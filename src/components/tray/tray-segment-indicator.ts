@@ -1,6 +1,6 @@
 import gsap from "gsap";
 
-export const TRAY_INDICATOR_DURATION_S = 0.3;
+export const TRAY_INDICATOR_DURATION_S = 0.32;
 export const TRAY_INDICATOR_EASE = "power3.out";
 
 export interface IndicatorMetrics {
@@ -8,28 +8,54 @@ export interface IndicatorMetrics {
   width: number;
 }
 
-export function measureSegmentItem(_track: HTMLElement, item: HTMLElement): IndicatorMetrics {
-  const group = item.parentElement;
-  const groupLeft = group?.offsetLeft ?? 0;
+export function metricsFromClientRects(
+  trackRect: Pick<DOMRect, "left">,
+  itemRect: Pick<DOMRect, "left" | "width">,
+): IndicatorMetrics {
   return {
-    x: groupLeft + item.offsetLeft,
-    width: item.offsetWidth,
+    x: itemRect.left - trackRect.left,
+    width: itemRect.width,
   };
+}
+
+export function measureSegmentItem(track: HTMLElement, item: HTMLElement): IndicatorMetrics {
+  return metricsFromClientRects(track.getBoundingClientRect(), item.getBoundingClientRect());
 }
 
 export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+export function createActiveIndicatorQuickTo(indicator: HTMLElement) {
+  return {
+    x: gsap.quickTo(indicator, "x", {
+      duration: TRAY_INDICATOR_DURATION_S,
+      ease: TRAY_INDICATOR_EASE,
+    }),
+    width: gsap.quickTo(indicator, "width", {
+      duration: TRAY_INDICATOR_DURATION_S,
+      ease: TRAY_INDICATOR_EASE,
+    }),
+  };
+}
+
 export function applyActiveIndicatorPosition(
   indicator: HTMLElement,
   metrics: IndicatorMetrics,
-  options: { animate: boolean; instant: boolean },
+  options: { animate: boolean },
+  quickTo: { x: gsap.QuickToFunc; width: gsap.QuickToFunc } | null,
 ) {
   const { x, width } = metrics;
 
-  if (prefersReducedMotion() || options.instant || !options.animate) {
+  if (prefersReducedMotion() || !options.animate) {
     gsap.set(indicator, { x, width, opacity: 1 });
+    return;
+  }
+
+  if (quickTo) {
+    quickTo.x(x);
+    quickTo.width(width);
+    gsap.to(indicator, { opacity: 1, duration: 0.15, overwrite: "auto" });
     return;
   }
 
@@ -94,16 +120,14 @@ export function syncActiveSegmentIndicator(
   track: HTMLElement | null,
   indicator: HTMLElement | null,
   item: HTMLButtonElement | undefined,
-  instant: boolean,
+  animate: boolean,
+  quickTo: { x: gsap.QuickToFunc; width: gsap.QuickToFunc } | null,
 ) {
   if (!track || !indicator || !item) {
     return;
   }
 
-  applyActiveIndicatorPosition(indicator, measureSegmentItem(track, item), {
-    animate: !instant,
-    instant,
-  });
+  applyActiveIndicatorPosition(indicator, measureSegmentItem(track, item), { animate }, quickTo);
 }
 
 export function syncHoverSegmentIndicator(
