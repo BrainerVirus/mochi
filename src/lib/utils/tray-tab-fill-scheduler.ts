@@ -1,12 +1,24 @@
 const readyQueue = new Set<() => void>();
 
 let tabFillPending = false;
+let tabFillPendingToken = 0;
 
-export function markTrayTabFillPending(): void {
+export function markTrayTabFillPending(): number {
   tabFillPending = true;
+  tabFillPendingToken += 1;
+
+  return tabFillPendingToken;
 }
 
-export function markTrayTabFillReady(): void {
+export function getTrayTabFillPendingToken(): number {
+  return tabFillPendingToken;
+}
+
+export function markTrayTabFillReady(token = tabFillPendingToken): void {
+  if (token !== tabFillPendingToken) {
+    return;
+  }
+
   tabFillPending = false;
 
   for (const run of readyQueue) {
@@ -35,5 +47,6 @@ export function runWhenTrayTabFillReady(run: () => void): () => void {
 
 export function resetTrayTabFillSchedulerForTests(): void {
   tabFillPending = false;
+  tabFillPendingToken = 0;
   readyQueue.clear();
 }

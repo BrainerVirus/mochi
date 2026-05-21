@@ -10,6 +10,25 @@ export function usageMeterFillTranslateX(percent: number): string {
   return `${-(100 - clamped)}%`;
 }
 
+export function usageMeterEmptyFillTransform(): string {
+  return `translateX(${usageMeterFillTranslateX(0)})`;
+}
+
+export function formatUsageMeterLeftLabel(percent: number): string {
+  const clamped = Math.max(0, Math.min(100, percent));
+
+  return `${Math.round(clamped)}% left`;
+}
+
+export function resolveUsageMeterDisplayPercent(
+  usedPercent: number,
+  remainingPercent?: number,
+): number {
+  const displayPercent = remainingPercent ?? 100 - usedPercent;
+
+  return Math.max(0, Math.min(100, displayPercent));
+}
+
 /** Restarts from empty on tab switch; keeps prior value for usage refresh on the same tab. */
 export function resolveUsageMeterFillStartPercent(
   previousPercent: number | null,

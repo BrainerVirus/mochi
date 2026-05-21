@@ -16,7 +16,9 @@ export function getMascotStateFromSnapshots(
     return "normal";
   }
 
-  const highestUsedPercent = Math.max(...snapshots.map((snapshot) => snapshot.primary.used_percent));
+  const highestUsedPercent = Math.max(
+    ...snapshots.map((snapshot) => snapshot.primary.used_percent),
+  );
   const tone = getUsageMeterTone(highestUsedPercent);
 
   if (tone === "critical") {

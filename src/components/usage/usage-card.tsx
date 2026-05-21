@@ -10,10 +10,6 @@ interface UsageCardProps {
 
 export function UsageCard({ snapshot, onRefresh, isRefreshing = false }: UsageCardProps) {
   return (
-    <ProviderUsageSection
-      snapshot={snapshot}
-      onRefresh={onRefresh}
-      isRefreshing={isRefreshing}
-    />
+    <ProviderUsageSection snapshot={snapshot} onRefresh={onRefresh} isRefreshing={isRefreshing} />
   );
 }

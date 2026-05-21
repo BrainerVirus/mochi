@@ -2,8 +2,13 @@ import { useRef } from "react";
 
 import { Progress } from "@/components/ui/progress";
 import { useUsageMeterFill } from "@/hooks/use-usage-meter-fill";
+import { useUsageMeterLeftLabel } from "@/hooks/use-usage-meter-left-label";
 import { cn } from "@/lib/utils";
 import { formatResetLine } from "@/lib/utils/format-reset-line";
+import {
+  formatUsageMeterLeftLabel,
+  resolveUsageMeterDisplayPercent,
+} from "@/lib/utils/usage-meter-fill-animation";
 import { getUsageMeterTone, usageMeterToneClasses } from "@/lib/utils/usage-meter-tone";
 
 interface UsageMeterProps {
@@ -29,22 +34,21 @@ export function UsageMeter({
   fillActivationKey = "static",
 }: UsageMeterProps) {
   const clamped = Math.max(0, Math.min(100, usedPercent));
-  const leftPercent =
-    remainingPercent !== undefined
-      ? Math.max(0, Math.min(100, remainingPercent))
-      : Math.max(0, 100 - clamped);
+  const leftPercent = resolveUsageMeterDisplayPercent(clamped, remainingPercent);
   const tone = getUsageMeterTone(clamped);
   const resetLabel = formatResetLine(resetsAt);
   const meterRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
+  const leftLabelRef = useRef<HTMLSpanElement>(null);
 
-  useUsageMeterFill(meterRef, indicatorRef, clamped, fillActivationKey);
+  useUsageMeterFill(meterRef, indicatorRef, leftPercent, fillActivationKey);
+  useUsageMeterLeftLabel(leftLabelRef, leftPercent, fillActivationKey);
 
   return (
     <div ref={meterRef} className={cn("flex flex-col", compact ? "gap-1" : "gap-1.5")}>
       <span className={cn("font-medium", compact ? "text-xs" : "text-sm")}>{label}</span>
       <Progress
-        value={clamped}
+        value={leftPercent}
         indicatorRef={indicatorRef}
         animateIndicator
         className={cn(compact ? "h-1" : "h-1.5", usageMeterToneClasses[tone])}
@@ -56,8 +60,8 @@ export function UsageMeter({
           compact ? "text-[11px]" : "text-xs",
         )}
       >
-        <span className="text-foreground font-medium tabular-nums">
-          {Math.round(leftPercent)}% left
+        <span ref={leftLabelRef} className="text-foreground font-medium tabular-nums">
+          {formatUsageMeterLeftLabel(0)}
         </span>
         {resetLabel ? (
           <span className="text-muted-foreground tabular-nums">{resetLabel}</span>

@@ -2,6 +2,7 @@ import { Progress as ProgressPrimitive } from "radix-ui";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { usageMeterEmptyFillTransform } from "@/lib/utils/usage-meter-fill-animation";
 
 function Progress({
   className,
@@ -25,13 +26,10 @@ function Progress({
       <ProgressPrimitive.Indicator
         ref={indicatorRef}
         data-slot="progress-indicator"
-        className={cn(
-          "bg-primary size-full flex-1",
-          !animateIndicator && "transition-all",
-        )}
+        className={cn("bg-primary size-full flex-1", !animateIndicator && "transition-all")}
         style={
           animateIndicator
-            ? undefined
+            ? { transform: usageMeterEmptyFillTransform() }
             : { transform: `translateX(-${100 - (value || 0)}%)` }
         }
       />

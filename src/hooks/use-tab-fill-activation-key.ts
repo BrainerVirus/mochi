@@ -1,8 +1,5 @@
 import { useRef } from "react";
 
-import { isTauriTrayPanel } from "@/lib/utils/tray-panel-height-sync";
-import { markTrayTabFillPending } from "@/lib/utils/tray-tab-fill-scheduler";
-
 import {
   formatTabFillActivationKey,
   nextTabFillActivationState,
@@ -13,10 +10,6 @@ export function useTabFillActivationKey(activeTab: string): string {
   const stateRef = useRef({ tab: activeTab, generation: 0 });
 
   if (stateRef.current.tab !== activeTab) {
-    if (isTauriTrayPanel()) {
-      markTrayTabFillPending();
-    }
-
     stateRef.current = nextTabFillActivationState(stateRef.current, activeTab);
   }
 

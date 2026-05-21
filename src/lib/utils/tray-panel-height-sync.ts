@@ -5,9 +5,6 @@ import {
   resolveTrayPanelHeight,
 } from "@/lib/utils/tray-panel-height-animation";
 import { TRAY_PANEL_CONTENT_SELECTOR } from "@/lib/utils/tray-panel-layout";
-import {
-  markTrayTabFillReady,
-} from "@/lib/utils/tray-tab-fill-scheduler";
 
 export function isTauriTrayPanel(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -87,7 +84,6 @@ export function runTrayPanelTabHeightAnimation(
       refs.lastHeightRef.current = toHeight;
       refs.isTabAnimatingRef.current = false;
       void setTrayPanelHeight(toHeight);
-      markTrayTabFillReady();
       return;
     }
 
@@ -102,7 +98,6 @@ export function runTrayPanelTabHeightAnimation(
         refs.lastHeightRef.current = toHeight;
         refs.isTabAnimatingRef.current = false;
         refs.heightTweenRef.current = null;
-        markTrayTabFillReady();
       },
     });
   });
@@ -112,6 +107,5 @@ export function runTrayPanelTabHeightAnimation(
     refs.heightTweenRef.current?.kill();
     refs.heightTweenRef.current = null;
     refs.isTabAnimatingRef.current = false;
-    markTrayTabFillReady();
   };
 }

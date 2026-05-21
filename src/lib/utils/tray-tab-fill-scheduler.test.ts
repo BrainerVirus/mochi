@@ -56,4 +56,24 @@ describe("trayTabFillScheduler", () => {
 
     expect(ran).toBe(false);
   });
+
+  it("does not let stale ready signals release a newer tab fill", () => {
+    resetTrayTabFillSchedulerForTests();
+    const staleToken = markTrayTabFillPending();
+    const currentToken = markTrayTabFillPending();
+    const runs: string[] = [];
+
+    markTrayTabFillReady(staleToken);
+    runWhenTrayTabFillReady(() => {
+      runs.push("fill");
+    });
+
+    expect(runs).toEqual([]);
+    expect(isTrayTabFillPending()).toBe(true);
+
+    markTrayTabFillReady(currentToken);
+
+    expect(runs).toEqual(["fill"]);
+    expect(isTrayTabFillPending()).toBe(false);
+  });
 });
