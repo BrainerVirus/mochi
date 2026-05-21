@@ -20,7 +20,9 @@
         "decorations": false,
         "resizable": false,
         "alwaysOnTop": true,
-        "skipTaskbar": true
+        "skipTaskbar": true,
+        "transparent": true,
+        "shadow": false
       },
       {
         "label": "widget",

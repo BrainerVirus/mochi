@@ -13,8 +13,8 @@ use crate::settings::SettingsState;
 use crate::status;
 
 pub use panel::{
-    maybe_show_main_for_dev, open_tray_panel, setup_main_panel, show_main_panel, show_tray_panel,
-    show_tray_panel_centered, MAIN_PANEL_LABEL,
+    maybe_show_main_for_dev, open_tray_panel, record_tray_icon_event, setup_main_panel,
+    show_main_panel, show_tray_panel, show_tray_panel_centered, MAIN_PANEL_LABEL,
 };
 pub use usage::{aggregate_used_percent, tray_usage_tone, TrayUsageTone, TRAY_ID};
 
@@ -114,7 +114,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
-            tauri_plugin_positioner::on_tray_event(tray.app_handle(), &event);
+            record_tray_icon_event(tray.app_handle(), &event);
 
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
@@ -128,9 +128,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .build(app)?;
 
     #[cfg(debug_assertions)]
-    eprintln!(
-        "[mochi] tray registered (id={TRAY_ID}). On macOS, check menu bar overflow (Control Center → Menu Bar) if the icon is missing."
-    );
+    eprintln!("[mochi] tray registered (id={TRAY_ID})");
 
     Ok(())
 }

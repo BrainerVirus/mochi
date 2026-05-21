@@ -60,7 +60,6 @@ pub fn run() -> anyhow::Result<()> {
 }
 
 fn run_cli(command: Command) -> anyhow::Result<()> {
-fn run_cli(command: Command) -> anyhow::Result<()> {
     match command {
         Command::StatusBar { format } => {
             let output = status_bar::format_output(&format, 42, "Claude");

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { RefreshCwIcon, SettingsIcon } from "lucide-react";
 
 import { MochiMascot } from "@/components/mascot/mochi-mascot";
+import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,7 @@ export function TrayPanel() {
   const isRefreshing = isFetching || refreshProvider.isPending;
 
   return (
-    <main className="bg-background text-foreground min-h-full">
+    <TrayPanelShell>
       <section className="mx-auto flex w-full max-w-[360px] flex-col gap-4 p-4">
         <header className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -73,7 +74,7 @@ export function TrayPanel() {
           updates.
         </p>
       </section>
-    </main>
+    </TrayPanelShell>
   );
 }
 
