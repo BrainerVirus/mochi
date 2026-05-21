@@ -1,8 +1,8 @@
 import { ActivityIcon, BarChart3Icon } from "lucide-react";
 
 import { TrayMenuList, TrayMenuRow, type TrayMenuItem } from "@/components/tray/tray-menu-row";
-import type { ProviderId } from "@/lib/schemas/usage";
 import { getProviderExternalLinks } from "@/lib/providers/dashboard-urls";
+import type { ProviderId } from "@/lib/schemas/usage";
 import { openExternalUrl } from "@/lib/tauri/commands";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
 

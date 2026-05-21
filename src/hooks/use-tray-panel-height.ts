@@ -14,10 +14,7 @@ gsap.registerPlugin(useGSAP);
  * Resizes the native tray popover to match measured column height, capped at viewport max.
  * Tab switches morph height with GSAP; other layout changes sync immediately.
  */
-export function useTrayPanelHeight(
-  layoutRef: RefObject<HTMLElement | null>,
-  activeTab: string,
-) {
+export function useTrayPanelHeight(layoutRef: RefObject<HTMLElement | null>, activeTab: string) {
   const lastHeightRef = useRef<number | null>(null);
   const isTabAnimatingRef = useRef(false);
   const heightTweenRef = useRef<gsap.core.Tween | null>(null);

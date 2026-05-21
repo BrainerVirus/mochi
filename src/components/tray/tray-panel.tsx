@@ -1,7 +1,7 @@
 import { useRef } from "react";
 
-import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { UsageSnapshotsPanel } from "@/components/tray/tray-panel-content";
+import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { useTrayPanelHeight } from "@/hooks/use-tray-panel-height";
@@ -41,10 +41,7 @@ export function TrayPanel() {
 
   return (
     <TrayPanelShell layoutRef={layoutRef}>
-      <section
-        data-tray-panel-content
-        className="mx-auto flex w-full max-w-[360px] flex-col"
-      >
+      <section data-tray-panel-content className="mx-auto flex w-full max-w-[360px] flex-col">
         <UsageSnapshotsPanel
           error={error}
           isError={isError}

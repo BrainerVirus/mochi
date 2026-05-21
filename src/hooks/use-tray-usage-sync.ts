@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
 import { useUsageData } from "@/hooks/use-usage-data";
-import { syncTrayUsage } from "@/lib/tauri/commands";
 import { useTrayUiStore } from "@/lib/stores/tray-ui-store";
+import { syncTrayUsage } from "@/lib/tauri/commands";
 
 export function useTrayUsageSync() {
   const { data, isSuccess } = useUsageData();

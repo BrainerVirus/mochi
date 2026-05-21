@@ -1,9 +1,6 @@
 import gsap from "gsap";
 
-import {
-  clampTrayPanelHeight,
-  measureTrayPanelLayoutHeight,
-} from "@/lib/utils/tray-panel-layout";
+import { clampTrayPanelHeight, measureTrayPanelLayoutHeight } from "@/lib/utils/tray-panel-layout";
 
 export const TRAY_PANEL_HEIGHT_DURATION_S = 0.32;
 export const TRAY_PANEL_HEIGHT_EASE = "power2.out";

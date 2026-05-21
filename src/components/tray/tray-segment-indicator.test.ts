@@ -7,9 +7,10 @@ import {
 
 describe("metricsFromClientRects", () => {
   it("returns position relative to the track using layout boxes", () => {
-    expect(
-      metricsFromClientRects({ left: 10 }, { left: 90, width: 60 }),
-    ).toEqual({ x: 80, width: 60 });
+    expect(metricsFromClientRects({ left: 10 }, { left: 90, width: 60 })).toEqual({
+      x: 80,
+      width: 60,
+    });
   });
 });
 

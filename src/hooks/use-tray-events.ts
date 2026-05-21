@@ -46,9 +46,9 @@ export function useTrayEvents() {
         void navigate({ to: event.payload });
       }),
       listen("tray-refresh", () => {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }).then(() =>
-          syncTrayUsage(),
-        );
+        void queryClient
+          .invalidateQueries({ queryKey: queryKeys.usageSnapshots })
+          .then(() => syncTrayUsage());
       }),
       listen<UpdateChannel>("tray-set-channel", (event) => {
         const current = queryClient.getQueryData<MochiSettings>(queryKeys.settings);

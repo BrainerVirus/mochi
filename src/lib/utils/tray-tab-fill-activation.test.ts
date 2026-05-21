@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  formatTabFillActivationKey,
-  nextTabFillActivationState,
-} from "./tray-tab-fill-activation";
+import { formatTabFillActivationKey, nextTabFillActivationState } from "./tray-tab-fill-activation";
 
 describe("trayTabFillActivation", () => {
   it("increments generation on every tab switch, including returning to the same tab id", () => {

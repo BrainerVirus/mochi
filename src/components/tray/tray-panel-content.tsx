@@ -2,11 +2,11 @@ import { TrayOverview } from "@/components/tray/tray-overview";
 import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
+import { useTabFillActivationKey } from "@/hooks/use-tab-fill-activation-key";
 import { useUsageData } from "@/hooks/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 import { buildTrayPanelTabs } from "@/lib/utils/tray-panel-tabs";
-import { useTabFillActivationKey } from "@/hooks/use-tab-fill-activation-key";
 import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
 interface UsageSnapshotsPanelProps {

@@ -77,11 +77,7 @@ function ScrollFadeVerticalChevron({
         !isStart && !visible && "translate-y-1",
       )}
     >
-      {isStart ? (
-        <ChevronUpIcon className="size-3.5" />
-      ) : (
-        <ChevronDownIcon className="size-3.5" />
-      )}
+      {isStart ? <ChevronUpIcon className="size-3.5" /> : <ChevronDownIcon className="size-3.5" />}
     </Button>
   );
 }
@@ -184,7 +180,11 @@ function ScrollFadeViewport({
       {canScrollStart && !isHorizontal ? (
         <>
           <div aria-hidden className="scroll-fade-edge-top" />
-          <ScrollFadeVerticalChevron side="start" visible={canScrollStart} onCycle={onCycleBackward} />
+          <ScrollFadeVerticalChevron
+            side="start"
+            visible={canScrollStart}
+            onCycle={onCycleBackward}
+          />
         </>
       ) : null}
       {canScrollEnd && isHorizontal ? <div aria-hidden className="scroll-fade-edge-right" /> : null}

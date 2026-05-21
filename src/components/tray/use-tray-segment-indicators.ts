@@ -117,7 +117,16 @@ export function useTraySegmentIndicators(
       cancelled = true;
       cancelAnimationFrame(frameId);
     };
-  }, [value, tabCount, syncActive, syncHover, trackRef, activeIndicatorRef, itemRefs, hoveredIdRef]);
+  }, [
+    value,
+    tabCount,
+    syncActive,
+    syncHover,
+    trackRef,
+    activeIndicatorRef,
+    itemRefs,
+    hoveredIdRef,
+  ]);
 
   useEffect(() => {
     const track = trackRef.current;

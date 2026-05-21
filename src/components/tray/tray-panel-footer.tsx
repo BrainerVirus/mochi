@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
 
 import { TrayMenuList, TrayMenuRow, type TrayMenuItem } from "@/components/tray/tray-menu-row";
-import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 import { queryKeys } from "@/lib/query/keys";
 import { appVersion, openAppWindow } from "@/lib/tauri/commands";
 import { trayPanelShortcut } from "@/lib/utils/tray-panel-shortcut";
+import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
 interface TrayPanelFooterProps {
   isRefreshing: boolean;

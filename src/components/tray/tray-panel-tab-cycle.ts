@@ -8,7 +8,9 @@ import {
 const TRAY_TAB_SELECTOR = "[data-tray-tab-id]";
 
 function scrollTrayTabIntoView(scrollEl: HTMLDivElement, tabId: string) {
-  const trigger = scrollEl.querySelector<HTMLElement>(`${TRAY_TAB_SELECTOR}[data-tray-tab-id="${tabId}"]`);
+  const trigger = scrollEl.querySelector<HTMLElement>(
+    `${TRAY_TAB_SELECTOR}[data-tray-tab-id="${tabId}"]`,
+  );
   trigger?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
 }
 
