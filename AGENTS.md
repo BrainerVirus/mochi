@@ -6,6 +6,10 @@ This repo is pre-scaffold. Do not infer the implementation stack from missing ma
 - Current implementation stack source of truth: [docs/tech-stack.md](docs/tech-stack.md).
 - The old generated plan at [docs/superpowers/plans/2026-05-19-mochi.md](docs/superpowers/plans/2026-05-19-mochi.md) predates the TanStack Start/Oxc direction; use it only for product/module intent, not package versions or scaffold commands.
 
+## Cross-Platform Requirement
+
+**Mandatory:** All code must work correctly on **macOS, Windows, and Linux**. Do not ship macOS-only assumptions — paths, shell commands, file locations, tray/window behavior, or platform APIs — without equivalent cross-platform handling or explicit guards (`#[cfg(...)]`, runtime detection). Tray panel, widget, settings, CLI, and build tooling must remain functional on all three desktop targets. When a platform needs a special case (e.g. macOS private API for transparent tray windows), document it and keep Win/Linux behavior correct without that API.
+
 ## Stack To Preserve
 
 - Frontend: React 19 + TanStack Start 1.x, not a plain Vite SPA.

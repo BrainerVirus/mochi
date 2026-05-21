@@ -10,12 +10,13 @@
     "frontendDist": "../.output/public"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
         "title": "Mochi",
         "width": 360,
-        "height": 520,
+        "height": 480,
         "visible": false,
         "decorations": false,
         "resizable": false,
