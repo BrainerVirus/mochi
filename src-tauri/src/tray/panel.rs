@@ -8,6 +8,16 @@ use tauri_plugin_positioner::{Position, WindowExt};
 
 pub const MAIN_PANEL_LABEL: &str = "main";
 
+/// Matches `src/lib/utils/tray-panel-layout.ts` and `tauri.conf.json` main window width.
+pub const TRAY_PANEL_WIDTH: f64 = 360.0;
+
+/// Matches `TRAY_PANEL_MIN_HEIGHT_PX` in the frontend layout module.
+pub const TRAY_PANEL_MIN_HEIGHT: f64 = 160.0;
+
+/// Default upper bound when the frontend cannot read screen height (480 + margin).
+#[allow(dead_code)]
+pub const TRAY_PANEL_DEFAULT_MAX_HEIGHT: f64 = 496.0;
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct TrayIconRect {
     pub x: i32,
@@ -131,6 +141,28 @@ pub fn has_cached_tray_icon_rect(app: &AppHandle) -> bool {
             .ok()
             .is_some_and(|cached| cached.is_some())
     })
+}
+
+/// Resizes the tray popover to content height (logical px), reclamping anchor when visible.
+#[tauri::command]
+pub fn set_tray_panel_height(app: AppHandle, height: f64) -> Result<(), String> {
+    let Some(window) = app.get_webview_window(MAIN_PANEL_LABEL) else {
+        return Err(format!("missing tray panel window: {MAIN_PANEL_LABEL}"));
+    };
+
+    let height = height.max(TRAY_PANEL_MIN_HEIGHT);
+    window
+        .set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: TRAY_PANEL_WIDTH,
+            height,
+        }))
+        .map_err(|error| error.to_string())?;
+
+    if window.is_visible().unwrap_or(false) {
+        position_tray_panel(&app, &window)?;
+    }
+
+    Ok(())
 }
 
 /// Opens the tray panel window. Useful for dev validation when the tray icon is hard to reach.
@@ -287,5 +319,12 @@ mod tests {
 
         #[cfg(not(target_os = "macos"))]
         assert!(matches!(tray_panel_anchor_position(), Position::TrayLeft));
+    }
+
+    #[test]
+    fn tray_panel_height_bounds_match_frontend_layout() {
+        assert_eq!(TRAY_PANEL_WIDTH, 360.0);
+        assert_eq!(TRAY_PANEL_MIN_HEIGHT, 160.0);
+        assert_eq!(TRAY_PANEL_DEFAULT_MAX_HEIGHT, 496.0);
     }
 }

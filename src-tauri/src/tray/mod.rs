@@ -14,8 +14,9 @@ use crate::settings::SettingsState;
 use crate::status;
 
 pub use panel::{
-    maybe_show_main_for_dev, open_tray_panel, record_tray_icon_event, setup_main_panel,
-    show_main_panel, show_tray_panel, show_tray_panel_centered, MAIN_PANEL_LABEL,
+    maybe_show_main_for_dev, open_tray_panel, record_tray_icon_event, set_tray_panel_height,
+    setup_main_panel, show_main_panel, show_tray_panel, show_tray_panel_centered,
+    MAIN_PANEL_LABEL,
 };
 pub use presentation::{
     pick_tray_snapshot, resolve_tray_presentation, TrayIconPresentation,

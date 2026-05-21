@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { RefreshCwIcon, SettingsIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+
+import { useTrayPanelHeight } from "@/hooks/use-tray-panel-height";
 
 import { TrayOverview } from "@/components/tray/tray-overview";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
@@ -21,6 +23,9 @@ export function TrayPanel() {
   const refreshProvider = useRefreshProvider();
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshingProvider, setRefreshingProvider] = useState<ProviderId | null>(null);
+  const contentRef = useRef<HTMLElement>(null);
+
+  useTrayPanelHeight(contentRef);
 
   const isRefreshingAll = isFetching || refreshProvider.isPending;
   const enabledProviders = settings?.enabled_providers ?? [];
@@ -38,7 +43,7 @@ export function TrayPanel() {
 
   return (
     <TrayPanelShell>
-      <section className="mx-auto flex w-full max-w-[360px] flex-col">
+      <section ref={contentRef} className="mx-auto flex w-full max-w-[360px] flex-col">
         <header className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
           <h1 className="text-sm font-semibold tracking-tight">Usage</h1>
           <div className="flex items-center gap-0.5">

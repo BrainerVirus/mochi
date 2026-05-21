@@ -63,3 +63,7 @@ export function syncTrayUsage(): Promise<void> {
 export function showMainPanel(): Promise<void> {
   return invoke<void>("show_main_panel");
 }
+
+export function setTrayPanelHeight(height: number): Promise<void> {
+  return invoke<void>("set_tray_panel_height", { height });
+}

@@ -13,7 +13,10 @@ use tauri::Manager;
 
 use cli::{Cli, Command};
 use settings::{get_settings, save_settings, SettingsState};
-use tray::{maybe_show_main_for_dev, setup_main_panel, setup_tray, show_main_panel, sync_tray_usage};
+use tray::{
+    maybe_show_main_for_dev, set_tray_panel_height, setup_main_panel, setup_tray, show_main_panel,
+    sync_tray_usage,
+};
 use widget::{hide_widget, setup_widget, show_widget, toggle_widget};
 
 #[tauri::command]
@@ -48,6 +51,7 @@ pub fn run() -> anyhow::Result<()> {
             status::get_usage_snapshots,
             status::refresh_provider,
             show_main_panel,
+            set_tray_panel_height,
             sync_tray_usage,
             updater::check_for_update,
             updater::install_update,
