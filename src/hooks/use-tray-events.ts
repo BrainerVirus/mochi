@@ -20,6 +20,7 @@ export function useSaveSettings() {
     ...saveSettingsMutationOptions(),
     onSuccess: (settings) => {
       queryClient.setQueryData(queryKeys.settings, settings);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
     },
   });
 }
