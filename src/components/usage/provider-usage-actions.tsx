@@ -6,7 +6,13 @@ import { getProviderExternalLinks } from "@/lib/providers/dashboard-urls";
 import { openExternalUrl } from "@/lib/tauri/commands";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
 
-export function ProviderUsageActions({ provider }: { provider: ProviderId }) {
+export function ProviderUsageActions({
+  provider,
+  animateRows = false,
+}: {
+  provider: ProviderId;
+  animateRows?: boolean;
+}) {
   const links = getProviderExternalLinks(provider);
 
   const items: TrayMenuItem[] = [];
@@ -41,7 +47,11 @@ export function ProviderUsageActions({ provider }: { provider: ProviderId }) {
     <div className="-mx-3">
       <TrayMenuList aria-label={`${getProviderLabel(provider)} links`}>
         {items.map((item) => (
-          <TrayMenuRow key={item.id} item={item} />
+          <TrayMenuRow
+            key={item.id}
+            item={item}
+            {...(animateRows ? { "data-tray-tab-enter": true } : {})}
+          />
         ))}
       </TrayMenuList>
     </div>

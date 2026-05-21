@@ -1,7 +1,10 @@
+import { useRef } from "react";
+
 import { TrayOverview } from "@/components/tray/tray-overview";
 import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
+import { useTrayTabTransition } from "@/hooks/use-tray-tab-transition";
 import { useUsageData } from "@/hooks/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
@@ -66,28 +69,64 @@ export function UsageSnapshotsPanel({
     const activeSnapshot = snapshots.find((snapshot) => snapshot.provider === activeTab);
 
     return (
-      <div className="flex flex-col gap-0">
-        <TrayPanelTabList tabs={tabs} value={activeTab} onValueChange={onTabChange} />
-
-        <div className={`${trayPanelSpacing.contentX} ${trayPanelSpacing.contentTop} pb-0`}>
-          {activeTab === "overview" ? (
-            <TrayOverview
-              snapshots={snapshots}
-              onRefreshProvider={onRefreshProvider}
-              refreshingProvider={refreshingProvider}
-            />
-          ) : activeSnapshot ? (
-            <ProviderUsageSection
-              snapshot={activeSnapshot}
-              onRefresh={onRefreshProvider}
-              isRefreshing={refreshingProvider === activeSnapshot.provider}
-              showProviderActions
-            />
-          ) : null}
-        </div>
-      </div>
+      <TabContentPanel
+        activeTab={activeTab}
+        activeSnapshot={activeSnapshot}
+        snapshots={snapshots}
+        tabs={tabs}
+        onTabChange={onTabChange}
+        onRefreshProvider={onRefreshProvider}
+        refreshingProvider={refreshingProvider}
+      />
     );
   }
 
   return null;
+}
+
+function TabContentPanel({
+  activeTab,
+  activeSnapshot,
+  snapshots,
+  tabs,
+  onTabChange,
+  onRefreshProvider,
+  refreshingProvider,
+}: {
+  activeTab: string;
+  activeSnapshot: UsageSnapshotsPanelProps["snapshots"][number] | undefined;
+  snapshots: UsageSnapshotsPanelProps["snapshots"];
+  tabs: UsageSnapshotsPanelProps["tabs"];
+  onTabChange: UsageSnapshotsPanelProps["onTabChange"];
+  onRefreshProvider: UsageSnapshotsPanelProps["onRefreshProvider"];
+  refreshingProvider: UsageSnapshotsPanelProps["refreshingProvider"];
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  useTrayTabTransition(contentRef, activeTab);
+
+  return (
+    <div className="flex flex-col gap-0">
+      <TrayPanelTabList tabs={tabs} value={activeTab} onValueChange={onTabChange} />
+
+      <div
+        ref={contentRef}
+        className={`${trayPanelSpacing.contentX} ${trayPanelSpacing.contentTop} pb-0`}
+      >
+        {activeTab === "overview" ? (
+          <TrayOverview
+            snapshots={snapshots}
+            onRefreshProvider={onRefreshProvider}
+            refreshingProvider={refreshingProvider}
+          />
+        ) : activeSnapshot ? (
+          <ProviderUsageSection
+            snapshot={activeSnapshot}
+            onRefresh={onRefreshProvider}
+            isRefreshing={refreshingProvider === activeSnapshot.provider}
+            showProviderActions
+          />
+        ) : null}
+      </div>
+    </div>
+  );
 }

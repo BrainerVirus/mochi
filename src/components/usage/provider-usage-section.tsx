@@ -32,7 +32,11 @@ export function ProviderUsageSection({
 
   return (
     <section className="flex flex-col">
-      <header className="flex items-start justify-between gap-2">
+      <div
+        {...(showProviderActions ? { "data-tray-tab-enter": true } : {})}
+        className="flex flex-col"
+      >
+        <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold">
             <ProviderIcon provider={snapshot.provider} className="size-4" />
@@ -79,10 +83,11 @@ export function ProviderUsageSection({
           />
         ))}
       </div>
+      </div>
       {showProviderActions ? (
         <>
-          <TrayPanelDivider />
-          <ProviderUsageActions provider={snapshot.provider} />
+          <TrayPanelDivider data-tray-tab-enter />
+          <ProviderUsageActions provider={snapshot.provider} animateRows />
         </>
       ) : null}
     </section>

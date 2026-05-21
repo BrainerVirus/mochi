@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,9 +11,13 @@ export interface TrayMenuItem {
   onClick?: () => void;
 }
 
-export function TrayMenuRow({ item }: { item: TrayMenuItem }) {
+export function TrayMenuRow({
+  item,
+  className,
+  ...props
+}: { item: TrayMenuItem } & ComponentProps<"li">) {
   return (
-    <li>
+    <li className={className} {...props}>
       <button
         type="button"
         className={cn(
