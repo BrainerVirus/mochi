@@ -1,12 +1,15 @@
+import { cn } from "@/lib/utils";
+
 interface MochiMascotProps {
   state: "normal" | "warning" | "critical" | "reset-soon" | "all-good";
+  className?: string;
 }
 
-export function MochiMascot({ state }: MochiMascotProps) {
+export function MochiMascot({ state, className }: MochiMascotProps) {
   const blush = state === "critical" ? "#FF8A8A" : "#FFB5C2";
 
   return (
-    <svg viewBox="0 0 120 100" aria-hidden="true" className="size-24">
+    <svg viewBox="0 0 120 100" aria-hidden="true" className={cn("size-24", className)}>
       <ellipse cx="60" cy="56" rx="42" ry="34" fill="#FFF8F0" stroke="#E7D8CC" strokeWidth="3" />
       <circle cx="45" cy="52" r="4" fill="#1F2937" />
       <circle cx="75" cy="52" r="4" fill="#1F2937" />

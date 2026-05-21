@@ -14,8 +14,8 @@
       {
         "label": "main",
         "title": "Mochi",
-        "width": 420,
-        "height": 620,
+        "width": 360,
+        "height": 640,
         "visible": false,
         "resizable": true
       }

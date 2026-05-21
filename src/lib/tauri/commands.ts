@@ -1,9 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { MochiSettingsSchema, type MochiSettings } from "@/lib/schemas/settings";
 import {
   UpdateInfoSchema,
+  UsageSnapshotSchema,
   UsageSnapshotsSchema,
+  type ProviderId,
   type UpdateInfo,
+  type UsageSnapshot,
   type UsageSnapshots,
 } from "@/lib/schemas/usage";
 
@@ -23,4 +27,19 @@ export function installUpdate(): Promise<void> {
 export async function getUsageSnapshots(): Promise<UsageSnapshots> {
   const result = await invoke<unknown>("get_usage_snapshots");
   return UsageSnapshotsSchema.parse(result);
+}
+
+export async function refreshProvider(provider: ProviderId): Promise<UsageSnapshot> {
+  const result = await invoke<unknown>("refresh_provider", { provider });
+  return UsageSnapshotSchema.parse(result);
+}
+
+export async function getSettings(): Promise<MochiSettings> {
+  const result = await invoke<unknown>("get_settings");
+  return MochiSettingsSchema.parse(result);
+}
+
+export async function saveSettings(settings: MochiSettings): Promise<MochiSettings> {
+  const result = await invoke<unknown>("save_settings", { settings });
+  return MochiSettingsSchema.parse(result);
 }
