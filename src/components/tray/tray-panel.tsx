@@ -5,17 +5,14 @@ import { useState } from "react";
 import { TrayOverview } from "@/components/tray/tray-overview";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
+import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { UsageCard } from "@/components/usage/usage-card";
 import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useUsageData } from "@/hooks/use-usage-data";
-import {
-  buildTrayPanelTabs,
-  filterSnapshotsForEnabledProviders,
-  getOverviewMetrics,
-} from "@/lib/utils/tray-panel-tabs";
+import type { ProviderId } from "@/lib/schemas/usage";
+import { buildTrayPanelTabs, filterSnapshotsForTrayPanel } from "@/lib/utils/tray-panel-tabs";
 import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
 export function TrayPanel() {
@@ -23,12 +20,21 @@ export function TrayPanel() {
   const { data, error, isError, isPending, isSuccess, refetch, isFetching } = useUsageData();
   const refreshProvider = useRefreshProvider();
   const [activeTab, setActiveTab] = useState("overview");
+  const [refreshingProvider, setRefreshingProvider] = useState<ProviderId | null>(null);
 
-  const isRefreshing = isFetching || refreshProvider.isPending;
+  const isRefreshingAll = isFetching || refreshProvider.isPending;
   const enabledProviders = settings?.enabled_providers ?? [];
-  const snapshots = filterSnapshotsForEnabledProviders(data ?? [], enabledProviders);
-  const tabs = buildTrayPanelTabs(snapshots, enabledProviders);
-  const metrics = getOverviewMetrics(snapshots);
+  const snapshots = filterSnapshotsForTrayPanel(data ?? [], enabledProviders);
+  const tabs = buildTrayPanelTabs(data ?? [], enabledProviders);
+
+  function handleRefreshProvider(provider: ProviderId) {
+    setRefreshingProvider(provider);
+    refreshProvider.mutate(provider, {
+      onSettled: () => {
+        setRefreshingProvider(null);
+      },
+    });
+  }
 
   return (
     <TrayPanelShell>
@@ -40,7 +46,7 @@ export function TrayPanel() {
               variant="ghost"
               size="icon-sm"
               className="cursor-pointer"
-              disabled={isRefreshing}
+              disabled={isRefreshingAll}
               aria-label="Refresh usage"
               onClick={() => {
                 void refetch();
@@ -57,7 +63,6 @@ export function TrayPanel() {
         </header>
 
         <UsageSnapshotsPanel
-          data={data}
           error={error}
           isError={isError}
           isPending={isPending}
@@ -66,8 +71,9 @@ export function TrayPanel() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           tabs={tabs}
-          metrics={metrics}
           snapshots={snapshots}
+          onRefreshProvider={handleRefreshProvider}
+          refreshingProvider={refreshingProvider}
         />
 
         <Separator className="mx-3" />
@@ -81,7 +87,6 @@ export function TrayPanel() {
 }
 
 interface UsageSnapshotsPanelProps {
-  data: ReturnType<typeof useUsageData>["data"];
   error: ReturnType<typeof useUsageData>["error"];
   isError: boolean;
   isPending: boolean;
@@ -90,8 +95,9 @@ interface UsageSnapshotsPanelProps {
   activeTab: string;
   onTabChange: (value: string) => void;
   tabs: ReturnType<typeof buildTrayPanelTabs>;
-  metrics: ReturnType<typeof getOverviewMetrics>;
   snapshots: NonNullable<ReturnType<typeof useUsageData>["data"]>;
+  onRefreshProvider: (provider: ProviderId) => void;
+  refreshingProvider: ProviderId | null;
 }
 
 function UsageSnapshotsPanel({
@@ -103,8 +109,9 @@ function UsageSnapshotsPanel({
   activeTab,
   onTabChange,
   tabs,
-  metrics,
   snapshots,
+  onRefreshProvider,
+  refreshingProvider,
 }: UsageSnapshotsPanelProps) {
   if (isPending) {
     return (
@@ -142,14 +149,17 @@ function UsageSnapshotsPanel({
 
         <div className="px-3 py-3">
           {activeTab === "overview" ? (
-            <TrayOverview snapshots={snapshots} metrics={metrics} />
+            <TrayOverview
+              snapshots={snapshots}
+              onRefreshProvider={onRefreshProvider}
+              refreshingProvider={refreshingProvider}
+            />
           ) : activeSnapshot ? (
-            <>
-              <UsageCard snapshot={activeSnapshot} compact />
-              <p className="text-muted-foreground mt-3 text-[10px]">
-                Updated {formatUpdatedAt(activeSnapshot.updated_at)}
-              </p>
-            </>
+            <ProviderUsageSection
+              snapshot={activeSnapshot}
+              onRefresh={onRefreshProvider}
+              isRefreshing={refreshingProvider === activeSnapshot.provider}
+            />
           ) : null}
         </div>
       </div>
@@ -157,18 +167,4 @@ function UsageSnapshotsPanel({
   }
 
   return null;
-}
-
-function formatUpdatedAt(updatedAt: string): string {
-  const date = new Date(updatedAt);
-  if (Number.isNaN(date.getTime())) {
-    return updatedAt;
-  }
-
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }

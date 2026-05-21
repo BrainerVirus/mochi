@@ -1,5 +1,6 @@
 import type { ProviderId, UsageSnapshot } from "@/lib/schemas/usage";
 
+import { filterConfiguredSnapshots } from "./is-provider-configured";
 import { getProviderLabel } from "./provider-labels";
 
 function isEnabledProvider(provider: ProviderId, enabledProviders: ProviderId[]): boolean {
@@ -11,30 +12,22 @@ export interface TrayPanelTab {
   label: string;
 }
 
-export interface OverviewMetrics {
-  providerCount: number;
-  highestUsedPercent: number;
-  averageUsedPercent: number;
-  healthyCount: number;
-}
-
-const HEALTHY_THRESHOLD = 60;
-
 export function buildTrayPanelTabs(
   snapshots: UsageSnapshot[],
   enabledProviders: ProviderId[] = [],
 ): TrayPanelTab[] {
-  const enabledSnapshots =
+  const configuredSnapshots = filterConfiguredSnapshots(
     enabledProviders.length === 0
       ? snapshots
-      : snapshots.filter((snapshot) => isEnabledProvider(snapshot.provider, enabledProviders));
+      : snapshots.filter((snapshot) => isEnabledProvider(snapshot.provider, enabledProviders)),
+  );
 
   const overviewTab: TrayPanelTab = {
     id: "overview",
     label: "Overview",
   };
 
-  const providerTabs = enabledSnapshots.map((snapshot) => ({
+  const providerTabs = configuredSnapshots.map((snapshot) => ({
     id: snapshot.provider,
     label: getProviderLabel(snapshot.provider),
   }));
@@ -42,6 +35,19 @@ export function buildTrayPanelTabs(
   return [overviewTab, ...providerTabs];
 }
 
+export function filterSnapshotsForTrayPanel(
+  snapshots: UsageSnapshot[],
+  enabledProviders: ProviderId[],
+): UsageSnapshot[] {
+  const enabledSnapshots =
+    enabledProviders.length === 0
+      ? snapshots
+      : snapshots.filter((snapshot) => isEnabledProvider(snapshot.provider, enabledProviders));
+
+  return filterConfiguredSnapshots(enabledSnapshots);
+}
+
+/** @deprecated Use filterSnapshotsForTrayPanel — kept for callers that only filter by enabled. */
 export function filterSnapshotsForEnabledProviders(
   snapshots: UsageSnapshot[],
   enabledProviders: ProviderId[],
@@ -51,25 +57,4 @@ export function filterSnapshotsForEnabledProviders(
   }
 
   return snapshots.filter((snapshot) => isEnabledProvider(snapshot.provider, enabledProviders));
-}
-
-export function getOverviewMetrics(snapshots: UsageSnapshot[]): OverviewMetrics {
-  if (snapshots.length === 0) {
-    return {
-      providerCount: 0,
-      highestUsedPercent: 0,
-      averageUsedPercent: 0,
-      healthyCount: 0,
-    };
-  }
-
-  const usedPercents = snapshots.map((snapshot) => snapshot.primary.used_percent);
-  const total = usedPercents.reduce((sum, value) => sum + value, 0);
-
-  return {
-    providerCount: snapshots.length,
-    highestUsedPercent: Math.round(Math.max(...usedPercents)),
-    averageUsedPercent: Math.round(total / snapshots.length),
-    healthyCount: usedPercents.filter((value) => value < HEALTHY_THRESHOLD).length,
-  };
 }

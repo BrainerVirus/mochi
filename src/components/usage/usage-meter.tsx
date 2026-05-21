@@ -1,6 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { formatResetCountdown } from "@/lib/utils/format-reset-countdown";
+import { formatResetLine } from "@/lib/utils/format-reset-line";
 import { getUsageMeterTone, usageMeterToneClasses } from "@/lib/utils/usage-meter-tone";
 
 interface UsageMeterProps {
@@ -9,6 +9,8 @@ interface UsageMeterProps {
   remainingPercent?: number;
   resetsAt?: string | null;
   compact?: boolean;
+  detailLeft?: string | null;
+  detailRight?: string | null;
 }
 
 export function UsageMeter({
@@ -17,6 +19,8 @@ export function UsageMeter({
   remainingPercent,
   resetsAt = null,
   compact = false,
+  detailLeft = null,
+  detailRight = null,
 }: UsageMeterProps) {
   const clamped = Math.max(0, Math.min(100, usedPercent));
   const leftPercent =
@@ -24,35 +28,44 @@ export function UsageMeter({
       ? Math.max(0, Math.min(100, remainingPercent))
       : Math.max(0, 100 - clamped);
   const tone = getUsageMeterTone(clamped);
-  const resetLabel = formatResetCountdown(resetsAt);
+  const resetLabel = formatResetLine(resetsAt);
 
   return (
-    <div className={cn("flex flex-col", compact ? "gap-0.5" : "gap-1")}>
-      <div
-        className={cn(
-          "flex items-center justify-between gap-2",
-          compact ? "text-[11px]" : "text-xs",
-          "text-muted-foreground",
-        )}
-      >
-        <span className="truncate">{label}</span>
-        <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
-          <span className="text-foreground font-medium">{Math.round(leftPercent)}% left</span>
-          {resetLabel ? (
-            <>
-              <span aria-hidden="true" className="text-border">
-                ·
-              </span>
-              <span>{resetLabel}</span>
-            </>
-          ) : null}
-        </span>
-      </div>
+    <div className={cn("flex flex-col", compact ? "gap-1" : "gap-1.5")}>
+      <span className={cn("font-medium", compact ? "text-xs" : "text-sm")}>{label}</span>
       <Progress
         value={clamped}
         className={cn(compact ? "h-1" : "h-1.5", usageMeterToneClasses[tone])}
         aria-label={`${label}: ${Math.round(leftPercent)}% remaining`}
       />
+      <div
+        className={cn(
+          "flex items-baseline justify-between gap-2",
+          compact ? "text-[11px]" : "text-xs",
+        )}
+      >
+        <span className="text-foreground font-medium tabular-nums">
+          {Math.round(leftPercent)}% left
+        </span>
+        {resetLabel ? <span className="text-muted-foreground tabular-nums">{resetLabel}</span> : null}
+      </div>
+      {detailLeft || detailRight ? (
+        <div
+          className={cn(
+            "flex items-baseline justify-between gap-2",
+            compact ? "text-[10px]" : "text-[11px]",
+          )}
+        >
+          {detailLeft ? (
+            <span className="text-muted-foreground truncate">{detailLeft}</span>
+          ) : (
+            <span />
+          )}
+          {detailRight ? (
+            <span className="text-muted-foreground shrink-0 tabular-nums">{detailRight}</span>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
