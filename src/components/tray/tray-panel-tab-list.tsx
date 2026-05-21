@@ -1,10 +1,15 @@
+import { useCallback } from "react";
+
 import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
 import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
+import { cycleTrayPanelTabs } from "@/components/tray/tray-panel-tab-cycle";
 import {
   TRAY_SEGMENT_ROW_HEIGHT,
   TraySegmentedControl,
 } from "@/components/tray/tray-segmented-control";
+
+const TAB_FADE_INSET = 40;
 
 interface TrayPanelTabListProps {
   tabs: TrayPanelTab[];
@@ -13,12 +18,29 @@ interface TrayPanelTabListProps {
 }
 
 export function TrayPanelTabList({ tabs, value, onValueChange }: TrayPanelTabListProps) {
+  const handleCycleForward = useCallback(
+    (scrollEl: HTMLDivElement) => {
+      cycleTrayPanelTabs(scrollEl, tabs, value, "forward", onValueChange, TAB_FADE_INSET);
+    },
+    [onValueChange, tabs, value],
+  );
+
+  const handleCycleBackward = useCallback(
+    (scrollEl: HTMLDivElement) => {
+      cycleTrayPanelTabs(scrollEl, tabs, value, "backward", onValueChange, TAB_FADE_INSET);
+    },
+    [onValueChange, tabs, value],
+  );
+
   return (
     <div className="border-border border-b px-3 pb-2">
       <ScrollFadeRegion
         orientation="horizontal"
         rowHeightClassName={TRAY_SEGMENT_ROW_HEIGHT}
         scrollClassName="overscroll-x-contain"
+        fadeInset={TAB_FADE_INSET}
+        onCycleForward={handleCycleForward}
+        onCycleBackward={handleCycleBackward}
       >
         <TraySegmentedControl tabs={tabs} value={value} onValueChange={onValueChange} />
       </ScrollFadeRegion>

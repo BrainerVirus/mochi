@@ -26,6 +26,10 @@ interface ScrollFadeRegionProps {
   rowHeightClassName?: string;
   /** Space reserved at the fade edge for the ghost control (px). */
   fadeInset?: number;
+  /** Override default horizontal forward scroll (e.g. tab selection). */
+  onCycleForward?: (scrollEl: HTMLDivElement) => void;
+  /** Override default horizontal backward scroll (e.g. tab selection). */
+  onCycleBackward?: (scrollEl: HTMLDivElement) => void;
 }
 
 function scrollFadeMaskClass(
@@ -74,6 +78,8 @@ function useScrollCycle(
   scrollRef: React.RefObject<HTMLDivElement | null>,
   orientation: ScrollFadeOrientation,
   fadeInset: number,
+  onCycleForward?: (scrollEl: HTMLDivElement) => void,
+  onCycleBackward?: (scrollEl: HTMLDivElement) => void,
 ) {
   const cycleScrollForward = useCallback(() => {
     const el = scrollRef.current;
@@ -82,12 +88,17 @@ function useScrollCycle(
     }
 
     if (orientation === "horizontal") {
+      if (onCycleForward) {
+        onCycleForward(el);
+        return;
+      }
+
       cycleHorizontalScrollForward(el, fadeInset);
       return;
     }
 
     cycleVerticalScroll(el);
-  }, [fadeInset, orientation, scrollRef]);
+  }, [fadeInset, onCycleForward, orientation, scrollRef]);
 
   const cycleScrollBackward = useCallback(() => {
     const el = scrollRef.current;
@@ -95,8 +106,13 @@ function useScrollCycle(
       return;
     }
 
+    if (onCycleBackward) {
+      onCycleBackward(el);
+      return;
+    }
+
     cycleHorizontalScrollBackward(el, fadeInset);
-  }, [fadeInset, orientation, scrollRef]);
+  }, [fadeInset, onCycleBackward, orientation, scrollRef]);
 
   return { cycleScrollForward, cycleScrollBackward };
 }
@@ -159,6 +175,8 @@ export function ScrollFadeRegion({
   scrollClassName,
   rowHeightClassName,
   fadeInset = 40,
+  onCycleForward,
+  onCycleBackward,
 }: ScrollFadeRegionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { canScrollStart, canScrollEnd } = useScrollOverflow(scrollRef, orientation);
@@ -168,6 +186,8 @@ export function ScrollFadeRegion({
     scrollRef,
     orientation,
     fadeInset,
+    onCycleForward,
+    onCycleBackward,
   );
 
   return (

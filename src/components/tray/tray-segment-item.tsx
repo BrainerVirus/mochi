@@ -29,6 +29,7 @@ export function TraySegmentItem({
       ref={(element) => {
         setItemRef(tab.id, element);
       }}
+      data-tray-tab-id={tab.id}
       value={tab.id}
       aria-label={tab.label}
       className={traySegmentItemClassName}

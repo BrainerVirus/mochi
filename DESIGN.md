@@ -127,7 +127,7 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 - **Scroll masks:** Tray panel body scroll uses the same pattern vertically (`.scroll-fade-mask-y-end`, ghost chevron-down, `scrollbar-none`). Edge tints use soft transparent gradients (`.scroll-fade-edge-*`, gitlab `BottomFade` stops) over `mask-image` — never solid `bg-background` blocks or backdrop blur on the fade zone.
 - **Overview tab:** 2×2 metric grid (providers, highest %, average %, healthy count), compact bar chart, then flat provider meter list.
 - **Provider tab:** Flat section with thin meters, `% left` + reset countdown, source badge — no card wrapper.
-- **Header:** Compact — `MochiMark` (`size-9`) as monochrome brand mark, refresh icon, settings gear.
+- **Header:** Compact — “Usage” title (`text-sm font-semibold`), refresh icon, settings gear.
 - **Typography:** Geist at `text-sm` / `text-xs` / `text-[10px]` labels; tabular nums for percentages.
 - **Meters:** Thin tracks (`h-1`), Mochi matcha/yuzu/ume fill by threshold; label row shows window name, `% left`, and reset time when available.
 

@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { RefreshCwIcon, SettingsIcon } from "lucide-react";
 import { useState } from "react";
 
-import { MochiMark } from "@/components/mascot/mochi-mark";
 import { TrayOverview } from "@/components/tray/tray-overview";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
@@ -17,7 +16,6 @@ import {
   filterSnapshotsForEnabledProviders,
   getOverviewMetrics,
 } from "@/lib/utils/tray-panel-tabs";
-import { getMascotStateFromSnapshots } from "@/lib/utils/mascot-state";
 import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
 export function TrayPanel() {
@@ -31,13 +29,12 @@ export function TrayPanel() {
   const snapshots = filterSnapshotsForEnabledProviders(data ?? [], enabledProviders);
   const tabs = buildTrayPanelTabs(snapshots, enabledProviders);
   const metrics = getOverviewMetrics(snapshots);
-  const mascotState = getMascotStateFromSnapshots(snapshots, { isError });
 
   return (
     <TrayPanelShell>
       <section className="mx-auto flex w-full max-w-[360px] flex-col">
         <header className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
-          <MochiMark state={mascotState} className="size-9" />
+          <h1 className="text-sm font-semibold tracking-tight">Usage</h1>
           <div className="flex items-center gap-0.5">
             <Button
               variant="ghost"
