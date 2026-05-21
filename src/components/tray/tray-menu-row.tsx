@@ -17,7 +17,7 @@ export function TrayMenuRow({ item }: { item: TrayMenuItem }) {
       <button
         type="button"
         className={cn(
-          "flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm",
+          "flex h-7 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm",
           "text-foreground hover:bg-white/10 active:bg-white/15",
           "disabled:pointer-events-none disabled:opacity-50",
         )}

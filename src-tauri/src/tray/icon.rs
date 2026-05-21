@@ -28,21 +28,18 @@ pub fn tray_icon_fallback() -> Image<'static> {
 
 fn blit_overview_glyph(rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
     let glyph = overview_glyph_mask();
-    for row in 0..GLYPH_SIZE {
-        for col in 0..GLYPH_SIZE {
-            if !glyph_pixel(&glyph, col, row) {
-                continue;
-            }
-            set_pixel(rgba, canvas_width, x + col, y + row, 0xF5, 0xF5, 0xF5, 255);
-        }
-    }
+    blit_mask(&glyph, rgba, canvas_width, x, y);
 }
 
 fn blit_glyph(provider: ProviderId, rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
     let glyph = provider_glyph_mask(provider);
+    blit_mask(&glyph, rgba, canvas_width, x, y);
+}
+
+fn blit_mask(mask: &[bool], rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
     for row in 0..GLYPH_SIZE {
         for col in 0..GLYPH_SIZE {
-            if !glyph_pixel(&glyph, col, row) {
+            if !glyph_pixel(mask, col, row) {
                 continue;
             }
             set_pixel(rgba, canvas_width, x + col, y + row, 0xF5, 0xF5, 0xF5, 255);
@@ -74,62 +71,242 @@ fn overview_glyph_mask() -> Vec<bool> {
 }
 
 fn provider_glyph_mask(provider: ProviderId) -> Vec<bool> {
-    match provider {
-        ProviderId::Codex => codex_glyph_mask(),
-        ProviderId::Claude => letter_glyph_mask('C'),
-        ProviderId::Cursor => letter_glyph_mask('U'),
-        ProviderId::Gemini => letter_glyph_mask('G'),
-        ProviderId::Copilot => letter_glyph_mask('P'),
-        ProviderId::Antigravity => letter_glyph_mask('A'),
-        ProviderId::Factory => letter_glyph_mask('F'),
-        ProviderId::Zai => letter_glyph_mask('Z'),
-        ProviderId::Kiro => letter_glyph_mask('K'),
-        ProviderId::Augment => letter_glyph_mask('+'),
-    }
+    mask_from_rows(match provider {
+        ProviderId::Codex => CODEX_GLYPH,
+        ProviderId::Claude => CLAUDE_GLYPH,
+        ProviderId::Cursor => CURSOR_GLYPH,
+        ProviderId::Gemini => GEMINI_GLYPH,
+        ProviderId::Copilot => COPILOT_GLYPH,
+        ProviderId::Antigravity => ANTIGRAVITY_GLYPH,
+        ProviderId::Factory => FACTORY_GLYPH,
+        ProviderId::Zai => ZAI_GLYPH,
+        ProviderId::Kiro => KIRO_GLYPH,
+        ProviderId::Augment => AUGMENT_GLYPH,
+    })
 }
 
-/// Codex mark: rounded square frame with chevron (matches tray panel SVG).
-fn codex_glyph_mask() -> Vec<bool> {
+fn mask_from_rows(rows: [&str; 18]) -> Vec<bool> {
     let mut mask = vec![false; (GLYPH_SIZE * GLYPH_SIZE) as usize];
-    let inset = 2_u32;
-
-    for y in 0..GLYPH_SIZE {
-        for x in 0..GLYPH_SIZE {
-            let on_border = x <= inset
-                || y <= inset
-                || x >= GLYPH_SIZE - 1 - inset
-                || y >= GLYPH_SIZE - 1 - inset;
-            let in_chevron = x >= 7 && x <= 11 && y >= 6 && y <= 12 && x + 1 >= y && x <= y + 2;
-            if on_border && !in_chevron {
-                mask[(y * GLYPH_SIZE + x) as usize] = true;
+    for (row, pattern) in rows.iter().enumerate() {
+        for (col, ch) in pattern.chars().enumerate() {
+            if ch == '1' {
+                mask[row * GLYPH_SIZE as usize + col] = true;
             }
         }
     }
-
     mask
 }
 
-fn letter_glyph_mask(ch: char) -> Vec<bool> {
-    const TEXT_HEIGHT: u32 = 7;
-    let mut mask = vec![false; (GLYPH_SIZE * GLYPH_SIZE) as usize];
-    let pattern = letter_pattern(ch);
-    let offset_x = 5_u32;
-    let offset_y = 4_u32;
+// Rasterized from `src/assets/providers/*.svg` at 18×18 (resvg, template-friendly).
+const CODEX_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000001000000000",
+    "000000111110000000",
+    "000001100111110000",
+    "000111011100011000",
+    "001111111011001000",
+    "001111111111111100",
+    "011011111110011100",
+    "001011110011101100",
+    "001101110011110100",
+    "001110111111110100",
+    "001111111111111100",
+    "001100110110111100",
+    "000110011110110000",
+    "000011111001100000",
+    "000000011111000000",
+    "000000000100000000",
+    "000000000000000000",
+];
 
-    for row in 0..TEXT_HEIGHT {
-        for col in 0..5 {
-            if pattern[row as usize] & (1 << (4 - col)) != 0 {
-                let x = offset_x + col;
-                let y = offset_y + row;
-                if x < GLYPH_SIZE && y < GLYPH_SIZE {
-                    mask[(y * GLYPH_SIZE + x) as usize] = true;
-                }
-            }
-        }
-    }
+const CLAUDE_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000000000000000",
+    "000001100110000000",
+    "000001110110010000",
+    "000100110110111000",
+    "000111111111110000",
+    "000011111111100000",
+    "000001111111011100",
+    "001111111111111100",
+    "001111111111111000",
+    "000000111111111100",
+    "000011111111100000",
+    "000111111111110000",
+    "000001101101111000",
+    "000001101101100000",
+    "000000001100000000",
+    "000000000000000000",
+    "000000000000000000",
+];
 
-    mask
-}
+const CURSOR_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000000000000000",
+    "000000011110000000",
+    "000001111111100000",
+    "000011111111110000",
+    "001111111111111100",
+    "001110000000001100",
+    "001111100000001100",
+    "001111111000011100",
+    "001111111000111100",
+    "001111111000111100",
+    "001111111001111100",
+    "001111111001111100",
+    "000011111011110000",
+    "000001111111100000",
+    "000000011110000000",
+    "000000000000000000",
+    "000000000000000000",
+];
+
+const GEMINI_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000000000000000",
+    "000000001100000000",
+    "000000001100000000",
+    "000000011110000000",
+    "000000111111000000",
+    "000001111111100000",
+    "000011111111110000",
+    "001111111111111100",
+    "001111111111111100",
+    "000011111111110000",
+    "000000111111000000",
+    "000000011110000000",
+    "000000011110000000",
+    "000000001100000000",
+    "000000001100000000",
+    "000000000000000000",
+    "000000000000000000",
+];
+
+const COPILOT_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000001100000000",
+    "000001111111100000",
+    "000011111111110000",
+    "000100011110001000",
+    "001100001100001100",
+    "001100011110001100",
+    "001100111111001100",
+    "011111110011111110",
+    "111100000000001111",
+    "111100110011001111",
+    "111100110011001111",
+    "111100110011001111",
+    "011100000000001110",
+    "000111110011111000",
+    "000001111111100000",
+    "000000000000000000",
+    "000000000000000000",
+];
+
+const ANTIGRAVITY_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000000000000000",
+    "000000011110000000",
+    "000000111111000000",
+    "000000111111000000",
+    "000001111111100000",
+    "000001111111100000",
+    "000001111111100000",
+    "000011111111110000",
+    "000011111111110000",
+    "000011100001110000",
+    "000111100000111000",
+    "000111000000111000",
+    "001110000000011100",
+    "001110000000011100",
+    "011100000000001110",
+    "000000000000000000",
+    "000000000000000000",
+];
+
+const FACTORY_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000000000000000",
+    "000001100111100000",
+    "000001111111100000",
+    "000011010011110000",
+    "001010011011011100",
+    "011111011010001110",
+    "001011111110111100",
+    "001100011111101000",
+    "000101111110001100",
+    "001111011111110100",
+    "011100010110111110",
+    "001110110110011100",
+    "000011110010110000",
+    "000001111111100000",
+    "000001111011100000",
+    "000000000000000000",
+    "000000000000000000",
+];
+
+const ZAI_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "011111111001111110",
+    "011111111011111110",
+    "011111111111111110",
+    "000000001111111100",
+    "000000001111111000",
+    "000000011111111000",
+    "000000111111110000",
+    "000000111111100000",
+    "000001111111000000",
+    "000011111111000000",
+    "000111111110000000",
+    "000111111100000000",
+    "001111111100000000",
+    "011111111111111110",
+    "011111110111111110",
+    "011111100111111110",
+    "000000000000000000",
+];
+
+const KIRO_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000000000000000",
+    "000000000000000000",
+    "000000011111000000",
+    "000000111111100000",
+    "000001111111110000",
+    "000001111111110000",
+    "000001111110110000",
+    "000001111111110000",
+    "000011111111110000",
+    "000011111111110000",
+    "000011111111110000",
+    "000011111111100000",
+    "000001111111100000",
+    "000000111111000000",
+    "000000000000000000",
+    "000000000000000000",
+    "000000000000000000",
+];
+
+const AUGMENT_GLYPH: [&str; 18] = [
+    "000000000000000000",
+    "000000010100000000",
+    "000000010101110000",
+    "011111100111111000",
+    "011000000000001100",
+    "011000000000001100",
+    "011000000000001100",
+    "011000000000001100",
+    "110001000001001110",
+    "011011100011101100",
+    "011011000001101100",
+    "011000000000001100",
+    "011000000011111100",
+    "001111100011111000",
+    "000111000000000000",
+    "000000000000000000",
+    "000000000000000000",
+    "000000000000000000",
+];
 
 fn glyph_pixel(mask: &[bool], x: u32, y: u32) -> bool {
     mask[(y * GLYPH_SIZE + x) as usize]
@@ -144,21 +321,6 @@ fn set_pixel(rgba: &mut [u8], width: u32, x: u32, y: u32, r: u8, g: u8, b: u8, a
     rgba[index + 1] = g;
     rgba[index + 2] = b;
     rgba[index + 3] = a;
-}
-
-fn letter_pattern(ch: char) -> [u16; 7] {
-    match ch {
-        'C' => [0b01110, 0b10001, 0b10000, 0b10000, 0b10000, 0b10001, 0b01110],
-        'U' => [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
-        'G' => [0b01110, 0b10001, 0b10000, 0b10111, 0b10001, 0b10001, 0b01110],
-        'P' => [0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000],
-        'A' => [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
-        'F' => [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000],
-        'Z' => [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b10000, 0b11111],
-        'K' => [0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001],
-        '+' => [0b00100, 0b00100, 0b11111, 0b00100, 0b00100, 0b00000, 0b00000],
-        _ => [0b00000; 7],
-    }
 }
 
 #[cfg(test)]
@@ -177,23 +339,43 @@ mod tests {
         }
     }
 
+    fn opaque_pixel_count(icon: &Image<'_>) -> usize {
+        icon.rgba().chunks(4).filter(|px| px[3] > 0).count()
+    }
+
     #[test]
     fn tray_icon_for_overview_renders_grid_glyph() {
-        let presentation = resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)], TraySelection::Overview);
+        let presentation =
+            resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)], TraySelection::Overview);
         let icon = tray_icon_for_presentation(&presentation);
         assert_eq!(icon.width(), ICON_SIZE);
         assert_eq!(icon.height(), ICON_SIZE);
-        assert!(icon.rgba().iter().any(|value| *value > 0));
+        assert!(opaque_pixel_count(&icon) > 0);
     }
 
     #[test]
     fn tray_icon_for_provider_renders_brand_glyph() {
-        let presentation =
-            resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)], TraySelection::Provider(ProviderId::Codex));
+        let presentation = resolve_tray_presentation(
+            &[snapshot(ProviderId::Codex, 10.0)],
+            TraySelection::Provider(ProviderId::Codex),
+        );
         let icon = tray_icon_for_presentation(&presentation);
         assert_eq!(icon.width(), ICON_SIZE);
         assert_eq!(icon.height(), ICON_SIZE);
-        assert!(icon.rgba().iter().any(|value| *value > 0));
+        assert!(opaque_pixel_count(&icon) > 0);
+    }
+
+    #[test]
+    fn codex_provider_glyph_differs_from_overview_grid() {
+        let overview = tray_icon_for_presentation(&resolve_tray_presentation(
+            &[snapshot(ProviderId::Codex, 10.0)],
+            TraySelection::Overview,
+        ));
+        let codex = tray_icon_for_presentation(&resolve_tray_presentation(
+            &[snapshot(ProviderId::Codex, 10.0)],
+            TraySelection::Provider(ProviderId::Codex),
+        ));
+        assert_ne!(overview.rgba(), codex.rgba());
     }
 
     #[test]
@@ -201,6 +383,6 @@ mod tests {
         let icon = tray_icon_fallback();
         assert_eq!(icon.width(), ICON_SIZE);
         assert_eq!(icon.height(), ICON_SIZE);
-        assert!(icon.rgba().iter().any(|value| *value > 0));
+        assert!(opaque_pixel_count(&icon) > 0);
     }
 }

@@ -38,7 +38,7 @@ export function ProviderUsageActions({ provider }: { provider: ProviderId }) {
   }
 
   return (
-    <div className="py-1">
+    <div className="pt-1">
       <TrayMenuList aria-label={`${getProviderLabel(provider)} links`}>
         {items.map((item) => (
           <TrayMenuRow key={item.id} item={item} />

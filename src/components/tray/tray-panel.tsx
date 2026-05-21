@@ -57,7 +57,7 @@ export function TrayPanel() {
           onRefreshProvider={handleRefreshProvider}
           refreshingProvider={refreshingProvider}
         />
-        <div data-tray-panel-separator className="px-3 py-1" aria-hidden>
+        <div data-tray-panel-separator className="px-3 pt-1 pb-0" aria-hidden>
           <div className="bg-border h-px w-full" />
         </div>
         <TrayPanelFooter

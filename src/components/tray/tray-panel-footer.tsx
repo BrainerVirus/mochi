@@ -55,7 +55,7 @@ export function TrayPanelFooter({ isRefreshing, onRefresh, onQuit }: TrayPanelFo
   ];
 
   return (
-    <div className="py-1" data-tray-panel-footer>
+    <div className="pt-0 pb-1" data-tray-panel-footer>
       <TrayMenuList aria-label="Tray panel actions">
         {items.map((item) => (
           <TrayMenuRow key={item.id} item={item} />

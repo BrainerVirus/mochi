@@ -68,7 +68,7 @@ export function UsageSnapshotsPanel({
       <div className="flex flex-col gap-0">
         <TrayPanelTabList tabs={tabs} value={activeTab} onValueChange={onTabChange} />
 
-        <div className="px-3 py-3">
+        <div className="px-3 pt-3 pb-0">
           {activeTab === "overview" ? (
             <TrayOverview
               snapshots={snapshots}

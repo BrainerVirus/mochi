@@ -79,12 +79,7 @@ export function ProviderUsageSection({
         ))}
       </div>
       {showProviderActions ? (
-        <>
-          <Separator />
-          <div className="-mx-3">
-            <ProviderUsageActions provider={snapshot.provider} />
-          </div>
-        </>
+        <ProviderUsageActions provider={snapshot.provider} />
       ) : null}
       {!isLast ? <Separator /> : null}
     </section>
