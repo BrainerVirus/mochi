@@ -42,13 +42,13 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 
 ### Functional Mapping (Usage States)
 
-| State            | Color         | Mascot                   |
-| ---------------- | ------------- | ------------------------ |
-| Normal (<60%)    | Matcha Calm   | Happy mochi              |
-| Warning (60–85%) | Yuzu Glow     | Worried mochi            |
-| Critical (>85%)  | Ume Alert     | Flattened/sweating mochi |
-| Reset soon       | Lavender Rest | Excited mochi + clock    |
-| All good         | Blush Mochi   | Bouncy mochi             |
+| State            | Color         | Mascot                                      |
+| ---------------- | ------------- | ------------------------------------------- |
+| Normal (<60%)    | Matcha Calm   | Calm dev companion, terminal cursor accent  |
+| Warning (60–85%) | Yuzu Glow     | Wide eyes, wavy mouth, sweat drop           |
+| Critical (>85%)  | Ume Alert     | Squished body, X eyes, dual sweat           |
+| Reset soon       | Lavender Rest | Sparkle eyes, open smile, clock badge       |
+| All good         | Blush Mochi   | Happy arcs, wide smile, matcha sparkle      |
 
 ## 3. Typography Rules
 
@@ -127,7 +127,7 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 - **Scroll masks:** Tray panel body scroll uses the same pattern vertically (`.scroll-fade-mask-y-end`, ghost chevron-down, `scrollbar-none`). Edge tints use soft transparent gradients (`.scroll-fade-edge-*`, gitlab `BottomFade` stops) over `mask-image` — never solid `bg-background` blocks or backdrop blur on the fade zone.
 - **Overview tab:** 2×2 metric grid (providers, highest %, average %, healthy count), compact bar chart, then flat provider meter list.
 - **Provider tab:** Flat section with thin meters, `% left` + reset countdown, source badge — no card wrapper.
-- **Header:** Minimal — wordmark, refresh icon, settings gear. No mascot in tray panel (data-first).
+- **Header:** Compact — `MochiMascot` (`size-9`) as code/AI companion mark, refresh icon, settings gear.
 - **Typography:** Geist at `text-sm` / `text-xs` / `text-[10px]` labels; tabular nums for percentages.
 - **Meters:** Thin tracks (`h-1`), Mochi matcha/yuzu/ume fill by threshold; label row shows window name, `% left`, and reset time when available.
 
@@ -173,7 +173,15 @@ Custom Tailwind tokens (always available): `mochi-cream`, `mochi-blush`, `mochi-
 
 ## 7. Motion & Mascot
 
+**MochiMascot** is a soft mochi rice cake fused with code/AI motifs — not a generic pet. The tray header mark reads as a tiny **dev companion daemon**:
+
+- **Body:** Pillowy cream ellipse (`#FFF8F0`) with state-tinted ring (matcha → yuzu → ume → lavender)
+- **Code identity:** Curved `{` `}` bracket wings on each side (monitoring + syntax pun on “mochi”)
+- **AI accent:** Lavender chip pin on top; all-good state adds a terminal cursor bar + matcha sparkle
+- **Expressions:** Usage-driven face — happy arcs (all-good), dot eyes (normal), wide eyes (warning), X eyes + squish (critical), sparkle eyes + clock badge (reset-soon)
+- **Size:** `size-9` in tray header, `size-8` in widget; inline SVG only, no external assets
+
 - **GSAP** for mascot state transitions and panel enter/exit
 - **Reduced motion:** Instant state swaps, no bounce
 - **Micro-interactions:** 200–300ms ease on meter fill width changes
-- Mascot sits beside or above usage summary; never obscures data
+- Mascot sits in tray header or widget title row; never obscures usage data
