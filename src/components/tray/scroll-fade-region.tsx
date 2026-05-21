@@ -1,6 +1,12 @@
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { useCallback, useRef, type ReactNode } from "react";
 
+import {
+  cycleHorizontalScrollBackward,
+  cycleHorizontalScrollForward,
+  cycleVerticalScroll,
+} from "@/components/tray/scroll-fade-cycle";
+import { useScrollOverflow } from "@/components/tray/use-scroll-overflow";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -13,76 +19,6 @@ interface ScrollFadeRegionProps {
   scrollClassName?: string;
   /** Space reserved at the fade edge for the ghost control (px). */
   fadeInset?: number;
-}
-
-function cycleHorizontalScroll(container: HTMLDivElement, fadeInset: number) {
-  const triggers = [...container.querySelectorAll<HTMLElement>('[data-slot="tabs-trigger"]')];
-  const visibleRight = container.scrollLeft + container.clientWidth - fadeInset;
-
-  for (const trigger of triggers) {
-    if (trigger.offsetLeft + trigger.offsetWidth > visibleRight + 1) {
-      container.scrollTo({ left: trigger.offsetLeft, behavior: "smooth" });
-      return;
-    }
-  }
-
-  container.scrollTo({ left: 0, behavior: "smooth" });
-}
-
-function cycleVerticalScroll(container: HTMLDivElement) {
-  const step = container.clientHeight * 0.75;
-  const maxScroll = container.scrollHeight - container.clientHeight;
-  const next = container.scrollTop + step;
-
-  if (next >= maxScroll - 1) {
-    container.scrollTo({ top: 0, behavior: "smooth" });
-    return;
-  }
-
-  container.scrollTo({ top: next, behavior: "smooth" });
-}
-
-function useScrollOverflow(
-  scrollRef: React.RefObject<HTMLDivElement | null>,
-  orientation: ScrollFadeOrientation,
-) {
-  const [canScrollStart, setCanScrollStart] = useState(false);
-  const [canScrollEnd, setCanScrollEnd] = useState(false);
-
-  const checkOverflow = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) {
-      return;
-    }
-
-    if (orientation === "horizontal") {
-      setCanScrollStart(el.scrollLeft > 1);
-      setCanScrollEnd(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-      return;
-    }
-
-    setCanScrollStart(false);
-    setCanScrollEnd(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
-  }, [orientation, scrollRef]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) {
-      return () => {};
-    }
-
-    checkOverflow();
-    el.addEventListener("scroll", checkOverflow, { passive: true });
-    const observer = new ResizeObserver(checkOverflow);
-    observer.observe(el);
-
-    return () => {
-      el.removeEventListener("scroll", checkOverflow);
-      observer.disconnect();
-    };
-  }, [checkOverflow, scrollRef]);
-
-  return { canScrollStart, canScrollEnd };
 }
 
 function scrollFadeMaskClass(
@@ -101,38 +37,141 @@ function scrollFadeMaskClass(
   return "scroll-fade-mask-y-end";
 }
 
+type ScrollFadeDirection = "forward" | "backward";
+
 function ScrollFadeGhostButton({
   orientation,
+  direction = "forward",
   onCycle,
   className,
 }: {
   orientation: ScrollFadeOrientation;
+  direction?: ScrollFadeDirection;
   onCycle: () => void;
   className?: string;
 }) {
   const isHorizontal = orientation === "horizontal";
+  const isBackward = direction === "backward";
 
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon-xs"
-      aria-label={isHorizontal ? "Show more tabs" : "Scroll down for more"}
+      aria-label={
+        isHorizontal
+          ? isBackward
+            ? "Show previous tabs"
+            : "Show more tabs"
+          : "Scroll down for more"
+      }
       onClick={onCycle}
       className={cn(
         "pointer-events-auto z-20 shrink-0 cursor-pointer rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-        isHorizontal
-          ? "relative mr-0.5"
-          : "absolute inset-x-0 bottom-0 z-20 mx-auto mb-0.5",
+        isHorizontal ? undefined : "absolute inset-x-0 bottom-0 z-20 mx-auto mb-0.5",
         className,
       )}
     >
       {isHorizontal ? (
-        <ChevronRightIcon className="size-3.5" />
+        isBackward ? (
+          <ChevronLeftIcon className="size-3.5" />
+        ) : (
+          <ChevronRightIcon className="size-3.5" />
+        )
       ) : (
         <ChevronDownIcon className="size-3.5" />
       )}
     </Button>
+  );
+}
+
+function HorizontalChevronColumn({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex shrink-0 items-center justify-center self-stretch px-0.5">
+      {children}
+    </div>
+  );
+}
+
+function useScrollCycle(
+  scrollRef: React.RefObject<HTMLDivElement | null>,
+  orientation: ScrollFadeOrientation,
+  fadeInset: number,
+) {
+  const cycleScrollForward = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) {
+      return;
+    }
+
+    if (orientation === "horizontal") {
+      cycleHorizontalScrollForward(el, fadeInset);
+      return;
+    }
+
+    cycleVerticalScroll(el);
+  }, [fadeInset, orientation, scrollRef]);
+
+  const cycleScrollBackward = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || orientation !== "horizontal") {
+      return;
+    }
+
+    cycleHorizontalScrollBackward(el, fadeInset);
+  }, [fadeInset, orientation, scrollRef]);
+
+  return { cycleScrollForward, cycleScrollBackward };
+}
+
+function ScrollFadeViewport({
+  scrollRef,
+  isHorizontal,
+  canScrollStart,
+  canScrollEnd,
+  orientation,
+  maskClass,
+  scrollClassName,
+  onCycleForward,
+  children,
+}: {
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  isHorizontal: boolean;
+  canScrollStart: boolean;
+  canScrollEnd: boolean;
+  orientation: ScrollFadeOrientation;
+  maskClass: string | undefined;
+  scrollClassName?: string;
+  onCycleForward: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn("relative min-w-0", isHorizontal && "flex-1")}>
+      <div
+        ref={scrollRef}
+        className={cn(
+          "scrollbar-none overscroll-contain",
+          isHorizontal ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
+          maskClass,
+          scrollClassName,
+        )}
+      >
+        {children}
+      </div>
+
+      {canScrollStart && isHorizontal ? (
+        <div aria-hidden className="scroll-fade-edge-left" />
+      ) : null}
+      {canScrollEnd && isHorizontal ? (
+        <div aria-hidden className="scroll-fade-edge-right" />
+      ) : null}
+      {canScrollEnd && !isHorizontal ? (
+        <>
+          <div aria-hidden className="scroll-fade-edge-bottom" />
+          <ScrollFadeGhostButton orientation={orientation} onCycle={onCycleForward} />
+        </>
+      ) : null}
+    </div>
   );
 }
 
@@ -147,52 +186,45 @@ export function ScrollFadeRegion({
   const { canScrollStart, canScrollEnd } = useScrollOverflow(scrollRef, orientation);
   const isHorizontal = orientation === "horizontal";
   const maskClass = scrollFadeMaskClass(orientation, canScrollStart, canScrollEnd);
-
-  const cycleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) {
-      return;
-    }
-
-    if (orientation === "horizontal") {
-      cycleHorizontalScroll(el, fadeInset);
-      return;
-    }
-
-    cycleVerticalScroll(el);
-  }, [fadeInset, orientation]);
+  const { cycleScrollForward, cycleScrollBackward } = useScrollCycle(
+    scrollRef,
+    orientation,
+    fadeInset,
+  );
 
   return (
-    <div className={cn("relative", isHorizontal && "flex items-center", className)}>
-      <div className={cn("relative min-w-0", isHorizontal && "flex-1")}>
-        <div
-          ref={scrollRef}
-          className={cn(
-            "scrollbar-none overscroll-contain",
-            isHorizontal ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
-            maskClass,
-            scrollClassName,
-          )}
-        >
-          {children}
-        </div>
+    <div className={cn("relative", isHorizontal && "flex items-stretch", className)}>
+      {canScrollStart && isHorizontal ? (
+        <HorizontalChevronColumn>
+          <ScrollFadeGhostButton
+            orientation={orientation}
+            direction="backward"
+            onCycle={cycleScrollBackward}
+          />
+        </HorizontalChevronColumn>
+      ) : null}
 
-        {canScrollStart && isHorizontal ? (
-          <div aria-hidden className="scroll-fade-edge-left" />
-        ) : null}
-        {canScrollEnd && isHorizontal ? (
-          <div aria-hidden className="scroll-fade-edge-right" />
-        ) : null}
-        {canScrollEnd && !isHorizontal ? (
-          <>
-            <div aria-hidden className="scroll-fade-edge-bottom" />
-            <ScrollFadeGhostButton orientation={orientation} onCycle={cycleScroll} />
-          </>
-        ) : null}
-      </div>
+      <ScrollFadeViewport
+        scrollRef={scrollRef}
+        isHorizontal={isHorizontal}
+        canScrollStart={canScrollStart}
+        canScrollEnd={canScrollEnd}
+        orientation={orientation}
+        maskClass={maskClass}
+        scrollClassName={scrollClassName}
+        onCycleForward={cycleScrollForward}
+      >
+        {children}
+      </ScrollFadeViewport>
 
       {canScrollEnd && isHorizontal ? (
-        <ScrollFadeGhostButton orientation={orientation} onCycle={cycleScroll} />
+        <HorizontalChevronColumn>
+          <ScrollFadeGhostButton
+            orientation={orientation}
+            direction="forward"
+            onCycle={cycleScrollForward}
+          />
+        </HorizontalChevronColumn>
       ) : null}
     </div>
   );

@@ -20,7 +20,7 @@ export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
     >
       <TabsList
         variant="line"
-        className="h-auto w-max min-w-full flex-nowrap items-center justify-start gap-0 bg-transparent p-0"
+        className="h-14 w-max min-w-full flex-nowrap items-stretch justify-start gap-0 bg-transparent p-0"
       >
         {tabs.map((tab) => {
           const tone = getUsageMeterTone(tab.usedPercent);
@@ -30,7 +30,7 @@ export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
               key={tab.id}
               value={tab.id}
               className={cn(
-                "min-w-[4.75rem] max-w-[7rem] shrink-0 flex-none cursor-pointer flex-col items-stretch justify-center gap-1 rounded-none px-2.5 py-2 text-[11px] after:bottom-0",
+                "h-full min-w-[4.75rem] max-w-[7rem] shrink-0 flex-none cursor-pointer flex-col items-stretch justify-center gap-1 rounded-none px-2.5 py-2 text-[11px] after:bottom-0",
                 "data-active:bg-transparent data-active:shadow-none",
               )}
             >
