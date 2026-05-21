@@ -1,14 +1,10 @@
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { useRef } from "react";
 
 import { Progress } from "@/components/ui/progress";
+import { useUsageMeterFill } from "@/hooks/use-usage-meter-fill";
 import { cn } from "@/lib/utils";
-import { animateUsageMeterFill } from "@/lib/utils/usage-meter-fill-animation";
 import { formatResetLine } from "@/lib/utils/format-reset-line";
 import { getUsageMeterTone, usageMeterToneClasses } from "@/lib/utils/usage-meter-tone";
-
-gsap.registerPlugin(useGSAP);
 
 interface UsageMeterProps {
   label: string;
@@ -18,6 +14,8 @@ interface UsageMeterProps {
   compact?: boolean;
   detailLeft?: string | null;
   detailRight?: string | null;
+  /** Changes when tray tab content activates; retriggers fill from empty. */
+  fillActivationKey?: string;
 }
 
 export function UsageMeter({
@@ -28,6 +26,7 @@ export function UsageMeter({
   compact = false,
   detailLeft = null,
   detailRight = null,
+  fillActivationKey = "static",
 }: UsageMeterProps) {
   const clamped = Math.max(0, Math.min(100, usedPercent));
   const leftPercent =
@@ -38,21 +37,8 @@ export function UsageMeter({
   const resetLabel = formatResetLine(resetsAt);
   const meterRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
-  const previousPercentRef = useRef<number | null>(null);
 
-  useGSAP(
-    () => {
-      const indicator = indicatorRef.current;
-      if (!indicator) {
-        return;
-      }
-
-      const from = previousPercentRef.current ?? 0;
-      animateUsageMeterFill(indicator, from, clamped);
-      previousPercentRef.current = clamped;
-    },
-    { dependencies: [clamped], scope: meterRef },
-  );
+  useUsageMeterFill(meterRef, indicatorRef, clamped, fillActivationKey);
 
   return (
     <div ref={meterRef} className={cn("flex flex-col", compact ? "gap-1" : "gap-1.5")}>

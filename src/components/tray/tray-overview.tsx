@@ -9,12 +9,14 @@ interface TrayOverviewProps {
   snapshots: UsageSnapshot[];
   onRefreshProvider?: (provider: ProviderId) => void;
   refreshingProvider?: ProviderId | null;
+  fillActivationKey?: string;
 }
 
 export function TrayOverview({
   snapshots,
   onRefreshProvider,
   refreshingProvider = null,
+  fillActivationKey,
 }: TrayOverviewProps) {
   return (
     <div className="flex flex-col">
@@ -24,6 +26,7 @@ export function TrayOverview({
             snapshot={snapshot}
             onRefresh={onRefreshProvider}
             isRefreshing={refreshingProvider === snapshot.provider}
+            fillActivationKey={fillActivationKey}
           />
           {index < snapshots.length - 1 ? <TrayPanelDivider /> : null}
         </Fragment>

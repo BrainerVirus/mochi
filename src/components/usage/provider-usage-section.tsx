@@ -19,6 +19,7 @@ interface ProviderUsageSectionProps {
   isRefreshing?: boolean;
   planLabel?: string | null;
   showProviderActions?: boolean;
+  fillActivationKey?: string;
 }
 
 export function ProviderUsageSection({
@@ -27,6 +28,7 @@ export function ProviderUsageSection({
   isRefreshing = false,
   planLabel = null,
   showProviderActions = false,
+  fillActivationKey,
 }: ProviderUsageSectionProps) {
   const windows = [snapshot.primary, ...(snapshot.secondary ? [snapshot.secondary] : [])];
 
@@ -76,6 +78,7 @@ export function ProviderUsageSection({
             remainingPercent={window.remaining_percent}
             resetsAt={window.resets_at}
             compact
+            fillActivationKey={fillActivationKey}
           />
         ))}
       </div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  resolveUsageMeterFillStartPercent,
   USAGE_METER_FILL_DURATION_S,
   USAGE_METER_FILL_EASE,
   usageMeterFillTranslateX,
@@ -17,5 +18,11 @@ describe("usageMeterFillAnimation", () => {
     expect(USAGE_METER_FILL_DURATION_S).toBeGreaterThanOrEqual(0.4);
     expect(USAGE_METER_FILL_DURATION_S).toBeLessThanOrEqual(0.6);
     expect(USAGE_METER_FILL_EASE).toBe("power2.out");
+  });
+
+  it("restarts fill from empty when tab activation changes", () => {
+    expect(resolveUsageMeterFillStartPercent(42, "codex", "overview")).toBe(0);
+    expect(resolveUsageMeterFillStartPercent(42, "codex", "codex")).toBe(42);
+    expect(resolveUsageMeterFillStartPercent(null, "codex", "codex")).toBe(0);
   });
 });

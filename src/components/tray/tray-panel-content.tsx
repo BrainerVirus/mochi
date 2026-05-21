@@ -75,6 +75,7 @@ export function UsageSnapshotsPanel({
               snapshots={snapshots}
               onRefreshProvider={onRefreshProvider}
               refreshingProvider={refreshingProvider}
+              fillActivationKey={activeTab}
             />
           ) : activeSnapshot ? (
             <ProviderUsageSection
@@ -82,6 +83,7 @@ export function UsageSnapshotsPanel({
               onRefresh={onRefreshProvider}
               isRefreshing={refreshingProvider === activeSnapshot.provider}
               showProviderActions
+              fillActivationKey={activeTab}
             />
           ) : null}
         </div>

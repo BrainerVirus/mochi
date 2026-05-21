@@ -10,6 +10,47 @@ export function usageMeterFillTranslateX(percent: number): string {
   return `${-(100 - clamped)}%`;
 }
 
+/** Restarts from empty on tab switch; keeps prior value for usage refresh on the same tab. */
+export function resolveUsageMeterFillStartPercent(
+  previousPercent: number | null,
+  activationKey: string,
+  previousActivationKey: string | null,
+): number {
+  if (previousActivationKey !== activationKey) {
+    return 0;
+  }
+
+  return previousPercent ?? 0;
+}
+
+export function scheduleUsageMeterFill(
+  indicator: HTMLElement,
+  fromPercent: number,
+  toPercent: number,
+): () => void {
+  if (prefersReducedMotion() || fromPercent === toPercent) {
+    gsap.set(indicator, { x: usageMeterFillTranslateX(toPercent) });
+    return () => {};
+  }
+
+  gsap.set(indicator, { x: usageMeterFillTranslateX(fromPercent) });
+
+  let innerFrame = 0;
+  const outerFrame = requestAnimationFrame(() => {
+    innerFrame = requestAnimationFrame(() => {
+      animateUsageMeterFill(indicator, fromPercent, toPercent);
+    });
+  });
+
+  return () => {
+    cancelAnimationFrame(outerFrame);
+    if (innerFrame) {
+      cancelAnimationFrame(innerFrame);
+    }
+    gsap.killTweensOf(indicator);
+  };
+}
+
 export function animateUsageMeterFill(
   indicator: HTMLElement,
   fromPercent: number,
