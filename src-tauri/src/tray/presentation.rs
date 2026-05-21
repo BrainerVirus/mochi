@@ -1,38 +1,88 @@
 use crate::core::models::{ProviderId, UsageSnapshot};
 
-/// Resolved tray status derived from usage snapshots (CodexBar-style: provider + % remaining).
+use super::usage::aggregate_used_percent;
+
+/// Which tray tab drives menu bar icon and title.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TraySelection {
+    Overview,
+    Provider(ProviderId),
+}
+
+impl TraySelection {
+    pub fn parse(value: Option<&str>) -> Self {
+        match value {
+            None | Some("overview") => Self::Overview,
+            Some(raw) => ProviderId::parse(raw)
+                .map(Self::Provider)
+                .unwrap_or(Self::Overview),
+        }
+    }
+}
+
+/// Resolved tray status derived from usage snapshots and selected tab.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TrayIconPresentation {
-    pub provider: Option<ProviderId>,
+    pub selection: TraySelection,
     pub remaining_percent: u8,
     pub title: Option<String>,
     pub tooltip: String,
 }
 
-pub fn resolve_tray_presentation(snapshots: &[UsageSnapshot]) -> TrayIconPresentation {
-    let Some(snapshot) = pick_tray_snapshot(snapshots) else {
+pub fn resolve_tray_presentation(
+    snapshots: &[UsageSnapshot],
+    selection: TraySelection,
+) -> TrayIconPresentation {
+    match selection {
+        TraySelection::Overview => resolve_overview_presentation(snapshots),
+        TraySelection::Provider(provider) => {
+            resolve_provider_presentation(snapshots, provider).unwrap_or_else(|| {
+                resolve_overview_presentation(snapshots)
+            })
+        }
+    }
+}
+
+fn resolve_overview_presentation(snapshots: &[UsageSnapshot]) -> TrayIconPresentation {
+    if snapshots.is_empty() {
         return TrayIconPresentation {
-            provider: None,
+            selection: TraySelection::Overview,
             remaining_percent: 100,
             title: None,
             tooltip: "Mochi — no usage data".to_string(),
         };
-    };
+    }
 
+    let remaining = aggregate_remaining_percent(snapshots);
+    let title = Some(tray_title_from_remaining(remaining));
+    let tooltip = format!("Mochi — Overview · {remaining}% left");
+
+    TrayIconPresentation {
+        selection: TraySelection::Overview,
+        remaining_percent: remaining,
+        title,
+        tooltip,
+    }
+}
+
+fn resolve_provider_presentation(
+    snapshots: &[UsageSnapshot],
+    provider: ProviderId,
+) -> Option<TrayIconPresentation> {
+    let snapshot = snapshots.iter().find(|entry| entry.provider == provider)?;
     let remaining = remaining_percent(snapshot);
-    let provider = snapshot.provider;
     let title = Some(tray_title_from_remaining(remaining));
     let tooltip = format!(
         "Mochi — {} · {remaining}% left",
         provider_display_name(provider)
     );
 
-    TrayIconPresentation {
-        provider: Some(provider),
+    Some(TrayIconPresentation {
+        selection: TraySelection::Provider(provider),
         remaining_percent: remaining,
         title,
         tooltip,
-    }
+    })
 }
 
 /// Prefer Codex when present, otherwise the provider closest to its limit (highest used %).
@@ -52,6 +102,11 @@ pub fn pick_tray_snapshot(snapshots: &[UsageSnapshot]) -> Option<&UsageSnapshot>
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         })
+}
+
+pub fn aggregate_remaining_percent(snapshots: &[UsageSnapshot]) -> u8 {
+    let used = aggregate_used_percent(snapshots);
+    (100_u8.saturating_sub(used)).min(100)
 }
 
 pub fn remaining_percent(snapshot: &UsageSnapshot) -> u8 {
@@ -106,6 +161,17 @@ mod tests {
     }
 
     #[test]
+    fn tray_selection_parse_accepts_overview_and_providers() {
+        assert_eq!(TraySelection::parse(None), TraySelection::Overview);
+        assert_eq!(TraySelection::parse(Some("overview")), TraySelection::Overview);
+        assert_eq!(
+            TraySelection::parse(Some("codex")),
+            TraySelection::Provider(ProviderId::Codex)
+        );
+        assert_eq!(TraySelection::parse(Some("unknown")), TraySelection::Overview);
+    }
+
+    #[test]
     fn pick_tray_snapshot_prefers_codex_when_present() {
         let snapshots = vec![snapshot(ProviderId::Claude, 90.0), snapshot(ProviderId::Codex, 5.0)];
         let picked = pick_tray_snapshot(&snapshots).expect("snapshot");
@@ -123,19 +189,28 @@ mod tests {
     }
 
     #[test]
-    fn resolve_tray_presentation_formats_remaining_percent() {
-        let snapshots = vec![snapshot(ProviderId::Codex, 1.0)];
-        let presentation = resolve_tray_presentation(&snapshots);
+    fn resolve_overview_presentation_uses_aggregate_remaining() {
+        let snapshots = vec![snapshot(ProviderId::Claude, 12.0), snapshot(ProviderId::Cursor, 67.0)];
+        let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
+        assert_eq!(presentation.selection, TraySelection::Overview);
+        assert_eq!(presentation.remaining_percent, 33);
+        assert_eq!(presentation.title, Some(tray_title_from_remaining(33)));
+        assert!(presentation.tooltip.contains("Overview"));
+    }
+
+    #[test]
+    fn resolve_provider_presentation_uses_selected_provider_remaining() {
+        let snapshots = vec![snapshot(ProviderId::Codex, 1.0), snapshot(ProviderId::Claude, 50.0)];
+        let presentation =
+            resolve_tray_presentation(&snapshots, TraySelection::Provider(ProviderId::Codex));
         assert_eq!(presentation.remaining_percent, 99);
-        assert_eq!(presentation.title, Some(tray_title_from_remaining(99)));
         assert!(presentation.tooltip.contains("Codex"));
-        assert!(presentation.tooltip.contains("99% left"));
     }
 
     #[test]
     fn resolve_tray_presentation_without_snapshots_uses_fallback() {
-        let presentation = resolve_tray_presentation(&[]);
-        assert_eq!(presentation.provider, None);
+        let presentation = resolve_tray_presentation(&[], TraySelection::Overview);
+        assert_eq!(presentation.selection, TraySelection::Overview);
         assert_eq!(presentation.title, None);
     }
 }

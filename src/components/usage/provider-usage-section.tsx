@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatUpdatedAgo } from "@/lib/utils/format-updated-ago";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
 
+import { ProviderUsageActions } from "./provider-usage-actions";
 import { UsageMeter } from "./usage-meter";
 
 interface ProviderUsageSectionProps {
@@ -17,6 +18,7 @@ interface ProviderUsageSectionProps {
   isRefreshing?: boolean;
   isLast?: boolean;
   planLabel?: string | null;
+  showProviderActions?: boolean;
 }
 
 export function ProviderUsageSection({
@@ -25,6 +27,7 @@ export function ProviderUsageSection({
   isRefreshing = false,
   isLast = true,
   planLabel = null,
+  showProviderActions = false,
 }: ProviderUsageSectionProps) {
   const windows = [snapshot.primary, ...(snapshot.secondary ? [snapshot.secondary] : [])];
 
@@ -56,7 +59,10 @@ export function ProviderUsageSection({
               onRefresh(snapshot.provider);
             }}
           >
-            <RefreshCwIcon data-icon="inline-start" className={isRefreshing ? "animate-spin" : undefined} />
+            <RefreshCwIcon
+              data-icon="inline-start"
+              className={isRefreshing ? "animate-spin" : undefined}
+            />
           </Button>
         ) : null}
       </header>
@@ -72,6 +78,7 @@ export function ProviderUsageSection({
           />
         ))}
       </div>
+      {showProviderActions ? <ProviderUsageActions provider={snapshot.provider} /> : null}
       {!isLast ? <Separator /> : null}
     </section>
   );

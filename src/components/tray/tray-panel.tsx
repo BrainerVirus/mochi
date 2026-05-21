@@ -1,38 +1,34 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef } from "react";
 
 import { UsageSnapshotsPanel } from "@/components/tray/tray-panel-content";
 import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
-import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useTrayPanelHeight } from "@/hooks/use-tray-panel-height";
-import { useTrayPanelRefresh } from "@/hooks/use-tray-panel-refresh";
 import { useTrayPanelShortcuts } from "@/hooks/use-tray-panel-shortcuts";
-import { useUsageData } from "@/hooks/use-usage-data";
-import type { ProviderId } from "@/lib/schemas/usage";
+import { useTrayPanelState } from "@/hooks/use-tray-panel-state";
 import { quitApp } from "@/lib/tauri/commands";
-import { buildTrayPanelTabs, filterSnapshotsForTrayPanel } from "@/lib/utils/tray-panel-tabs";
 
 export function TrayPanel() {
-  const { data: settings } = useSettings();
-  const { data, error, isError, isPending, isSuccess, refetch, isFetching } = useUsageData();
-  const refreshProviderMutation = useRefreshProvider();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [refreshingProvider, setRefreshingProvider] = useState<ProviderId | null>(null);
   const layoutRef = useRef<HTMLDivElement>(null);
-
-  const enabledProviders = useMemo(
-    () => settings?.enabled_providers ?? [],
-    [settings?.enabled_providers],
-  );
-  const { refreshAll, isRefreshingAll } = useTrayPanelRefresh({
-    enabledProviders,
-    refetch: () => refetch(),
-  });
+  const {
+    settings,
+    error,
+    isError,
+    isPending,
+    isSuccess,
+    isFetching,
+    refreshAll,
+    isRefreshingAll,
+    refreshProviderMutation,
+    selectedTab,
+    refreshingProvider,
+    snapshots,
+    tabs,
+    handleTabChange,
+    handleRefreshProvider,
+  } = useTrayPanelState();
 
   useTrayPanelHeight(layoutRef);
-
-  const snapshots = filterSnapshotsForTrayPanel(data ?? [], enabledProviders);
-  const tabs = buildTrayPanelTabs(data ?? [], enabledProviders);
   useTrayPanelShortcuts({
     onRefresh: () => {
       void refreshAll();
@@ -41,15 +37,6 @@ export function TrayPanel() {
       void quitApp();
     },
   });
-
-  function handleRefreshProvider(provider: ProviderId) {
-    setRefreshingProvider(provider);
-    refreshProviderMutation.mutate(provider, {
-      onSettled: () => {
-        setRefreshingProvider(null);
-      },
-    });
-  }
 
   return (
     <TrayPanelShell layoutRef={layoutRef}>
@@ -63,8 +50,8 @@ export function TrayPanel() {
           isPending={isPending}
           isSuccess={isSuccess}
           enabledProviderCount={settings?.enabled_providers.length ?? 0}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+          activeTab={selectedTab}
+          onTabChange={handleTabChange}
           tabs={tabs}
           snapshots={snapshots}
           onRefreshProvider={handleRefreshProvider}

@@ -2,7 +2,7 @@ use tauri::image::Image;
 
 use crate::core::models::ProviderId;
 
-use super::presentation::TrayIconPresentation;
+use super::presentation::{TrayIconPresentation, TraySelection};
 
 const GLYPH_SIZE: u32 = 18;
 const ICON_SIZE: u32 = 22;
@@ -10,16 +10,32 @@ const H_PADDING: u32 = 2;
 
 /// Template-friendly menu bar glyph only — percent text is shown via `TrayIcon::set_title`.
 pub fn tray_icon_for_presentation(presentation: &TrayIconPresentation) -> Image<'static> {
-    let provider = presentation.provider.unwrap_or(ProviderId::Codex);
     let mut rgba = vec![0_u8; (ICON_SIZE * ICON_SIZE * 4) as usize];
-    blit_glyph(provider, &mut rgba, ICON_SIZE, H_PADDING, H_PADDING);
+    match presentation.selection {
+        TraySelection::Overview => blit_overview_glyph(&mut rgba, ICON_SIZE, H_PADDING, H_PADDING),
+        TraySelection::Provider(provider) => {
+            blit_glyph(provider, &mut rgba, ICON_SIZE, H_PADDING, H_PADDING)
+        }
+    }
     Image::new_owned(rgba, ICON_SIZE, ICON_SIZE)
 }
 
 pub fn tray_icon_fallback() -> Image<'static> {
     let mut rgba = vec![0_u8; (ICON_SIZE * ICON_SIZE * 4) as usize];
-    blit_glyph(ProviderId::Codex, &mut rgba, ICON_SIZE, H_PADDING, H_PADDING);
+    blit_overview_glyph(&mut rgba, ICON_SIZE, H_PADDING, H_PADDING);
     Image::new_owned(rgba, ICON_SIZE, ICON_SIZE)
+}
+
+fn blit_overview_glyph(rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
+    let glyph = overview_glyph_mask();
+    for row in 0..GLYPH_SIZE {
+        for col in 0..GLYPH_SIZE {
+            if !glyph_pixel(&glyph, col, row) {
+                continue;
+            }
+            set_pixel(rgba, canvas_width, x + col, y + row, 0xF5, 0xF5, 0xF5, 255);
+        }
+    }
 }
 
 fn blit_glyph(provider: ProviderId, rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
@@ -32,6 +48,29 @@ fn blit_glyph(provider: ProviderId, rgba: &mut [u8], canvas_width: u32, x: u32, 
             set_pixel(rgba, canvas_width, x + col, y + row, 0xF5, 0xF5, 0xF5, 255);
         }
     }
+}
+
+/// 2×2 grid matching the Overview tab LayoutGrid icon (CodexBar square.grid.2x2).
+fn overview_glyph_mask() -> Vec<bool> {
+    let mut mask = vec![false; (GLYPH_SIZE * GLYPH_SIZE) as usize];
+    let cells = [
+        (3_u32, 3_u32, 8_u32, 8_u32),
+        (10_u32, 3_u32, 15_u32, 8_u32),
+        (3_u32, 10_u32, 8_u32, 15_u32),
+        (10_u32, 10_u32, 15_u32, 15_u32),
+    ];
+
+    for (left, top, right, bottom) in cells {
+        for y in top..=bottom {
+            for x in left..=right {
+                if x < GLYPH_SIZE && y < GLYPH_SIZE {
+                    mask[(y * GLYPH_SIZE + x) as usize] = true;
+                }
+            }
+        }
+    }
+
+    mask
 }
 
 fn provider_glyph_mask(provider: ProviderId) -> Vec<bool> {
@@ -126,7 +165,7 @@ fn letter_pattern(ch: char) -> [u16; 7] {
 mod tests {
     use super::*;
     use crate::core::models::{ProviderId, UsageSnapshot, UsageWindow};
-    use crate::tray::presentation::resolve_tray_presentation;
+    use crate::tray::presentation::{resolve_tray_presentation, TraySelection};
 
     fn snapshot(provider: ProviderId, used_percent: f32) -> UsageSnapshot {
         UsageSnapshot {
@@ -139,8 +178,8 @@ mod tests {
     }
 
     #[test]
-    fn tray_icon_for_presentation_is_glyph_only_square() {
-        let presentation = resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)]);
+    fn tray_icon_for_overview_renders_grid_glyph() {
+        let presentation = resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)], TraySelection::Overview);
         let icon = tray_icon_for_presentation(&presentation);
         assert_eq!(icon.width(), ICON_SIZE);
         assert_eq!(icon.height(), ICON_SIZE);
@@ -148,7 +187,17 @@ mod tests {
     }
 
     #[test]
-    fn tray_icon_fallback_renders_without_title() {
+    fn tray_icon_for_provider_renders_brand_glyph() {
+        let presentation =
+            resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)], TraySelection::Provider(ProviderId::Codex));
+        let icon = tray_icon_for_presentation(&presentation);
+        assert_eq!(icon.width(), ICON_SIZE);
+        assert_eq!(icon.height(), ICON_SIZE);
+        assert!(icon.rgba().iter().any(|value| *value > 0));
+    }
+
+    #[test]
+    fn tray_icon_fallback_renders_overview_grid() {
         let icon = tray_icon_fallback();
         assert_eq!(icon.width(), ICON_SIZE);
         assert_eq!(icon.height(), ICON_SIZE);

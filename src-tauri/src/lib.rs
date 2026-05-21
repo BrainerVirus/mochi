@@ -10,12 +10,13 @@ pub mod widget;
 
 use clap::Parser;
 use tauri::Manager;
+use tauri_plugin_opener::OpenerExt;
 
 use cli::{Cli, Command};
 use settings::{get_settings, save_settings, SettingsState};
 use tray::{
-    maybe_show_main_for_dev, set_tray_panel_height, setup_main_panel, setup_tray, show_main_panel,
-    sync_tray_usage,
+    maybe_show_main_for_dev, open_app_window, set_tray_panel_height, setup_main_panel, setup_tray,
+    show_main_panel, sync_tray_usage,
 };
 use widget::{hide_widget, setup_widget, show_widget, toggle_widget};
 
@@ -27,6 +28,13 @@ fn app_version() -> &'static str {
 #[tauri::command]
 fn quit_app(app: tauri::AppHandle) {
     app.exit(0);
+}
+
+#[tauri::command]
+fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|error| error.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -57,6 +65,8 @@ pub fn run() -> anyhow::Result<()> {
             status::get_usage_snapshots,
             status::refresh_provider,
             show_main_panel,
+            open_app_window,
+            open_external_url,
             set_tray_panel_height,
             sync_tray_usage,
             updater::check_for_update,

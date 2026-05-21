@@ -14,28 +14,28 @@ use crate::settings::SettingsState;
 use crate::status;
 
 pub use panel::{
-    maybe_show_main_for_dev, open_tray_panel, record_tray_icon_event, set_tray_panel_height,
-    setup_main_panel, show_main_panel, show_tray_panel, show_tray_panel_centered,
-    MAIN_PANEL_LABEL,
+    maybe_show_main_for_dev, open_app_window, open_tray_panel, record_tray_icon_event,
+    set_tray_panel_height, setup_main_panel, show_main_panel, show_tray_panel,
+    show_tray_panel_centered, MAIN_PANEL_LABEL, SETTINGS_WINDOW_LABEL,
 };
 pub use presentation::{
-    pick_tray_snapshot, resolve_tray_presentation, TrayIconPresentation,
+    pick_tray_snapshot, resolve_tray_presentation, TrayIconPresentation, TraySelection,
 };
 pub use usage::{aggregate_used_percent, tray_usage_tone, TrayUsageTone, TRAY_ID};
 
-use icon::{tray_icon_fallback, tray_icon_for_presentation};
+use icon::tray_icon_for_presentation;
 
-pub fn apply_tray_usage(app: &AppHandle, snapshots: &[UsageSnapshot]) -> Result<(), String> {
-    let presentation = resolve_tray_presentation(snapshots);
+pub fn apply_tray_usage(
+    app: &AppHandle,
+    snapshots: &[UsageSnapshot],
+    selection: TraySelection,
+) -> Result<(), String> {
+    let presentation = resolve_tray_presentation(snapshots, selection);
     let tray = app
         .tray_by_id(TRAY_ID)
         .ok_or_else(|| format!("tray icon {TRAY_ID} not found"))?;
 
-    let icon = if presentation.provider.is_some() {
-        tray_icon_for_presentation(&presentation)
-    } else {
-        tray_icon_fallback()
-    };
+    let icon = tray_icon_for_presentation(&presentation);
 
     tray.set_tooltip(Some(presentation.tooltip.clone()))
         .map_err(|error| error.to_string())?;
@@ -52,13 +52,15 @@ pub fn apply_tray_usage(app: &AppHandle, snapshots: &[UsageSnapshot]) -> Result<
 pub async fn sync_tray_usage(
     app: AppHandle,
     state: State<'_, SettingsState>,
+    selection: Option<String>,
 ) -> Result<(), String> {
     let settings = state.current()?;
     let snapshots = status::collect_usage_snapshots(&settings.enabled_providers)
         .await
         .map_err(|error| error.to_string())?;
 
-    apply_tray_usage(&app, &snapshots)
+    let tray_selection = TraySelection::parse(selection.as_deref());
+    apply_tray_usage(&app, &snapshots, tray_selection)
 }
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -91,7 +93,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         ],
     )?;
 
-    let icon = tray_icon_fallback();
+    let icon = icon::tray_icon_fallback();
 
     TrayIconBuilder::with_id(TRAY_ID)
         .icon(icon)
@@ -106,7 +108,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 let _ = crate::widget::show_widget(app.clone());
             }
             "settings" => {
-                open_tray_panel(app, "/settings");
+                let _ = open_app_window(app.clone(), "/settings".to_string());
             }
             "channel-stable" => {
                 let _ = app.emit("tray-set-channel", "stable");
@@ -160,7 +162,7 @@ mod tests {
     #[test]
     fn resolve_tray_presentation_uses_remaining_percent_in_tooltip() {
         let snapshots = vec![snapshot(12.0), snapshot(88.0)];
-        let presentation = resolve_tray_presentation(&snapshots);
+        let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
         assert_eq!(presentation.remaining_percent, 12);
         assert!(presentation.tooltip.contains("12% left"));
     }

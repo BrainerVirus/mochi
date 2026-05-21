@@ -37,6 +37,19 @@
         "visible": false,
         "alwaysOnTop": true,
         "resizable": true
+      },
+      {
+        "label": "settings",
+        "title": "Mochi",
+        "url": "/settings",
+        "width": 720,
+        "height": 640,
+        "minWidth": 480,
+        "minHeight": 480,
+        "visible": false,
+        "decorations": true,
+        "resizable": true,
+        "center": true
       }
     ],
     "security": {

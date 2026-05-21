@@ -80,6 +80,7 @@ export function UsageSnapshotsPanel({
               snapshot={activeSnapshot}
               onRefresh={onRefreshProvider}
               isRefreshing={refreshingProvider === activeSnapshot.provider}
+              showProviderActions
             />
           ) : null}
         </div>

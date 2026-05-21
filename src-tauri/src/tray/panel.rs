@@ -7,6 +7,7 @@ use tauri::{
 use tauri_plugin_positioner::{Position, WindowExt};
 
 pub const MAIN_PANEL_LABEL: &str = "main";
+pub const SETTINGS_WINDOW_LABEL: &str = "settings";
 
 /// Matches `src/lib/utils/tray-panel-layout.ts` and `tauri.conf.json` main window width.
 pub const TRAY_PANEL_WIDTH: f64 = 360.0;
@@ -169,6 +170,30 @@ pub fn set_tray_panel_height(app: AppHandle, height: f64) -> Result<(), String> 
 #[tauri::command]
 pub fn show_main_panel(app: AppHandle) {
     show_tray_panel(&app, "/");
+}
+
+/// Opens or focuses the dedicated settings/about window (not the tray popover).
+#[tauri::command]
+pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
+    if let Some(tray_panel) = app.get_webview_window(MAIN_PANEL_LABEL) {
+        let _ = tray_panel.hide();
+    }
+
+    let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) else {
+        return Err(format!("missing app window: {SETTINGS_WINDOW_LABEL}"));
+    };
+
+    app.emit("app-navigate", path.as_str())
+        .map_err(|error| error.to_string())?;
+
+    if window.is_visible().unwrap_or(false) {
+        window.set_focus().map_err(|error| error.to_string())?;
+    } else {
+        window.show().map_err(|error| error.to_string())?;
+        window.set_focus().map_err(|error| error.to_string())?;
+    }
+
+    Ok(())
 }
 
 pub fn show_tray_panel(app: &AppHandle, path: &str) {
