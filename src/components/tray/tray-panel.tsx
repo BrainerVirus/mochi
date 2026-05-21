@@ -57,11 +57,9 @@ export function TrayPanel() {
           onRefreshProvider={handleRefreshProvider}
           refreshingProvider={refreshingProvider}
         />
-        <div
-          data-tray-panel-separator
-          className="border-border border-t"
-          aria-hidden
-        />
+        <div data-tray-panel-separator className="px-3 py-1" aria-hidden>
+          <div className="bg-border h-px w-full" />
+        </div>
         <TrayPanelFooter
           isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
           onRefresh={() => {
