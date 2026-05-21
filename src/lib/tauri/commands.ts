@@ -55,3 +55,7 @@ export function hideWidget(): Promise<void> {
 export function toggleWidget(): Promise<void> {
   return invoke<void>("toggle_widget");
 }
+
+export function syncTrayUsage(): Promise<void> {
+  return invoke<void>("sync_tray_usage");
+}

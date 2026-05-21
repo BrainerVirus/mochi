@@ -7,7 +7,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { refreshProviderMutationOptions } from "@/lib/query/refresh-provider";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import type { MochiSettings, UpdateChannel } from "@/lib/schemas/settings";
-import { saveSettings } from "@/lib/tauri/commands";
+import { saveSettings, syncTrayUsage } from "@/lib/tauri/commands";
 
 export function useSettings() {
   return useQuery(settingsQueryOptions);
@@ -46,7 +46,9 @@ export function useTrayEvents() {
         void navigate({ to: event.payload });
       }),
       listen("tray-refresh", () => {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+        void queryClient
+          .invalidateQueries({ queryKey: queryKeys.usageSnapshots })
+          .then(() => syncTrayUsage());
       }),
       listen<UpdateChannel>("tray-set-channel", (event) => {
         const current = queryClient.getQueryData<MochiSettings>(queryKeys.settings);

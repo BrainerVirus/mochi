@@ -26,7 +26,7 @@ pub async fn refresh_provider(provider: String) -> Result<UsageSnapshot, String>
     }
 }
 
-async fn collect_usage_snapshots(
+pub(crate) async fn collect_usage_snapshots(
     enabled_providers: &[String],
 ) -> Result<Vec<UsageSnapshot>, ProviderError> {
     let mut snapshots = Vec::new();
