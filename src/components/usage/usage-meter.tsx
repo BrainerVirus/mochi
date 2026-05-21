@@ -1,3 +1,7 @@
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import { getUsageMeterTone, usageMeterToneClasses } from "@/lib/utils/usage-meter-tone";
+
 interface UsageMeterProps {
   label: string;
   usedPercent: number;
@@ -5,19 +9,19 @@ interface UsageMeterProps {
 
 export function UsageMeter({ label, usedPercent }: UsageMeterProps) {
   const clamped = Math.max(0, Math.min(100, usedPercent));
+  const tone = getUsageMeterTone(clamped);
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between text-xs text-slate-600">
+      <div className="text-muted-foreground flex items-center justify-between text-xs">
         <span>{label}</span>
-        <span>{Math.round(clamped)}% used</span>
+        <span className="font-medium tabular-nums">{Math.round(clamped)}% used</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-        <div
-          className="bg-mochi-blush h-full rounded-full transition-all duration-300"
-          style={{ width: `${clamped}%` }}
-        />
-      </div>
+      <Progress
+        value={clamped}
+        className={cn("h-2", usageMeterToneClasses[tone])}
+        aria-label={`${label}: ${Math.round(clamped)}% used`}
+      />
     </div>
   );
 }

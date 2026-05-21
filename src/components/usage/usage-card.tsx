@@ -1,5 +1,8 @@
 import type { UsageSnapshot } from "@/lib/schemas/usage";
 
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { UsageMeter } from "./usage-meter";
 
 interface UsageCardProps {
@@ -8,14 +11,12 @@ interface UsageCardProps {
 
 export function UsageCard({ snapshot }: UsageCardProps) {
   return (
-    <article className="rounded-mochi bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold capitalize">{snapshot.provider}</h2>
-        <span className="bg-mochi-matcha/40 rounded-full px-2 py-1 text-xs text-slate-700">
-          {snapshot.source}
-        </span>
-      </div>
-      <div className="mt-4 flex flex-col gap-3">
+    <Card className="rounded-mochi shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle className="capitalize">{snapshot.provider}</CardTitle>
+        <Badge variant="secondary">{snapshot.source}</Badge>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
         <UsageMeter label={snapshot.primary.label} usedPercent={snapshot.primary.used_percent} />
         {snapshot.secondary ? (
           <UsageMeter
@@ -23,7 +24,7 @@ export function UsageCard({ snapshot }: UsageCardProps) {
             usedPercent={snapshot.secondary.used_percent}
           />
         ) : null}
-      </div>
-    </article>
+      </CardContent>
+    </Card>
   );
 }
