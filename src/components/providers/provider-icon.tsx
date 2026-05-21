@@ -2,27 +2,34 @@ import type { ProviderId } from "@/lib/schemas/usage";
 
 import { cn } from "@/lib/utils";
 
+import { PROVIDER_BRAND_SVGS } from "./provider-icon-sources";
+
 interface ProviderIconProps {
   provider: ProviderId;
   className?: string;
 }
 
-/** Monochrome provider marks for tray panel tabs (CodexBar-style branding). */
+/** Monochrome provider brand marks for tray tabs, overview rows, and usage cards. */
 export function ProviderIcon({ provider, className }: ProviderIconProps) {
+  const markup = PROVIDER_BRAND_SVGS[provider];
+
+  if (!markup) {
+    return <ProviderLetter provider={provider} className={className} />;
+  }
+
   return (
     <span
       className={cn(
-        "inline-flex size-4 shrink-0 items-center justify-center text-current opacity-90",
+        "inline-flex size-4 shrink-0 items-center justify-center text-current opacity-90 [&>svg]:size-full",
         className,
       )}
       aria-hidden
-    >
-      {provider === "codex" ? <CodexMark /> : <ProviderLetter provider={provider} />}
-    </span>
+      dangerouslySetInnerHTML={{ __html: markup }}
+    />
   );
 }
 
-function ProviderLetter({ provider }: { provider: ProviderId }) {
+function ProviderLetter({ provider, className }: { provider: ProviderId; className?: string }) {
   const letter: Record<ProviderId, string> = {
     codex: "C",
     claude: "C",
@@ -36,30 +43,15 @@ function ProviderLetter({ provider }: { provider: ProviderId }) {
     augment: "+",
   };
 
-  return <span className="text-[10px] leading-none font-semibold">{letter[provider]}</span>;
-}
-
-function CodexMark() {
   return (
-    <svg viewBox="0 0 18 18" className="size-4" fill="currentColor" aria-hidden>
-      <rect
-        x="2.5"
-        y="2.5"
-        width="13"
-        height="13"
-        rx="2.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-      />
-      <path
-        d="M8 6.5 L11 9 L8 11.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <span
+      className={cn(
+        "inline-flex size-4 shrink-0 items-center justify-center text-current opacity-90",
+        className,
+      )}
+      aria-hidden
+    >
+      <span className="text-[10px] leading-none font-semibold">{letter[provider]}</span>
+    </span>
   );
 }
