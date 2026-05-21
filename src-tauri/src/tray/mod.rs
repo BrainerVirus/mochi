@@ -1,16 +1,21 @@
 mod icon;
+mod panel;
 mod usage;
 
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager, State,
+    AppHandle, Emitter, State,
 };
 
 use crate::core::models::UsageSnapshot;
 use crate::settings::SettingsState;
 use crate::status;
 
+pub use panel::{
+    maybe_show_main_for_dev, open_tray_panel, record_tray_icon_event, setup_main_panel,
+    show_main_panel, show_tray_panel, show_tray_panel_centered, MAIN_PANEL_LABEL,
+};
 pub use usage::{aggregate_used_percent, tray_usage_tone, TrayUsageTone, TRAY_ID};
 
 use icon::tray_icon_for_tone;
@@ -92,7 +97,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 let _ = crate::widget::show_widget(app.clone());
             }
             "settings" => {
-                show_main_window(app, "/settings");
+                open_tray_panel(app, "/settings");
             }
             "channel-stable" => {
                 let _ = app.emit("tray-set-channel", "stable");
@@ -109,37 +114,23 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
+            record_tray_icon_event(tray.app_handle(), &event);
+
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
                 ..
             } = event
             {
-                show_main_window(tray.app_handle(), "/");
+                show_tray_panel(tray.app_handle(), "/");
             }
         })
         .build(app)?;
 
     #[cfg(debug_assertions)]
-    eprintln!(
-        "[mochi] tray registered (id={TRAY_ID}). On macOS, check menu bar overflow (Control Center → Menu Bar) if the icon is missing."
-    );
+    eprintln!("[mochi] tray registered (id={TRAY_ID})");
 
     Ok(())
-}
-
-/// Opens the tray panel window. Useful for dev validation when the menu bar icon is hidden.
-#[tauri::command]
-pub fn show_main_panel(app: AppHandle) {
-    show_main_window(&app, "/");
-}
-
-pub fn show_main_window(app: &AppHandle, path: &str) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.set_focus();
-        let _ = app.emit("tray-navigate", path);
-    }
 }
 
 #[cfg(test)]

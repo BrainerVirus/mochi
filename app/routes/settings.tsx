@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { SettingsForm } from "@/components/settings/settings-form";
+import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/settings")({
@@ -9,8 +10,8 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   return (
-    <main className="bg-background text-foreground min-h-screen">
-      <section className="mx-auto flex min-h-screen w-full max-w-[720px] flex-col gap-6 p-6">
+    <TrayPanelShell>
+      <section className="mx-auto flex min-h-full w-full max-w-[720px] flex-col gap-6 p-6">
         <Card className="rounded-mochi shadow-sm">
           <CardHeader>
             <CardDescription className="font-medium tracking-[0.2em] uppercase">
@@ -26,6 +27,6 @@ function SettingsPage() {
           </CardContent>
         </Card>
       </section>
-    </main>
+    </TrayPanelShell>
   );
 }

@@ -16,6 +16,10 @@
   --radius-mochi: 1.5rem;
 }
 
+@utility rounded-mochi {
+  border-radius: var(--radius-mochi);
+}
+
 :root {
   color-scheme: light dark;
   --background: #fff8f0;
