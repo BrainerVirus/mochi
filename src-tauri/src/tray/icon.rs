@@ -1,326 +1,176 @@
 use tauri::image::Image;
+use tiny_skia::{FillRule, Paint, PathBuilder, Pixmap, Transform};
 
 use crate::core::models::ProviderId;
 
 use super::presentation::{TrayIconPresentation, TraySelection};
 
-const GLYPH_SIZE: u32 = 18;
-const ICON_SIZE: u32 = 22;
-const H_PADDING: u32 = 2;
+/// Logical menu-bar glyph size in points (matches CodexBar ProviderBrandIcon / tray slot).
+const GLYPH_PT: u32 = 18;
+const ICON_PT: u32 = 22;
+const H_PADDING_PT: u32 = 2;
+/// Render at 2× then output retina bitmap (CodexBar IconRenderer uses outputScale = 2).
+const OUTPUT_SCALE: u32 = 2;
+
+const GLYPH_PX: u32 = GLYPH_PT * OUTPUT_SCALE;
+const ICON_PX: u32 = ICON_PT * OUTPUT_SCALE;
+const H_PADDING_PX: u32 = H_PADDING_PT * OUTPUT_SCALE;
+
+const TEMPLATE_RGB: u8 = 0xF5;
 
 /// Template-friendly menu bar glyph only — percent text is shown via `TrayIcon::set_title`.
 pub fn tray_icon_for_presentation(presentation: &TrayIconPresentation) -> Image<'static> {
-    let mut rgba = vec![0_u8; (ICON_SIZE * ICON_SIZE * 4) as usize];
+    let mut rgba = vec![0_u8; (ICON_PX * ICON_PX * 4) as usize];
     match presentation.selection {
-        TraySelection::Overview => blit_overview_glyph(&mut rgba, ICON_SIZE, H_PADDING, H_PADDING),
-        TraySelection::Provider(provider) => {
-            blit_glyph(provider, &mut rgba, ICON_SIZE, H_PADDING, H_PADDING)
-        }
+        TraySelection::Overview => blit_overview_glyph(&mut rgba),
+        TraySelection::Provider(provider) => blit_provider_glyph(provider, &mut rgba),
     }
-    Image::new_owned(rgba, ICON_SIZE, ICON_SIZE)
+    Image::new_owned(rgba, ICON_PX, ICON_PX)
 }
 
 pub fn tray_icon_fallback() -> Image<'static> {
-    let mut rgba = vec![0_u8; (ICON_SIZE * ICON_SIZE * 4) as usize];
-    blit_overview_glyph(&mut rgba, ICON_SIZE, H_PADDING, H_PADDING);
-    Image::new_owned(rgba, ICON_SIZE, ICON_SIZE)
+    let mut rgba = vec![0_u8; (ICON_PX * ICON_PX * 4) as usize];
+    blit_overview_glyph(&mut rgba);
+    Image::new_owned(rgba, ICON_PX, ICON_PX)
 }
 
-fn blit_overview_glyph(rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
-    let glyph = overview_glyph_mask();
-    blit_mask(&glyph, rgba, canvas_width, x, y);
+fn blit_overview_glyph(rgba: &mut [u8]) {
+    let Some(glyph) = render_overview_glyph() else {
+        return;
+    };
+    blit_template_glyph(&glyph, rgba, H_PADDING_PX, H_PADDING_PX);
 }
 
-fn blit_glyph(provider: ProviderId, rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
-    let glyph = provider_glyph_mask(provider);
-    blit_mask(&glyph, rgba, canvas_width, x, y);
+fn blit_provider_glyph(provider: ProviderId, rgba: &mut [u8]) {
+    let Some(glyph) = rasterize_provider_svg(provider) else {
+        return;
+    };
+    blit_template_glyph(&glyph, rgba, H_PADDING_PX, H_PADDING_PX);
 }
 
-fn blit_mask(mask: &[bool], rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
-    for row in 0..GLYPH_SIZE {
-        for col in 0..GLYPH_SIZE {
-            if !glyph_pixel(mask, col, row) {
+fn blit_template_glyph(glyph: &Pixmap, rgba: &mut [u8], x: u32, y: u32) {
+    let width = ICON_PX;
+    let data = glyph.data();
+    let glyph_width = glyph.width();
+    let glyph_height = glyph.height();
+
+    for row in 0..glyph_height {
+        for col in 0..glyph_width {
+            let src_index = ((row * glyph_width + col) * 4) as usize;
+            let alpha = data[src_index + 3];
+            if alpha == 0 {
                 continue;
             }
-            set_pixel(rgba, canvas_width, x + col, y + row, 0xF5, 0xF5, 0xF5, 255);
+
+            let dst_x = x + col;
+            let dst_y = y + row;
+            if dst_x >= width || dst_y >= width {
+                continue;
+            }
+
+            let dst_index = ((dst_y * width + dst_x) * 4) as usize;
+            rgba[dst_index] = TEMPLATE_RGB;
+            rgba[dst_index + 1] = TEMPLATE_RGB;
+            rgba[dst_index + 2] = TEMPLATE_RGB;
+            rgba[dst_index + 3] = rgba[dst_index + 3].max(alpha);
         }
     }
 }
 
 /// 2×2 grid matching the Overview tab LayoutGrid icon (CodexBar square.grid.2x2).
-fn overview_glyph_mask() -> Vec<bool> {
-    let mut mask = vec![false; (GLYPH_SIZE * GLYPH_SIZE) as usize];
+fn render_overview_glyph() -> Option<Pixmap> {
+    let mut pixmap = Pixmap::new(GLYPH_PX, GLYPH_PX)?;
+    let scale = OUTPUT_SCALE as f32;
+    let mut paint = Paint::default();
+    paint.set_color_rgba8(TEMPLATE_RGB, TEMPLATE_RGB, TEMPLATE_RGB, 255);
+
     let cells = [
-        (3_u32, 3_u32, 8_u32, 8_u32),
-        (10_u32, 3_u32, 15_u32, 8_u32),
-        (3_u32, 10_u32, 8_u32, 15_u32),
-        (10_u32, 10_u32, 15_u32, 15_u32),
+        (3.0, 3.0, 8.0, 8.0),
+        (10.0, 3.0, 15.0, 8.0),
+        (3.0, 10.0, 8.0, 15.0),
+        (10.0, 10.0, 15.0, 15.0),
     ];
 
     for (left, top, right, bottom) in cells {
-        for y in top..=bottom {
-            for x in left..=right {
-                if x < GLYPH_SIZE && y < GLYPH_SIZE {
-                    mask[(y * GLYPH_SIZE + x) as usize] = true;
-                }
-            }
+        let mut path = PathBuilder::new();
+        path.push_rect(tiny_skia::Rect::from_ltrb(
+            left * scale,
+            top * scale,
+            (right + 1.0) * scale,
+            (bottom + 1.0) * scale,
+        )?);
+        pixmap.fill_path(&path.finish()?, &paint, FillRule::Winding, Transform::identity(), None);
+    }
+
+    Some(pixmap)
+}
+
+fn rasterize_provider_svg(provider: ProviderId) -> Option<Pixmap> {
+    let svg = provider_svg(provider);
+    let mut options = usvg::Options::default();
+    options.font_family = "sans-serif".to_string();
+
+    let tree = usvg::Tree::from_str(svg, &options).ok()?;
+    let svg_size = tree.size();
+    if svg_size.width() <= 0.0 || svg_size.height() <= 0.0 {
+        return None;
+    }
+
+    let scale = GLYPH_PX as f32 / svg_size.width().max(svg_size.height());
+    let scaled_width = svg_size.width() * scale;
+    let scaled_height = svg_size.height() * scale;
+    let tx = (GLYPH_PX as f32 - scaled_width) / 2.0;
+    let ty = (GLYPH_PX as f32 - scaled_height) / 2.0;
+    let transform = Transform::from_translate(tx, ty).post_scale(scale, scale);
+
+    let mut pixmap = Pixmap::new(GLYPH_PX, GLYPH_PX)?;
+    resvg::render(&tree, transform, &mut pixmap.as_mut());
+    Some(pixmap)
+}
+
+fn provider_svg(provider: ProviderId) -> &'static str {
+    match provider {
+        ProviderId::Codex => {
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/codex.svg"))
+        }
+        ProviderId::Claude => {
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/claude.svg"))
+        }
+        ProviderId::Cursor => {
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/cursor.svg"))
+        }
+        ProviderId::Gemini => {
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/gemini.svg"))
+        }
+        ProviderId::Copilot => {
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/copilot.svg"
+            ))
+        }
+        ProviderId::Antigravity => include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../src/assets/providers/antigravity.svg"
+        )),
+        ProviderId::Factory => {
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/factory.svg"
+            ))
+        }
+        ProviderId::Zai => {
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/zai.svg"))
+        }
+        ProviderId::Kiro => {
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/kiro.svg"))
+        }
+        ProviderId::Augment => {
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/augment.svg"
+            ))
         }
     }
-
-    mask
-}
-
-fn provider_glyph_mask(provider: ProviderId) -> Vec<bool> {
-    mask_from_rows(match provider {
-        ProviderId::Codex => CODEX_GLYPH,
-        ProviderId::Claude => CLAUDE_GLYPH,
-        ProviderId::Cursor => CURSOR_GLYPH,
-        ProviderId::Gemini => GEMINI_GLYPH,
-        ProviderId::Copilot => COPILOT_GLYPH,
-        ProviderId::Antigravity => ANTIGRAVITY_GLYPH,
-        ProviderId::Factory => FACTORY_GLYPH,
-        ProviderId::Zai => ZAI_GLYPH,
-        ProviderId::Kiro => KIRO_GLYPH,
-        ProviderId::Augment => AUGMENT_GLYPH,
-    })
-}
-
-fn mask_from_rows(rows: [&str; 18]) -> Vec<bool> {
-    let mut mask = vec![false; (GLYPH_SIZE * GLYPH_SIZE) as usize];
-    for (row, pattern) in rows.iter().enumerate() {
-        for (col, ch) in pattern.chars().enumerate() {
-            if ch == '1' {
-                mask[row * GLYPH_SIZE as usize + col] = true;
-            }
-        }
-    }
-    mask
-}
-
-// Rasterized from `src/assets/providers/*.svg` at 18×18 (resvg, template-friendly).
-const CODEX_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000001000000000",
-    "000000111110000000",
-    "000001100111110000",
-    "000111011100011000",
-    "001111111011001000",
-    "001111111111111100",
-    "011011111110011100",
-    "001011110011101100",
-    "001101110011110100",
-    "001110111111110100",
-    "001111111111111100",
-    "001100110110111100",
-    "000110011110110000",
-    "000011111001100000",
-    "000000011111000000",
-    "000000000100000000",
-    "000000000000000000",
-];
-
-const CLAUDE_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000000000000000",
-    "000001100110000000",
-    "000001110110010000",
-    "000100110110111000",
-    "000111111111110000",
-    "000011111111100000",
-    "000001111111011100",
-    "001111111111111100",
-    "001111111111111000",
-    "000000111111111100",
-    "000011111111100000",
-    "000111111111110000",
-    "000001101101111000",
-    "000001101101100000",
-    "000000001100000000",
-    "000000000000000000",
-    "000000000000000000",
-];
-
-const CURSOR_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000000000000000",
-    "000000011110000000",
-    "000001111111100000",
-    "000011111111110000",
-    "001111111111111100",
-    "001110000000001100",
-    "001111100000001100",
-    "001111111000011100",
-    "001111111000111100",
-    "001111111000111100",
-    "001111111001111100",
-    "001111111001111100",
-    "000011111011110000",
-    "000001111111100000",
-    "000000011110000000",
-    "000000000000000000",
-    "000000000000000000",
-];
-
-const GEMINI_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000000000000000",
-    "000000001100000000",
-    "000000001100000000",
-    "000000011110000000",
-    "000000111111000000",
-    "000001111111100000",
-    "000011111111110000",
-    "001111111111111100",
-    "001111111111111100",
-    "000011111111110000",
-    "000000111111000000",
-    "000000011110000000",
-    "000000011110000000",
-    "000000001100000000",
-    "000000001100000000",
-    "000000000000000000",
-    "000000000000000000",
-];
-
-const COPILOT_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000001100000000",
-    "000001111111100000",
-    "000011111111110000",
-    "000100011110001000",
-    "001100001100001100",
-    "001100011110001100",
-    "001100111111001100",
-    "011111110011111110",
-    "111100000000001111",
-    "111100110011001111",
-    "111100110011001111",
-    "111100110011001111",
-    "011100000000001110",
-    "000111110011111000",
-    "000001111111100000",
-    "000000000000000000",
-    "000000000000000000",
-];
-
-const ANTIGRAVITY_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000000000000000",
-    "000000011110000000",
-    "000000111111000000",
-    "000000111111000000",
-    "000001111111100000",
-    "000001111111100000",
-    "000001111111100000",
-    "000011111111110000",
-    "000011111111110000",
-    "000011100001110000",
-    "000111100000111000",
-    "000111000000111000",
-    "001110000000011100",
-    "001110000000011100",
-    "011100000000001110",
-    "000000000000000000",
-    "000000000000000000",
-];
-
-const FACTORY_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000000000000000",
-    "000001100111100000",
-    "000001111111100000",
-    "000011010011110000",
-    "001010011011011100",
-    "011111011010001110",
-    "001011111110111100",
-    "001100011111101000",
-    "000101111110001100",
-    "001111011111110100",
-    "011100010110111110",
-    "001110110110011100",
-    "000011110010110000",
-    "000001111111100000",
-    "000001111011100000",
-    "000000000000000000",
-    "000000000000000000",
-];
-
-const ZAI_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "011111111001111110",
-    "011111111011111110",
-    "011111111111111110",
-    "000000001111111100",
-    "000000001111111000",
-    "000000011111111000",
-    "000000111111110000",
-    "000000111111100000",
-    "000001111111000000",
-    "000011111111000000",
-    "000111111110000000",
-    "000111111100000000",
-    "001111111100000000",
-    "011111111111111110",
-    "011111110111111110",
-    "011111100111111110",
-    "000000000000000000",
-];
-
-const KIRO_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000000000000000",
-    "000000000000000000",
-    "000000011111000000",
-    "000000111111100000",
-    "000001111111110000",
-    "000001111111110000",
-    "000001111110110000",
-    "000001111111110000",
-    "000011111111110000",
-    "000011111111110000",
-    "000011111111110000",
-    "000011111111100000",
-    "000001111111100000",
-    "000000111111000000",
-    "000000000000000000",
-    "000000000000000000",
-    "000000000000000000",
-];
-
-const AUGMENT_GLYPH: [&str; 18] = [
-    "000000000000000000",
-    "000000010100000000",
-    "000000010101110000",
-    "011111100111111000",
-    "011000000000001100",
-    "011000000000001100",
-    "011000000000001100",
-    "011000000000001100",
-    "110001000001001110",
-    "011011100011101100",
-    "011011000001101100",
-    "011000000000001100",
-    "011000000011111100",
-    "001111100011111000",
-    "000111000000000000",
-    "000000000000000000",
-    "000000000000000000",
-    "000000000000000000",
-];
-
-fn glyph_pixel(mask: &[bool], x: u32, y: u32) -> bool {
-    mask[(y * GLYPH_SIZE + x) as usize]
-}
-
-fn set_pixel(rgba: &mut [u8], width: u32, x: u32, y: u32, r: u8, g: u8, b: u8, a: u8) {
-    if y >= ICON_SIZE || x >= width {
-        return;
-    }
-    let index = ((y * width + x) * 4) as usize;
-    rgba[index] = r;
-    rgba[index + 1] = g;
-    rgba[index + 2] = b;
-    rgba[index + 3] = a;
 }
 
 #[cfg(test)]
@@ -343,13 +193,20 @@ mod tests {
         icon.rgba().chunks(4).filter(|px| px[3] > 0).count()
     }
 
+    fn semi_transparent_pixel_count(icon: &Image<'_>) -> usize {
+        icon.rgba()
+            .chunks(4)
+            .filter(|px| px[3] > 0 && px[3] < 255)
+            .count()
+    }
+
     #[test]
     fn tray_icon_for_overview_renders_grid_glyph() {
         let presentation =
             resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)], TraySelection::Overview);
         let icon = tray_icon_for_presentation(&presentation);
-        assert_eq!(icon.width(), ICON_SIZE);
-        assert_eq!(icon.height(), ICON_SIZE);
+        assert_eq!(icon.width(), ICON_PX);
+        assert_eq!(icon.height(), ICON_PX);
         assert!(opaque_pixel_count(&icon) > 0);
     }
 
@@ -360,8 +217,8 @@ mod tests {
             TraySelection::Provider(ProviderId::Codex),
         );
         let icon = tray_icon_for_presentation(&presentation);
-        assert_eq!(icon.width(), ICON_SIZE);
-        assert_eq!(icon.height(), ICON_SIZE);
+        assert_eq!(icon.width(), ICON_PX);
+        assert_eq!(icon.height(), ICON_PX);
         assert!(opaque_pixel_count(&icon) > 0);
     }
 
@@ -379,10 +236,22 @@ mod tests {
     }
 
     #[test]
+    fn codex_provider_glyph_uses_anti_aliased_edges() {
+        let icon = tray_icon_for_presentation(&resolve_tray_presentation(
+            &[snapshot(ProviderId::Codex, 10.0)],
+            TraySelection::Provider(ProviderId::Codex),
+        ));
+        assert!(
+            semi_transparent_pixel_count(&icon) > 0,
+            "expected SVG rasterization to produce soft alpha edges"
+        );
+    }
+
+    #[test]
     fn tray_icon_fallback_renders_overview_grid() {
         let icon = tray_icon_fallback();
-        assert_eq!(icon.width(), ICON_SIZE);
-        assert_eq!(icon.height(), ICON_SIZE);
+        assert_eq!(icon.width(), ICON_PX);
+        assert_eq!(icon.height(), ICON_PX);
         assert!(opaque_pixel_count(&icon) > 0);
     }
 }
