@@ -56,6 +56,78 @@ function useHoverIndicatorSync(
   return { syncHover, hoveredIdRef };
 }
 
+function useActiveIndicatorLayout(
+  trackRef: RefObject<HTMLDivElement | null>,
+  activeIndicatorRef: RefObject<HTMLDivElement | null>,
+  itemRefs: RefObject<Map<string, HTMLButtonElement>>,
+  value: string,
+  tabCount: number,
+  hasPreviousMetrics: boolean,
+  syncActive: (animate: boolean) => void,
+  syncHover: (tabId: string | null, animate: boolean) => void,
+  hoveredIdRef: RefObject<string | null>,
+) {
+  useLayoutEffect(() => {
+    let cancelled = false;
+    let frameId = 0;
+
+    const run = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const item = itemRefs.current?.get(value);
+      if (!trackRef.current || !activeIndicatorRef.current || !item) {
+        frameId = requestAnimationFrame(run);
+        return;
+      }
+
+      syncActive(hasPreviousMetrics);
+
+      if (hoveredIdRef.current) {
+        syncHover(hoveredIdRef.current, false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frameId);
+    };
+  }, [
+    value,
+    tabCount,
+    hasPreviousMetrics,
+    syncActive,
+    syncHover,
+    trackRef,
+    activeIndicatorRef,
+    itemRefs,
+    hoveredIdRef,
+  ]);
+}
+
+function useSegmentTrackResize(
+  trackRef: RefObject<HTMLDivElement | null>,
+  syncActive: (animate: boolean) => void,
+  syncHover: (tabId: string | null, animate: boolean) => void,
+  hoveredIdRef: RefObject<string | null>,
+) {
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return undefined;
+
+    const resizeObserver = observeSegmentTrackResize(track, () => {
+      syncActive(false);
+      const hoveredId = hoveredIdRef.current;
+      if (hoveredId) syncHover(hoveredId, false);
+    });
+
+    return () => resizeObserver.disconnect();
+  }, [syncActive, syncHover, hoveredIdRef, trackRef]);
+}
+
 export function useTraySegmentIndicators(
   trackRef: RefObject<HTMLDivElement | null>,
   activeIndicatorRef: RefObject<HTMLDivElement | null>,
@@ -89,57 +161,19 @@ export function useTraySegmentIndicators(
     [activeIndicatorRef, itemRefs, trackRef, value],
   );
 
-  useLayoutEffect(() => {
-    let cancelled = false;
-    let frameId = 0;
-
-    const run = () => {
-      if (cancelled) {
-        return;
-      }
-
-      const item = itemRefs.current?.get(value);
-      if (!trackRef.current || !activeIndicatorRef.current || !item) {
-        frameId = requestAnimationFrame(run);
-        return;
-      }
-
-      syncActive(prevActiveMetricsRef.current !== null);
-
-      if (hoveredIdRef.current) {
-        syncHover(hoveredIdRef.current, false);
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(frameId);
-    };
-  }, [
-    value,
-    tabCount,
-    syncActive,
-    syncHover,
+  useActiveIndicatorLayout(
     trackRef,
     activeIndicatorRef,
     itemRefs,
+    value,
+    tabCount,
+    prevActiveMetricsRef.current !== null,
+    syncActive,
+    syncHover,
     hoveredIdRef,
-  ]);
+  );
 
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return undefined;
-
-    const resizeObserver = observeSegmentTrackResize(track, () => {
-      syncActive(false);
-      const hoveredId = hoveredIdRef.current;
-      if (hoveredId) syncHover(hoveredId, false);
-    });
-
-    return () => resizeObserver.disconnect();
-  }, [syncActive, syncHover, hoveredIdRef, trackRef]);
+  useSegmentTrackResize(trackRef, syncActive, syncHover, hoveredIdRef);
 
   return { syncHoverIndicator: syncHover };
 }
