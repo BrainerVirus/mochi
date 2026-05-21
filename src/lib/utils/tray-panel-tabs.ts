@@ -9,8 +9,6 @@ function isEnabledProvider(provider: ProviderId, enabledProviders: ProviderId[])
 export interface TrayPanelTab {
   id: "overview" | ProviderId;
   label: string;
-  usedPercent: number;
-  remainingPercent: number;
 }
 
 export interface OverviewMetrics {
@@ -31,21 +29,14 @@ export function buildTrayPanelTabs(
       ? snapshots
       : snapshots.filter((snapshot) => isEnabledProvider(snapshot.provider, enabledProviders));
 
-  const usedPercents = enabledSnapshots.map((snapshot) => snapshot.primary.used_percent);
-  const remainingPercents = enabledSnapshots.map((snapshot) => snapshot.primary.remaining_percent);
-
   const overviewTab: TrayPanelTab = {
     id: "overview",
     label: "Overview",
-    usedPercent: usedPercents.length ? Math.max(...usedPercents) : 0,
-    remainingPercent: remainingPercents.length ? Math.min(...remainingPercents) : 100,
   };
 
   const providerTabs = enabledSnapshots.map((snapshot) => ({
     id: snapshot.provider,
     label: getProviderLabel(snapshot.provider),
-    usedPercent: snapshot.primary.used_percent,
-    remainingPercent: snapshot.primary.remaining_percent,
   }));
 
   return [overviewTab, ...providerTabs];

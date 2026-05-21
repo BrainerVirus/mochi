@@ -36,8 +36,8 @@ describe("buildTrayPanelTabs", () => {
 
     expect(tabs.map((tab) => tab.id)).toEqual(["overview", "codex", "cursor"]);
     expect(tabs[0]?.label).toBe("Overview");
-    expect(tabs[1]?.usedPercent).toBe(40);
-    expect(tabs[2]?.usedPercent).toBe(72);
+    expect(tabs[1]?.label).toBe("Codex");
+    expect(tabs[2]?.label).toBe("Cursor");
   });
 
   it("only includes enabled provider tabs when enabled list is provided", () => {
