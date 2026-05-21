@@ -23,4 +23,5 @@ tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-opener = "2"
 tauri-plugin-updater = "2"
 thiserror = "2.0"
-tokio = { version = "1.41", features = ["macros", "process", "rt-multi-thread", "time"] }
+time = { version = "0.3", features = ["formatting", "parsing"] }
+tokio = { version = "1.41", features = ["io-util", "macros", "process", "rt-multi-thread", "time"] }

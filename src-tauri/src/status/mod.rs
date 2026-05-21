@@ -111,9 +111,20 @@ mod tests {
         let enabled = MochiSettings::default().enabled_providers;
         let snapshots = collect_usage_snapshots(&enabled)
             .await
-            .expect("static providers should fetch");
+            .expect("providers should fetch or skip when unconfigured");
 
-        assert_eq!(snapshots.len(), 10);
+        let static_provider_count = enabled
+            .iter()
+            .filter(|provider| *provider != "codex")
+            .count();
+        let static_snapshots = snapshots
+            .iter()
+            .filter(|snapshot| snapshot.provider != ProviderId::Codex)
+            .count();
+
+        assert_eq!(static_snapshots, static_provider_count);
+        assert!(snapshots.len() >= static_provider_count);
+        assert!(snapshots.len() <= enabled.len());
     }
 
     #[tokio::test]
