@@ -15,6 +15,7 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 - Pastel usage meters that shift from matcha → yuzu → ume as limits approach
 - Mascot-driven emotional feedback alongside numeric data
 - Light-first with a warm dark mode for late-night coding sessions
+- **Tray popover:** Always uses scoped `.tray-panel` dark charcoal theme (CodexBar-inspired density) with Mochi pastel meter accents — independent of app light/dark preference
 
 ## 2. Color Palette & Roles
 
@@ -82,13 +83,15 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 - **Background:** Warm Parchment White with 80% opacity option for overlay panels
 - **Shadow:** Whisper-soft (`shadow-sm`), ring-1 in Warm Stone Border
 - **Padding:** `p-4` compact, `p-6` for settings sections
+- **Tray panel exception:** Do **not** use `Card` on the tray route — use flat sections on the integrated dark `.tray-panel` surface instead.
 
 ### Usage Meters
 
-- **Track:** Muted warm gray (`bg-muted`)
+- **Track:** Muted warm gray (`bg-muted`) on light surfaces; `bg-muted` on tray dark surface
 - **Fill:** State-driven — matcha → yuzu → ume gradient logic
-- **Height:** 0.5rem (`h-2`) in compact mode, 0.75rem in expanded
+- **Height:** `h-1` in tray/compact mode, `h-1.5` in expanded
 - **Shape:** Pill track and fill (`rounded-full`)
+- **Labels:** Show `% left` (not `% used`) plus reset countdown when `resets_at` is present
 
 ### Badges
 
@@ -112,9 +115,20 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 
 ### Surfaces
 
-- **Tray panel:** Max ~360px wide, vertical stack, 12–16px gap
+- **Tray panel:** Max ~360px wide, **single integrated dark surface** (`.tray-panel` scoped theme), CodexBar-style information density. No nested cards — sections separated by `Separator` only.
 - **Widget:** Resizable 280–480px, density modes adjust padding and font scale
 - **Settings:** Max 720px centered, tabbed sections
+
+### Tray Panel Layout (required patterns)
+
+- **Single surface:** One charcoal panel shell (`tray-panel` class on `TrayPanelShell`); never stack `Card` inside the tray route.
+- **Top tabs:** Horizontal `Tabs` with `variant="line"` — Overview plus one tab per enabled provider. Each provider tab shows a mini usage bar (`h-0.5` Progress) tinted by usage state.
+- **Overview tab:** 2×2 metric grid (providers, highest %, average %, healthy count), compact bar chart, then flat provider meter list.
+- **Provider tab:** Flat section with thin meters, `% left` + reset countdown, source badge — no card wrapper.
+- **Header:** Minimal — wordmark, refresh icon, settings gear. No mascot in tray panel (data-first).
+- **Typography:** Geist at `text-sm` / `text-xs` / `text-[10px]` labels; tabular nums for percentages.
+- **Meters:** Thin tracks (`h-1`), Mochi matcha/yuzu/ume fill by threshold; label row shows window name, `% left`, and reset time when available.
+- **Spacing:** `px-3` horizontal padding, `gap-3` between sections, `Separator` between logical groups.
 
 ### Spacing
 

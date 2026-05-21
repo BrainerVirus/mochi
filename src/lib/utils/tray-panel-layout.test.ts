@@ -18,6 +18,7 @@ describe("trayPanelLayout", () => {
     expect(shell).toContain("overflow-hidden");
     expect(shell).toContain("rounded-mochi");
     expect(shell).toContain("h-full");
+    expect(shell).toContain("tray-panel");
   });
 
   it("enables vertical scrolling inside the rounded shell", () => {

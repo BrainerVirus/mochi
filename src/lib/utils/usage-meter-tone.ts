@@ -22,3 +22,9 @@ export const usageMeterToneClasses: Record<UsageMeterTone, string> = {
   warning: "[&_[data-slot=progress-indicator]]:bg-mochi-yuzu",
   critical: "[&_[data-slot=progress-indicator]]:bg-mochi-ume",
 };
+
+export const usageMeterFillClasses: Record<UsageMeterTone, string> = {
+  normal: "bg-mochi-matcha",
+  warning: "bg-mochi-yuzu",
+  critical: "bg-mochi-ume",
+};
