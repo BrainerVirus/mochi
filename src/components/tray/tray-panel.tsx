@@ -1,77 +1,79 @@
 import { Link } from "@tanstack/react-router";
 import { RefreshCwIcon, SettingsIcon } from "lucide-react";
+import { useState } from "react";
 
-import { MochiMascot } from "@/components/mascot/mochi-mascot";
+import { TrayOverview } from "@/components/tray/tray-overview";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
+import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { UsageCard } from "@/components/usage/usage-card";
 import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useUsageData } from "@/hooks/use-usage-data";
+import { buildTrayPanelTabs, getOverviewMetrics } from "@/lib/utils/tray-panel-tabs";
 import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
 export function TrayPanel() {
   const { data: settings } = useSettings();
   const { data, error, isError, isPending, isSuccess, refetch, isFetching } = useUsageData();
   const refreshProvider = useRefreshProvider();
+  const [activeTab, setActiveTab] = useState("overview");
 
   const isRefreshing = isFetching || refreshProvider.isPending;
+  const snapshots = data ?? [];
+  const tabs = buildTrayPanelTabs(snapshots);
+  const metrics = getOverviewMetrics(snapshots);
 
   return (
     <TrayPanelShell>
-      <section className="mx-auto flex w-full max-w-[360px] flex-col gap-4 p-4">
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <MochiMascot state={isError ? "warning" : "normal"} className="size-10" />
-            <div>
-              <p className="text-xs font-medium tracking-[0.2em] uppercase">Mochi</p>
-              <h1 className="text-lg font-semibold">Usage overview</h1>
-            </div>
+      <section className="mx-auto flex w-full max-w-[360px] flex-col">
+        <header className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
+          <div>
+            <p className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase">
+              Mochi
+            </p>
+            <h1 className="text-sm font-semibold">Usage</h1>
           </div>
-          <Button variant="ghost" size="icon-sm" asChild>
-            <Link to="/settings" aria-label="Open settings">
-              <SettingsIcon data-icon="inline-start" />
-            </Link>
-          </Button>
-        </header>
-
-        <Card className="rounded-mochi shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-base">Providers</CardTitle>
-              <CardDescription>Soft alerts before hard limits.</CardDescription>
-            </div>
+          <div className="flex items-center gap-0.5">
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon-sm"
               disabled={isRefreshing}
+              aria-label="Refresh usage"
               onClick={() => {
                 void refetch();
               }}
             >
               <RefreshCwIcon data-icon="inline-start" />
-              Refresh
             </Button>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <UsageSnapshotsPanel
-              data={data}
-              error={error}
-              isError={isError}
-              isPending={isPending}
-              isSuccess={isSuccess}
-              enabledProviderCount={settings?.enabled_providers.length ?? 0}
-            />
-          </CardContent>
-        </Card>
+            <Button variant="ghost" size="icon-sm" asChild>
+              <Link to="/settings" aria-label="Open settings">
+                <SettingsIcon data-icon="inline-start" />
+              </Link>
+            </Button>
+          </div>
+        </header>
 
-        <Separator />
+        <UsageSnapshotsPanel
+          data={data}
+          error={error}
+          isError={isError}
+          isPending={isPending}
+          isSuccess={isSuccess}
+          enabledProviderCount={settings?.enabled_providers.length ?? 0}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          tabs={tabs}
+          metrics={metrics}
+          snapshots={snapshots}
+        />
 
-        <p className="text-muted-foreground text-center text-xs">
-          Left-click the tray icon to reopen this panel. Right-click for refresh, settings, and
-          updates.
+        <Separator className="mx-3" />
+
+        <p className="text-muted-foreground px-3 py-2 text-center text-[10px]">
+          Left-click tray icon to reopen · Right-click for menu
         </p>
       </section>
     </TrayPanelShell>
@@ -85,19 +87,28 @@ interface UsageSnapshotsPanelProps {
   isPending: boolean;
   isSuccess: boolean;
   enabledProviderCount: number;
+  activeTab: string;
+  onTabChange: (value: string) => void;
+  tabs: ReturnType<typeof buildTrayPanelTabs>;
+  metrics: ReturnType<typeof getOverviewMetrics>;
+  snapshots: NonNullable<ReturnType<typeof useUsageData>["data"]>;
 }
 
 function UsageSnapshotsPanel({
-  data,
   error,
   isError,
   isPending,
   isSuccess,
   enabledProviderCount,
+  activeTab,
+  onTabChange,
+  tabs,
+  metrics,
+  snapshots,
 }: UsageSnapshotsPanelProps) {
   if (isPending) {
     return (
-      <output className="text-muted-foreground block text-center text-sm">
+      <output className="text-muted-foreground block px-3 py-6 text-center text-xs">
         Loading provider usage…
       </output>
     );
@@ -105,32 +116,57 @@ function UsageSnapshotsPanel({
 
   if (isError) {
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Could not load usage</AlertTitle>
-        <AlertDescription>{error?.message ?? "Unknown error"}</AlertDescription>
-      </Alert>
+      <div className="px-3 pb-3">
+        <Alert variant="destructive">
+          <AlertTitle>Could not load usage</AlertTitle>
+          <AlertDescription>{error?.message ?? "Unknown error"}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
-  if (isSuccess && data !== undefined && data.length === 0) {
+  if (isSuccess && snapshots.length === 0) {
     return (
-      <p className="text-muted-foreground text-center text-sm">
+      <p className="text-muted-foreground px-3 py-6 text-center text-xs">
         {usageSnapshotsEmptyMessage(enabledProviderCount)}
       </p>
     );
   }
 
-  if (isSuccess && data !== undefined) {
+  if (isSuccess && snapshots.length > 0) {
     return (
-      <ul className="flex w-full flex-col gap-3">
-        {data.map((snapshot) => (
-          <li key={snapshot.provider}>
-            <UsageCard snapshot={snapshot} />
-          </li>
+      <Tabs value={activeTab} onValueChange={onTabChange} className="gap-0">
+        <TrayPanelTabList tabs={tabs} />
+
+        <TabsContent value="overview" className="px-3 py-3">
+          <TrayOverview snapshots={snapshots} metrics={metrics} />
+        </TabsContent>
+
+        {snapshots.map((snapshot) => (
+          <TabsContent key={snapshot.provider} value={snapshot.provider} className="px-3 py-3">
+            <UsageCard snapshot={snapshot} compact />
+            <p className="text-muted-foreground mt-3 text-[10px]">
+              Updated {formatUpdatedAt(snapshot.updated_at)}
+            </p>
+          </TabsContent>
         ))}
-      </ul>
+      </Tabs>
     );
   }
 
   return null;
+}
+
+function formatUpdatedAt(updatedAt: string): string {
+  const date = new Date(updatedAt);
+  if (Number.isNaN(date.getTime())) {
+    return updatedAt;
+  }
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

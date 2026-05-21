@@ -137,6 +137,34 @@ body {
   --sidebar-ring: #ffb088;
 }
 
+/* Tray popover: integrated dark surface (CodexBar-style density, Mochi accents). */
+.tray-panel {
+  color-scheme: dark;
+  --background: #171412;
+  --foreground: #f5efe8;
+  --card: #211d1a;
+  --card-foreground: #f5efe8;
+  --popover: #211d1a;
+  --popover-foreground: #f5efe8;
+  --primary: #7dd3c0;
+  --primary-foreground: #171412;
+  --secondary: #2a2522;
+  --secondary-foreground: #f5efe8;
+  --muted: #2a2522;
+  --muted-foreground: #9ca3af;
+  --accent: #c4b5e0;
+  --accent-foreground: #171412;
+  --destructive: #ff8a8a;
+  --border: #3a3430;
+  --input: #3a3430;
+  --ring: #7dd3c0;
+  --chart-1: #7dd3c0;
+  --chart-2: #ffe4a1;
+  --chart-3: #ffb088;
+  --chart-4: #ffb5c2;
+  --chart-5: #c4b5e0;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

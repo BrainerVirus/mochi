@@ -84,7 +84,10 @@ mod tests {
         fs::write(&auth_path, "{}").expect("write auth fixture");
         let strategy = BrowserCookiesStrategy::with_auth_path(auth_path.clone());
 
-        assert!(strategy.is_available(&FetchContext).await.expect("availability"));
+        assert!(strategy
+            .is_available(&FetchContext)
+            .await
+            .expect("availability"));
 
         let _ = fs::remove_file(auth_path);
     }
