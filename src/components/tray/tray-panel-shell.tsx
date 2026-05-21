@@ -14,7 +14,7 @@ interface TrayPanelShellProps {
 export function TrayPanelShell({ children, footer }: TrayPanelShellProps) {
   return (
     <main className={trayPanelShellClassName()}>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ScrollFadeRegion
           orientation="vertical"
           className={trayPanelScrollRegionClassName()}

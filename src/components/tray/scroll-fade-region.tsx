@@ -137,12 +137,19 @@ function ScrollFadeViewport({
   children: ReactNode;
 }) {
   return (
-    <div className={cn("relative min-h-0 min-w-0", isHorizontal && "h-full w-full")}>
+    <div
+      className={cn(
+        "relative min-h-0 min-w-0",
+        isHorizontal ? "h-full w-full" : "flex h-full min-h-0 flex-1 flex-col",
+      )}
+    >
       <div
         ref={scrollRef}
         className={cn(
           "scrollbar-none overscroll-contain",
-          isHorizontal ? "h-full overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
+          isHorizontal
+            ? "h-full overflow-x-auto overflow-y-hidden"
+            : "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
           isHorizontal && canScrollStart && HORIZONTAL_CHEVRON_INSET_START,
           isHorizontal && canScrollEnd && HORIZONTAL_CHEVRON_INSET_END,
           maskClass,
@@ -155,9 +162,7 @@ function ScrollFadeViewport({
       {canScrollStart && isHorizontal ? (
         <div aria-hidden className="scroll-fade-edge-left" />
       ) : null}
-      {canScrollEnd && isHorizontal ? (
-        <div aria-hidden className="scroll-fade-edge-right" />
-      ) : null}
+      {canScrollEnd && isHorizontal ? <div aria-hidden className="scroll-fade-edge-right" /> : null}
       {canScrollEnd && !isHorizontal ? (
         <>
           <div aria-hidden className="scroll-fade-edge-bottom" />
@@ -191,13 +196,7 @@ export function ScrollFadeRegion({
   );
 
   return (
-    <div
-      className={cn(
-        "relative",
-        isHorizontal && rowHeightClassName,
-        className,
-      )}
-    >
+    <div className={cn("relative", isHorizontal && rowHeightClassName, className)}>
       <ScrollFadeViewport
         scrollRef={scrollRef}
         isHorizontal={isHorizontal}
@@ -212,11 +211,7 @@ export function ScrollFadeRegion({
 
       {isHorizontal ? (
         <>
-          <TrayTabChevron
-            side="start"
-            visible={canScrollStart}
-            onCycle={cycleScrollBackward}
-          />
+          <TrayTabChevron side="start" visible={canScrollStart} onCycle={cycleScrollBackward} />
           <TrayTabChevron side="end" visible={canScrollEnd} onCycle={cycleScrollForward} />
         </>
       ) : null}

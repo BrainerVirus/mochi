@@ -6,6 +6,7 @@ import {
   TRAY_PANEL_VIEWPORT_MARGIN_PX,
   TRAY_PANEL_WIDTH_PX,
   clampTrayPanelHeight,
+  measureTrayPanelLayoutHeight,
   trayPanelMaxHeightPx,
   trayPanelScrollRegionClassName,
   trayPanelShellClassName,
@@ -26,6 +27,13 @@ describe("trayPanelLayout", () => {
     expect(clampTrayPanelHeight(80, 900)).toBe(TRAY_PANEL_MIN_HEIGHT_PX);
     expect(clampTrayPanelHeight(320, 900)).toBe(320);
     expect(clampTrayPanelHeight(2000, 900)).toBe(trayPanelMaxHeightPx(900));
+  });
+
+  it("includes footer height in layout measurement", () => {
+    expect(measureTrayPanelLayoutHeight({ scrollHeight: 280 }, { offsetHeight: 168 })).toBe(
+      448,
+    );
+    expect(measureTrayPanelLayoutHeight({ scrollHeight: 280 }, null)).toBe(280);
   });
 
   it("keeps the shell clipped with fully rounded corners", () => {

@@ -14,10 +14,7 @@ export const TRAY_PANEL_VIEWPORT_MARGIN_PX = 16;
 export const TRAY_PANEL_MAX_HEIGHT_PX = TRAY_PANEL_DEFAULT_MAX_HEIGHT_PX;
 
 export function trayPanelMaxHeightPx(viewportHeight: number): number {
-  return Math.max(
-    TRAY_PANEL_MIN_HEIGHT_PX,
-    viewportHeight - TRAY_PANEL_VIEWPORT_MARGIN_PX,
-  );
+  return Math.max(TRAY_PANEL_MIN_HEIGHT_PX, viewportHeight - TRAY_PANEL_VIEWPORT_MARGIN_PX);
 }
 
 export function clampTrayPanelHeight(
@@ -26,6 +23,19 @@ export function clampTrayPanelHeight(
 ): number {
   const maxHeight = trayPanelMaxHeightPx(viewportHeight);
   return Math.min(maxHeight, Math.max(TRAY_PANEL_MIN_HEIGHT_PX, Math.ceil(contentHeight)));
+}
+
+type TrayPanelContentMeasure = Pick<HTMLElement, "scrollHeight">;
+type TrayPanelFooterMeasure = Pick<HTMLElement, "offsetHeight">;
+
+/** Natural scroll content height plus fixed footer (excluded from scroll measurement). */
+export function measureTrayPanelLayoutHeight(
+  contentEl: TrayPanelContentMeasure | null,
+  footerEl: TrayPanelFooterMeasure | null,
+): number {
+  const contentHeight = contentEl?.scrollHeight ?? 0;
+  const footerHeight = footerEl?.offsetHeight ?? 0;
+  return contentHeight + footerHeight;
 }
 
 export function trayPanelShellClassName(): string {

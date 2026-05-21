@@ -19,6 +19,7 @@ export function TrayPanel() {
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshingProvider, setRefreshingProvider] = useState<ProviderId | null>(null);
   const contentRef = useRef<HTMLElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
 
   const enabledProviders = useMemo(
     () => settings?.enabled_providers ?? [],
@@ -29,7 +30,7 @@ export function TrayPanel() {
     refetch: () => refetch(),
   });
 
-  useTrayPanelHeight(contentRef);
+  useTrayPanelHeight({ contentRef, footerRef });
 
   const snapshots = filterSnapshotsForTrayPanel(data ?? [], enabledProviders);
   const tabs = buildTrayPanelTabs(data ?? [], enabledProviders);
@@ -55,6 +56,7 @@ export function TrayPanel() {
     <TrayPanelShell
       footer={
         <TrayPanelFooter
+          footerRef={footerRef}
           isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
           onRefresh={() => {
             void refreshAll();
