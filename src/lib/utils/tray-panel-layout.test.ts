@@ -21,9 +21,9 @@ describe("trayPanelLayout", () => {
     expect(shell).toContain("tray-panel");
   });
 
-  it("enables vertical scrolling inside the rounded shell", () => {
+  it("sizes the scroll region as a flex child inside the rounded shell", () => {
     const scrollRegion = trayPanelScrollRegionClassName();
-    expect(scrollRegion).toContain("overflow-y-auto");
     expect(scrollRegion).toContain("min-h-0");
+    expect(scrollRegion).toContain("flex-1");
   });
 });

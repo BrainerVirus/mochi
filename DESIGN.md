@@ -123,7 +123,8 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 ### Tray Panel Layout (required patterns)
 
 - **Single surface:** One charcoal panel shell (`tray-panel` class on `TrayPanelShell`); never stack `Card` inside the tray route.
-- **Top tabs:** Horizontal `Tabs` with `variant="line"` — Overview plus one tab per enabled provider. Each provider tab shows a **provider icon**, label, **remaining %**, and a mini usage bar (`h-0.5` Progress) tinted by usage state.
+- **Top tabs:** Horizontal `Tabs` with `variant="line"` — Overview plus one tab per enabled provider. Each provider tab shows a **provider icon**, label, **remaining %**, and a mini usage bar (`h-0.5` Progress) tinted by usage state. Overflowing tabs use a **right-edge fade mask** (`.scroll-fade-mask-x`) with hidden scrollbars and a ghost chevron to cycle hidden tabs — no visible x-axis scrollbar, no y-axis overflow on the tab row.
+- **Scroll masks:** Tray panel body scroll uses the same pattern vertically (`.scroll-fade-mask-y`, ghost chevron-down, `scrollbar-none`). Fade overlays combine CSS mask + soft gradient/backdrop-blur at the overflow edge.
 - **Overview tab:** 2×2 metric grid (providers, highest %, average %, healthy count), compact bar chart, then flat provider meter list.
 - **Provider tab:** Flat section with thin meters, `% left` + reset countdown, source badge — no card wrapper.
 - **Header:** Minimal — wordmark, refresh icon, settings gear. No mascot in tray panel (data-first).

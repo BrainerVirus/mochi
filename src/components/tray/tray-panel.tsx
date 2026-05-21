@@ -45,6 +45,7 @@ export function TrayPanel() {
             <Button
               variant="ghost"
               size="icon-sm"
+              className="cursor-pointer"
               disabled={isRefreshing}
               aria-label="Refresh usage"
               onClick={() => {
@@ -53,8 +54,8 @@ export function TrayPanel() {
             >
               <RefreshCwIcon data-icon="inline-start" />
             </Button>
-            <Button variant="ghost" size="icon-sm" asChild>
-              <Link to="/settings" aria-label="Open settings">
+            <Button variant="ghost" size="icon-sm" className="cursor-pointer" asChild>
+              <Link to="/settings" aria-label="Open settings" className="cursor-pointer">
                 <SettingsIcon data-icon="inline-start" />
               </Link>
             </Button>

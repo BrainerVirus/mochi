@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import {
   trayPanelScrollRegionClassName,
   trayPanelShellClassName,
@@ -8,7 +9,13 @@ import {
 export function TrayPanelShell({ children }: { children: ReactNode }) {
   return (
     <main className={trayPanelShellClassName()}>
-      <div className={trayPanelScrollRegionClassName()}>{children}</div>
+      <ScrollFadeRegion
+        orientation="vertical"
+        className={trayPanelScrollRegionClassName()}
+        scrollClassName="overscroll-y-contain"
+      >
+        {children}
+      </ScrollFadeRegion>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
+import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import { Progress } from "@/components/ui/progress";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,11 @@ interface TrayPanelTabListProps {
 
 export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
   return (
-    <div className="border-border overflow-x-auto overscroll-x-contain border-b">
+    <ScrollFadeRegion
+      orientation="horizontal"
+      className="border-border border-b"
+      scrollClassName="overscroll-x-contain"
+    >
       <TabsList
         variant="line"
         className="h-auto w-max min-w-full flex-nowrap justify-start gap-0 bg-transparent p-0"
@@ -25,7 +30,7 @@ export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
               key={tab.id}
               value={tab.id}
               className={cn(
-                "flex-none min-w-[4.75rem] max-w-[7rem] shrink-0 flex-col gap-1 rounded-none px-2.5 py-2 text-[11px] after:bottom-0",
+                "min-w-[4.75rem] max-w-[7rem] shrink-0 flex-none cursor-pointer flex-col gap-1 rounded-none px-2.5 py-2 text-[11px] after:bottom-0",
                 "data-active:bg-transparent data-active:shadow-none",
               )}
             >
@@ -55,6 +60,6 @@ export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
           );
         })}
       </TabsList>
-    </div>
+    </ScrollFadeRegion>
   );
 }

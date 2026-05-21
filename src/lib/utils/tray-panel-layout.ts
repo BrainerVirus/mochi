@@ -9,5 +9,5 @@ export function trayPanelShellClassName(): string {
 }
 
 export function trayPanelScrollRegionClassName(): string {
-  return "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain";
+  return "min-h-0 flex-1";
 }
