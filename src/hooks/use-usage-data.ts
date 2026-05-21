@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { usageSnapshotsQueryOptions } from "@/lib/query/usage-snapshots";
+import { settingsQueryOptions } from "@/lib/query/settings";
+import { createUsageSnapshotsQueryOptions } from "@/lib/query/usage-snapshots";
 
 export function useUsageData() {
-  return useQuery(usageSnapshotsQueryOptions);
+  const { data: settings } = useQuery(settingsQueryOptions);
+
+  return useQuery(createUsageSnapshotsQueryOptions(settings?.refresh_interval_seconds));
 }
