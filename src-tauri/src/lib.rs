@@ -14,6 +14,7 @@ use tauri::Manager;
 use cli::{Cli, Command};
 use settings::{get_settings, save_settings, SettingsState};
 use tray::setup_tray;
+use widget::{hide_widget, setup_widget, show_widget, toggle_widget};
 
 #[tauri::command]
 fn app_version() -> &'static str {
@@ -34,6 +35,7 @@ pub fn run() -> anyhow::Result<()> {
         .setup(|app| {
             app.manage(SettingsState::new(app.handle())?);
             setup_tray(app.handle())?;
+            setup_widget(app.handle())?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -43,7 +45,10 @@ pub fn run() -> anyhow::Result<()> {
             status::get_usage_snapshots,
             status::refresh_provider,
             updater::check_for_update,
-            updater::install_update
+            updater::install_update,
+            show_widget,
+            hide_widget,
+            toggle_widget
         ])
         .run(tauri::generate_context!())
         .map_err(|error| anyhow::anyhow!(error))

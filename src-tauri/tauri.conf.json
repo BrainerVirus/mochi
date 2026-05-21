@@ -18,6 +18,19 @@
         "height": 640,
         "visible": false,
         "resizable": true
+      },
+      {
+        "label": "widget",
+        "title": "Mochi Widget",
+        "url": "/widget",
+        "width": 320,
+        "height": 420,
+        "minWidth": 280,
+        "maxWidth": 480,
+        "minHeight": 200,
+        "visible": false,
+        "alwaysOnTop": true,
+        "resizable": true
       }
     ],
     "security": {
