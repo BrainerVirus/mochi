@@ -37,6 +37,7 @@
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",
     "tauri": "tauri",
+    "tauri:dev": "MOCHI_DEV_SHOW_MAIN=1 pnpm tauri dev",
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {

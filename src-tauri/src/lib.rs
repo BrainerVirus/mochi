@@ -13,7 +13,7 @@ use tauri::Manager;
 
 use cli::{Cli, Command};
 use settings::{get_settings, save_settings, SettingsState};
-use tray::{setup_tray, sync_tray_usage};
+use tray::{setup_tray, show_main_panel, sync_tray_usage};
 use widget::{hide_widget, setup_widget, show_widget, toggle_widget};
 
 #[tauri::command]
@@ -36,6 +36,7 @@ pub fn run() -> anyhow::Result<()> {
             app.manage(SettingsState::new(app.handle())?);
             setup_tray(app.handle())?;
             setup_widget(app.handle())?;
+            maybe_show_main_for_dev(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -44,6 +45,7 @@ pub fn run() -> anyhow::Result<()> {
             save_settings,
             status::get_usage_snapshots,
             status::refresh_provider,
+            show_main_panel,
             sync_tray_usage,
             updater::check_for_update,
             updater::install_update,
@@ -53,6 +55,24 @@ pub fn run() -> anyhow::Result<()> {
         ])
         .run(tauri::generate_context!())
         .map_err(|error| anyhow::anyhow!(error))
+}
+
+/// When `MOCHI_DEV_SHOW_MAIN=1`, opens the main window at startup so devs can use DevTools
+/// without locating the tray icon (e.g. when hidden in menu bar overflow).
+fn maybe_show_main_for_dev(app: &tauri::AppHandle) {
+    #[cfg(not(debug_assertions))]
+    let _ = app;
+
+    #[cfg(debug_assertions)]
+    {
+        let show = std::env::var_os("MOCHI_DEV_SHOW_MAIN").is_some_and(|value| {
+            value != "0" && value != "false"
+        });
+        if show {
+            tray::show_main_window(app, "/");
+            eprintln!("[mochi] MOCHI_DEV_SHOW_MAIN: opened main window for dev validation");
+        }
+    }
 }
 
 fn run_cli(command: Command) -> anyhow::Result<()> {

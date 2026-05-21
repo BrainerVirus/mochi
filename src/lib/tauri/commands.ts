@@ -59,3 +59,7 @@ export function toggleWidget(): Promise<void> {
 export function syncTrayUsage(): Promise<void> {
   return invoke<void>("sync_tray_usage");
 }
+
+export function showMainPanel(): Promise<void> {
+  return invoke<void>("show_main_panel");
+}

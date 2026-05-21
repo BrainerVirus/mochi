@@ -120,10 +120,21 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         })
         .build(app)?;
 
+    #[cfg(debug_assertions)]
+    eprintln!(
+        "[mochi] tray registered (id={TRAY_ID}). On macOS, check menu bar overflow (Control Center → Menu Bar) if the icon is missing."
+    );
+
     Ok(())
 }
 
-fn show_main_window(app: &AppHandle, path: &str) {
+/// Opens the tray panel window. Useful for dev validation when the menu bar icon is hidden.
+#[tauri::command]
+pub fn show_main_panel(app: AppHandle) {
+    show_main_window(&app, "/");
+}
+
+pub fn show_main_window(app: &AppHandle, path: &str) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.set_focus();
