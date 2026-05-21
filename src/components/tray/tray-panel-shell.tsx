@@ -6,16 +6,24 @@ import {
   trayPanelShellClassName,
 } from "@/lib/utils/tray-panel-layout";
 
-export function TrayPanelShell({ children }: { children: ReactNode }) {
+interface TrayPanelShellProps {
+  children: ReactNode;
+  footer?: ReactNode;
+}
+
+export function TrayPanelShell({ children, footer }: TrayPanelShellProps) {
   return (
     <main className={trayPanelShellClassName()}>
-      <ScrollFadeRegion
-        orientation="vertical"
-        className={trayPanelScrollRegionClassName()}
-        scrollClassName="overscroll-y-contain"
-      >
-        {children}
-      </ScrollFadeRegion>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ScrollFadeRegion
+          orientation="vertical"
+          className={trayPanelScrollRegionClassName()}
+          scrollClassName="overscroll-y-contain"
+        >
+          {children}
+        </ScrollFadeRegion>
+        {footer}
+      </div>
     </main>
   );
 }

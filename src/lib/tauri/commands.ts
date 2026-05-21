@@ -67,3 +67,11 @@ export function showMainPanel(): Promise<void> {
 export function setTrayPanelHeight(height: number): Promise<void> {
   return invoke<void>("set_tray_panel_height", { height });
 }
+
+export function quitApp(): Promise<void> {
+  if (typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window)) {
+    return Promise.resolve();
+  }
+
+  return invoke<void>("quit_app");
+}

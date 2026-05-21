@@ -42,13 +42,13 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 
 ### Functional Mapping (Usage States)
 
-| State            | Color         | Brand mark ring                             |
-| ---------------- | ------------- | ------------------------------------------- |
-| Normal (<60%)    | Matcha Calm   | Muted sage arc, low opacity                 |
-| Warning (60–85%) | Yuzu Glow     | Yuzu arc, medium opacity                    |
+| State            | Color         | Brand mark ring                                |
+| ---------------- | ------------- | ---------------------------------------------- |
+| Normal (<60%)    | Matcha Calm   | Muted sage arc, low opacity                    |
+| Warning (60–85%) | Yuzu Glow     | Yuzu arc, medium opacity                       |
 | Critical (>85%)  | Ume Alert     | Ume arc, full opacity, slightly heavier stroke |
-| Reset soon       | Lavender Rest | Lavender arc                                |
-| All good         | Matcha Calm   | Matcha arc, high opacity                    |
+| Reset soon       | Lavender Rest | Lavender arc                                   |
+| All good         | Matcha Calm   | Matcha arc, high opacity                       |
 
 ## 3. Typography Rules
 
@@ -127,7 +127,7 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 - **Scroll masks:** Tray panel body scroll uses the same pattern vertically (`.scroll-fade-mask-y-end`, ghost chevron-down, `scrollbar-none`). Edge tints use soft transparent gradients (`.scroll-fade-edge-*`, gitlab `BottomFade` stops) over `mask-image` — never solid `bg-background` blocks or backdrop blur on the fade zone.
 - **Overview tab:** 2×2 metric grid (providers, highest %, average %, healthy count), compact bar chart, then flat provider meter list.
 - **Provider tab:** Flat section with thin meters, `% left` + reset countdown, source badge — no card wrapper.
-- **Header:** Compact — “Usage” title (`text-sm font-semibold`), refresh icon, settings gear.
+- **Footer menu:** Fixed bottom list (CodexBar-style) — Refresh (`⌘R`), Settings… (`⌘,`), About Mochi, Quit (`⌘Q`); row separators, muted shortcut hints on the right. No top header chrome.
 - **Typography:** Geist at `text-sm` / `text-xs` / `text-[10px]` labels; tabular nums for percentages.
 - **Meters:** Thin tracks (`h-1`), Mochi matcha/yuzu/ume fill by threshold; label row shows window name, `% left`, and reset time when available.
 
