@@ -15,7 +15,7 @@ interface ProviderUsageSectionProps {
   snapshot: UsageSnapshot;
   onRefresh?: (provider: ProviderId) => void;
   isRefreshing?: boolean;
-  showSeparator?: boolean;
+  isLast?: boolean;
   planLabel?: string | null;
 }
 
@@ -23,14 +23,13 @@ export function ProviderUsageSection({
   snapshot,
   onRefresh,
   isRefreshing = false,
-  showSeparator = false,
+  isLast = true,
   planLabel = null,
 }: ProviderUsageSectionProps) {
   const windows = [snapshot.primary, ...(snapshot.secondary ? [snapshot.secondary] : [])];
 
   return (
     <section className="flex flex-col gap-2.5">
-      {showSeparator ? <Separator className="mb-0.5" /> : null}
       <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold">
@@ -73,6 +72,7 @@ export function ProviderUsageSection({
           />
         ))}
       </div>
+      {!isLast ? <Separator /> : null}
     </section>
   );
 }

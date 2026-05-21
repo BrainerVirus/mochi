@@ -10,7 +10,6 @@ import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
 import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useUsageData } from "@/hooks/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
@@ -81,9 +80,7 @@ export function TrayPanel() {
           refreshingProvider={refreshingProvider}
         />
 
-        <Separator className="mx-3" />
-
-        <p className="text-muted-foreground px-3 py-2 text-center text-[10px]">
+        <p className="text-muted-foreground px-3 pt-1 pb-2 text-center text-[10px]">
           Left-click tray icon to reopen · Right-click for menu
         </p>
       </section>

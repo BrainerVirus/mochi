@@ -21,7 +21,7 @@ export function TrayOverview({
           snapshot={snapshot}
           onRefresh={onRefreshProvider}
           isRefreshing={refreshingProvider === snapshot.provider}
-          showSeparator={index > 0}
+          isLast={index === snapshots.length - 1}
         />
       ))}
     </div>
