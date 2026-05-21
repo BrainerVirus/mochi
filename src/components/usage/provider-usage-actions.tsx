@@ -38,15 +38,12 @@ export function ProviderUsageActions({ provider }: { provider: ProviderId }) {
   }
 
   return (
-    <div className="pt-2">
-      <div className="bg-border mb-1 h-px w-full" aria-hidden />
-      <div className="-mx-3">
-        <TrayMenuList aria-label={`${getProviderLabel(provider)} links`}>
-          {items.map((item) => (
-            <TrayMenuRow key={item.id} item={item} />
-          ))}
-        </TrayMenuList>
-      </div>
+    <div className="-mx-3">
+      <TrayMenuList aria-label={`${getProviderLabel(provider)} links`}>
+        {items.map((item) => (
+          <TrayMenuRow key={item.id} item={item} />
+        ))}
+      </TrayMenuList>
     </div>
   );
 }

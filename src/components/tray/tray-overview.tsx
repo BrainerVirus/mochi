@@ -1,5 +1,8 @@
+import { Fragment } from "react";
+
 import type { ProviderId, UsageSnapshot } from "@/lib/schemas/usage";
 
+import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
 
 interface TrayOverviewProps {
@@ -14,15 +17,16 @@ export function TrayOverview({
   refreshingProvider = null,
 }: TrayOverviewProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col">
       {snapshots.map((snapshot, index) => (
-        <ProviderUsageSection
-          key={snapshot.provider}
-          snapshot={snapshot}
-          onRefresh={onRefreshProvider}
-          isRefreshing={refreshingProvider === snapshot.provider}
-          isLast={index === snapshots.length - 1}
-        />
+        <Fragment key={snapshot.provider}>
+          <ProviderUsageSection
+            snapshot={snapshot}
+            onRefresh={onRefreshProvider}
+            isRefreshing={refreshingProvider === snapshot.provider}
+          />
+          {index < snapshots.length - 1 ? <TrayPanelDivider /> : null}
+        </Fragment>
       ))}
     </div>
   );

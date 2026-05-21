@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
 
 import { TrayMenuList, TrayMenuRow, type TrayMenuItem } from "@/components/tray/tray-menu-row";
+import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 import { queryKeys } from "@/lib/query/keys";
 import { appVersion, openAppWindow } from "@/lib/tauri/commands";
 import { trayPanelShortcut } from "@/lib/utils/tray-panel-shortcut";
@@ -55,7 +56,7 @@ export function TrayPanelFooter({ isRefreshing, onRefresh, onQuit }: TrayPanelFo
   ];
 
   return (
-    <div className="pt-0 pb-1" data-tray-panel-footer>
+    <div className={`pt-0 ${trayPanelSpacing.footerBottom}`} data-tray-panel-footer>
       <TrayMenuList aria-label="Tray panel actions">
         {items.map((item) => (
           <TrayMenuRow key={item.id} item={item} />

@@ -3,11 +3,12 @@ import { RefreshCwIcon } from "lucide-react";
 import type { ProviderId, UsageSnapshot } from "@/lib/schemas/usage";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
+import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { formatUpdatedAgo } from "@/lib/utils/format-updated-ago";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
+import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
 import { ProviderUsageActions } from "./provider-usage-actions";
 import { UsageMeter } from "./usage-meter";
@@ -16,7 +17,6 @@ interface ProviderUsageSectionProps {
   snapshot: UsageSnapshot;
   onRefresh?: (provider: ProviderId) => void;
   isRefreshing?: boolean;
-  isLast?: boolean;
   planLabel?: string | null;
   showProviderActions?: boolean;
 }
@@ -25,14 +25,13 @@ export function ProviderUsageSection({
   snapshot,
   onRefresh,
   isRefreshing = false,
-  isLast = true,
   planLabel = null,
   showProviderActions = false,
 }: ProviderUsageSectionProps) {
   const windows = [snapshot.primary, ...(snapshot.secondary ? [snapshot.secondary] : [])];
 
   return (
-    <section className="flex flex-col gap-2.5">
+    <section className="flex flex-col">
       <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold">
@@ -66,7 +65,9 @@ export function ProviderUsageSection({
           </Button>
         ) : null}
       </header>
-      <div className="flex flex-col gap-3">
+      <div
+        className={`${trayPanelSpacing.headerToMeters} flex flex-col ${trayPanelSpacing.meterGap}`}
+      >
         {windows.map((window) => (
           <UsageMeter
             key={window.label}
@@ -79,9 +80,11 @@ export function ProviderUsageSection({
         ))}
       </div>
       {showProviderActions ? (
-        <ProviderUsageActions provider={snapshot.provider} />
+        <>
+          <TrayPanelDivider />
+          <ProviderUsageActions provider={snapshot.provider} />
+        </>
       ) : null}
-      {!isLast ? <Separator /> : null}
     </section>
   );
 }

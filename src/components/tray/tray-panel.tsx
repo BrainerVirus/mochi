@@ -1,5 +1,6 @@
 import { useRef } from "react";
 
+import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { UsageSnapshotsPanel } from "@/components/tray/tray-panel-content";
 import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
@@ -57,9 +58,7 @@ export function TrayPanel() {
           onRefreshProvider={handleRefreshProvider}
           refreshingProvider={refreshingProvider}
         />
-        <div data-tray-panel-separator className="px-3 pt-2 pb-0" aria-hidden>
-          <div className="bg-border mb-1 h-px w-full" />
-        </div>
+        <TrayPanelDivider inset data-tray-panel-separator />
         <TrayPanelFooter
           isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
           onRefresh={() => {

@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
 import { useUsageData } from "@/hooks/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
+import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 import { buildTrayPanelTabs } from "@/lib/utils/tray-panel-tabs";
 import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
@@ -68,7 +69,7 @@ export function UsageSnapshotsPanel({
       <div className="flex flex-col gap-0">
         <TrayPanelTabList tabs={tabs} value={activeTab} onValueChange={onTabChange} />
 
-        <div className="px-3 pt-3 pb-0">
+        <div className={`${trayPanelSpacing.contentX} ${trayPanelSpacing.contentTop} pb-0`}>
           {activeTab === "overview" ? (
             <TrayOverview
               snapshots={snapshots}
