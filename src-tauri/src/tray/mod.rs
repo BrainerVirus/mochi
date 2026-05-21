@@ -156,6 +156,9 @@ mod tests {
         let snapshots = vec![snapshot(12.0), snapshot(88.0)];
         assert_eq!(aggregate_used_percent(&snapshots), 88);
         assert_eq!(tray_usage_tone(88), TrayUsageTone::Critical);
-        assert_eq!(tray_tooltip(aggregate_used_percent(&snapshots)), "Mochi: 88% used");
+        assert_eq!(
+            tray_tooltip(aggregate_used_percent(&snapshots)),
+            "Mochi: 88% used"
+        );
     }
 }

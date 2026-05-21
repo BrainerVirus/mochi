@@ -10,7 +10,10 @@ pub struct UpdateInfo {
 }
 
 #[tauri::command]
-pub async fn check_for_update(app: tauri::AppHandle, channel: String) -> Result<UpdateInfo, String> {
+pub async fn check_for_update(
+    app: tauri::AppHandle,
+    channel: String,
+) -> Result<UpdateInfo, String> {
     if std::env::var("FLATPAK_ID").is_ok() {
         return Ok(UpdateInfo {
             available: false,
