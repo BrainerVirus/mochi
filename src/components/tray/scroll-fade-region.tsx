@@ -42,10 +42,11 @@ function cycleVerticalScroll(container: HTMLDivElement) {
   container.scrollTo({ top: next, behavior: "smooth" });
 }
 
-function useScrollEndOverflow(
+function useScrollOverflow(
   scrollRef: React.RefObject<HTMLDivElement | null>,
   orientation: ScrollFadeOrientation,
 ) {
+  const [canScrollStart, setCanScrollStart] = useState(false);
   const [canScrollEnd, setCanScrollEnd] = useState(false);
 
   const checkOverflow = useCallback(() => {
@@ -55,10 +56,12 @@ function useScrollEndOverflow(
     }
 
     if (orientation === "horizontal") {
+      setCanScrollStart(el.scrollLeft > 1);
       setCanScrollEnd(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
       return;
     }
 
+    setCanScrollStart(false);
     setCanScrollEnd(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
   }, [orientation, scrollRef]);
 
@@ -79,10 +82,26 @@ function useScrollEndOverflow(
     };
   }, [checkOverflow, scrollRef]);
 
-  return canScrollEnd;
+  return { canScrollStart, canScrollEnd };
 }
 
-function ScrollFadeEdge({
+function scrollFadeMaskClass(
+  orientation: ScrollFadeOrientation,
+  canScrollStart: boolean,
+  canScrollEnd: boolean,
+): string | undefined {
+  if (!canScrollEnd) {
+    return undefined;
+  }
+
+  if (orientation === "horizontal") {
+    return canScrollStart ? "scroll-fade-mask-x-both" : "scroll-fade-mask-x-end";
+  }
+
+  return "scroll-fade-mask-y-end";
+}
+
+function ScrollFadeGhostButton({
   orientation,
   onCycle,
 }: {
@@ -92,34 +111,23 @@ function ScrollFadeEdge({
   const isHorizontal = orientation === "horizontal";
 
   return (
-    <>
-      <div
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute z-10 from-background/95 via-background/60 to-transparent backdrop-blur-sm",
-          isHorizontal
-            ? "inset-y-0 right-0 w-14 bg-gradient-to-l"
-            : "inset-x-0 bottom-0 h-14 bg-gradient-to-t",
-        )}
-      />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        aria-label={isHorizontal ? "Show more tabs" : "Scroll down for more"}
-        onClick={onCycle}
-        className={cn(
-          "absolute z-20 size-7 cursor-pointer rounded-full bg-background/40 text-muted-foreground backdrop-blur-sm hover:bg-background/70 hover:text-foreground",
-          isHorizontal ? "inset-y-0 right-0 my-auto mr-0.5" : "inset-x-0 bottom-0 mx-auto mb-0.5",
-        )}
-      >
-        {isHorizontal ? (
-          <ChevronRightIcon className="size-3.5" />
-        ) : (
-          <ChevronDownIcon className="size-3.5" />
-        )}
-      </Button>
-    </>
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      aria-label={isHorizontal ? "Show more tabs" : "Scroll down for more"}
+      onClick={onCycle}
+      className={cn(
+        "pointer-events-auto absolute z-20 size-7 cursor-pointer rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+        isHorizontal ? "inset-y-0 right-0 my-auto mr-0.5" : "inset-x-0 bottom-0 mx-auto mb-0.5",
+      )}
+    >
+      {isHorizontal ? (
+        <ChevronRightIcon className="size-3.5" />
+      ) : (
+        <ChevronDownIcon className="size-3.5" />
+      )}
+    </Button>
   );
 }
 
@@ -131,8 +139,9 @@ export function ScrollFadeRegion({
   fadeInset = 40,
 }: ScrollFadeRegionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const canScrollEnd = useScrollEndOverflow(scrollRef, orientation);
+  const { canScrollStart, canScrollEnd } = useScrollOverflow(scrollRef, orientation);
   const isHorizontal = orientation === "horizontal";
+  const maskClass = scrollFadeMaskClass(orientation, canScrollStart, canScrollEnd);
 
   const cycleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -155,14 +164,23 @@ export function ScrollFadeRegion({
         className={cn(
           "scrollbar-none overscroll-contain",
           isHorizontal ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
-          canScrollEnd && (isHorizontal ? "scroll-fade-mask-x" : "scroll-fade-mask-y"),
+          maskClass,
           scrollClassName,
         )}
       >
         {children}
       </div>
 
-      {canScrollEnd ? <ScrollFadeEdge orientation={orientation} onCycle={cycleScroll} /> : null}
+      {canScrollStart && isHorizontal ? <div aria-hidden className="scroll-fade-edge-left" /> : null}
+      {canScrollEnd ? (
+        <>
+          <div
+            aria-hidden
+            className={isHorizontal ? "scroll-fade-edge-right" : "scroll-fade-edge-bottom"}
+          />
+          <ScrollFadeGhostButton orientation={orientation} onCycle={cycleScroll} />
+        </>
+      ) : null}
     </div>
   );
 }
