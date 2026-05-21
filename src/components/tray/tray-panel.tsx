@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { UsageCard } from "@/components/usage/usage-card";
-import { useRefreshProvider } from "@/hooks/use-tray-events";
+import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useUsageData } from "@/hooks/use-usage-data";
+import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
 export function TrayPanel() {
+  const { data: settings } = useSettings();
   const { data, error, isError, isPending, isSuccess, refetch, isFetching } = useUsageData();
   const refreshProvider = useRefreshProvider();
 
@@ -59,6 +61,7 @@ export function TrayPanel() {
               isError={isError}
               isPending={isPending}
               isSuccess={isSuccess}
+              enabledProviderCount={settings?.enabled_providers.length ?? 0}
             />
           </CardContent>
         </Card>
@@ -80,6 +83,7 @@ interface UsageSnapshotsPanelProps {
   isError: boolean;
   isPending: boolean;
   isSuccess: boolean;
+  enabledProviderCount: number;
 }
 
 function UsageSnapshotsPanel({
@@ -88,6 +92,7 @@ function UsageSnapshotsPanel({
   isError,
   isPending,
   isSuccess,
+  enabledProviderCount,
 }: UsageSnapshotsPanelProps) {
   if (isPending) {
     return (
@@ -109,7 +114,7 @@ function UsageSnapshotsPanel({
   if (isSuccess && data !== undefined && data.length === 0) {
     return (
       <p className="text-muted-foreground text-center text-sm">
-        No provider usage snapshots yet. Enable providers in settings to get started.
+        {usageSnapshotsEmptyMessage(enabledProviderCount)}
       </p>
     );
   }
