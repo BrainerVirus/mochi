@@ -18,8 +18,7 @@ export function TrayPanel() {
   const refreshProviderMutation = useRefreshProvider();
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshingProvider, setRefreshingProvider] = useState<ProviderId | null>(null);
-  const contentRef = useRef<HTMLElement>(null);
-  const footerRef = useRef<HTMLElement>(null);
+  const layoutRef = useRef<HTMLDivElement>(null);
 
   const enabledProviders = useMemo(
     () => settings?.enabled_providers ?? [],
@@ -30,7 +29,7 @@ export function TrayPanel() {
     refetch: () => refetch(),
   });
 
-  useTrayPanelHeight({ contentRef, footerRef });
+  useTrayPanelHeight(layoutRef);
 
   const snapshots = filterSnapshotsForTrayPanel(data ?? [], enabledProviders);
   const tabs = buildTrayPanelTabs(data ?? [], enabledProviders);
@@ -54,9 +53,9 @@ export function TrayPanel() {
 
   return (
     <TrayPanelShell
+      layoutRef={layoutRef}
       footer={
         <TrayPanelFooter
-          footerRef={footerRef}
           isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
           onRefresh={() => {
             void refreshAll();
@@ -67,7 +66,10 @@ export function TrayPanel() {
         />
       }
     >
-      <section ref={contentRef} className="mx-auto flex w-full max-w-[360px] flex-col">
+      <section
+        data-tray-panel-content
+        className="mx-auto flex w-full max-w-[360px] flex-col"
+      >
         <UsageSnapshotsPanel
           error={error}
           isError={isError}
@@ -81,10 +83,6 @@ export function TrayPanel() {
           onRefreshProvider={handleRefreshProvider}
           refreshingProvider={refreshingProvider}
         />
-
-        <p className="text-muted-foreground px-3 pt-1 pb-2 text-center text-[10px]">
-          Left-click tray icon to reopen · Right-click for menu
-        </p>
       </section>
     </TrayPanelShell>
   );

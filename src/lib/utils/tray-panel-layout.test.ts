@@ -7,6 +7,7 @@ import {
   TRAY_PANEL_WIDTH_PX,
   clampTrayPanelHeight,
   measureTrayPanelLayoutHeight,
+  sumTrayPanelBlockHeights,
   trayPanelMaxHeightPx,
   trayPanelScrollRegionClassName,
   trayPanelShellClassName,
@@ -29,11 +30,15 @@ describe("trayPanelLayout", () => {
     expect(clampTrayPanelHeight(2000, 900)).toBe(trayPanelMaxHeightPx(900));
   });
 
-  it("includes footer height in layout measurement", () => {
-    expect(measureTrayPanelLayoutHeight({ scrollHeight: 280 }, { offsetHeight: 168 })).toBe(
-      448,
-    );
-    expect(measureTrayPanelLayoutHeight({ scrollHeight: 280 }, null)).toBe(280);
+  it("sums scroll content, separator, and footer block heights", () => {
+    expect(
+      sumTrayPanelBlockHeights({
+        contentScrollHeight: 280,
+        separatorHeight: 1,
+        footerHeight: 168,
+      }),
+    ).toBe(449);
+    expect(measureTrayPanelLayoutHeight(null)).toBe(0);
   });
 
   it("keeps the shell clipped with fully rounded corners", () => {
@@ -42,6 +47,7 @@ describe("trayPanelLayout", () => {
     expect(shell).toContain("rounded-mochi");
     expect(shell).toContain("h-full");
     expect(shell).toContain("tray-panel");
+    expect(shell).toContain("pt-3");
   });
 
   it("sizes the scroll region as a flex child inside the rounded shell", () => {

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
-import { useState, type ReactNode, type RefObject } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { queryKeys } from "@/lib/query/keys";
@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import { trayPanelShortcut } from "@/lib/utils/tray-panel-shortcut";
 
 interface TrayPanelFooterProps {
-  footerRef?: RefObject<HTMLElement | null>;
   isRefreshing: boolean;
   onRefresh: () => void;
   onQuit: () => void;
@@ -100,12 +99,7 @@ function TrayAboutOverlay({ version, onClose }: { version: string; onClose: () =
   );
 }
 
-export function TrayPanelFooter({
-  footerRef,
-  isRefreshing,
-  onRefresh,
-  onQuit,
-}: TrayPanelFooterProps) {
+export function TrayPanelFooter({ isRefreshing, onRefresh, onQuit }: TrayPanelFooterProps) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const { data: version = "…" } = useQuery({
     queryKey: queryKeys.appVersion,
@@ -124,7 +118,7 @@ export function TrayPanelFooter({
     },
     {
       id: "settings",
-      label: "Settings…",
+      label: "Settings",
       icon: <SettingsIcon aria-hidden />,
       shortcut: trayPanelShortcut(","),
       to: "/settings",
@@ -144,12 +138,12 @@ export function TrayPanelFooter({
   ];
 
   return (
-    <footer ref={footerRef} className="border-border relative shrink-0 border-t">
+    <footer data-tray-panel-footer className="relative shrink-0">
       {aboutOpen ? (
         <TrayAboutOverlay version={version} onClose={() => setAboutOpen(false)} />
       ) : null}
       <nav aria-label="Tray panel actions">
-        <ul className="divide-border divide-y">
+        <ul>
           {items.map((item) => (
             <TrayMenuRow
               key={item.id}

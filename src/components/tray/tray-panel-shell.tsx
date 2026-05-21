@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 
 import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import {
@@ -9,12 +9,13 @@ import {
 interface TrayPanelShellProps {
   children: ReactNode;
   footer?: ReactNode;
+  layoutRef?: RefObject<HTMLDivElement | null>;
 }
 
-export function TrayPanelShell({ children, footer }: TrayPanelShellProps) {
+export function TrayPanelShell({ children, footer, layoutRef }: TrayPanelShellProps) {
   return (
     <main className={trayPanelShellClassName()}>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div ref={layoutRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ScrollFadeRegion
           orientation="vertical"
           className={trayPanelScrollRegionClassName()}
@@ -22,7 +23,16 @@ export function TrayPanelShell({ children, footer }: TrayPanelShellProps) {
         >
           {children}
         </ScrollFadeRegion>
-        {footer}
+        {footer ? (
+          <>
+            <div
+              data-tray-panel-separator
+              className="border-border shrink-0 border-t"
+              aria-hidden
+            />
+            {footer}
+          </>
+        ) : null}
       </div>
     </main>
   );
