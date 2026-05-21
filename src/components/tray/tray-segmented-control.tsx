@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export const TRAY_SEGMENT_ROW_HEIGHT = "h-11" as const;
 
 const indicatorLayerClassName =
-  "pointer-events-none absolute top-0.5 bottom-0.5 left-0 rounded-md will-change-[transform,width]";
+  "pointer-events-none absolute inset-y-0.5 left-0 rounded-md will-change-[transform,width]";
 
 interface TraySegmentedControlProps {
   tabs: TrayPanelTab[];
@@ -56,14 +56,14 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
         ref={hoverIndicatorRef}
         data-segment-hover-indicator
         aria-hidden
-        className={cn(indicatorLayerClassName, "z-0 bg-background/40 opacity-0")}
+        className={cn(indicatorLayerClassName, "z-[1] bg-background/25 invisible")}
         style={{ width: 0 }}
       />
       <div
         ref={activeIndicatorRef}
         data-segment-indicator
         aria-hidden
-        className={cn(indicatorLayerClassName, "z-[1] bg-background opacity-0 shadow-sm")}
+        className={cn(indicatorLayerClassName, "z-[2] bg-background invisible shadow-sm")}
         style={{ width: 0 }}
       />
 

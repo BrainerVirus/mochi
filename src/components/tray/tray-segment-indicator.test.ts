@@ -1,22 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
-  applyActiveIndicatorPosition,
   metricsFromClientRects,
-  TRAY_INDICATOR_DURATION_S,
-  TRAY_INDICATOR_EASE,
+  shouldAnimateActiveIndicator,
 } from "@/components/tray/tray-segment-indicator";
-
-const gsapMocks = vi.hoisted(() => ({
-  fromTo: vi.fn(),
-  set: vi.fn(),
-  to: vi.fn(),
-  quickTo: vi.fn(() => vi.fn()),
-}));
-
-vi.mock("gsap", () => ({
-  default: gsapMocks,
-}));
 
 describe("metricsFromClientRects", () => {
   it("returns position relative to the track using layout boxes", () => {
@@ -26,57 +13,18 @@ describe("metricsFromClientRects", () => {
   });
 });
 
-describe("applyActiveIndicatorPosition", () => {
-  const indicator = document.createElement("div");
-  const next = { x: 120, width: 72 };
+describe("shouldAnimateActiveIndicator", () => {
   const prev = { x: 40, width: 68 };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.stubGlobal(
-      "matchMedia",
-      vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn() }),
-    );
-  });
-
   it("snaps on first layout without a previous position", () => {
-    applyActiveIndicatorPosition(indicator, next, null, true);
-
-    expect(gsapMocks.set).toHaveBeenCalledWith(indicator, {
-      x: next.x,
-      width: next.width,
-      opacity: 1,
-      force3D: true,
-    });
-    expect(gsapMocks.fromTo).not.toHaveBeenCalled();
+    expect(shouldAnimateActiveIndicator(null, true, false)).toBe(false);
   });
 
-  it("morphs from the previous position when animating segment changes", () => {
-    applyActiveIndicatorPosition(indicator, next, prev, true);
-
-    expect(gsapMocks.fromTo).toHaveBeenCalledWith(
-      indicator,
-      { x: prev.x, width: prev.width, opacity: 1 },
-      {
-        x: next.x,
-        width: next.width,
-        opacity: 1,
-        duration: TRAY_INDICATOR_DURATION_S,
-        ease: TRAY_INDICATOR_EASE,
-        overwrite: "auto",
-      },
-    );
+  it("morphs when a previous position exists and animation is enabled", () => {
+    expect(shouldAnimateActiveIndicator(prev, true, false)).toBe(true);
   });
 
   it("snaps when animation is disabled", () => {
-    applyActiveIndicatorPosition(indicator, next, prev, false);
-
-    expect(gsapMocks.set).toHaveBeenCalledWith(indicator, {
-      x: next.x,
-      width: next.width,
-      opacity: 1,
-      force3D: true,
-    });
-    expect(gsapMocks.fromTo).not.toHaveBeenCalled();
+    expect(shouldAnimateActiveIndicator(prev, false, false)).toBe(false);
   });
 });

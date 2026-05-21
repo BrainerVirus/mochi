@@ -3,15 +3,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 
 import {
-  createActiveIndicatorQuickTo,
   createHoverIndicatorQuickTo,
   hideHoverIndicator,
   observeSegmentTrackResize,
   syncActiveSegmentIndicator,
   syncHoverSegmentIndicator,
+  type IndicatorMetrics,
 } from "@/components/tray/tray-segment-indicator";
-
-type IndicatorQuickTo = ReturnType<typeof createActiveIndicatorQuickTo>;
 
 function useHoverIndicatorSync(
   trackRef: RefObject<HTMLDivElement | null>,
@@ -20,7 +18,7 @@ function useHoverIndicatorSync(
   value: string,
 ) {
   const hoveredIdRef = useRef<string | null>(null);
-  const hoverQuickToRef = useRef<IndicatorQuickTo | null>(null);
+  const hoverQuickToRef = useRef<ReturnType<typeof createHoverIndicatorQuickTo> | null>(null);
 
   const syncHover = useCallback(
     (tabId: string | null, animate: boolean) => {
@@ -58,34 +56,35 @@ function useHoverIndicatorSync(
   return { syncHover, hoveredIdRef };
 }
 
-function useActiveIndicatorSync(
+export function useTraySegmentIndicators(
   trackRef: RefObject<HTMLDivElement | null>,
   activeIndicatorRef: RefObject<HTMLDivElement | null>,
-  itemRefs: RefObject<Map<string, HTMLButtonElement>>,
+  hoverIndicatorRef: RefObject<HTMLDivElement | null>,
   value: string,
   tabCount: number,
-  hoveredIdRef: RefObject<string | null>,
-  syncHover: (tabId: string | null, animate: boolean) => void,
+  itemRefs: RefObject<Map<string, HTMLButtonElement>>,
 ) {
-  const hasPositionedActiveRef = useRef(false);
-  const activeQuickToRef = useRef<IndicatorQuickTo | null>(null);
+  const prevActiveMetricsRef = useRef<IndicatorMetrics | null>(null);
+  const { syncHover, hoveredIdRef } = useHoverIndicatorSync(
+    trackRef,
+    hoverIndicatorRef,
+    itemRefs,
+    value,
+  );
 
   const syncActive = useCallback(
     (animate: boolean) => {
-      const indicator = activeIndicatorRef.current;
-      if (!indicator) {
-        return;
-      }
-
-      activeQuickToRef.current ??= createActiveIndicatorQuickTo(indicator);
-
-      syncActiveSegmentIndicator(
+      const metrics = syncActiveSegmentIndicator(
         trackRef.current,
-        indicator,
+        activeIndicatorRef.current,
         itemRefs.current?.get(value),
+        prevActiveMetricsRef.current,
         animate,
-        activeQuickToRef.current,
       );
+
+      if (metrics) {
+        prevActiveMetricsRef.current = metrics;
+      }
     },
     [activeIndicatorRef, itemRefs, trackRef, value],
   );
@@ -105,12 +104,10 @@ function useActiveIndicatorSync(
         return;
       }
 
-      syncActive(hasPositionedActiveRef.current);
-      hasPositionedActiveRef.current = true;
+      syncActive(prevActiveMetricsRef.current !== null);
 
-      const hoveredId = hoveredIdRef.current;
-      if (hoveredId) {
-        syncHover(hoveredId, false);
+      if (hoveredIdRef.current) {
+        syncHover(hoveredIdRef.current, false);
       }
     };
 
@@ -120,57 +117,16 @@ function useActiveIndicatorSync(
       cancelled = true;
       cancelAnimationFrame(frameId);
     };
-  }, [
-    value,
-    tabCount,
-    syncActive,
-    syncHover,
-    trackRef,
-    activeIndicatorRef,
-    itemRefs,
-    hoveredIdRef,
-  ]);
-
-  return syncActive;
-}
-
-export function useTraySegmentIndicators(
-  trackRef: RefObject<HTMLDivElement | null>,
-  activeIndicatorRef: RefObject<HTMLDivElement | null>,
-  hoverIndicatorRef: RefObject<HTMLDivElement | null>,
-  value: string,
-  tabCount: number,
-  itemRefs: RefObject<Map<string, HTMLButtonElement>>,
-) {
-  const { syncHover, hoveredIdRef } = useHoverIndicatorSync(
-    trackRef,
-    hoverIndicatorRef,
-    itemRefs,
-    value,
-  );
-
-  const syncActive = useActiveIndicatorSync(
-    trackRef,
-    activeIndicatorRef,
-    itemRefs,
-    value,
-    tabCount,
-    hoveredIdRef,
-    syncHover,
-  );
+  }, [value, tabCount, syncActive, syncHover, trackRef, activeIndicatorRef, itemRefs, hoveredIdRef]);
 
   useEffect(() => {
     const track = trackRef.current;
-    if (!track) {
-      return undefined;
-    }
+    if (!track) return undefined;
 
     const resizeObserver = observeSegmentTrackResize(track, () => {
       syncActive(false);
       const hoveredId = hoveredIdRef.current;
-      if (hoveredId) {
-        syncHover(hoveredId, false);
-      }
+      if (hoveredId) syncHover(hoveredId, false);
     });
 
     return () => resizeObserver.disconnect();

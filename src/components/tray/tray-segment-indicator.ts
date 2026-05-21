@@ -1,7 +1,7 @@
 import gsap from "gsap";
 
-export const TRAY_INDICATOR_DURATION_S = 0.32;
-export const TRAY_INDICATOR_EASE = "power3.out";
+export const TRAY_INDICATOR_DURATION_S = 0.35;
+export const TRAY_INDICATOR_EASE = "power3.inOut";
 
 export interface IndicatorMetrics {
   x: number;
@@ -26,47 +26,39 @@ export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function createActiveIndicatorQuickTo(indicator: HTMLElement) {
-  return {
-    x: gsap.quickTo(indicator, "x", {
-      duration: TRAY_INDICATOR_DURATION_S,
-      ease: TRAY_INDICATOR_EASE,
-    }),
-    width: gsap.quickTo(indicator, "width", {
-      duration: TRAY_INDICATOR_DURATION_S,
-      ease: TRAY_INDICATOR_EASE,
-    }),
-  };
+export function shouldAnimateActiveIndicator(
+  prevMetrics: IndicatorMetrics | null,
+  animate: boolean,
+  reducedMotion = prefersReducedMotion(),
+): boolean {
+  return !reducedMotion && animate && prevMetrics !== null;
 }
 
 export function applyActiveIndicatorPosition(
   indicator: HTMLElement,
   metrics: IndicatorMetrics,
-  options: { animate: boolean },
-  quickTo: { x: gsap.QuickToFunc; width: gsap.QuickToFunc } | null,
+  prevMetrics: IndicatorMetrics | null,
+  animate: boolean,
 ) {
   const { x, width } = metrics;
 
-  if (prefersReducedMotion() || !options.animate) {
-    gsap.set(indicator, { x, width, opacity: 1 });
+  if (!shouldAnimateActiveIndicator(prevMetrics, animate)) {
+    gsap.set(indicator, { x, width, autoAlpha: 1, force3D: true });
     return;
   }
 
-  if (quickTo) {
-    quickTo.x(x);
-    quickTo.width(width);
-    gsap.to(indicator, { opacity: 1, duration: 0.15, overwrite: "auto" });
-    return;
-  }
-
-  gsap.to(indicator, {
-    x,
-    width,
-    opacity: 1,
-    duration: TRAY_INDICATOR_DURATION_S,
-    ease: TRAY_INDICATOR_EASE,
-    overwrite: "auto",
-  });
+  gsap.fromTo(
+    indicator,
+    { x: prevMetrics!.x, width: prevMetrics!.width, autoAlpha: 1 },
+    {
+      x,
+      width,
+      autoAlpha: 1,
+      duration: TRAY_INDICATOR_DURATION_S,
+      ease: TRAY_INDICATOR_EASE,
+      overwrite: "auto",
+    },
+  );
 }
 
 export function createHoverIndicatorQuickTo(indicator: HTMLElement) {
@@ -90,7 +82,7 @@ export function applyHoverIndicatorPosition(
   hoveredId: string,
 ) {
   if (prefersReducedMotion()) {
-    gsap.set(indicator, { ...metrics, opacity: hoveredId === activeValue ? 0 : 1 });
+    gsap.set(indicator, { ...metrics, opacity: hoveredId === activeValue ? 0 : 1, force3D: true });
     return;
   }
 
@@ -98,11 +90,11 @@ export function applyHoverIndicatorPosition(
     quickTo.x(metrics.x);
     quickTo.width(metrics.width);
   } else {
-    gsap.set(indicator, metrics);
+    gsap.set(indicator, { ...metrics, force3D: true });
   }
 
   gsap.to(indicator, {
-    opacity: hoveredId === activeValue ? 0 : 1,
+    autoAlpha: hoveredId === activeValue ? 0 : 1,
     duration: 0.15,
     overwrite: "auto",
   });
@@ -110,7 +102,7 @@ export function applyHoverIndicatorPosition(
 
 export function hideHoverIndicator(indicator: HTMLElement, animate: boolean) {
   gsap.to(indicator, {
-    opacity: 0,
+    autoAlpha: 0,
     duration: animate && !prefersReducedMotion() ? 0.15 : 0,
     overwrite: "auto",
   });
@@ -120,14 +112,16 @@ export function syncActiveSegmentIndicator(
   track: HTMLElement | null,
   indicator: HTMLElement | null,
   item: HTMLButtonElement | undefined,
+  prevMetrics: IndicatorMetrics | null,
   animate: boolean,
-  quickTo: { x: gsap.QuickToFunc; width: gsap.QuickToFunc } | null,
 ) {
   if (!track || !indicator || !item) {
-    return;
+    return null;
   }
 
-  applyActiveIndicatorPosition(indicator, measureSegmentItem(track, item), { animate }, quickTo);
+  const metrics = measureSegmentItem(track, item);
+  applyActiveIndicatorPosition(indicator, metrics, prevMetrics, animate);
+  return metrics;
 }
 
 export function syncHoverSegmentIndicator(
