@@ -5,12 +5,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UsageCard } from "@/components/usage/usage-card";
-import { useRefreshProvider } from "@/hooks/use-tray-events";
+import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useUsageData } from "@/hooks/use-usage-data";
+import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 import { widgetDensityClasses } from "@/lib/utils/widget-density";
 
 export function WidgetWindow() {
   const density = widgetDensityClasses("compact");
+  const { data: settings } = useSettings();
   const { data, error, isError, isPending, isSuccess, refetch, isFetching } = useUsageData();
   const refreshProvider = useRefreshProvider();
   const isRefreshing = isFetching || refreshProvider.isPending;
@@ -54,6 +56,7 @@ export function WidgetWindow() {
               isError={isError}
               isPending={isPending}
               isSuccess={isSuccess}
+              enabledProviderCount={settings?.enabled_providers.length ?? 0}
             />
           </CardContent>
         </Card>
@@ -68,9 +71,17 @@ interface WidgetUsagePanelProps {
   isError: boolean;
   isPending: boolean;
   isSuccess: boolean;
+  enabledProviderCount: number;
 }
 
-function WidgetUsagePanel({ data, error, isError, isPending, isSuccess }: WidgetUsagePanelProps) {
+function WidgetUsagePanel({
+  data,
+  error,
+  isError,
+  isPending,
+  isSuccess,
+  enabledProviderCount,
+}: WidgetUsagePanelProps) {
   if (isPending) {
     return (
       <output className="text-muted-foreground block text-center text-xs">
@@ -91,7 +102,7 @@ function WidgetUsagePanel({ data, error, isError, isPending, isSuccess }: Widget
   if (isSuccess && data !== undefined && data.length === 0) {
     return (
       <p className="text-muted-foreground text-center text-xs">
-        Enable providers in settings to see usage here.
+        {usageSnapshotsEmptyMessage(enabledProviderCount)}
       </p>
     );
   }
