@@ -1,10 +1,16 @@
 import type { ReactNode } from "react";
 
-const trayPanelShellClassName =
-  "bg-background text-foreground min-h-full overflow-hidden rounded-mochi shadow-sm ring-1 ring-border";
+import {
+  trayPanelScrollRegionClassName,
+  trayPanelShellClassName,
+} from "@/lib/utils/tray-panel-layout";
 
 export function TrayPanelShell({ children }: { children: ReactNode }) {
-  return <main className={trayPanelShellClassName}>{children}</main>;
+  return (
+    <main className={trayPanelShellClassName()}>
+      <div className={trayPanelScrollRegionClassName()}>{children}</div>
+    </main>
+  );
 }
 
 export { trayPanelShellClassName };

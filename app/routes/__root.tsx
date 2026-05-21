@@ -43,7 +43,13 @@ function RootComponent() {
       <head>
         <HeadContent />
       </head>
-      <body className={isTrayPanelWindow ? "h-full overflow-hidden bg-transparent" : undefined}>
+      <body
+        className={
+          isTrayPanelWindow
+            ? "flex h-full min-h-0 flex-col overflow-hidden bg-transparent"
+            : undefined
+        }
+      >
         <QueryClientProvider client={queryClient}>
           <TrayEventBridge />
           <Outlet />
