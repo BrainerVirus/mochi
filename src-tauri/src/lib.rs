@@ -2,6 +2,7 @@ pub mod cli;
 pub mod core;
 pub mod providers;
 pub mod settings;
+pub mod status;
 pub mod status_bar;
 pub mod tray;
 pub mod updater;
@@ -29,6 +30,7 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             app_version,
+            status::get_usage_snapshots,
             updater::check_for_update,
             updater::install_update
         ])
