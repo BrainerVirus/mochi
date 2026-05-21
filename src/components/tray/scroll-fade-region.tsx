@@ -17,6 +17,8 @@ interface ScrollFadeRegionProps {
   children: ReactNode;
   className?: string;
   scrollClassName?: string;
+  /** Tailwind height class matching the scroll row (e.g. tab list). Horizontal only. */
+  rowHeightClassName?: string;
   /** Space reserved at the fade edge for the ghost control (px). */
   fadeInset?: number;
 }
@@ -42,11 +44,13 @@ type ScrollFadeDirection = "forward" | "backward";
 function ScrollFadeGhostButton({
   orientation,
   direction = "forward",
+  visible,
   onCycle,
   className,
 }: {
   orientation: ScrollFadeOrientation;
   direction?: ScrollFadeDirection;
+  visible: boolean;
   onCycle: () => void;
   className?: string;
 }) {
@@ -58,6 +62,8 @@ function ScrollFadeGhostButton({
       type="button"
       variant="ghost"
       size="icon-xs"
+      aria-hidden={!visible}
+      tabIndex={visible ? 0 : -1}
       aria-label={
         isHorizontal
           ? isBackward
@@ -67,8 +73,22 @@ function ScrollFadeGhostButton({
       }
       onClick={onCycle}
       className={cn(
-        "pointer-events-auto z-20 shrink-0 cursor-pointer rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-        isHorizontal ? undefined : "absolute inset-x-0 bottom-0 z-20 mx-auto mb-0.5",
+        "pointer-events-auto z-20 shrink-0 cursor-pointer rounded-full text-muted-foreground transition-[opacity,transform] duration-200 ease-out hover:bg-muted/50 hover:text-foreground",
+        isHorizontal
+          ? cn(
+              "absolute top-1/2 -translate-y-1/2",
+              isBackward
+                ? visible
+                  ? "left-0 translate-x-0 opacity-100"
+                  : "left-0 -translate-x-1 opacity-0 pointer-events-none"
+                : visible
+                  ? "right-0 translate-x-0 opacity-100"
+                  : "right-0 translate-x-1 opacity-0 pointer-events-none",
+            )
+          : cn(
+              "absolute inset-x-0 bottom-0 z-20 mx-auto mb-0.5",
+              visible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0 pointer-events-none",
+            ),
         className,
       )}
     >
@@ -82,14 +102,6 @@ function ScrollFadeGhostButton({
         <ChevronDownIcon className="size-3.5" />
       )}
     </Button>
-  );
-}
-
-function HorizontalChevronColumn({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex shrink-0 items-center justify-center self-stretch px-0.5">
-      {children}
-    </div>
   );
 }
 
@@ -133,6 +145,7 @@ function ScrollFadeViewport({
   maskClass,
   scrollClassName,
   onCycleForward,
+  onCycleBackward,
   children,
 }: {
   scrollRef: React.RefObject<HTMLDivElement | null>;
@@ -143,15 +156,16 @@ function ScrollFadeViewport({
   maskClass: string | undefined;
   scrollClassName?: string;
   onCycleForward: () => void;
+  onCycleBackward: () => void;
   children: ReactNode;
 }) {
   return (
-    <div className={cn("relative min-w-0", isHorizontal && "flex-1")}>
+    <div className={cn("relative min-w-0", isHorizontal && "h-full w-full")}>
       <div
         ref={scrollRef}
         className={cn(
           "scrollbar-none overscroll-contain",
-          isHorizontal ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
+          isHorizontal ? "h-full overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
           maskClass,
           scrollClassName,
         )}
@@ -168,7 +182,28 @@ function ScrollFadeViewport({
       {canScrollEnd && !isHorizontal ? (
         <>
           <div aria-hidden className="scroll-fade-edge-bottom" />
-          <ScrollFadeGhostButton orientation={orientation} onCycle={onCycleForward} />
+          <ScrollFadeGhostButton
+            orientation={orientation}
+            visible={canScrollEnd}
+            onCycle={onCycleForward}
+          />
+        </>
+      ) : null}
+
+      {isHorizontal ? (
+        <>
+          <ScrollFadeGhostButton
+            orientation={orientation}
+            direction="backward"
+            visible={canScrollStart}
+            onCycle={onCycleBackward}
+          />
+          <ScrollFadeGhostButton
+            orientation={orientation}
+            direction="forward"
+            visible={canScrollEnd}
+            onCycle={onCycleForward}
+          />
         </>
       ) : null}
     </div>
@@ -180,6 +215,7 @@ export function ScrollFadeRegion({
   children,
   className,
   scrollClassName,
+  rowHeightClassName,
   fadeInset = 40,
 }: ScrollFadeRegionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -193,17 +229,13 @@ export function ScrollFadeRegion({
   );
 
   return (
-    <div className={cn("relative", isHorizontal && "flex items-stretch", className)}>
-      {canScrollStart && isHorizontal ? (
-        <HorizontalChevronColumn>
-          <ScrollFadeGhostButton
-            orientation={orientation}
-            direction="backward"
-            onCycle={cycleScrollBackward}
-          />
-        </HorizontalChevronColumn>
-      ) : null}
-
+    <div
+      className={cn(
+        "relative",
+        isHorizontal && rowHeightClassName,
+        className,
+      )}
+    >
       <ScrollFadeViewport
         scrollRef={scrollRef}
         isHorizontal={isHorizontal}
@@ -213,19 +245,10 @@ export function ScrollFadeRegion({
         maskClass={maskClass}
         scrollClassName={scrollClassName}
         onCycleForward={cycleScrollForward}
+        onCycleBackward={cycleScrollBackward}
       >
         {children}
       </ScrollFadeViewport>
-
-      {canScrollEnd && isHorizontal ? (
-        <HorizontalChevronColumn>
-          <ScrollFadeGhostButton
-            orientation={orientation}
-            direction="forward"
-            onCycle={cycleScrollForward}
-          />
-        </HorizontalChevronColumn>
-      ) : null}
     </div>
   );
 }

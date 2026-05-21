@@ -1,6 +1,9 @@
 import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
+
+/** Matches TabsList row height — keep chevron overlay and tab row in sync. */
+export const TRAY_TAB_ROW_HEIGHT = "h-14" as const;
 import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import { Progress } from "@/components/ui/progress";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,12 +18,16 @@ export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
   return (
     <ScrollFadeRegion
       orientation="horizontal"
+      rowHeightClassName={TRAY_TAB_ROW_HEIGHT}
       className="border-border border-b"
       scrollClassName="overscroll-x-contain"
     >
       <TabsList
         variant="line"
-        className="h-14 w-max min-w-full flex-nowrap items-stretch justify-start gap-0 bg-transparent p-0"
+        className={cn(
+          TRAY_TAB_ROW_HEIGHT,
+          "w-max min-w-full flex-nowrap items-stretch justify-start gap-0 bg-transparent p-0",
+        )}
       >
         {tabs.map((tab) => {
           const tone = getUsageMeterTone(tab.usedPercent);
