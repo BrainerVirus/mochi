@@ -6,6 +6,7 @@ export interface TrayPanelTab {
   id: "overview" | ProviderId;
   label: string;
   usedPercent: number;
+  remainingPercent: number;
 }
 
 export interface OverviewMetrics {
@@ -18,18 +19,21 @@ export interface OverviewMetrics {
 const HEALTHY_THRESHOLD = 60;
 
 export function buildTrayPanelTabs(snapshots: UsageSnapshot[]): TrayPanelTab[] {
+  const usedPercents = snapshots.map((snapshot) => snapshot.primary.used_percent);
+  const remainingPercents = snapshots.map((snapshot) => snapshot.primary.remaining_percent);
+
   const overviewTab: TrayPanelTab = {
     id: "overview",
     label: "Overview",
-    usedPercent: snapshots.length
-      ? Math.max(...snapshots.map((snapshot) => snapshot.primary.used_percent))
-      : 0,
+    usedPercent: usedPercents.length ? Math.max(...usedPercents) : 0,
+    remainingPercent: remainingPercents.length ? Math.min(...remainingPercents) : 100,
   };
 
   const providerTabs = snapshots.map((snapshot) => ({
     id: snapshot.provider,
     label: getProviderLabel(snapshot.provider),
     usedPercent: snapshot.primary.used_percent,
+    remainingPercent: snapshot.primary.remaining_percent,
   }));
 
   return [overviewTab, ...providerTabs];

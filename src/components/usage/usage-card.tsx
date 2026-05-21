@@ -1,5 +1,6 @@
 import type { UsageSnapshot } from "@/lib/schemas/usage";
 
+import { ProviderIcon } from "@/components/providers/provider-icon";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
@@ -17,7 +18,10 @@ export function UsageCard({ snapshot, compact = false, showHeader = true }: Usag
     <section className="flex flex-col gap-2.5">
       {showHeader ? (
         <header className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-medium capitalize">{getProviderLabel(snapshot.provider)}</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-medium">
+            <ProviderIcon provider={snapshot.provider} />
+            {getProviderLabel(snapshot.provider)}
+          </h3>
           <Badge variant="outline" className="text-[10px]">
             {snapshot.source}
           </Badge>

@@ -1,5 +1,6 @@
 import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
+import { ProviderIcon } from "@/components/providers/provider-icon";
 import { Progress } from "@/components/ui/progress";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,15 @@ export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
               "data-active:bg-transparent data-active:shadow-none",
             )}
           >
-            <span className="truncate font-medium">{tab.label}</span>
+            <span className="flex min-w-0 items-center gap-1">
+              {tab.id !== "overview" ? <ProviderIcon provider={tab.id} /> : null}
+              <span className="truncate font-medium">{tab.label}</span>
+              {tab.id !== "overview" ? (
+                <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
+                  {Math.round(tab.remainingPercent)}%
+                </span>
+              ) : null}
+            </span>
             {tab.id !== "overview" ? (
               <Progress
                 value={tab.usedPercent}
@@ -36,7 +45,9 @@ export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
               />
             ) : (
               <span className="text-muted-foreground text-[10px] tabular-nums">
-                {tab.usedPercent > 0 ? `${Math.round(tab.usedPercent)}% peak` : "All clear"}
+                {tab.usedPercent > 0
+                  ? `${Math.round(tab.remainingPercent)}% left min`
+                  : "All clear"}
               </span>
             )}
           </TabsTrigger>

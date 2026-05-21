@@ -1,6 +1,7 @@
 import type { UsageSnapshot } from "@/lib/schemas/usage";
 import type { OverviewMetrics } from "@/lib/utils/tray-panel-tabs";
 
+import { ProviderIcon } from "@/components/providers/provider-icon";
 import { Separator } from "@/components/ui/separator";
 import { UsageMeter } from "@/components/usage/usage-meter";
 import { cn } from "@/lib/utils";
@@ -17,8 +18,8 @@ export function TrayOverview({ snapshots, metrics }: TrayOverviewProps) {
     <div className="flex flex-col gap-3">
       <dl className="grid grid-cols-2 gap-2">
         <MetricTile label="Providers" value={String(metrics.providerCount)} />
-        <MetricTile label="Highest" value={`${metrics.highestUsedPercent}%`} />
-        <MetricTile label="Average" value={`${metrics.averageUsedPercent}%`} />
+        <MetricTile label="Peak used" value={`${metrics.highestUsedPercent}%`} />
+        <MetricTile label="Avg used" value={`${metrics.averageUsedPercent}%`} />
         <MetricTile label="Healthy" value={String(metrics.healthyCount)} />
       </dl>
 
@@ -45,8 +46,9 @@ export function TrayOverview({ snapshots, metrics }: TrayOverviewProps) {
                     title={`${getProviderLabel(snapshot.provider)}: ${Math.round(used)}% used`}
                   />
                 </div>
-                <span className="text-muted-foreground w-full truncate text-center text-[10px]">
-                  {getProviderLabel(snapshot.provider)}
+                <span className="text-muted-foreground flex w-full items-center justify-center gap-0.5 truncate text-[10px]">
+                  <ProviderIcon provider={snapshot.provider} className="size-3" />
+                  <span className="truncate">{getProviderLabel(snapshot.provider)}</span>
                 </span>
               </div>
             );
