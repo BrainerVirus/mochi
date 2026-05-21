@@ -1,13 +1,13 @@
-import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { useRef, type RefObject } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 
 import {
+  animateUsageMeterFill,
   resolveUsageMeterFillStartPercent,
-  scheduleUsageMeterFill,
+  usageMeterFillTranslateX,
 } from "@/lib/utils/usage-meter-fill-animation";
-
-gsap.registerPlugin(useGSAP);
+import { prefersReducedMotion } from "@/lib/utils/tray-panel-height-animation";
+import { runWhenTrayTabFillReady } from "@/lib/utils/tray-tab-fill-scheduler";
 
 function resolveUsageMeterIndicator(
   meterRef: RefObject<HTMLDivElement | null>,
@@ -29,27 +29,38 @@ export function useUsageMeterFill(
   const previousPercentRef = useRef<number | null>(null);
   const previousActivationKeyRef = useRef<string | null>(null);
 
-  useGSAP(
-    () => {
-      const indicator = resolveUsageMeterIndicator(meterRef, indicatorRef);
-      if (!indicator) {
-        return () => {};
+  useLayoutEffect(() => {
+    const indicator = resolveUsageMeterIndicator(meterRef, indicatorRef);
+    if (!indicator) {
+      return undefined;
+    }
+
+    const from = resolveUsageMeterFillStartPercent(
+      previousPercentRef.current,
+      fillActivationKey,
+      previousActivationKeyRef.current,
+    );
+    previousActivationKeyRef.current = fillActivationKey;
+    previousPercentRef.current = clampedPercent;
+
+    const ctx = gsap.context(() => {}, meterRef);
+
+    const startFill = () => {
+      if (prefersReducedMotion() || from === clampedPercent) {
+        gsap.set(indicator, { x: usageMeterFillTranslateX(clampedPercent) });
+        return;
       }
 
-      const from = resolveUsageMeterFillStartPercent(
-        previousPercentRef.current,
-        fillActivationKey,
-        previousActivationKeyRef.current,
-      );
-      previousActivationKeyRef.current = fillActivationKey;
+      gsap.set(indicator, { x: usageMeterFillTranslateX(from) });
+      animateUsageMeterFill(indicator, from, clampedPercent);
+    };
 
-      const cancelScheduled = scheduleUsageMeterFill(indicator, from, clampedPercent);
-      previousPercentRef.current = clampedPercent;
+    const cancelReady = runWhenTrayTabFillReady(startFill);
 
-      return () => {
-        cancelScheduled();
-      };
-    },
-    { dependencies: [clampedPercent, fillActivationKey], scope: meterRef, revertOnUpdate: true },
-  );
+    return () => {
+      cancelReady();
+      gsap.killTweensOf(indicator);
+      ctx.revert();
+    };
+  }, [clampedPercent, fillActivationKey, indicatorRef, meterRef]);
 }

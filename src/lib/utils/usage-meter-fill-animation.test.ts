@@ -22,6 +22,7 @@ describe("usageMeterFillAnimation", () => {
 
   it("restarts fill from empty when tab activation changes", () => {
     expect(resolveUsageMeterFillStartPercent(42, "codex", "overview")).toBe(0);
+    expect(resolveUsageMeterFillStartPercent(42, "codex:2", "codex:1")).toBe(0);
     expect(resolveUsageMeterFillStartPercent(42, "codex", "codex")).toBe(42);
     expect(resolveUsageMeterFillStartPercent(null, "codex", "codex")).toBe(0);
   });

@@ -72,7 +72,7 @@ export function ProviderUsageSection({
       >
         {windows.map((window) => (
           <UsageMeter
-            key={window.label}
+            key={`${fillActivationKey ?? "static"}-${window.label}`}
             label={window.label}
             usedPercent={window.used_percent}
             remainingPercent={window.remaining_percent}
