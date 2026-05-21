@@ -5,34 +5,21 @@ use crate::core::models::ProviderId;
 use super::presentation::TrayIconPresentation;
 
 const GLYPH_SIZE: u32 = 18;
-const ICON_HEIGHT: u32 = 22;
-const TEXT_HEIGHT: u32 = 7;
-const TEXT_SCALE: u32 = 2;
-const CHAR_WIDTH: u32 = 5 * TEXT_SCALE + 1;
+const ICON_SIZE: u32 = 22;
 const H_PADDING: u32 = 2;
 
+/// Template-friendly menu bar glyph only — percent text is shown via `TrayIcon::set_title`.
 pub fn tray_icon_for_presentation(presentation: &TrayIconPresentation) -> Image<'static> {
     let provider = presentation.provider.unwrap_or(ProviderId::Codex);
-    let label = presentation
-        .title
-        .clone()
-        .unwrap_or_else(|| format!("{}%", presentation.remaining_percent));
-
-    let text_width = text_pixel_width(&label);
-    let width = H_PADDING + GLYPH_SIZE + 2 + text_width + H_PADDING;
-    let mut rgba = vec![0_u8; (width * ICON_HEIGHT * 4) as usize];
-
-    blit_glyph(provider, &mut rgba, width, 0, 2);
-    draw_text(&label, &mut rgba, width, H_PADDING + GLYPH_SIZE + 2, 7);
-
-    Image::new_owned(rgba, width, ICON_HEIGHT)
+    let mut rgba = vec![0_u8; (ICON_SIZE * ICON_SIZE * 4) as usize];
+    blit_glyph(provider, &mut rgba, ICON_SIZE, H_PADDING, H_PADDING);
+    Image::new_owned(rgba, ICON_SIZE, ICON_SIZE)
 }
 
 pub fn tray_icon_fallback() -> Image<'static> {
-    let width = H_PADDING + GLYPH_SIZE + H_PADDING;
-    let mut rgba = vec![0_u8; (width * ICON_HEIGHT * 4) as usize];
-    blit_glyph(ProviderId::Codex, &mut rgba, width, H_PADDING, 2);
-    Image::new_owned(rgba, width, ICON_HEIGHT)
+    let mut rgba = vec![0_u8; (ICON_SIZE * ICON_SIZE * 4) as usize];
+    blit_glyph(ProviderId::Codex, &mut rgba, ICON_SIZE, H_PADDING, H_PADDING);
+    Image::new_owned(rgba, ICON_SIZE, ICON_SIZE)
 }
 
 fn blit_glyph(provider: ProviderId, rgba: &mut [u8], canvas_width: u32, x: u32, y: u32) {
@@ -62,7 +49,7 @@ fn provider_glyph_mask(provider: ProviderId) -> Vec<bool> {
     }
 }
 
-/// Simplified Codex mark: rounded square frame with a chevron cut-in (template-friendly).
+/// Codex mark: rounded square frame with chevron (matches tray panel SVG).
 fn codex_glyph_mask() -> Vec<bool> {
     let mut mask = vec![false; (GLYPH_SIZE * GLYPH_SIZE) as usize];
     let inset = 2_u32;
@@ -84,8 +71,9 @@ fn codex_glyph_mask() -> Vec<bool> {
 }
 
 fn letter_glyph_mask(ch: char) -> Vec<bool> {
+    const TEXT_HEIGHT: u32 = 7;
     let mut mask = vec![false; (GLYPH_SIZE * GLYPH_SIZE) as usize];
-    let pattern = glyph_pattern(ch);
+    let pattern = letter_pattern(ch);
     let offset_x = 5_u32;
     let offset_y = 4_u32;
 
@@ -109,7 +97,7 @@ fn glyph_pixel(mask: &[bool], x: u32, y: u32) -> bool {
 }
 
 fn set_pixel(rgba: &mut [u8], width: u32, x: u32, y: u32, r: u8, g: u8, b: u8, a: u8) {
-    if y >= ICON_HEIGHT || x >= width {
+    if y >= ICON_SIZE || x >= width {
         return;
     }
     let index = ((y * width + x) * 4) as usize;
@@ -119,53 +107,8 @@ fn set_pixel(rgba: &mut [u8], width: u32, x: u32, y: u32, r: u8, g: u8, b: u8, a
     rgba[index + 3] = a;
 }
 
-fn text_pixel_width(text: &str) -> u32 {
-    text.chars()
-        .map(|ch| if ch == '%' { CHAR_WIDTH + 1 } else { CHAR_WIDTH })
-        .sum()
-}
-
-fn draw_text(text: &str, rgba: &mut [u8], canvas_width: u32, mut x: u32, y: u32) {
-    for ch in text.chars() {
-        let pattern = glyph_pattern(ch);
-        for row in 0..TEXT_HEIGHT {
-            for col in 0..5 {
-                if pattern[row as usize] & (1 << (4 - col)) == 0 {
-                    continue;
-                }
-                for sy in 0..TEXT_SCALE {
-                    for sx in 0..TEXT_SCALE {
-                        set_pixel(
-                            rgba,
-                            canvas_width,
-                            x + col * TEXT_SCALE + sx,
-                            y + row * TEXT_SCALE + sy,
-                            0xF5,
-                            0xF5,
-                            0xF5,
-                            255,
-                        );
-                    }
-                }
-            }
-        }
-        x += if ch == '%' { CHAR_WIDTH + 1 } else { CHAR_WIDTH };
-    }
-}
-
-fn glyph_pattern(ch: char) -> [u16; 7] {
+fn letter_pattern(ch: char) -> [u16; 7] {
     match ch {
-        '0' => [0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110],
-        '1' => [0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
-        '2' => [0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b01000, 0b11111],
-        '3' => [0b01110, 0b10001, 0b00001, 0b00110, 0b00001, 0b10001, 0b01110],
-        '4' => [0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010],
-        '5' => [0b11111, 0b10000, 0b11110, 0b00001, 0b00001, 0b10001, 0b01110],
-        '6' => [0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110],
-        '7' => [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000],
-        '8' => [0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110],
-        '9' => [0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b01100],
-        '%' => [0b10001, 0b00010, 0b00100, 0b01000, 0b10000, 0b10001, 0b00000],
         'C' => [0b01110, 0b10001, 0b10000, 0b10000, 0b10000, 0b10001, 0b01110],
         'U' => [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
         'G' => [0b01110, 0b10001, 0b10000, 0b10111, 0b10001, 0b10001, 0b01110],
@@ -182,8 +125,8 @@ fn glyph_pattern(ch: char) -> [u16; 7] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tray::presentation::resolve_tray_presentation;
     use crate::core::models::{ProviderId, UsageSnapshot, UsageWindow};
+    use crate::tray::presentation::resolve_tray_presentation;
 
     fn snapshot(provider: ProviderId, used_percent: f32) -> UsageSnapshot {
         UsageSnapshot {
@@ -196,18 +139,19 @@ mod tests {
     }
 
     #[test]
-    fn tray_icon_for_presentation_has_nonzero_pixels() {
+    fn tray_icon_for_presentation_is_glyph_only_square() {
         let presentation = resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)]);
         let icon = tray_icon_for_presentation(&presentation);
-        assert!(icon.width() > GLYPH_SIZE);
-        assert_eq!(icon.height(), ICON_HEIGHT);
+        assert_eq!(icon.width(), ICON_SIZE);
+        assert_eq!(icon.height(), ICON_SIZE);
         assert!(icon.rgba().iter().any(|value| *value > 0));
     }
 
     #[test]
     fn tray_icon_fallback_renders_without_title() {
         let icon = tray_icon_fallback();
-        assert_eq!(icon.height(), ICON_HEIGHT);
+        assert_eq!(icon.width(), ICON_SIZE);
+        assert_eq!(icon.height(), ICON_SIZE);
         assert!(icon.rgba().iter().any(|value| *value > 0));
     }
 }

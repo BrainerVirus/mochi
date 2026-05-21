@@ -12,7 +12,11 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { UsageCard } from "@/components/usage/usage-card";
 import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useUsageData } from "@/hooks/use-usage-data";
-import { buildTrayPanelTabs, getOverviewMetrics } from "@/lib/utils/tray-panel-tabs";
+import {
+  buildTrayPanelTabs,
+  filterSnapshotsForEnabledProviders,
+  getOverviewMetrics,
+} from "@/lib/utils/tray-panel-tabs";
 import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
 export function TrayPanel() {
@@ -22,8 +26,9 @@ export function TrayPanel() {
   const [activeTab, setActiveTab] = useState("overview");
 
   const isRefreshing = isFetching || refreshProvider.isPending;
-  const snapshots = data ?? [];
-  const tabs = buildTrayPanelTabs(snapshots);
+  const enabledProviders = settings?.enabled_providers ?? [];
+  const snapshots = filterSnapshotsForEnabledProviders(data ?? [], enabledProviders);
+  const tabs = buildTrayPanelTabs(snapshots, enabledProviders);
   const metrics = getOverviewMetrics(snapshots);
 
   return (
@@ -135,7 +140,7 @@ function UsageSnapshotsPanel({
 
   if (isSuccess && snapshots.length > 0) {
     return (
-      <Tabs value={activeTab} onValueChange={onTabChange} className="gap-0">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="gap-0" defaultValue="overview">
         <TrayPanelTabList tabs={tabs} />
 
         <TabsContent value="overview" className="px-3 py-3">

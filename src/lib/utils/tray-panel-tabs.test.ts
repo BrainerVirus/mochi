@@ -39,6 +39,15 @@ describe("buildTrayPanelTabs", () => {
     expect(tabs[1]?.usedPercent).toBe(40);
     expect(tabs[2]?.usedPercent).toBe(72);
   });
+
+  it("only includes enabled provider tabs when enabled list is provided", () => {
+    const tabs = buildTrayPanelTabs(
+      [snapshot("codex", 40), snapshot("cursor", 72), snapshot("claude", 10)],
+      ["codex", "claude"],
+    );
+
+    expect(tabs.map((tab) => tab.id)).toEqual(["overview", "codex", "claude"]);
+  });
 });
 
 describe("getOverviewMetrics", () => {

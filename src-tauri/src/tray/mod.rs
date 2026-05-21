@@ -40,7 +40,8 @@ pub fn apply_tray_usage(app: &AppHandle, snapshots: &[UsageSnapshot]) -> Result<
         .map_err(|error| error.to_string())?;
     tray.set_icon(Some(icon))
         .map_err(|error| error.to_string())?;
-    tray.set_title(presentation.title.clone())
+    // Crisp system font beside template icon (macOS); no percent baked into RGBA.
+    tray.set_title(presentation.title.as_deref())
         .map_err(|error| error.to_string())?;
 
     Ok(())

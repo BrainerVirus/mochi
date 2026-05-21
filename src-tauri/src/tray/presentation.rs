@@ -21,7 +21,7 @@ pub fn resolve_tray_presentation(snapshots: &[UsageSnapshot]) -> TrayIconPresent
 
     let remaining = remaining_percent(snapshot);
     let provider = snapshot.provider;
-    let title = Some(format!("{remaining}%"));
+    let title = Some(tray_title_from_remaining(remaining));
     let tooltip = format!(
         "Mochi — {} · {remaining}% left",
         provider_display_name(provider)
@@ -60,6 +60,19 @@ pub fn remaining_percent(snapshot: &UsageSnapshot) -> u8 {
         .remaining_percent
         .round()
         .clamp(0.0, 100.0) as u8
+}
+
+/// Menu bar title beside template icon (CodexBar-style leading space on macOS).
+pub fn tray_title_from_remaining(remaining: u8) -> String {
+    let label = format!("{remaining}%");
+    #[cfg(target_os = "macos")]
+    {
+        return format!(" {label}");
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        label
+    }
 }
 
 pub fn provider_display_name(provider: ProviderId) -> &'static str {
@@ -114,7 +127,7 @@ mod tests {
         let snapshots = vec![snapshot(ProviderId::Codex, 1.0)];
         let presentation = resolve_tray_presentation(&snapshots);
         assert_eq!(presentation.remaining_percent, 99);
-        assert_eq!(presentation.title.as_deref(), Some("99%"));
+        assert_eq!(presentation.title, Some(tray_title_from_remaining(99)));
         assert!(presentation.tooltip.contains("Codex"));
         assert!(presentation.tooltip.contains("99% left"));
     }

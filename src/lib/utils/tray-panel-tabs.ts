@@ -2,6 +2,10 @@ import type { ProviderId, UsageSnapshot } from "@/lib/schemas/usage";
 
 import { getProviderLabel } from "./provider-labels";
 
+function isEnabledProvider(provider: ProviderId, enabledProviders: ProviderId[]): boolean {
+  return enabledProviders.includes(provider);
+}
+
 export interface TrayPanelTab {
   id: "overview" | ProviderId;
   label: string;
@@ -18,9 +22,17 @@ export interface OverviewMetrics {
 
 const HEALTHY_THRESHOLD = 60;
 
-export function buildTrayPanelTabs(snapshots: UsageSnapshot[]): TrayPanelTab[] {
-  const usedPercents = snapshots.map((snapshot) => snapshot.primary.used_percent);
-  const remainingPercents = snapshots.map((snapshot) => snapshot.primary.remaining_percent);
+export function buildTrayPanelTabs(
+  snapshots: UsageSnapshot[],
+  enabledProviders: ProviderId[] = [],
+): TrayPanelTab[] {
+  const enabledSnapshots =
+    enabledProviders.length === 0
+      ? snapshots
+      : snapshots.filter((snapshot) => isEnabledProvider(snapshot.provider, enabledProviders));
+
+  const usedPercents = enabledSnapshots.map((snapshot) => snapshot.primary.used_percent);
+  const remainingPercents = enabledSnapshots.map((snapshot) => snapshot.primary.remaining_percent);
 
   const overviewTab: TrayPanelTab = {
     id: "overview",
@@ -29,7 +41,7 @@ export function buildTrayPanelTabs(snapshots: UsageSnapshot[]): TrayPanelTab[] {
     remainingPercent: remainingPercents.length ? Math.min(...remainingPercents) : 100,
   };
 
-  const providerTabs = snapshots.map((snapshot) => ({
+  const providerTabs = enabledSnapshots.map((snapshot) => ({
     id: snapshot.provider,
     label: getProviderLabel(snapshot.provider),
     usedPercent: snapshot.primary.used_percent,
@@ -37,6 +49,17 @@ export function buildTrayPanelTabs(snapshots: UsageSnapshot[]): TrayPanelTab[] {
   }));
 
   return [overviewTab, ...providerTabs];
+}
+
+export function filterSnapshotsForEnabledProviders(
+  snapshots: UsageSnapshot[],
+  enabledProviders: ProviderId[],
+): UsageSnapshot[] {
+  if (enabledProviders.length === 0) {
+    return snapshots;
+  }
+
+  return snapshots.filter((snapshot) => isEnabledProvider(snapshot.provider, enabledProviders));
 }
 
 export function getOverviewMetrics(snapshots: UsageSnapshot[]): OverviewMetrics {
