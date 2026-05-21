@@ -29,3 +29,11 @@ export const PROVIDER_LABELS: Record<z.infer<typeof ProviderIdSchema>, string> =
 };
 
 export const ALL_PROVIDER_IDS = ProviderIdSchema.options;
+
+/** Matches `MochiSettings::default()` in `src-tauri/src/settings/mod.rs`. */
+export const DEFAULT_MOCHI_SETTINGS = MochiSettingsSchema.parse({
+  update_channel: "stable",
+  refresh_interval_seconds: 300,
+  enabled_providers: ALL_PROVIDER_IDS,
+  show_notifications: true,
+});
