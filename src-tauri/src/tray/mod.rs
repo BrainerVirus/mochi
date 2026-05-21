@@ -1,11 +1,50 @@
+mod icon;
+mod usage;
+
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager,
+    AppHandle, Emitter, Manager, State,
 };
+
+use crate::core::models::UsageSnapshot;
+use crate::settings::SettingsState;
+use crate::status;
+
+pub use usage::{aggregate_used_percent, tray_usage_tone, TrayUsageTone, TRAY_ID};
+
+use icon::tray_icon_for_tone;
 
 pub fn tray_tooltip(used_percent: u8) -> String {
     format!("Mochi: {used_percent}% used")
+}
+
+pub fn apply_tray_usage(app: &AppHandle, snapshots: &[UsageSnapshot]) -> Result<(), String> {
+    let used_percent = aggregate_used_percent(snapshots);
+    let tone = tray_usage_tone(used_percent);
+    let tray = app
+        .tray_by_id(TRAY_ID)
+        .ok_or_else(|| format!("tray icon {TRAY_ID} not found"))?;
+
+    tray.set_tooltip(Some(tray_tooltip(used_percent)))
+        .map_err(|error| error.to_string())?;
+    tray.set_icon(Some(tray_icon_for_tone(tone)))
+        .map_err(|error| error.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn sync_tray_usage(
+    app: AppHandle,
+    state: State<'_, SettingsState>,
+) -> Result<(), String> {
+    let settings = state.current()?;
+    let snapshots = status::collect_usage_snapshots(&settings.enabled_providers)
+        .await
+        .map_err(|error| error.to_string())?;
+
+    apply_tray_usage(&app, &snapshots)
 }
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -38,12 +77,9 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         ],
     )?;
 
-    let icon = app
-        .default_window_icon()
-        .ok_or("missing default window icon")?
-        .clone();
+    let icon = tray_icon_for_tone(TrayUsageTone::Normal);
 
-    TrayIconBuilder::new()
+    TrayIconBuilder::with_id(TRAY_ID)
         .icon(icon)
         .tooltip(tray_tooltip(0))
         .menu(&menu)
@@ -98,9 +134,31 @@ fn show_main_window(app: &AppHandle, path: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::models::{ProviderId, UsageSnapshot, UsageWindow};
+
+    fn snapshot(used_percent: f32) -> UsageSnapshot {
+        UsageSnapshot {
+            provider: ProviderId::Claude,
+            primary: UsageWindow::new("Session", used_percent, None),
+            secondary: None,
+            updated_at: "1970-01-01T00:00:00Z".to_string(),
+            source: "test".to_string(),
+        }
+    }
 
     #[test]
     fn tray_tooltip_includes_used_percent() {
         assert_eq!(tray_tooltip(42), "Mochi: 42% used");
+    }
+
+    #[test]
+    fn apply_tray_usage_aggregates_snapshots_for_tooltip_text() {
+        let snapshots = vec![snapshot(12.0), snapshot(88.0)];
+        assert_eq!(aggregate_used_percent(&snapshots), 88);
+        assert_eq!(tray_usage_tone(88), TrayUsageTone::Critical);
+        assert_eq!(
+            tray_tooltip(aggregate_used_percent(&snapshots)),
+            "Mochi: 88% used"
+        );
     }
 }

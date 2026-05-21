@@ -35,10 +35,7 @@ impl SettingsState {
 
     pub fn update(&self, next: MochiSettings) -> Result<MochiSettings, String> {
         persist_settings(&self.path, &next)?;
-        let mut settings = self
-            .settings
-            .lock()
-            .map_err(|error| error.to_string())?;
+        let mut settings = self.settings.lock().map_err(|error| error.to_string())?;
         *settings = next.clone();
         Ok(next)
     }

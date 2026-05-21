@@ -16,8 +16,8 @@ pub async fn get_usage_snapshots(
 
 #[tauri::command]
 pub async fn refresh_provider(provider: String) -> Result<UsageSnapshot, String> {
-    let provider_id = ProviderId::parse(&provider)
-        .ok_or_else(|| format!("unknown provider: {provider}"))?;
+    let provider_id =
+        ProviderId::parse(&provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
 
     match fetch_provider_snapshot(provider_id).await {
         Ok(Some(snapshot)) => Ok(snapshot),
@@ -26,7 +26,7 @@ pub async fn refresh_provider(provider: String) -> Result<UsageSnapshot, String>
     }
 }
 
-async fn collect_usage_snapshots(
+pub(crate) async fn collect_usage_snapshots(
     enabled_providers: &[String],
 ) -> Result<Vec<UsageSnapshot>, ProviderError> {
     let mut snapshots = Vec::new();
