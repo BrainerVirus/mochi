@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { RefreshCwIcon, SettingsIcon } from "lucide-react";
 import { useState } from "react";
 
-import { MochiMascot } from "@/components/mascot/mochi-mascot";
+import { MochiMark } from "@/components/mascot/mochi-mark";
 import { TrayOverview } from "@/components/tray/tray-overview";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
@@ -37,7 +37,7 @@ export function TrayPanel() {
     <TrayPanelShell>
       <section className="mx-auto flex w-full max-w-[360px] flex-col">
         <header className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
-          <MochiMascot state={mascotState} className="size-9" />
+          <MochiMark state={mascotState} className="size-9" />
           <div className="flex items-center gap-0.5">
             <Button
               variant="ghost"
