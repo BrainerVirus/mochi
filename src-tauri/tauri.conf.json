@@ -15,9 +15,12 @@
         "label": "main",
         "title": "Mochi",
         "width": 360,
-        "height": 640,
+        "height": 520,
         "visible": false,
-        "resizable": true
+        "decorations": false,
+        "resizable": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true
       },
       {
         "label": "widget",
