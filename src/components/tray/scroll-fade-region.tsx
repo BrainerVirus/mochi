@@ -1,4 +1,4 @@
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 import { useCallback, useRef, type ReactNode } from "react";
 
 import {
@@ -6,11 +6,16 @@ import {
   cycleHorizontalScrollForward,
   cycleVerticalScroll,
 } from "@/components/tray/scroll-fade-cycle";
+import { TrayTabChevron } from "@/components/tray/tray-tab-chevron";
 import { useScrollOverflow } from "@/components/tray/use-scroll-overflow";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type ScrollFadeOrientation = "horizontal" | "vertical";
+
+/** Matches overlay chevron column width (w-8). */
+const HORIZONTAL_CHEVRON_INSET_START = "pl-8";
+const HORIZONTAL_CHEVRON_INSET_END = "pr-8";
 
 interface ScrollFadeRegionProps {
   orientation: ScrollFadeOrientation;
@@ -39,24 +44,13 @@ function scrollFadeMaskClass(
   return "scroll-fade-mask-y-end";
 }
 
-type ScrollFadeDirection = "forward" | "backward";
-
-function ScrollFadeGhostButton({
-  orientation,
-  direction = "forward",
+function ScrollFadeVerticalChevron({
   visible,
   onCycle,
-  className,
 }: {
-  orientation: ScrollFadeOrientation;
-  direction?: ScrollFadeDirection;
   visible: boolean;
   onCycle: () => void;
-  className?: string;
 }) {
-  const isHorizontal = orientation === "horizontal";
-  const isBackward = direction === "backward";
-
   return (
     <Button
       type="button"
@@ -64,43 +58,14 @@ function ScrollFadeGhostButton({
       size="icon-xs"
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
-      aria-label={
-        isHorizontal
-          ? isBackward
-            ? "Show previous tabs"
-            : "Show more tabs"
-          : "Scroll down for more"
-      }
+      aria-label="Scroll down for more"
       onClick={onCycle}
       className={cn(
-        "pointer-events-auto z-20 shrink-0 cursor-pointer rounded-full text-muted-foreground transition-[opacity,transform] duration-200 ease-out hover:bg-muted/50 hover:text-foreground",
-        isHorizontal
-          ? cn(
-              "absolute top-1/2 -translate-y-1/2",
-              isBackward
-                ? visible
-                  ? "left-0 translate-x-0 opacity-100"
-                  : "left-0 -translate-x-1 opacity-0 pointer-events-none"
-                : visible
-                  ? "right-0 translate-x-0 opacity-100"
-                  : "right-0 translate-x-1 opacity-0 pointer-events-none",
-            )
-          : cn(
-              "absolute inset-x-0 bottom-0 z-20 mx-auto mb-0.5",
-              visible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0 pointer-events-none",
-            ),
-        className,
+        "pointer-events-auto absolute inset-x-0 bottom-0 z-20 mx-auto mb-0.5 shrink-0 cursor-pointer rounded-full text-muted-foreground transition-[opacity,transform] duration-200 ease-out hover:bg-muted/50 hover:text-foreground motion-reduce:transition-none",
+        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-1 opacity-0",
       )}
     >
-      {isHorizontal ? (
-        isBackward ? (
-          <ChevronLeftIcon className="size-3.5" />
-        ) : (
-          <ChevronRightIcon className="size-3.5" />
-        )
-      ) : (
-        <ChevronDownIcon className="size-3.5" />
-      )}
+      <ChevronDownIcon className="size-3.5" />
     </Button>
   );
 }
@@ -141,31 +106,29 @@ function ScrollFadeViewport({
   isHorizontal,
   canScrollStart,
   canScrollEnd,
-  orientation,
   maskClass,
   scrollClassName,
   onCycleForward,
-  onCycleBackward,
   children,
 }: {
   scrollRef: React.RefObject<HTMLDivElement | null>;
   isHorizontal: boolean;
   canScrollStart: boolean;
   canScrollEnd: boolean;
-  orientation: ScrollFadeOrientation;
   maskClass: string | undefined;
   scrollClassName?: string;
   onCycleForward: () => void;
-  onCycleBackward: () => void;
   children: ReactNode;
 }) {
   return (
-    <div className={cn("relative min-w-0", isHorizontal && "h-full w-full")}>
+    <div className={cn("relative min-h-0 min-w-0", isHorizontal && "h-full w-full")}>
       <div
         ref={scrollRef}
         className={cn(
           "scrollbar-none overscroll-contain",
           isHorizontal ? "h-full overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
+          isHorizontal && canScrollStart && HORIZONTAL_CHEVRON_INSET_START,
+          isHorizontal && canScrollEnd && HORIZONTAL_CHEVRON_INSET_END,
           maskClass,
           scrollClassName,
         )}
@@ -182,28 +145,7 @@ function ScrollFadeViewport({
       {canScrollEnd && !isHorizontal ? (
         <>
           <div aria-hidden className="scroll-fade-edge-bottom" />
-          <ScrollFadeGhostButton
-            orientation={orientation}
-            visible={canScrollEnd}
-            onCycle={onCycleForward}
-          />
-        </>
-      ) : null}
-
-      {isHorizontal ? (
-        <>
-          <ScrollFadeGhostButton
-            orientation={orientation}
-            direction="backward"
-            visible={canScrollStart}
-            onCycle={onCycleBackward}
-          />
-          <ScrollFadeGhostButton
-            orientation={orientation}
-            direction="forward"
-            visible={canScrollEnd}
-            onCycle={onCycleForward}
-          />
+          <ScrollFadeVerticalChevron visible={canScrollEnd} onCycle={onCycleForward} />
         </>
       ) : null}
     </div>
@@ -241,14 +183,23 @@ export function ScrollFadeRegion({
         isHorizontal={isHorizontal}
         canScrollStart={canScrollStart}
         canScrollEnd={canScrollEnd}
-        orientation={orientation}
         maskClass={maskClass}
         scrollClassName={scrollClassName}
         onCycleForward={cycleScrollForward}
-        onCycleBackward={cycleScrollBackward}
       >
         {children}
       </ScrollFadeViewport>
+
+      {isHorizontal ? (
+        <>
+          <TrayTabChevron
+            side="start"
+            visible={canScrollStart}
+            onCycle={cycleScrollBackward}
+          />
+          <TrayTabChevron side="end" visible={canScrollEnd} onCycle={cycleScrollForward} />
+        </>
+      ) : null}
     </div>
   );
 }

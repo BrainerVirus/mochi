@@ -1,10 +1,10 @@
 import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
+import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 
 /** Matches TabsList row height — keep chevron overlay and tab row in sync. */
 export const TRAY_TAB_ROW_HEIGHT = "h-14" as const;
-import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import { Progress } from "@/components/ui/progress";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
