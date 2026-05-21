@@ -30,7 +30,6 @@ export function clampTrayPanelHeight(
 }
 
 type TrayPanelContentMeasure = Pick<HTMLElement, "scrollHeight">;
-type TrayPanelBlockMeasure = Pick<HTMLElement, "offsetHeight">;
 
 export function sumTrayPanelBlockHeights({
   contentScrollHeight,
@@ -44,21 +43,15 @@ export function sumTrayPanelBlockHeights({
   return contentScrollHeight + separatorHeight + footerHeight;
 }
 
-/** Natural scroll content height plus separator and bottom menu below the scroll region. */
+/** Natural height of the unified tray column (tabs, content, divider, and menu options). */
 export function measureTrayPanelLayoutHeight(layoutEl: HTMLElement | null): number {
   if (!layoutEl) {
     return 0;
   }
 
   const contentEl = layoutEl.querySelector<HTMLElement>(TRAY_PANEL_CONTENT_SELECTOR);
-  const separatorEl = layoutEl.querySelector<HTMLElement>(TRAY_PANEL_SEPARATOR_SELECTOR);
-  const footerEl = layoutEl.querySelector<HTMLElement>(TRAY_PANEL_FOOTER_SELECTOR);
 
-  return sumTrayPanelBlockHeights({
-    contentScrollHeight: (contentEl as TrayPanelContentMeasure | null)?.scrollHeight ?? 0,
-    separatorHeight: (separatorEl as TrayPanelBlockMeasure | null)?.offsetHeight ?? 0,
-    footerHeight: (footerEl as TrayPanelBlockMeasure | null)?.offsetHeight ?? 0,
-  });
+  return (contentEl as TrayPanelContentMeasure | null)?.scrollHeight ?? 0;
 }
 
 export function trayPanelShellClassName(): string {

@@ -138,7 +138,7 @@ export function TrayPanelFooter({ isRefreshing, onRefresh, onQuit }: TrayPanelFo
   ];
 
   return (
-    <footer data-tray-panel-footer className="relative shrink-0">
+    <div data-tray-panel-footer className="relative">
       {aboutOpen ? (
         <TrayAboutOverlay version={version} onClose={() => setAboutOpen(false)} />
       ) : null}
@@ -155,6 +155,6 @@ export function TrayPanelFooter({ isRefreshing, onRefresh, onQuit }: TrayPanelFo
           ))}
         </ul>
       </nav>
-    </footer>
+    </div>
   );
 }

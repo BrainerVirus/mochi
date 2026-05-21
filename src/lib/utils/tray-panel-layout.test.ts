@@ -38,6 +38,9 @@ describe("trayPanelLayout", () => {
         footerHeight: 168,
       }),
     ).toBe(449);
+  });
+
+  it("measures unified tray content scroll height", () => {
     expect(measureTrayPanelLayoutHeight(null)).toBe(0);
   });
 

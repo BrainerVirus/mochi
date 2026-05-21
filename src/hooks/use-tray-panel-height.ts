@@ -4,6 +4,7 @@ import { setTrayPanelHeight } from "@/lib/tauri/commands";
 import {
   clampTrayPanelHeight,
   measureTrayPanelLayoutHeight,
+  TRAY_PANEL_CONTENT_SELECTOR,
 } from "@/lib/utils/tray-panel-layout";
 
 function isTauriTrayPanel(): boolean {
@@ -39,14 +40,9 @@ export function useTrayPanelHeight(layoutRef: RefObject<HTMLElement | null>) {
     const resizeObserver = new ResizeObserver(syncHeight);
     resizeObserver.observe(layout);
 
-    const content = layout.querySelector("[data-tray-panel-content]");
+    const content = layout.querySelector(TRAY_PANEL_CONTENT_SELECTOR);
     if (content) {
       resizeObserver.observe(content);
-    }
-
-    const footer = layout.querySelector("[data-tray-panel-footer]");
-    if (footer) {
-      resizeObserver.observe(footer);
     }
 
     syncHeight();

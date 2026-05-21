@@ -52,20 +52,7 @@ export function TrayPanel() {
   }
 
   return (
-    <TrayPanelShell
-      layoutRef={layoutRef}
-      footer={
-        <TrayPanelFooter
-          isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
-          onRefresh={() => {
-            void refreshAll();
-          }}
-          onQuit={() => {
-            void quitApp();
-          }}
-        />
-      }
-    >
+    <TrayPanelShell layoutRef={layoutRef}>
       <section
         data-tray-panel-content
         className="mx-auto flex w-full max-w-[360px] flex-col"
@@ -82,6 +69,20 @@ export function TrayPanel() {
           snapshots={snapshots}
           onRefreshProvider={handleRefreshProvider}
           refreshingProvider={refreshingProvider}
+        />
+        <div
+          data-tray-panel-separator
+          className="border-border border-t"
+          aria-hidden
+        />
+        <TrayPanelFooter
+          isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
+          onRefresh={() => {
+            void refreshAll();
+          }}
+          onQuit={() => {
+            void quitApp();
+          }}
         />
       </section>
     </TrayPanelShell>

@@ -8,11 +8,10 @@ import {
 
 interface TrayPanelShellProps {
   children: ReactNode;
-  footer?: ReactNode;
   layoutRef?: RefObject<HTMLDivElement | null>;
 }
 
-export function TrayPanelShell({ children, footer, layoutRef }: TrayPanelShellProps) {
+export function TrayPanelShell({ children, layoutRef }: TrayPanelShellProps) {
   return (
     <main className={trayPanelShellClassName()}>
       <div ref={layoutRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -23,16 +22,6 @@ export function TrayPanelShell({ children, footer, layoutRef }: TrayPanelShellPr
         >
           {children}
         </ScrollFadeRegion>
-        {footer ? (
-          <>
-            <div
-              data-tray-panel-separator
-              className="border-border shrink-0 border-t"
-              aria-hidden
-            />
-            {footer}
-          </>
-        ) : null}
       </div>
     </main>
   );
