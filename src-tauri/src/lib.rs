@@ -13,7 +13,9 @@ use tauri::Manager;
 
 use cli::{Cli, Command};
 use settings::{get_settings, save_settings, SettingsState};
-use tray::{maybe_show_main_for_dev, setup_main_panel, setup_tray, show_main_panel, sync_tray_usage};
+use tray::{
+    maybe_show_main_for_dev, setup_main_panel, setup_tray, show_main_panel, sync_tray_usage,
+};
 use widget::{hide_widget, setup_widget, show_widget, toggle_widget};
 
 #[tauri::command]

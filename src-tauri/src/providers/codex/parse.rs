@@ -47,16 +47,13 @@ pub fn snapshot_from_rate_limits_result(
     Ok(UsageSnapshot {
         provider: ProviderId::Codex,
         primary: usage_window_from_rate_limit(primary),
-        secondary: bucket
-            .secondary
-            .as_ref()
-            .map(usage_window_from_rate_limit),
+        secondary: bucket.secondary.as_ref().map(usage_window_from_rate_limit),
         updated_at: updated_at.to_string(),
         source: "codex-cli".to_string(),
     })
 }
 
-fn select_codex_bucket<'a>(payload: &'a RateLimitsReadResult) -> Option<&'a RateLimitBucket> {
+fn select_codex_bucket(payload: &RateLimitsReadResult) -> Option<&RateLimitBucket> {
     if let Some(bucket) = payload.rate_limits_by_limit_id.get("codex") {
         return Some(bucket);
     }
@@ -73,9 +70,7 @@ fn usage_window_from_rate_limit(window: &RateLimitWindow) -> UsageWindow {
     UsageWindow::new(
         window_label(window.window_duration_mins),
         window.used_percent,
-        window
-            .resets_at
-            .and_then(format_unix_timestamp),
+        window.resets_at.and_then(format_unix_timestamp),
     )
 }
 
@@ -100,10 +95,9 @@ mod tests {
 
     #[test]
     fn maps_codex_rate_limits_fixture_to_usage_snapshot() {
-        let result: serde_json::Value = serde_json::from_str(include_str!(
-            "fixtures/rate_limits.json"
-        ))
-        .expect("fixture should parse as json");
+        let result: serde_json::Value =
+            serde_json::from_str(include_str!("fixtures/rate_limits.json"))
+                .expect("fixture should parse as json");
 
         let snapshot =
             snapshot_from_rate_limits_result(&result, "2025-12-04T18:10:22Z").expect("snapshot");
