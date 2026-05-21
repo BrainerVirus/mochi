@@ -59,7 +59,7 @@ export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) 
     <div
       ref={columnRef}
       className={cn(
-        "pointer-events-none absolute inset-y-0 z-20 flex w-8 items-center justify-center",
+        "pointer-events-none absolute top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center",
         isStart ? "left-0" : "right-0",
         !visible && "invisible opacity-0",
       )}

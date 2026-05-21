@@ -8,7 +8,6 @@ import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { UsageCard } from "@/components/usage/usage-card";
 import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useUsageData } from "@/hooks/use-usage-data";
@@ -140,23 +139,25 @@ function UsageSnapshotsPanel({
   }
 
   if (isSuccess && snapshots.length > 0) {
+    const activeSnapshot = snapshots.find((snapshot) => snapshot.provider === activeTab);
+
     return (
-      <Tabs value={activeTab} onValueChange={onTabChange} className="gap-0" defaultValue="overview">
-        <TrayPanelTabList tabs={tabs} />
+      <div className="flex flex-col gap-0">
+        <TrayPanelTabList tabs={tabs} value={activeTab} onValueChange={onTabChange} />
 
-        <TabsContent value="overview" className="px-3 py-3">
-          <TrayOverview snapshots={snapshots} metrics={metrics} />
-        </TabsContent>
-
-        {snapshots.map((snapshot) => (
-          <TabsContent key={snapshot.provider} value={snapshot.provider} className="px-3 py-3">
-            <UsageCard snapshot={snapshot} compact />
-            <p className="text-muted-foreground mt-3 text-[10px]">
-              Updated {formatUpdatedAt(snapshot.updated_at)}
-            </p>
-          </TabsContent>
-        ))}
-      </Tabs>
+        <div className="px-3 py-3">
+          {activeTab === "overview" ? (
+            <TrayOverview snapshots={snapshots} metrics={metrics} />
+          ) : activeSnapshot ? (
+            <>
+              <UsageCard snapshot={activeSnapshot} compact />
+              <p className="text-muted-foreground mt-3 text-[10px]">
+                Updated {formatUpdatedAt(activeSnapshot.updated_at)}
+              </p>
+            </>
+          ) : null}
+        </div>
+      </div>
     );
   }
 
