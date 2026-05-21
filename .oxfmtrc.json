@@ -1,0 +1,28 @@
+{
+  "printWidth": 100,
+  "semi": true,
+  "singleQuote": false,
+  "jsxSingleQuote": false,
+  "trailingComma": "all",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "singleAttributePerLine": false,
+  "htmlWhitespaceSensitivity": "css",
+  "sortImports": {
+    "partitionByNewline": true,
+    "newlinesBetween": false
+  },
+  "sortPackageJson": {
+    "sortScripts": true
+  },
+  "sortTailwindcss": true,
+  "ignorePatterns": [
+    ".agents/**",
+    ".output/**",
+    ".nitro/**",
+    "app/routeTree.gen.ts",
+    "node_modules/**",
+    "src-tauri/target/**",
+    "src-tauri/gen/**"
+  ]
+}

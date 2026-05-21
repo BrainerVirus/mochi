@@ -1,0 +1,49 @@
+{
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "pedantic": "off",
+    "style": "off",
+    "restriction": "off"
+  },
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "import"],
+  "jsPlugins": ["oxlint-tailwindcss"],
+  "env": {
+    "browser": true,
+    "node": true
+  },
+  "options": {
+    "typeAware": true
+  },
+  "settings": {
+    "tailwindcss": {
+      "entryPoint": "src/styles/index.css"
+    }
+  },
+  "overrides": [
+    {
+      "files": ["app/routeTree.gen.ts", "src/components/ui/**"],
+      "rules": {
+        "max-lines": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.{ts,tsx}"],
+      "plugins": ["vitest"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ],
+  "rules": {
+    "max-lines": ["warn", 300],
+    "max-lines-per-function": ["warn", 80],
+    "no-explicit-any": "error",
+    "no-duplicate-imports": "error",
+    "no-console": "warn",
+    "tailwindcss/no-unknown-classes": "error",
+    "tailwindcss/no-conflicting-classes": "error",
+    "react-in-jsx-scope": "off"
+  }
+}

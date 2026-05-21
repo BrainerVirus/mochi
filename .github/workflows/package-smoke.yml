@@ -1,0 +1,15 @@
+name: Package Smoke
+
+on:
+  workflow_run:
+    workflows: ["Stable Release", "Unstable Release"]
+    types: [completed]
+
+jobs:
+  smoke:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release documentation exists
+        run: test -f docs/releasing.md && test -f docs/linux.md
