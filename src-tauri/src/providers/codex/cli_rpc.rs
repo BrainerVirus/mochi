@@ -77,9 +77,12 @@ impl CodexAppServer for SubprocessCodexAppServer {
     }
 
     async fn fetch_rate_limits(&self) -> ProviderResult<Value> {
-        timeout(RPC_TIMEOUT, run_codex_rate_limits_rpc(self.binary_path().as_ref()))
-            .await
-            .map_err(|_| ProviderError::Timeout)?
+        timeout(
+            RPC_TIMEOUT,
+            run_codex_rate_limits_rpc(self.binary_path().as_ref()),
+        )
+        .await
+        .map_err(|_| ProviderError::Timeout)?
     }
 }
 
@@ -106,7 +109,10 @@ impl FetchStrategy for CliRpcStrategy {
     fn should_fallback(&self, error: &ProviderError) -> bool {
         matches!(
             error,
-            ProviderError::NotConfigured | ProviderError::Auth(_) | ProviderError::Timeout
+            ProviderError::NotConfigured
+                | ProviderError::Auth(_)
+                | ProviderError::Timeout
+                | ProviderError::Fetch(_)
         )
     }
 }
@@ -193,8 +199,8 @@ async fn send_rpc_message(
     stdin: &mut tokio::process::ChildStdin,
     message: Value,
 ) -> ProviderResult<()> {
-    let mut payload = serde_json::to_string(&message)
-        .map_err(|error| ProviderError::Parse(error.to_string()))?;
+    let mut payload =
+        serde_json::to_string(&message).map_err(|error| ProviderError::Parse(error.to_string()))?;
     payload.push('\n');
     stdin
         .write_all(payload.as_bytes())
@@ -289,8 +295,8 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_uses_mock_rate_limits_payload() {
-        let result: Value = serde_json::from_str(include_str!("fixtures/rate_limits.json"))
-            .expect("fixture json");
+        let result: Value =
+            serde_json::from_str(include_str!("fixtures/rate_limits.json")).expect("fixture json");
         let strategy = CliRpcStrategy::with_client(Arc::new(MockCodexAppServer {
             installed: true,
             result: Ok(result),

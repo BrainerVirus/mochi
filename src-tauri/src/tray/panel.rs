@@ -1,8 +1,7 @@
 use std::sync::Mutex;
 
 use tauri::{
-    AppHandle, Emitter, Manager, Runtime, WebviewWindow, WindowEvent,
-    tray::TrayIconEvent,
+    tray::TrayIconEvent, AppHandle, Emitter, Manager, Runtime, WebviewWindow, WindowEvent,
 };
 use tauri_plugin_positioner::{Position, WindowExt};
 
@@ -135,13 +134,8 @@ pub fn tray_panel_fallback_position() -> Position {
 }
 
 pub fn has_cached_tray_icon_rect(app: &AppHandle) -> bool {
-    app.try_state::<TrayIconRectState>().is_some_and(|state| {
-        state
-            .0
-            .lock()
-            .ok()
-            .is_some_and(|cached| cached.is_some())
-    })
+    app.try_state::<TrayIconRectState>()
+        .is_some_and(|state| state.0.lock().ok().is_some_and(|cached| cached.is_some()))
 }
 
 /// Resizes the tray popover to content height (logical px), reclamping anchor when visible.
@@ -276,27 +270,28 @@ pub fn maybe_show_main_for_dev(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Mutex;
+
     use super::*;
 
-    #[test]
-    fn dev_show_main_disabled_by_default() {
-        std::env::remove_var("MOCHI_DEV_SHOW_MAIN");
-        assert!(!dev_show_main_enabled());
-    }
+    static ENV_TEST_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
-    fn dev_show_main_honors_env_var() {
+    fn dev_show_main_env_var_behavior() {
+        let _guard = ENV_TEST_LOCK.lock().expect("env test lock");
+
+        std::env::remove_var("MOCHI_DEV_SHOW_MAIN");
+        assert!(!dev_show_main_enabled());
+
         std::env::set_var("MOCHI_DEV_SHOW_MAIN", "1");
         assert!(dev_show_main_enabled());
-        std::env::remove_var("MOCHI_DEV_SHOW_MAIN");
-    }
 
-    #[test]
-    fn dev_show_main_respects_zero_and_false() {
         std::env::set_var("MOCHI_DEV_SHOW_MAIN", "0");
         assert!(!dev_show_main_enabled());
+
         std::env::set_var("MOCHI_DEV_SHOW_MAIN", "false");
         assert!(!dev_show_main_enabled());
+
         std::env::remove_var("MOCHI_DEV_SHOW_MAIN");
     }
 
@@ -322,10 +317,7 @@ mod tests {
     #[test]
     fn tray_panel_fallback_uses_platform_corner() {
         #[cfg(target_os = "macos")]
-        assert!(matches!(
-            tray_panel_fallback_position(),
-            Position::TopRight
-        ));
+        assert!(matches!(tray_panel_fallback_position(), Position::TopRight));
 
         #[cfg(not(target_os = "macos"))]
         assert!(matches!(

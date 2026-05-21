@@ -41,10 +41,7 @@ mod tests {
             .map(|strategy| strategy.id())
             .collect();
 
-        assert_eq!(
-            strategy_ids,
-            vec!["codex-cli-rpc", "codex-browser-cookies"]
-        );
+        assert_eq!(strategy_ids, vec!["codex-cli-rpc", "codex-browser-cookies"]);
     }
 
     #[test]
