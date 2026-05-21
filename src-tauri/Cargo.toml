@@ -23,6 +23,9 @@ tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-ap
 tauri-plugin-opener = "2"
 tauri-plugin-positioner = { version = "2.3.1", features = ["tray-icon"] }
 tauri-plugin-updater = "2"
+resvg = "0.44"
 thiserror = "2.0"
 time = { version = "0.3", features = ["formatting", "parsing"] }
+tiny-skia = "0.11"
+usvg = "0.44"
 tokio = { version = "1.41", features = ["io-util", "macros", "process", "rt-multi-thread", "time"] }

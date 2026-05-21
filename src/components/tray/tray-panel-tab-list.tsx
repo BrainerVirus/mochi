@@ -1,47 +1,49 @@
+import { useCallback } from "react";
+
 import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
-import { Progress } from "@/components/ui/progress";
-import { TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import { getUsageMeterTone, usageMeterToneClasses } from "@/lib/utils/usage-meter-tone";
+import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
+import { cycleTrayPanelTabs } from "@/components/tray/tray-panel-tab-cycle";
+import {
+  TRAY_SEGMENT_ROW_HEIGHT,
+  TraySegmentedControl,
+} from "@/components/tray/tray-segmented-control";
+
+const TAB_FADE_INSET = 40;
 
 interface TrayPanelTabListProps {
   tabs: TrayPanelTab[];
+  value: string;
+  onValueChange: (value: string) => void;
 }
 
-export function TrayPanelTabList({ tabs }: TrayPanelTabListProps) {
-  return (
-    <TabsList
-      variant="line"
-      className="border-border h-auto w-full flex-nowrap justify-start gap-0 overflow-x-auto border-b bg-transparent p-0"
-    >
-      {tabs.map((tab) => {
-        const tone = getUsageMeterTone(tab.usedPercent);
+export function TrayPanelTabList({ tabs, value, onValueChange }: TrayPanelTabListProps) {
+  const handleCycleForward = useCallback(
+    (scrollEl: HTMLDivElement) => {
+      cycleTrayPanelTabs(scrollEl, tabs, value, "forward", onValueChange, TAB_FADE_INSET);
+    },
+    [onValueChange, tabs, value],
+  );
 
-        return (
-          <TabsTrigger
-            key={tab.id}
-            value={tab.id}
-            className={cn(
-              "min-w-0 shrink-0 flex-col gap-1 rounded-none px-2.5 py-2 text-[11px] after:bottom-0",
-              "data-active:bg-transparent data-active:shadow-none",
-            )}
-          >
-            <span className="truncate font-medium">{tab.label}</span>
-            {tab.id !== "overview" ? (
-              <Progress
-                value={tab.usedPercent}
-                className={cn("h-0.5 w-full", usageMeterToneClasses[tone])}
-                aria-hidden
-              />
-            ) : (
-              <span className="text-muted-foreground text-[10px] tabular-nums">
-                {tab.usedPercent > 0 ? `${Math.round(tab.usedPercent)}% peak` : "All clear"}
-              </span>
-            )}
-          </TabsTrigger>
-        );
-      })}
-    </TabsList>
+  const handleCycleBackward = useCallback(
+    (scrollEl: HTMLDivElement) => {
+      cycleTrayPanelTabs(scrollEl, tabs, value, "backward", onValueChange, TAB_FADE_INSET);
+    },
+    [onValueChange, tabs, value],
+  );
+
+  return (
+    <div className="border-border border-b px-3 pb-2">
+      <ScrollFadeRegion
+        orientation="horizontal"
+        rowHeightClassName={TRAY_SEGMENT_ROW_HEIGHT}
+        scrollClassName="overscroll-x-contain"
+        fadeInset={TAB_FADE_INSET}
+        onCycleForward={handleCycleForward}
+        onCycleBackward={handleCycleBackward}
+      >
+        <TraySegmentedControl tabs={tabs} value={value} onValueChange={onValueChange} />
+      </ScrollFadeRegion>
+    </div>
   );
 }

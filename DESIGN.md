@@ -6,16 +6,17 @@
 
 Mochi is a **soft, calm usage companion** for AI coding tools. The interface should feel like a friendly kitchen counter note — warm, approachable, and never alarming until it truly needs to be. Data density is **compact but breathable**: tray panels and widgets show the essentials first, with room to expand into detail.
 
-The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillowy surfaces, pastel accents, and cream backgrounds that read as gentle rather than clinical. Usage warnings escalate through color and mascot expression, not through harsh reds or modal overload.
+The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillowy surfaces, pastel accents, and cream backgrounds that read as gentle rather than clinical. Usage warnings escalate through color on meters and the brand mark ring, not through harsh reds or modal overload.
 
 **Key characteristics:**
 
 - Warm cream canvas with whisper-soft shadows
 - Pill-shaped badges and generously rounded cards (`rounded-mochi`, 1.5rem)
 - Pastel usage meters that shift from matcha → yuzu → ume as limits approach
-- Mascot-driven emotional feedback alongside numeric data
+- Brand mark ring tint alongside numeric usage data
 - Light-first with a warm dark mode for late-night coding sessions
 - **Tray popover:** Always uses scoped `.tray-panel` dark charcoal theme (CodexBar-inspired density) with Mochi pastel meter accents — independent of app light/dark preference
+- **Menu bar tray icon:** Provider glyph + remaining `%` label (CodexBar “brand + percent” mode), not a usage-colored dot
 
 ## 2. Color Palette & Roles
 
@@ -41,13 +42,13 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 
 ### Functional Mapping (Usage States)
 
-| State            | Color         | Mascot                   |
-| ---------------- | ------------- | ------------------------ |
-| Normal (<60%)    | Matcha Calm   | Happy mochi              |
-| Warning (60–85%) | Yuzu Glow     | Worried mochi            |
-| Critical (>85%)  | Ume Alert     | Flattened/sweating mochi |
-| Reset soon       | Lavender Rest | Excited mochi + clock    |
-| All good         | Blush Mochi   | Bouncy mochi             |
+| State            | Color         | Brand mark ring                                |
+| ---------------- | ------------- | ---------------------------------------------- |
+| Normal (<60%)    | Matcha Calm   | Muted sage arc, low opacity                    |
+| Warning (60–85%) | Yuzu Glow     | Yuzu arc, medium opacity                       |
+| Critical (>85%)  | Ume Alert     | Ume arc, full opacity, slightly heavier stroke |
+| Reset soon       | Lavender Rest | Lavender arc                                   |
+| All good         | Matcha Calm   | Matcha arc, high opacity                       |
 
 ## 3. Typography Rules
 
@@ -122,12 +123,21 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 ### Tray Panel Layout (required patterns)
 
 - **Single surface:** One charcoal panel shell (`tray-panel` class on `TrayPanelShell`); never stack `Card` inside the tray route.
-- **Top tabs:** Horizontal `Tabs` with `variant="line"` — Overview plus one tab per enabled provider. Each provider tab shows a mini usage bar (`h-0.5` Progress) tinted by usage state.
+- **Top tabs:** Horizontal `Tabs` with `variant="line"` — Overview plus one tab per enabled provider. Each provider tab shows a **provider icon**, label, **remaining %**, and a mini usage bar (`h-0.5` Progress) tinted by usage state. Overflowing tabs use a **multi-stop fade mask** (`.scroll-fade-mask-x-end` / `.scroll-fade-mask-x-both` when scrolled) with hidden scrollbars and a ghost chevron to cycle hidden tabs — no visible x-axis scrollbar, no y-axis overflow on the tab row.
+- **Scroll masks:** Tray panel body scroll uses the same pattern vertically (`.scroll-fade-mask-y-end`, ghost chevron-down, `scrollbar-none`). Edge tints use soft transparent gradients (`.scroll-fade-edge-*`, gitlab `BottomFade` stops) over `mask-image` — never solid `bg-background` blocks or backdrop blur on the fade zone.
 - **Overview tab:** 2×2 metric grid (providers, highest %, average %, healthy count), compact bar chart, then flat provider meter list.
 - **Provider tab:** Flat section with thin meters, `% left` + reset countdown, source badge — no card wrapper.
-- **Header:** Minimal — wordmark, refresh icon, settings gear. No mascot in tray panel (data-first).
+- **Footer menu:** Fixed bottom list (CodexBar-style) — Refresh (`⌘R`), Settings… (`⌘,`), About Mochi, Quit (`⌘Q`); row separators, muted shortcut hints on the right. No top header chrome.
 - **Typography:** Geist at `text-sm` / `text-xs` / `text-[10px]` labels; tabular nums for percentages.
 - **Meters:** Thin tracks (`h-1`), Mochi matcha/yuzu/ume fill by threshold; label row shows window name, `% left`, and reset time when available.
+
+### Menu bar tray icon (required)
+
+- **Provider glyph:** Monochrome 18×18 mark for the active provider (Codex chevron-in-square when Codex is selected; letter fallback for others).
+- **Percent label:** Remaining quota as compact text (e.g. `99%`) beside the glyph — matches CodexBar Display → “provider branding icons with a percent label”.
+- **Selection:** Prefer Codex when it has data; otherwise the provider closest to its limit (highest used %).
+- **Fallback:** Neutral Mochi/Codex glyph when no usage snapshots exist — never a green/yellow/red dot.
+- **Tooltip:** `Mochi — {Provider} · {N}% left`.
 - **Spacing:** `px-3` horizontal padding, `gap-3` between sections, `Separator` between logical groups.
 
 ### Spacing
@@ -140,7 +150,7 @@ The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillow
 ### Density Modes
 
 - **Compact:** `text-xs`, `p-3`, single-line meters
-- **Normal:** `text-sm`, `p-4`, standard meters + mascot thumbnail
+- **Normal:** `text-sm`, `p-4`, standard meters + brand mark thumbnail
 - **Expanded:** `text-base`, `p-6`, dual meters + provider detail link
 
 ## 6. shadcn Token Mapping
@@ -161,9 +171,17 @@ When building UI, map Mochi semantics to shadcn tokens:
 
 Custom Tailwind tokens (always available): `mochi-cream`, `mochi-blush`, `mochi-matcha`, `mochi-yuzu`, `mochi-peach`, `mochi-ume`, `mochi-lavender`, `rounded-mochi`.
 
-## 7. Motion & Mascot
+## 7. Motion & Brand Mark
 
-- **GSAP** for mascot state transitions and panel enter/exit
+**MochiMark** is a sober, geometric quota indicator — inspired by Cursor/Vercel logo simplicity, not a cartoon mascot:
+
+- **Frame:** Rounded square (`currentColor`, ~30% opacity) — dashboard tile metaphor
+- **Arc:** Open usage ring (~270° sweep, gap at bottom-right) tinted by state (matcha → yuzu → ume → lavender)
+- **Center dot:** Solid `currentColor` focal point — minimal quota indicator
+- **State variation:** Ring color and opacity only — no expressions, blush, brackets, or chip pins
+- **Size:** `size-9` in tray header, `size-8` in widget; inline SVG only, no external assets
+
+- **GSAP** for mark state transitions and panel enter/exit
 - **Reduced motion:** Instant state swaps, no bounce
 - **Micro-interactions:** 200–300ms ease on meter fill width changes
-- Mascot sits beside or above usage summary; never obscures data
+- Brand mark sits in tray header or widget title row; never obscures usage data

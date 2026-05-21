@@ -7,7 +7,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { refreshProviderMutationOptions } from "@/lib/query/refresh-provider";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import type { MochiSettings, UpdateChannel } from "@/lib/schemas/settings";
-import { saveSettings, syncTrayUsage } from "@/lib/tauri/commands";
+import { saveSettings, syncTrayUsage, openAppWindow } from "@/lib/tauri/commands";
 
 export function useSettings() {
   return useQuery(settingsQueryOptions);
@@ -64,7 +64,10 @@ export function useTrayEvents() {
         });
       }),
       listen("tray-check-update", () => {
-        void navigate({ to: "/settings" });
+        void openAppWindow("/settings");
+      }),
+      listen<string>("app-navigate", (event) => {
+        void navigate({ to: event.payload });
       }),
     ];
 

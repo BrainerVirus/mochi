@@ -10,6 +10,7 @@ import {
   type UsageSnapshot,
   type UsageSnapshots,
 } from "@/lib/schemas/usage";
+import type { TraySelectedTab } from "@/lib/stores/tray-ui-store";
 
 export function appVersion(): Promise<string> {
   return invoke<string>("app_version");
@@ -56,10 +57,30 @@ export function toggleWidget(): Promise<void> {
   return invoke<void>("toggle_widget");
 }
 
-export function syncTrayUsage(): Promise<void> {
-  return invoke<void>("sync_tray_usage");
+export function syncTrayUsage(selection?: TraySelectedTab): Promise<void> {
+  return invoke<void>("sync_tray_usage", { selection: selection ?? null });
 }
 
 export function showMainPanel(): Promise<void> {
   return invoke<void>("show_main_panel");
+}
+
+export function openAppWindow(path: string): Promise<void> {
+  return invoke<void>("open_app_window", { path });
+}
+
+export function openExternalUrl(url: string): Promise<void> {
+  return invoke<void>("open_external_url", { url });
+}
+
+export function setTrayPanelHeight(height: number): Promise<void> {
+  return invoke<void>("set_tray_panel_height", { height });
+}
+
+export function quitApp(): Promise<void> {
+  if (typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window)) {
+    return Promise.resolve();
+  }
+
+  return invoke<void>("quit_app");
 }

@@ -1,172 +1,71 @@
-import { Link } from "@tanstack/react-router";
-import { RefreshCwIcon, SettingsIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef } from "react";
 
-import { TrayOverview } from "@/components/tray/tray-overview";
+import { UsageSnapshotsPanel } from "@/components/tray/tray-panel-content";
+import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
+import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
-import { TrayPanelTabList } from "@/components/tray/tray-panel-tab-list";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { UsageCard } from "@/components/usage/usage-card";
-import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
-import { useUsageData } from "@/hooks/use-usage-data";
-import { buildTrayPanelTabs, getOverviewMetrics } from "@/lib/utils/tray-panel-tabs";
-import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
+import { useTrayPanelHeight } from "@/hooks/use-tray-panel-height";
+import { useTrayPanelShortcuts } from "@/hooks/use-tray-panel-shortcuts";
+import { useTrayPanelState } from "@/hooks/use-tray-panel-state";
+import { quitApp } from "@/lib/tauri/commands";
 
 export function TrayPanel() {
-  const { data: settings } = useSettings();
-  const { data, error, isError, isPending, isSuccess, refetch, isFetching } = useUsageData();
-  const refreshProvider = useRefreshProvider();
-  const [activeTab, setActiveTab] = useState("overview");
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const {
+    settings,
+    error,
+    isError,
+    isPending,
+    isSuccess,
+    isFetching,
+    refreshAll,
+    isRefreshingAll,
+    refreshProviderMutation,
+    selectedTab,
+    refreshingProvider,
+    snapshots,
+    tabs,
+    handleTabChange,
+    handleRefreshProvider,
+  } = useTrayPanelState();
 
-  const isRefreshing = isFetching || refreshProvider.isPending;
-  const snapshots = data ?? [];
-  const tabs = buildTrayPanelTabs(snapshots);
-  const metrics = getOverviewMetrics(snapshots);
+  useTrayPanelHeight(layoutRef, selectedTab);
+  useTrayPanelShortcuts({
+    onRefresh: () => {
+      void refreshAll();
+    },
+    onQuit: () => {
+      void quitApp();
+    },
+  });
 
   return (
-    <TrayPanelShell>
-      <section className="mx-auto flex w-full max-w-[360px] flex-col">
-        <header className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
-          <div>
-            <p className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase">
-              Mochi
-            </p>
-            <h1 className="text-sm font-semibold">Usage</h1>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={isRefreshing}
-              aria-label="Refresh usage"
-              onClick={() => {
-                void refetch();
-              }}
-            >
-              <RefreshCwIcon data-icon="inline-start" />
-            </Button>
-            <Button variant="ghost" size="icon-sm" asChild>
-              <Link to="/settings" aria-label="Open settings">
-                <SettingsIcon data-icon="inline-start" />
-              </Link>
-            </Button>
-          </div>
-        </header>
-
+    <TrayPanelShell layoutRef={layoutRef}>
+      <section data-tray-panel-content className="mx-auto flex w-full max-w-[360px] flex-col">
         <UsageSnapshotsPanel
-          data={data}
           error={error}
           isError={isError}
           isPending={isPending}
           isSuccess={isSuccess}
           enabledProviderCount={settings?.enabled_providers.length ?? 0}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+          activeTab={selectedTab}
+          onTabChange={handleTabChange}
           tabs={tabs}
-          metrics={metrics}
           snapshots={snapshots}
+          onRefreshProvider={handleRefreshProvider}
+          refreshingProvider={refreshingProvider}
         />
-
-        <Separator className="mx-3" />
-
-        <p className="text-muted-foreground px-3 py-2 text-center text-[10px]">
-          Left-click tray icon to reopen · Right-click for menu
-        </p>
+        <TrayPanelDivider inset data-tray-panel-separator />
+        <TrayPanelFooter
+          isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
+          onRefresh={() => {
+            void refreshAll();
+          }}
+          onQuit={() => {
+            void quitApp();
+          }}
+        />
       </section>
     </TrayPanelShell>
   );
-}
-
-interface UsageSnapshotsPanelProps {
-  data: ReturnType<typeof useUsageData>["data"];
-  error: ReturnType<typeof useUsageData>["error"];
-  isError: boolean;
-  isPending: boolean;
-  isSuccess: boolean;
-  enabledProviderCount: number;
-  activeTab: string;
-  onTabChange: (value: string) => void;
-  tabs: ReturnType<typeof buildTrayPanelTabs>;
-  metrics: ReturnType<typeof getOverviewMetrics>;
-  snapshots: NonNullable<ReturnType<typeof useUsageData>["data"]>;
-}
-
-function UsageSnapshotsPanel({
-  error,
-  isError,
-  isPending,
-  isSuccess,
-  enabledProviderCount,
-  activeTab,
-  onTabChange,
-  tabs,
-  metrics,
-  snapshots,
-}: UsageSnapshotsPanelProps) {
-  if (isPending) {
-    return (
-      <output className="text-muted-foreground block px-3 py-6 text-center text-xs">
-        Loading provider usage…
-      </output>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="px-3 pb-3">
-        <Alert variant="destructive">
-          <AlertTitle>Could not load usage</AlertTitle>
-          <AlertDescription>{error?.message ?? "Unknown error"}</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (isSuccess && snapshots.length === 0) {
-    return (
-      <p className="text-muted-foreground px-3 py-6 text-center text-xs">
-        {usageSnapshotsEmptyMessage(enabledProviderCount)}
-      </p>
-    );
-  }
-
-  if (isSuccess && snapshots.length > 0) {
-    return (
-      <Tabs value={activeTab} onValueChange={onTabChange} className="gap-0">
-        <TrayPanelTabList tabs={tabs} />
-
-        <TabsContent value="overview" className="px-3 py-3">
-          <TrayOverview snapshots={snapshots} metrics={metrics} />
-        </TabsContent>
-
-        {snapshots.map((snapshot) => (
-          <TabsContent key={snapshot.provider} value={snapshot.provider} className="px-3 py-3">
-            <UsageCard snapshot={snapshot} compact />
-            <p className="text-muted-foreground mt-3 text-[10px]">
-              Updated {formatUpdatedAt(snapshot.updated_at)}
-            </p>
-          </TabsContent>
-        ))}
-      </Tabs>
-    );
-  }
-
-  return null;
-}
-
-function formatUpdatedAt(updatedAt: string): string {
-  const date = new Date(updatedAt);
-  if (Number.isNaN(date.getTime())) {
-    return updatedAt;
-  }
-
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }

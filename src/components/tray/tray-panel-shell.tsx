@@ -1,14 +1,28 @@
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 
+import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import {
   trayPanelScrollRegionClassName,
   trayPanelShellClassName,
 } from "@/lib/utils/tray-panel-layout";
 
-export function TrayPanelShell({ children }: { children: ReactNode }) {
+interface TrayPanelShellProps {
+  children: ReactNode;
+  layoutRef?: RefObject<HTMLDivElement | null>;
+}
+
+export function TrayPanelShell({ children, layoutRef }: TrayPanelShellProps) {
   return (
     <main className={trayPanelShellClassName()}>
-      <div className={trayPanelScrollRegionClassName()}>{children}</div>
+      <div ref={layoutRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <ScrollFadeRegion
+          orientation="vertical"
+          className={trayPanelScrollRegionClassName()}
+          scrollClassName="overscroll-y-contain"
+        >
+          {children}
+        </ScrollFadeRegion>
+      </div>
     </main>
   );
 }

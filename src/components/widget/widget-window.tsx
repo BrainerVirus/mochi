@@ -1,6 +1,6 @@
 import { RefreshCwIcon } from "lucide-react";
 
-import { MochiMascot } from "@/components/mascot/mochi-mascot";
+import { MochiMark } from "@/components/mascot/mochi-mark";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,7 @@ export function WidgetWindow() {
       >
         <header className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <MochiMascot state={isError ? "warning" : "normal"} className="size-8" />
+            <MochiMark state={isError ? "warning" : "normal"} className="size-8" />
             <div>
               <p className="text-muted-foreground text-[10px] font-medium tracking-[0.2em] uppercase">
                 Mochi
