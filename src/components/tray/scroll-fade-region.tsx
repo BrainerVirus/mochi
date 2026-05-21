@@ -104,9 +104,11 @@ function scrollFadeMaskClass(
 function ScrollFadeGhostButton({
   orientation,
   onCycle,
+  className,
 }: {
   orientation: ScrollFadeOrientation;
   onCycle: () => void;
+  className?: string;
 }) {
   const isHorizontal = orientation === "horizontal";
 
@@ -118,8 +120,11 @@ function ScrollFadeGhostButton({
       aria-label={isHorizontal ? "Show more tabs" : "Scroll down for more"}
       onClick={onCycle}
       className={cn(
-        "pointer-events-auto absolute z-20 size-7 cursor-pointer rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-        isHorizontal ? "inset-y-0 right-0 my-auto mr-0.5" : "inset-x-0 bottom-0 mx-auto mb-0.5",
+        "pointer-events-auto z-20 shrink-0 cursor-pointer rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+        isHorizontal
+          ? "relative mr-0.5"
+          : "absolute inset-x-0 bottom-0 z-20 mx-auto mb-0.5",
+        className,
       )}
     >
       {isHorizontal ? (
@@ -158,28 +163,36 @@ export function ScrollFadeRegion({
   }, [fadeInset, orientation]);
 
   return (
-    <div className={cn("relative", className)}>
-      <div
-        ref={scrollRef}
-        className={cn(
-          "scrollbar-none overscroll-contain",
-          isHorizontal ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
-          maskClass,
-          scrollClassName,
-        )}
-      >
-        {children}
+    <div className={cn("relative", isHorizontal && "flex items-center", className)}>
+      <div className={cn("relative min-w-0", isHorizontal && "flex-1")}>
+        <div
+          ref={scrollRef}
+          className={cn(
+            "scrollbar-none overscroll-contain",
+            isHorizontal ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden overflow-y-auto",
+            maskClass,
+            scrollClassName,
+          )}
+        >
+          {children}
+        </div>
+
+        {canScrollStart && isHorizontal ? (
+          <div aria-hidden className="scroll-fade-edge-left" />
+        ) : null}
+        {canScrollEnd && isHorizontal ? (
+          <div aria-hidden className="scroll-fade-edge-right" />
+        ) : null}
+        {canScrollEnd && !isHorizontal ? (
+          <>
+            <div aria-hidden className="scroll-fade-edge-bottom" />
+            <ScrollFadeGhostButton orientation={orientation} onCycle={cycleScroll} />
+          </>
+        ) : null}
       </div>
 
-      {canScrollStart && isHorizontal ? <div aria-hidden className="scroll-fade-edge-left" /> : null}
-      {canScrollEnd ? (
-        <>
-          <div
-            aria-hidden
-            className={isHorizontal ? "scroll-fade-edge-right" : "scroll-fade-edge-bottom"}
-          />
-          <ScrollFadeGhostButton orientation={orientation} onCycle={cycleScroll} />
-        </>
+      {canScrollEnd && isHorizontal ? (
+        <ScrollFadeGhostButton orientation={orientation} onCycle={cycleScroll} />
       ) : null}
     </div>
   );
