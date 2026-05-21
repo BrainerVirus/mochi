@@ -134,9 +134,18 @@ Recommended stack:
 
 - Tauri v2.
 - Rust stable toolchain.
-- React + TypeScript.
-- Tailwind CSS.
-- Vite.
+- React 19 + TypeScript.
+- TanStack Start 1.x with TanStack Router.
+- TanStack Query 5 for async server/cache state.
+- Zustand 5 for local client UI state.
+- Tailwind CSS 4 with official `@tailwindcss/vite`.
+- shadcn/ui guided by a repo `DESIGN.md` generated or maintained with `.agents/skills/design-md`.
+- Vite 8 through TanStack Start/Vinxi.
+- GSAP with `@gsap/react` for non-trivial UI animation.
+- Zod 4 for boundary validation and server function inputs.
+- oxlint for JS/TS linting.
+- `oxlint-tailwindcss` for Tailwind class linting.
+- oxfmt for JS/TS formatting.
 - `clap` for CLI parsing.
 - `serde`/`serde_json` for data models.
 - `reqwest` for HTTP.
