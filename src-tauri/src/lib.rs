@@ -58,7 +58,7 @@ pub fn run() -> anyhow::Result<()> {
 }
 
 /// When `MOCHI_DEV_SHOW_MAIN=1`, opens the main window at startup so devs can use DevTools
-/// without locating the menu bar icon (common on 14" MacBooks with menu bar overflow).
+/// without locating the tray icon (e.g. when hidden in menu bar overflow).
 fn maybe_show_main_for_dev(app: &tauri::AppHandle) {
     #[cfg(not(debug_assertions))]
     let _ = app;
