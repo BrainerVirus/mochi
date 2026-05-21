@@ -9,3 +9,5 @@ src-tauri/target
 src-tauri/gen/schemas
 
 .nitro/
+
+.pnpm-store/
