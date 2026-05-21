@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { MochiSettingsSchema, type MochiSettings } from "@/lib/schemas/settings";
+import {
+  DEFAULT_MOCHI_SETTINGS,
+  MochiSettingsSchema,
+  type MochiSettings,
+} from "@/lib/schemas/settings";
+import { isTauriRuntime } from "@/lib/tauri/runtime";
 import {
   UpdateInfoSchema,
   UsageSnapshotSchema,
@@ -35,6 +40,10 @@ export async function refreshProvider(provider: ProviderId): Promise<UsageSnapsh
 }
 
 export async function getSettings(): Promise<MochiSettings> {
+  if (!isTauriRuntime()) {
+    return DEFAULT_MOCHI_SETTINGS;
+  }
+
   const result = await invoke<unknown>("get_settings");
   return MochiSettingsSchema.parse(result);
 }

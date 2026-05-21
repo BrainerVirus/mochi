@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { MochiSettingsSchema } from "./settings";
+import { DEFAULT_MOCHI_SETTINGS, MochiSettingsSchema } from "./settings";
 
 describe("MochiSettingsSchema", () => {
+  it("ships defaults aligned with the Rust backend", () => {
+    expect(DEFAULT_MOCHI_SETTINGS.update_channel).toBe("stable");
+    expect(DEFAULT_MOCHI_SETTINGS.refresh_interval_seconds).toBe(300);
+    expect(DEFAULT_MOCHI_SETTINGS.show_notifications).toBe(true);
+    expect(DEFAULT_MOCHI_SETTINGS.enabled_providers.length).toBeGreaterThan(0);
+  });
+
   it("accepts stable defaults from the backend", () => {
     const parsed = MochiSettingsSchema.parse({
       update_channel: "stable",

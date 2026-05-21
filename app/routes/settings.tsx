@@ -5,6 +5,8 @@ import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/settings")({
+  // Settings depend on Tauri invoke; skip SSR so server HTML matches client mount.
+  ssr: false,
   component: SettingsPage,
 });
 
