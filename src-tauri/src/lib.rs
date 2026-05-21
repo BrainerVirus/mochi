@@ -9,8 +9,11 @@ pub mod updater;
 pub mod widget;
 
 use clap::Parser;
+use tauri::Manager;
 
 use cli::{Cli, Command};
+use settings::{get_settings, save_settings, SettingsState};
+use tray::setup_tray;
 
 #[tauri::command]
 fn app_version() -> &'static str {
@@ -28,9 +31,17 @@ pub fn run() -> anyhow::Result<()> {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .setup(|app| {
+            app.manage(SettingsState::new(app.handle())?);
+            setup_tray(app.handle())?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             app_version,
+            get_settings,
+            save_settings,
             status::get_usage_snapshots,
+            status::refresh_provider,
             updater::check_for_update,
             updater::install_update
         ])

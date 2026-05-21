@@ -1,0 +1,76 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { listen } from "@tauri-apps/api/event";
+import { useEffect } from "react";
+
+import { queryKeys } from "@/lib/query/keys";
+import { refreshProviderMutationOptions } from "@/lib/query/refresh-provider";
+import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
+import type { MochiSettings, UpdateChannel } from "@/lib/schemas/settings";
+import { saveSettings } from "@/lib/tauri/commands";
+
+export function useSettings() {
+  return useQuery(settingsQueryOptions);
+}
+
+export function useSaveSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...saveSettingsMutationOptions(),
+    onSuccess: (settings) => {
+      queryClient.setQueryData(queryKeys.settings, settings);
+    },
+  });
+}
+
+export function useRefreshProvider() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...refreshProviderMutationOptions(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+    },
+  });
+}
+
+export function useTrayEvents() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const unlistenPromises = [
+      listen<string>("tray-navigate", (event) => {
+        void navigate({ to: event.payload });
+      }),
+      listen("tray-refresh", () => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+      }),
+      listen<UpdateChannel>("tray-set-channel", (event) => {
+        const current = queryClient.getQueryData<MochiSettings>(queryKeys.settings);
+        if (!current) {
+          return;
+        }
+
+        void saveSettings({
+          ...current,
+          update_channel: event.payload,
+        }).then((settings) => {
+          queryClient.setQueryData(queryKeys.settings, settings);
+        });
+      }),
+      listen("tray-check-update", () => {
+        void navigate({ to: "/settings" });
+      }),
+    ];
+
+    return () => {
+      void Promise.all(unlistenPromises).then((unlisteners) => {
+        for (const unlisten of unlisteners) {
+          unlisten();
+        }
+      });
+    };
+  }, [navigate, queryClient]);
+}

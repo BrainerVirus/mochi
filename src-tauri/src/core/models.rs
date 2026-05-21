@@ -15,6 +15,24 @@ pub enum ProviderId {
     Augment,
 }
 
+impl ProviderId {
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "codex" => Some(Self::Codex),
+            "claude" => Some(Self::Claude),
+            "cursor" => Some(Self::Cursor),
+            "gemini" => Some(Self::Gemini),
+            "copilot" => Some(Self::Copilot),
+            "antigravity" => Some(Self::Antigravity),
+            "factory" => Some(Self::Factory),
+            "zai" => Some(Self::Zai),
+            "kiro" => Some(Self::Kiro),
+            "augment" => Some(Self::Augment),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UsageWindow {
     pub label: String,
@@ -60,5 +78,11 @@ mod tests {
         let window = UsageWindow::new("Weekly", -8.0, None);
         assert_eq!(window.used_percent, 0.0);
         assert_eq!(window.remaining_percent, 100.0);
+    }
+
+    #[test]
+    fn provider_id_parses_kebab_case_values() {
+        assert_eq!(ProviderId::parse("factory"), Some(ProviderId::Factory));
+        assert_eq!(ProviderId::parse("unknown"), None);
     }
 }
