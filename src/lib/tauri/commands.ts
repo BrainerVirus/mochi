@@ -43,3 +43,15 @@ export async function saveSettings(settings: MochiSettings): Promise<MochiSettin
   const result = await invoke<unknown>("save_settings", { settings });
   return MochiSettingsSchema.parse(result);
 }
+
+export function showWidget(): Promise<void> {
+  return invoke<void>("show_widget");
+}
+
+export function hideWidget(): Promise<void> {
+  return invoke<void>("hide_widget");
+}
+
+export function toggleWidget(): Promise<void> {
+  return invoke<void>("toggle_widget");
+}

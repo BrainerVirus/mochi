@@ -10,6 +10,7 @@ pub fn tray_tooltip(used_percent: u8) -> String {
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let refresh_item = MenuItem::with_id(app, "refresh", "Refresh usage", true, None::<&str>)?;
+    let widget_item = MenuItem::with_id(app, "widget", "Show widget", true, None::<&str>)?;
     let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
     let stable_channel_item =
         MenuItem::with_id(app, "channel-stable", "Stable", true, None::<&str>)?;
@@ -28,6 +29,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         app,
         &[
             &refresh_item,
+            &widget_item,
             &settings_item,
             &channel_menu,
             &update_item,
@@ -49,6 +51,9 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .on_menu_event(|app, event| match event.id.as_ref() {
             "refresh" => {
                 let _ = app.emit("tray-refresh", ());
+            }
+            "widget" => {
+                let _ = crate::widget::show_widget(app.clone());
             }
             "settings" => {
                 show_main_window(app, "/settings");
