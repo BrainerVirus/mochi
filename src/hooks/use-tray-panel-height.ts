@@ -1,20 +1,28 @@
-import { useEffect, type RefObject } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { useEffect, useRef, type RefObject } from "react";
 
-import { setTrayPanelHeight } from "@/lib/tauri/commands";
 import {
-  clampTrayPanelHeight,
-  measureTrayPanelLayoutHeight,
-  TRAY_PANEL_CONTENT_SELECTOR,
-} from "@/lib/utils/tray-panel-layout";
+  isTauriTrayPanel,
+  observeTrayPanelHeight,
+  runTrayPanelTabHeightAnimation,
+} from "@/lib/utils/tray-panel-height-sync";
 
-function isTauriTrayPanel(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
+gsap.registerPlugin(useGSAP);
 
 /**
  * Resizes the native tray popover to match measured column height, capped at viewport max.
+ * Tab switches morph height with GSAP; other layout changes sync immediately.
  */
-export function useTrayPanelHeight(layoutRef: RefObject<HTMLElement | null>) {
+export function useTrayPanelHeight(
+  layoutRef: RefObject<HTMLElement | null>,
+  activeTab: string,
+) {
+  const lastHeightRef = useRef<number | null>(null);
+  const isTabAnimatingRef = useRef(false);
+  const heightTweenRef = useRef<gsap.core.Tween | null>(null);
+  const isInitialTabRef = useRef(true);
+
   useEffect(() => {
     if (!isTauriTrayPanel()) {
       return undefined;
@@ -25,34 +33,27 @@ export function useTrayPanelHeight(layoutRef: RefObject<HTMLElement | null>) {
       return undefined;
     }
 
-    let frame = 0;
-
-    const syncHeight = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const viewportHeight = window.screen.availHeight;
-        const layoutHeight = measureTrayPanelLayoutHeight(layout);
-        const height = clampTrayPanelHeight(layoutHeight, viewportHeight);
-        void setTrayPanelHeight(height);
-      });
-    };
-
-    const resizeObserver = new ResizeObserver(syncHeight);
-    resizeObserver.observe(layout);
-
-    const content = layout.querySelector(TRAY_PANEL_CONTENT_SELECTOR);
-    if (content) {
-      resizeObserver.observe(content);
-    }
-
-    syncHeight();
-
-    window.addEventListener("resize", syncHeight);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", syncHeight);
-    };
+    return observeTrayPanelHeight(layout, lastHeightRef, isTabAnimatingRef);
   }, [layoutRef]);
+
+  useGSAP(
+    () => {
+      if (!isTauriTrayPanel()) {
+        return undefined;
+      }
+
+      const layout = layoutRef.current;
+      if (!layout) {
+        return undefined;
+      }
+
+      return runTrayPanelTabHeightAnimation(layout, {
+        lastHeightRef,
+        isTabAnimatingRef,
+        heightTweenRef,
+        isInitialTabRef,
+      });
+    },
+    { dependencies: [activeTab], scope: layoutRef, revertOnUpdate: true },
+  );
 }

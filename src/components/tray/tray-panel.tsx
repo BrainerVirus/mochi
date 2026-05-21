@@ -28,7 +28,7 @@ export function TrayPanel() {
     handleRefreshProvider,
   } = useTrayPanelState();
 
-  useTrayPanelHeight(layoutRef);
+  useTrayPanelHeight(layoutRef, selectedTab);
   useTrayPanelShortcuts({
     onRefresh: () => {
       void refreshAll();
