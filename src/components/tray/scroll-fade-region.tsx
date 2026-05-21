@@ -1,10 +1,11 @@
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { useCallback, useRef, type ReactNode } from "react";
 
 import {
   cycleHorizontalScrollBackward,
   cycleHorizontalScrollForward,
-  cycleVerticalScroll,
+  cycleVerticalScrollBackward,
+  cycleVerticalScrollForward,
 } from "@/components/tray/scroll-fade-cycle";
 import { TrayTabChevron } from "@/components/tray/tray-tab-chevron";
 import { useScrollOverflow } from "@/components/tray/use-scroll-overflow";
@@ -45,16 +46,20 @@ function scrollFadeMaskClass(
     return canScrollStart ? "scroll-fade-mask-x-both" : "scroll-fade-mask-x-end";
   }
 
-  return "scroll-fade-mask-y-end";
+  return canScrollStart ? "scroll-fade-mask-y-both" : "scroll-fade-mask-y-end";
 }
 
 function ScrollFadeVerticalChevron({
+  side,
   visible,
   onCycle,
 }: {
+  side: "start" | "end";
   visible: boolean;
   onCycle: () => void;
 }) {
+  const isStart = side === "start";
+
   return (
     <Button
       type="button"
@@ -62,14 +67,21 @@ function ScrollFadeVerticalChevron({
       size="icon-xs"
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
-      aria-label="Scroll down for more"
+      aria-label={isStart ? "Scroll up for more" : "Scroll down for more"}
       onClick={onCycle}
       className={cn(
-        "pointer-events-auto absolute inset-x-0 bottom-0 z-20 mx-auto mb-0.5 shrink-0 cursor-pointer rounded-full text-muted-foreground transition-[opacity,transform] duration-200 ease-out hover:bg-muted/50 hover:text-foreground motion-reduce:transition-none",
-        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-1 opacity-0",
+        "pointer-events-auto absolute inset-x-0 z-20 mx-auto shrink-0 cursor-pointer rounded-full text-muted-foreground transition-[opacity,transform] duration-200 ease-out hover:bg-muted/50 hover:text-foreground motion-reduce:transition-none",
+        isStart ? "top-0 mt-0.5" : "bottom-0 mb-0.5",
+        visible ? "translate-y-0 opacity-100" : "pointer-events-none opacity-0",
+        isStart && !visible && "-translate-y-1",
+        !isStart && !visible && "translate-y-1",
       )}
     >
-      <ChevronDownIcon className="size-3.5" />
+      {isStart ? (
+        <ChevronUpIcon className="size-3.5" />
+      ) : (
+        <ChevronDownIcon className="size-3.5" />
+      )}
     </Button>
   );
 }
@@ -97,21 +109,26 @@ function useScrollCycle(
       return;
     }
 
-    cycleVerticalScroll(el);
+    cycleVerticalScrollForward(el);
   }, [fadeInset, onCycleForward, orientation, scrollRef]);
 
   const cycleScrollBackward = useCallback(() => {
     const el = scrollRef.current;
-    if (!el || orientation !== "horizontal") {
+    if (!el) {
       return;
     }
 
-    if (onCycleBackward) {
-      onCycleBackward(el);
+    if (orientation === "horizontal") {
+      if (onCycleBackward) {
+        onCycleBackward(el);
+        return;
+      }
+
+      cycleHorizontalScrollBackward(el, fadeInset);
       return;
     }
 
-    cycleHorizontalScrollBackward(el, fadeInset);
+    cycleVerticalScrollBackward(el);
   }, [fadeInset, onCycleBackward, orientation, scrollRef]);
 
   return { cycleScrollForward, cycleScrollBackward };
@@ -125,6 +142,7 @@ function ScrollFadeViewport({
   maskClass,
   scrollClassName,
   onCycleForward,
+  onCycleBackward,
   children,
 }: {
   scrollRef: React.RefObject<HTMLDivElement | null>;
@@ -134,6 +152,7 @@ function ScrollFadeViewport({
   maskClass: string | undefined;
   scrollClassName?: string;
   onCycleForward: () => void;
+  onCycleBackward: () => void;
   children: ReactNode;
 }) {
   return (
@@ -162,11 +181,17 @@ function ScrollFadeViewport({
       {canScrollStart && isHorizontal ? (
         <div aria-hidden className="scroll-fade-edge-left" />
       ) : null}
+      {canScrollStart && !isHorizontal ? (
+        <>
+          <div aria-hidden className="scroll-fade-edge-top" />
+          <ScrollFadeVerticalChevron side="start" visible={canScrollStart} onCycle={onCycleBackward} />
+        </>
+      ) : null}
       {canScrollEnd && isHorizontal ? <div aria-hidden className="scroll-fade-edge-right" /> : null}
       {canScrollEnd && !isHorizontal ? (
         <>
           <div aria-hidden className="scroll-fade-edge-bottom" />
-          <ScrollFadeVerticalChevron visible={canScrollEnd} onCycle={onCycleForward} />
+          <ScrollFadeVerticalChevron side="end" visible={canScrollEnd} onCycle={onCycleForward} />
         </>
       ) : null}
     </div>
@@ -205,6 +230,7 @@ export function ScrollFadeRegion({
         maskClass={maskClass}
         scrollClassName={scrollClassName}
         onCycleForward={cycleScrollForward}
+        onCycleBackward={cycleScrollBackward}
       >
         {children}
       </ScrollFadeViewport>

@@ -1,5 +1,12 @@
 const TRAY_SEGMENT_SELECTOR = '[data-slot="toggle-group-item"]';
 
+type ScrollableElement = {
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+  scrollTo(options: ScrollToOptions): void;
+};
+
 function getTriggerScrollLeft(container: HTMLDivElement, trigger: HTMLElement): number {
   const containerRect = container.getBoundingClientRect();
   const triggerRect = trigger.getBoundingClientRect();
@@ -49,15 +56,19 @@ export function cycleHorizontalScrollBackward(container: HTMLDivElement, fadeIns
   container.scrollTo({ left: 0, behavior: "smooth" });
 }
 
-export function cycleVerticalScroll(container: HTMLDivElement) {
-  const step = container.clientHeight * 0.75;
-  const maxScroll = container.scrollHeight - container.clientHeight;
-  const next = container.scrollTop + step;
+function verticalScrollChunk(container: ScrollableElement): number {
+  return Math.max(container.clientHeight, 1) * 0.75;
+}
 
-  if (next >= maxScroll - 1) {
-    container.scrollTo({ top: 0, behavior: "smooth" });
-    return;
-  }
+export function cycleVerticalScrollForward(container: ScrollableElement) {
+  const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
+  const next = Math.min(container.scrollTop + verticalScrollChunk(container), maxScroll);
+
+  container.scrollTo({ top: next, behavior: "smooth" });
+}
+
+export function cycleVerticalScrollBackward(container: ScrollableElement) {
+  const next = Math.max(0, container.scrollTop - verticalScrollChunk(container));
 
   container.scrollTo({ top: next, behavior: "smooth" });
 }

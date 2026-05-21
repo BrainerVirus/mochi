@@ -238,6 +238,31 @@ body {
   );
 }
 
+.scroll-fade-mask-y-both {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgb(0 0 0 / 28%) 1.1rem,
+    rgb(0 0 0 / 72%) 2.25rem,
+    #000 3.5rem,
+    #000 calc(100% - 3.5rem),
+    rgb(0 0 0 / 72%) calc(100% - 2.25rem),
+    rgb(0 0 0 / 28%) calc(100% - 1.1rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgb(0 0 0 / 28%) 1.1rem,
+    rgb(0 0 0 / 72%) 2.25rem,
+    #000 3.5rem,
+    #000 calc(100% - 3.5rem),
+    rgb(0 0 0 / 72%) calc(100% - 2.25rem),
+    rgb(0 0 0 / 28%) calc(100% - 1.1rem),
+    transparent 100%
+  );
+}
+
 /* Optional edge tint (gitlab BottomFade pattern) — transparent tail, no backdrop blur. */
 .scroll-fade-edge-right {
   pointer-events: none;
@@ -278,6 +303,21 @@ body {
   height: 3.5rem;
   background-image: linear-gradient(
     to top,
+    color-mix(in oklab, var(--background) 95%, transparent) 10%,
+    color-mix(in oklab, var(--background) 40%, transparent) 55%,
+    transparent 100%
+  );
+}
+
+.scroll-fade-edge-top {
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 10;
+  height: 3.5rem;
+  background-image: linear-gradient(
+    to bottom,
     color-mix(in oklab, var(--background) 95%, transparent) 10%,
     color-mix(in oklab, var(--background) 40%, transparent) 55%,
     transparent 100%

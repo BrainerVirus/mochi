@@ -21,7 +21,7 @@ export function useScrollOverflow(
       return;
     }
 
-    setCanScrollStart(false);
+    setCanScrollStart(el.scrollTop > 1);
     setCanScrollEnd(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
   }, [orientation, scrollRef]);
 
