@@ -250,36 +250,36 @@ Suggested `.oxlintrc.json` policy after scaffold:
     "perf": "warn",
     "pedantic": "off",
     "style": "off",
-    "restriction": "off"
+    "restriction": "off",
   },
   "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "import"],
   "jsPlugins": ["oxlint-tailwindcss"],
   "env": {
     "browser": true,
-    "node": true
+    "node": true,
   },
   "options": {
-    "typeAware": true
+    "typeAware": true,
   },
   "settings": {
     "tailwindcss": {
-      "entryPoint": "src/styles/index.css"
-    }
+      "entryPoint": "src/styles/index.css",
+    },
   },
   "overrides": [
     {
       "files": ["app/routeTree.gen.ts", "src/components/ui/**"],
       "rules": {
-        "max-lines": "off"
-      }
+        "max-lines": "off",
+      },
     },
     {
       "files": ["**/*.test.{ts,tsx}"],
       "plugins": ["vitest"],
       "rules": {
-        "no-console": "off"
-      }
-    }
+        "no-console": "off",
+      },
+    },
   ],
   "rules": {
     "max-lines": ["warn", 300],
@@ -289,8 +289,8 @@ Suggested `.oxlintrc.json` policy after scaffold:
     "no-console": "warn",
     "tailwindcss/no-unknown-classes": "error",
     "tailwindcss/no-conflicting-classes": "error",
-    "tailwindcss/enforce-sort-order": "warn"
-  }
+    "tailwindcss/enforce-sort-order": "warn",
+  },
 }
 ```
 
