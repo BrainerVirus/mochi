@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod cli;
 pub mod core;
 pub mod providers;
@@ -13,6 +14,7 @@ use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
 
 use cli::{Cli, Command};
+use core::usage_store::UsageStore;
 use settings::{get_settings, save_settings, SettingsState};
 use tray::{
     maybe_show_main_for_dev, open_app_window, set_tray_panel_height, setup_main_panel, setup_tray,
@@ -51,6 +53,7 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             app.manage(SettingsState::new(app.handle())?);
+            app.manage(UsageStore::new(None));
             setup_main_panel(app.handle())?;
             setup_tray(app.handle())?;
             setup_widget(app.handle())?;

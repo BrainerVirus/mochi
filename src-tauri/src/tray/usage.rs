@@ -37,13 +37,13 @@ mod tests {
     use crate::core::models::{ProviderId, UsageWindow};
 
     fn snapshot(used_percent: f32) -> UsageSnapshot {
-        UsageSnapshot {
-            provider: ProviderId::Claude,
-            primary: UsageWindow::new("Session", used_percent, None),
-            secondary: None,
-            updated_at: "1970-01-01T00:00:00Z".to_string(),
-            source: "test".to_string(),
-        }
+        UsageSnapshot::new(
+            ProviderId::Claude,
+            UsageWindow::new("Session", used_percent, None),
+            None,
+            "1970-01-01T00:00:00Z",
+            "test",
+        )
     }
 
     #[test]

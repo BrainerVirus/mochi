@@ -1,32 +1,56 @@
 use crate::core::models::{ProviderId, UsageSnapshot};
 use crate::core::provider::{FetchContext, Provider, ProviderError};
+use crate::core::usage_store::{failed_attempt, UsageStore};
 use crate::providers::built_in_providers;
 use crate::settings::SettingsState;
 use tauri::State;
 
 #[tauri::command]
 pub async fn get_usage_snapshots(
+    store: State<'_, UsageStore>,
     state: State<'_, SettingsState>,
 ) -> Result<Vec<UsageSnapshot>, String> {
     let settings = state.current()?;
-    collect_usage_snapshots(&settings.enabled_providers)
-        .await
-        .map_err(|error| error.to_string())
+    Ok(read_cached_snapshots(&store, &settings.enabled_providers))
 }
 
 #[tauri::command]
-pub async fn refresh_provider(provider: String) -> Result<UsageSnapshot, String> {
+pub async fn refresh_provider(
+    store: State<'_, UsageStore>,
+    provider: String,
+) -> Result<UsageSnapshot, String> {
     let provider_id =
         ProviderId::parse(&provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
 
     match fetch_provider_snapshot(provider_id).await {
-        Ok(Some(snapshot)) => Ok(snapshot),
+        Ok(Some(snapshot)) => {
+            store.record_success(snapshot.clone());
+            Ok(snapshot)
+        }
         Ok(None) => Err("provider returned no snapshot".to_string()),
-        Err(error) => Err(error.to_string()),
+        Err(error) => {
+            if let Some(stale) = store.record_failure(
+                provider_id,
+                &error,
+                failed_attempt("live-fetch", &error),
+            ) {
+                Err(format!("{} (serving stale cache)", stale.error.unwrap_or_default()))
+            } else {
+                Err(error.to_string())
+            }
+        }
     }
 }
 
-pub(crate) async fn collect_usage_snapshots(
+pub fn read_cached_snapshots(
+    store: &UsageStore,
+    enabled_providers: &[String],
+) -> Vec<UsageSnapshot> {
+    store.get_snapshots(enabled_providers)
+}
+
+pub async fn refresh_enabled_snapshots(
+    store: &UsageStore,
     enabled_providers: &[String],
 ) -> Result<Vec<UsageSnapshot>, ProviderError> {
     let mut snapshots = Vec::new();
@@ -37,8 +61,21 @@ pub(crate) async fn collect_usage_snapshots(
             continue;
         }
 
-        if let Some(snapshot) = fetch_provider_snapshot(provider_id).await? {
-            snapshots.push(snapshot);
+        match fetch_provider_snapshot(provider_id).await {
+            Ok(Some(snapshot)) => {
+                store.record_success(snapshot.clone());
+                snapshots.push(snapshot);
+            }
+            Ok(None) => {}
+            Err(error) => {
+                if let Some(stale) = store.record_failure(
+                    provider_id,
+                    &error,
+                    failed_attempt("live-fetch", &error),
+                ) {
+                    snapshots.push(stale);
+                }
+            }
         }
     }
 
@@ -82,11 +119,34 @@ fn find_provider(provider_id: ProviderId) -> Option<std::sync::Arc<dyn Provider>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::models::{ProviderHealth, UsageSnapshot, UsageWindow};
     use crate::settings::MochiSettings;
 
+    fn cached_claude_snapshot() -> UsageSnapshot {
+        UsageSnapshot::new(
+            ProviderId::Claude,
+            UsageWindow::new("Session", 55.0, None),
+            None,
+            "2026-05-20T12:00:00Z",
+            "cached",
+        )
+    }
+
+    #[test]
+    fn read_cached_snapshots_returns_store_entries_without_live_fetch() {
+        let store = UsageStore::new(None);
+        store.record_success(cached_claude_snapshot());
+
+        let snapshots = read_cached_snapshots(&store, &["claude".into(), "gemini".into()]);
+        assert_eq!(snapshots.len(), 1);
+        assert_eq!(snapshots[0].provider, ProviderId::Claude);
+        assert_eq!(snapshots[0].primary.used_percent, 55.0);
+    }
+
     #[tokio::test]
-    async fn collect_usage_snapshots_returns_only_enabled_providers() {
-        let snapshots = collect_usage_snapshots(&["claude".into(), "cursor".into()])
+    async fn refresh_enabled_snapshots_returns_only_enabled_providers() {
+        let store = UsageStore::new(None);
+        let snapshots = refresh_enabled_snapshots(&store, &["claude".into(), "cursor".into()])
             .await
             .expect("static providers should fetch");
 
@@ -98,8 +158,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn collect_usage_snapshots_returns_empty_when_none_enabled() {
-        let snapshots = collect_usage_snapshots(&[])
+    async fn refresh_enabled_snapshots_returns_empty_when_none_enabled() {
+        let store = UsageStore::new(None);
+        let snapshots = refresh_enabled_snapshots(&store, &[])
             .await
             .expect("empty enabled list should succeed");
 
@@ -107,9 +168,23 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn collect_usage_snapshots_returns_all_default_enabled_providers() {
+    async fn refresh_enabled_snapshots_populates_cache_for_get() {
+        let store = UsageStore::new(None);
+        refresh_enabled_snapshots(&store, &["claude".into()])
+            .await
+            .expect("refresh should succeed");
+
+        let cached = read_cached_snapshots(&store, &["claude".into()]);
+        assert_eq!(cached.len(), 1);
+        assert_eq!(cached[0].provider, ProviderId::Claude);
+        assert_eq!(cached[0].health, ProviderHealth::Ok);
+    }
+
+    #[tokio::test]
+    async fn refresh_enabled_snapshots_returns_all_default_enabled_providers() {
+        let store = UsageStore::new(None);
         let enabled = MochiSettings::default().enabled_providers;
-        let snapshots = collect_usage_snapshots(&enabled)
+        let snapshots = refresh_enabled_snapshots(&store, &enabled)
             .await
             .expect("providers should fetch or skip when unconfigured");
 
@@ -129,11 +204,33 @@ mod tests {
 
     #[tokio::test]
     async fn refresh_provider_returns_snapshot_for_known_provider() {
-        let snapshot = refresh_provider("claude".into())
+        let store = UsageStore::new(None);
+        let snapshot = refresh_provider_with_store(&store, "claude".into())
             .await
             .expect("claude should refresh");
 
         assert_eq!(snapshot.provider, ProviderId::Claude);
+        assert_eq!(
+            read_cached_snapshots(&store, &["claude".into()])[0].provider,
+            ProviderId::Claude
+        );
+    }
+
+    async fn refresh_provider_with_store(
+        store: &UsageStore,
+        provider: String,
+    ) -> Result<UsageSnapshot, String> {
+        let provider_id =
+            ProviderId::parse(&provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
+
+        match fetch_provider_snapshot(provider_id).await {
+            Ok(Some(snapshot)) => {
+                store.record_success(snapshot.clone());
+                Ok(snapshot)
+            }
+            Ok(None) => Err("provider returned no snapshot".to_string()),
+            Err(error) => Err(error.to_string()),
+        }
     }
 
     #[test]
@@ -150,7 +247,8 @@ mod tests {
 
     #[tokio::test]
     async fn refresh_provider_rejects_unknown_provider() {
-        let error = refresh_provider("not-a-provider".into())
+        let store = UsageStore::new(None);
+        let error = refresh_provider_with_store(&store, "not-a-provider".into())
             .await
             .expect_err("unknown provider should fail");
 
