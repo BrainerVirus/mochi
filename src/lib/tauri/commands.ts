@@ -5,7 +5,6 @@ import {
   MochiSettingsSchema,
   type MochiSettings,
 } from "@/lib/schemas/settings";
-import { isTauriRuntime } from "@/lib/tauri/runtime";
 import {
   UpdateInfoSchema,
   UsageSnapshotSchema,
@@ -16,6 +15,7 @@ import {
   type UsageSnapshots,
 } from "@/lib/schemas/usage";
 import type { TraySelectedTab } from "@/lib/stores/tray-ui-store";
+import { isTauriRuntime } from "@/lib/tauri/runtime";
 
 export function appVersion(): Promise<string> {
   return invoke<string>("app_version");

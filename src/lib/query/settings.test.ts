@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { queryKeys } from "./keys";
 import { DEFAULT_MOCHI_SETTINGS } from "@/lib/schemas/settings";
+import { queryKeys } from "./keys";
 
 import { settingsQueryOptions } from "./settings";
 

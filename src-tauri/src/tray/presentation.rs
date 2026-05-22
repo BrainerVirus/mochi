@@ -35,11 +35,8 @@ pub fn resolve_tray_presentation(
 ) -> TrayIconPresentation {
     match selection {
         TraySelection::Overview => resolve_overview_presentation(snapshots),
-        TraySelection::Provider(provider) => {
-            resolve_provider_presentation(snapshots, provider).unwrap_or_else(|| {
-                resolve_overview_presentation(snapshots)
-            })
-        }
+        TraySelection::Provider(provider) => resolve_provider_presentation(snapshots, provider)
+            .unwrap_or_else(|| resolve_overview_presentation(snapshots)),
     }
 }
 
@@ -110,11 +107,7 @@ pub fn aggregate_remaining_percent(snapshots: &[UsageSnapshot]) -> u8 {
 }
 
 pub fn remaining_percent(snapshot: &UsageSnapshot) -> u8 {
-    snapshot
-        .primary
-        .remaining_percent
-        .round()
-        .clamp(0.0, 100.0) as u8
+    snapshot.primary.remaining_percent.round().clamp(0.0, 100.0) as u8
 }
 
 /// Menu bar title beside template icon (CodexBar-style leading space on macOS).
@@ -122,7 +115,7 @@ pub fn tray_title_from_remaining(remaining: u8) -> String {
     let label = format!("{remaining}%");
     #[cfg(target_os = "macos")]
     {
-        return format!(" {label}");
+        format!(" {label}")
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -163,17 +156,26 @@ mod tests {
     #[test]
     fn tray_selection_parse_accepts_overview_and_providers() {
         assert_eq!(TraySelection::parse(None), TraySelection::Overview);
-        assert_eq!(TraySelection::parse(Some("overview")), TraySelection::Overview);
+        assert_eq!(
+            TraySelection::parse(Some("overview")),
+            TraySelection::Overview
+        );
         assert_eq!(
             TraySelection::parse(Some("codex")),
             TraySelection::Provider(ProviderId::Codex)
         );
-        assert_eq!(TraySelection::parse(Some("unknown")), TraySelection::Overview);
+        assert_eq!(
+            TraySelection::parse(Some("unknown")),
+            TraySelection::Overview
+        );
     }
 
     #[test]
     fn pick_tray_snapshot_prefers_codex_when_present() {
-        let snapshots = vec![snapshot(ProviderId::Claude, 90.0), snapshot(ProviderId::Codex, 5.0)];
+        let snapshots = vec![
+            snapshot(ProviderId::Claude, 90.0),
+            snapshot(ProviderId::Codex, 5.0),
+        ];
         let picked = pick_tray_snapshot(&snapshots).expect("snapshot");
         assert_eq!(picked.provider, ProviderId::Codex);
     }
@@ -190,7 +192,10 @@ mod tests {
 
     #[test]
     fn resolve_overview_presentation_uses_aggregate_remaining() {
-        let snapshots = vec![snapshot(ProviderId::Claude, 12.0), snapshot(ProviderId::Cursor, 67.0)];
+        let snapshots = vec![
+            snapshot(ProviderId::Claude, 12.0),
+            snapshot(ProviderId::Cursor, 67.0),
+        ];
         let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
         assert_eq!(presentation.selection, TraySelection::Overview);
         assert_eq!(presentation.remaining_percent, 33);
@@ -200,7 +205,10 @@ mod tests {
 
     #[test]
     fn resolve_provider_presentation_uses_selected_provider_remaining() {
-        let snapshots = vec![snapshot(ProviderId::Codex, 1.0), snapshot(ProviderId::Claude, 50.0)];
+        let snapshots = vec![
+            snapshot(ProviderId::Codex, 1.0),
+            snapshot(ProviderId::Claude, 50.0),
+        ];
         let presentation =
             resolve_tray_presentation(&snapshots, TraySelection::Provider(ProviderId::Codex));
         assert_eq!(presentation.remaining_percent, 99);

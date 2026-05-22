@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contributing guide
+    url: https://github.com/BrainerVirus/mochi/blob/main/docs/contributing.md
+    about: Read the lightweight contribution flow before opening a larger change.
