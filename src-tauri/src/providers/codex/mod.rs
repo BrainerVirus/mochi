@@ -1,9 +1,11 @@
 mod cli_rpc;
 mod cookies;
+mod oauth;
 mod parse;
 
 use cli_rpc::CliRpcStrategy;
 use cookies::BrowserCookiesStrategy;
+use oauth::OAuthStrategy;
 
 use crate::core::models::ProviderId;
 use crate::core::provider::{Provider, ProviderMetadata};
@@ -22,6 +24,7 @@ impl Provider for CodexProvider {
 
     fn strategies(&self) -> Vec<Box<dyn crate::core::provider::FetchStrategy>> {
         vec![
+            Box::new(OAuthStrategy::new()),
             Box::new(CliRpcStrategy::new()),
             Box::new(BrowserCookiesStrategy::new()),
         ]
@@ -33,7 +36,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn strategies_prefer_cli_rpc_before_browser_cookies() {
+    fn strategies_prefer_oauth_before_cli_rpc_and_cookies() {
         let provider = CodexProvider;
         let strategy_ids: Vec<_> = provider
             .strategies()
@@ -41,7 +44,10 @@ mod tests {
             .map(|strategy| strategy.id())
             .collect();
 
-        assert_eq!(strategy_ids, vec!["codex-cli-rpc", "codex-browser-cookies"]);
+        assert_eq!(
+            strategy_ids,
+            vec!["codex-oauth", "codex-cli-rpc", "codex-browser-cookies"]
+        );
     }
 
     #[test]
