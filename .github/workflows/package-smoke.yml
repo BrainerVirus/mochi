@@ -5,11 +5,17 @@ on:
     workflows: ["Stable Release", "Unstable Release"]
     types: [completed]
 
+permissions:
+  contents: read
+
 jobs:
   smoke:
+    name: Package Smoke
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Verify release documentation exists
         run: test -f docs/releasing.md && test -f docs/linux.md
+      - name: Verify repository templates exist
+        run: test -f .github/PULL_REQUEST_TEMPLATE.md && test -f .github/ISSUE_TEMPLATE/bug_report.yml && test -f .github/ISSUE_TEMPLATE/feature_request.yml

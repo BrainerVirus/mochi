@@ -99,7 +99,13 @@ fn render_overview_glyph() -> Option<Pixmap> {
             (right + 1.0) * scale,
             (bottom + 1.0) * scale,
         )?);
-        pixmap.fill_path(&path.finish()?, &paint, FillRule::Winding, Transform::identity(), None);
+        pixmap.fill_path(
+            &path.finish()?,
+            &paint,
+            FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
     }
 
     Some(pixmap)
@@ -107,8 +113,10 @@ fn render_overview_glyph() -> Option<Pixmap> {
 
 fn rasterize_provider_svg(provider: ProviderId) -> Option<Pixmap> {
     let svg = provider_svg(provider);
-    let mut options = usvg::Options::default();
-    options.font_family = "sans-serif".to_string();
+    let options = usvg::Options {
+        font_family: "sans-serif".to_string(),
+        ..Default::default()
+    };
 
     let tree = usvg::Tree::from_str(svg, &options).ok()?;
     let svg_size = tree.size();
@@ -131,16 +139,28 @@ fn rasterize_provider_svg(provider: ProviderId) -> Option<Pixmap> {
 fn provider_svg(provider: ProviderId) -> &'static str {
     match provider {
         ProviderId::Codex => {
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/codex.svg"))
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/codex.svg"
+            ))
         }
         ProviderId::Claude => {
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/claude.svg"))
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/claude.svg"
+            ))
         }
         ProviderId::Cursor => {
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/cursor.svg"))
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/cursor.svg"
+            ))
         }
         ProviderId::Gemini => {
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/gemini.svg"))
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/gemini.svg"
+            ))
         }
         ProviderId::Copilot => {
             include_str!(concat!(
@@ -159,10 +179,16 @@ fn provider_svg(provider: ProviderId) -> &'static str {
             ))
         }
         ProviderId::Zai => {
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/zai.svg"))
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/zai.svg"
+            ))
         }
         ProviderId::Kiro => {
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/assets/providers/kiro.svg"))
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/kiro.svg"
+            ))
         }
         ProviderId::Augment => {
             include_str!(concat!(
@@ -202,8 +228,10 @@ mod tests {
 
     #[test]
     fn tray_icon_for_overview_renders_grid_glyph() {
-        let presentation =
-            resolve_tray_presentation(&[snapshot(ProviderId::Codex, 10.0)], TraySelection::Overview);
+        let presentation = resolve_tray_presentation(
+            &[snapshot(ProviderId::Codex, 10.0)],
+            TraySelection::Overview,
+        );
         let icon = tray_icon_for_presentation(&presentation);
         assert_eq!(icon.width(), ICON_PX);
         assert_eq!(icon.height(), ICON_PX);

@@ -59,8 +59,14 @@ impl FetchStrategy for BrowserCookiesStrategy {
         ))
     }
 
-    fn should_fallback(&self, _error: &ProviderError) -> bool {
-        false
+    fn should_fallback(&self, error: &ProviderError) -> bool {
+        matches!(
+            error,
+            ProviderError::NotConfigured
+                | ProviderError::Auth(_)
+                | ProviderError::Timeout
+                | ProviderError::Fetch(_)
+        )
     }
 }
 
@@ -103,5 +109,21 @@ mod tests {
             .expect_err("missing auth should fail");
 
         assert!(matches!(error, ProviderError::NotConfigured));
+    }
+
+    #[tokio::test]
+    async fn unfinished_cookie_fetch_can_fallback_when_auth_file_exists() {
+        let auth_path = temp_auth_path();
+        fs::write(&auth_path, "{}").expect("write auth fixture");
+        let strategy = BrowserCookiesStrategy::with_auth_path(auth_path.clone());
+
+        let error = strategy
+            .fetch(&FetchContext)
+            .await
+            .expect_err("unfinished cookie fetch should fail");
+
+        assert!(strategy.should_fallback(&error));
+
+        let _ = fs::remove_file(auth_path);
     }
 }

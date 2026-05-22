@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest a small, useful improvement for Mochi.
+title: "feature: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for the idea. A focused request is easier to build and test.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow or pain point should this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should Mochi do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional notes on other approaches.
+    validations:
+      required: false
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Area
+      options:
+        - Tray
+        - Widget
+        - Settings
+        - Provider support
+        - CLI/status bar
+        - Updates/releases
+        - Other
+    validations:
+      required: true
