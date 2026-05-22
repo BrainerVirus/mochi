@@ -1,0 +1,8 @@
+---
+description: Commit message style for AI-generated commits
+alwaysApply: true
+---
+
+# Commit Message Conventions
+
+Follow the shared project rule in `docs/agent-rules/commit-messages.md`.

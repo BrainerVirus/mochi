@@ -1,0 +1,10 @@
+---
+description: Use the project design system for UI work
+globs:
+  - "**/*.{ts,html,css,scss,tsx,jsx}"
+alwaysApply: false
+---
+
+# Design System
+
+Follow the shared project rule in `docs/agent-rules/design-system.md`.

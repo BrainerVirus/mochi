@@ -37,6 +37,13 @@ This repo is pre-scaffold. Do not infer the implementation stack from missing ma
 - Before behavior changes, follow `.agents/skills/test-driven-development/SKILL.md`; write the failing test first unless the user explicitly approves a config/prototype exception.
 - Before claiming completion, run the relevant verification from [docs/tech-stack.md](docs/tech-stack.md) and report what actually ran.
 
+## Shared Agent Rules
+
+These rules are mirrored for Cursor and OpenCode. Treat the Markdown files under `docs/agent-rules/` as the source of truth.
+
+- Commit messages: follow [docs/agent-rules/commit-messages.md](docs/agent-rules/commit-messages.md) for every agent-generated git commit.
+- Design system: before UI, frontend, CSS, Tailwind, component, or accessibility work, follow [docs/agent-rules/design-system.md](docs/agent-rules/design-system.md) and read `DESIGN.md`.
+
 ## GitHub Flow
 
 This repository uses GitHub Flow. Agents and contributors must keep `main` deployable and do all work on short-lived branches created from `main`.
