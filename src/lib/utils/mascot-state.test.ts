@@ -16,6 +16,8 @@ function snapshot(usedPercent: number): UsageSnapshot {
     secondary: null,
     updated_at: "1970-01-01T00:00:00Z",
     source: "test",
+    health: "ok",
+    is_stale: false,
   };
 }
 

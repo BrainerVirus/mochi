@@ -44,13 +44,13 @@ pub fn snapshot_from_rate_limits_result(
         .as_ref()
         .ok_or_else(|| ProviderError::Parse("codex primary rate limit missing".into()))?;
 
-    Ok(UsageSnapshot {
-        provider: ProviderId::Codex,
-        primary: usage_window_from_rate_limit(primary),
-        secondary: bucket.secondary.as_ref().map(usage_window_from_rate_limit),
-        updated_at: updated_at.to_string(),
-        source: "codex-cli".to_string(),
-    })
+    Ok(UsageSnapshot::new(
+        ProviderId::Codex,
+        usage_window_from_rate_limit(primary),
+        bucket.secondary.as_ref().map(usage_window_from_rate_limit),
+        updated_at,
+        "codex-cli",
+    ))
 }
 
 fn select_codex_bucket(payload: &RateLimitsReadResult) -> Option<&RateLimitBucket> {

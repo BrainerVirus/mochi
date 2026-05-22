@@ -24,12 +24,29 @@ export const UsageWindowSchema = z.object({
 
 export type UsageWindow = z.infer<typeof UsageWindowSchema>;
 
+export const ProviderHealthSchema = z.enum(["ok", "stale", "error"]);
+
+export type ProviderHealth = z.infer<typeof ProviderHealthSchema>;
+
+export const FetchAttemptSchema = z.object({
+  strategy_id: z.string(),
+  succeeded: z.boolean(),
+  error: z.string().nullable().optional(),
+  attempted_at: z.string(),
+});
+
+export type FetchAttempt = z.infer<typeof FetchAttemptSchema>;
+
 export const UsageSnapshotSchema = z.object({
   provider: ProviderIdSchema,
   primary: UsageWindowSchema,
   secondary: UsageWindowSchema.nullable(),
   updated_at: z.string(),
   source: z.string(),
+  health: ProviderHealthSchema.default("ok"),
+  is_stale: z.boolean().default(false),
+  error: z.string().nullable().optional(),
+  last_fetch_attempt: FetchAttemptSchema.nullable().optional(),
 });
 
 export type UsageSnapshot = z.infer<typeof UsageSnapshotSchema>;

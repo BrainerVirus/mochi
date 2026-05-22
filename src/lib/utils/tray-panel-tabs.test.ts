@@ -21,6 +21,8 @@ function snapshot(
     secondary: null,
     updated_at: configured ? "2026-05-21T12:00:00Z" : STATIC_SNAPSHOT_EPOCH,
     source: configured ? "codex-cli" : "Claude",
+    health: "ok",
+    is_stale: false,
   };
 }
 

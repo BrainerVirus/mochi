@@ -55,13 +55,13 @@ impl FetchStrategy for StaticStrategy {
     }
 
     async fn fetch(&self, _ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
-        Ok(UsageSnapshot {
-            provider: self.id,
-            primary: UsageWindow::new("Session", 0.0, None),
-            secondary: Some(UsageWindow::new("Weekly", 0.0, None)),
-            updated_at: "1970-01-01T00:00:00Z".to_string(),
-            source: self.name.to_string(),
-        })
+        Ok(UsageSnapshot::new(
+            self.id,
+            UsageWindow::new("Session", 0.0, None),
+            Some(UsageWindow::new("Weekly", 0.0, None)),
+            "1970-01-01T00:00:00Z",
+            self.name,
+        ))
     }
 
     fn should_fallback(&self, _error: &ProviderError) -> bool {

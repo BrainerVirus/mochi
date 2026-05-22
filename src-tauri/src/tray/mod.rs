@@ -10,6 +10,7 @@ use tauri::{
 };
 
 use crate::core::models::UsageSnapshot;
+use crate::core::usage_store::UsageStore;
 use crate::settings::SettingsState;
 use crate::status;
 
@@ -51,11 +52,12 @@ pub fn apply_tray_usage(
 #[tauri::command]
 pub async fn sync_tray_usage(
     app: AppHandle,
-    state: State<'_, SettingsState>,
+    settings_state: State<'_, SettingsState>,
+    usage_store: State<'_, UsageStore>,
     selection: Option<String>,
 ) -> Result<(), String> {
-    let settings = state.current()?;
-    let snapshots = status::collect_usage_snapshots(&settings.enabled_providers)
+    let settings = settings_state.current()?;
+    let snapshots = status::refresh_enabled_snapshots(&usage_store, &settings.enabled_providers)
         .await
         .map_err(|error| error.to_string())?;
 
@@ -150,13 +152,13 @@ mod tests {
     use crate::core::models::{ProviderId, UsageSnapshot, UsageWindow};
 
     fn snapshot(used_percent: f32) -> UsageSnapshot {
-        UsageSnapshot {
-            provider: ProviderId::Claude,
-            primary: UsageWindow::new("Session", used_percent, None),
-            secondary: None,
-            updated_at: "1970-01-01T00:00:00Z".to_string(),
-            source: "test".to_string(),
-        }
+        UsageSnapshot::new(
+            ProviderId::Claude,
+            UsageWindow::new("Session", used_percent, None),
+            None,
+            "1970-01-01T00:00:00Z",
+            "test",
+        )
     }
 
     #[test]

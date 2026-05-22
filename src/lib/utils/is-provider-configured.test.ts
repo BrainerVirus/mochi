@@ -20,6 +20,8 @@ function snapshot(overrides: Partial<UsageSnapshot> = {}): UsageSnapshot {
     secondary: null,
     updated_at: "2026-05-21T12:00:00Z",
     source: "codex-cli",
+    health: "ok",
+    is_stale: false,
     ...overrides,
   };
 }
