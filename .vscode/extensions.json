@@ -20,5 +20,6 @@
     "wix.vscode-import-cost",
     "xabikos.javascriptsnippets",
     "yoavbls.pretty-ts-errors"
-  ]
+  ],
+  "unwantedRecommendations": ["rust-lang.rust"]
 }

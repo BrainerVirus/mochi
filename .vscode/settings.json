@@ -25,6 +25,9 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "rust-analyzer.linkedProjects": ["src-tauri/Cargo.toml"],
+  "rust-analyzer.check.command": "clippy",
+  "rust-client.engine": "rust-analyzer",
+  "rust-client.disableRustup": true,
   "github-actions.workflows.pinned.workflows": [
     ".github/workflows/pr.yml",
     ".github/workflows/release-stable.yml",
