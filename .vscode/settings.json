@@ -1,0 +1,37 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    ".env": ".env.*, !.env.example",
+    ".oxfmtrc.json": ".oxlintignore",
+    ".oxlintrc.json": ".oxlintignore",
+    "Cargo.toml": "Cargo.lock, rust-toolchain.toml, rustfmt.toml",
+    "package.json": "pnpm-lock.yaml, pnpm-workspace.yaml, package-lock.json, yarn.lock",
+    "README.md": "CONTRIBUTING.md, CHANGELOG.md, AGENTS.md, DESIGN.md",
+    "tsconfig.json": "tsconfig.*.json",
+    "vite.config.*": "vitest.config.*, app.config.*"
+  },
+  "editor.linkedEditing": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "*.svg": "html",
+    "*.css": "tailwindcss"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "rust-analyzer.linkedProjects": ["src-tauri/Cargo.toml"],
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/pr.yml",
+    ".github/workflows/release-stable.yml",
+    ".github/workflows/release-unstable.yml"
+  ],
+  "tailwindCSS.classFunctions": ["tw", "clsx", "cva", "cx", "tw\\.[a-z-]+", "cn"],
+  "tailwindCSS.experimental.classRegex": [
+    "host\\s*:\\s*\\{[\\s\\S]*?class\\s*:\\s*['\"`]([^'\"`]*)['\"`]"
+  ]
+}
