@@ -1,10 +1,16 @@
 # Mochi
 
+[![Pull Request](https://github.com/BrainerVirus/mochi/actions/workflows/pr.yml/badge.svg)](https://github.com/BrainerVirus/mochi/actions/workflows/pr.yml)
+[![React Doctor](https://img.shields.io/badge/React%20Doctor-enabled-61dafb?logo=react&logoColor=111827)](https://react.doctor/)
+[![Tauri](https://img.shields.io/badge/Tauri-v2-24c8db?logo=tauri&logoColor=white)](https://v2.tauri.app/)
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=111827)](https://react.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 **Soft alerts before hard limits.**
 
 Mochi is a cross-platform desktop companion for AI coding tools. It tracks session and weekly usage, reset windows, provider status, and local usage signals for tools like Codex, Claude, Cursor, Gemini, Copilot, and more—without sending your data to a cloud backend.
 
-Inspired by menu-bar usage trackers, Mochi is built from scratch for macOS, Windows, and Linux with tray, widget, CLI, and status-bar surfaces that feel native on each platform.
+Mochi exists because of [steipete/codexbar](https://github.com/steipete/codexbar). CodexBar proved how useful a focused menu-bar usage tracker for Codex could be; Mochi takes that spark seriously and expands the idea into a cross-platform companion for macOS, Windows, and Linux, with tray, widget, CLI, and status-bar surfaces that feel native on each platform.
 
 ## Features
 
@@ -51,6 +57,10 @@ Agent and stack details: [AGENTS.md](AGENTS.md).
 ## Contributing
 
 This project uses **GitHub Flow**: short-lived branches from `main`, pull requests, no direct merges by automation. See [docs/contributing.md](docs/contributing.md).
+
+## Kudos
+
+Deep thanks to [Peter Steinberger](https://github.com/steipete) and [CodexBar](https://github.com/steipete/codexbar), the project that inspired Mochi’s original direction. Mochi is not a fork, but CodexBar is the origin point for this app’s menu-bar-first thinking and deserves clear credit.
 
 ## License
 
