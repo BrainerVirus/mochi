@@ -1,0 +1,25 @@
+{
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=827846
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "chakrounanas.turbo-console-log",
+    "christian-kohler.npm-intellisense",
+    "christian-kohler.path-intellisense",
+    "eamodio.gitlens",
+    "formulahendry.auto-close-tag",
+    "meganrogge.template-string-converter",
+    "mikestead.dotenv",
+    "moalamri.inline-fold",
+    "pflannery.vscode-versionlens",
+    "redhat.vscode-yaml",
+    "rust-lang.rust-analyzer",
+    "tauri-apps.tauri-vscode",
+    "unifiedjs.vscode-mdx",
+    "usernamehw.errorlens",
+    "wallabyjs.console-ninja",
+    "wix.vscode-import-cost",
+    "xabikos.javascriptsnippets",
+    "yoavbls.pretty-ts-errors"
+  ],
+  "unwantedRecommendations": ["rust-lang.rust"]
+}
