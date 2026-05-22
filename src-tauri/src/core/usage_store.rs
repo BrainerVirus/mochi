@@ -55,12 +55,7 @@ impl UsageStore {
             .entries
             .write()
             .unwrap_or_else(|error| error.into_inner());
-        entries.insert(
-            provider_id,
-            CacheEntry {
-                snapshot,
-            },
-        );
+        entries.insert(provider_id, CacheEntry { snapshot });
         // Persistence hook: write JSON to `persistence_path` in a later phase.
     }
 
@@ -178,18 +173,17 @@ mod tests {
         assert!(stale.is_stale);
         assert_eq!(stale.health, ProviderHealth::Stale);
         assert_eq!(stale.primary.used_percent, good.primary.used_percent);
-        assert_eq!(stale.error.as_deref(), Some("provider fetch failed: network"));
+        assert_eq!(
+            stale.error.as_deref(),
+            Some("provider fetch failed: network")
+        );
     }
 
     #[test]
     fn record_failure_without_cache_returns_none() {
         let store = UsageStore::new(None);
         assert!(store
-            .record_failure(
-                ProviderId::Cursor,
-                &ProviderError::NotConfigured,
-                attempt(),
-            )
+            .record_failure(ProviderId::Cursor, &ProviderError::NotConfigured, attempt(),)
             .is_none());
     }
 
@@ -207,11 +201,7 @@ mod tests {
     #[test]
     fn record_error_stores_error_snapshot() {
         let store = UsageStore::new(None);
-        let snapshot = store.record_error(
-            ProviderId::Codex,
-            "auth failed",
-            attempt(),
-        );
+        let snapshot = store.record_error(ProviderId::Codex, "auth failed", attempt());
 
         assert_eq!(snapshot.health, ProviderHealth::Error);
         assert_eq!(snapshot.error.as_deref(), Some("auth failed"));

@@ -29,12 +29,13 @@ pub async fn refresh_provider(
         }
         Ok(None) => Err("provider returned no snapshot".to_string()),
         Err(error) => {
-            if let Some(stale) = store.record_failure(
-                provider_id,
-                &error,
-                failed_attempt("live-fetch", &error),
-            ) {
-                Err(format!("{} (serving stale cache)", stale.error.unwrap_or_default()))
+            if let Some(stale) =
+                store.record_failure(provider_id, &error, failed_attempt("live-fetch", &error))
+            {
+                Err(format!(
+                    "{} (serving stale cache)",
+                    stale.error.unwrap_or_default()
+                ))
             } else {
                 Err(error.to_string())
             }
@@ -68,11 +69,9 @@ pub async fn refresh_enabled_snapshots(
             }
             Ok(None) => {}
             Err(error) => {
-                if let Some(stale) = store.record_failure(
-                    provider_id,
-                    &error,
-                    failed_attempt("live-fetch", &error),
-                ) {
+                if let Some(stale) =
+                    store.record_failure(provider_id, &error, failed_attempt("live-fetch", &error))
+                {
                     snapshots.push(stale);
                 }
             }

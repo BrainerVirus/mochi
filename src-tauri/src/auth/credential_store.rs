@@ -69,10 +69,7 @@ mod tests {
     fn dev_store_round_trips_secrets() {
         let store = DevCredentialStore::new();
         store.set("codex.oauth", "token").unwrap();
-        assert_eq!(
-            store.get("codex.oauth").unwrap(),
-            Some("token".to_string())
-        );
+        assert_eq!(store.get("codex.oauth").unwrap(), Some("token".to_string()));
         store.delete("codex.oauth").unwrap();
         assert_eq!(store.get("codex.oauth").unwrap(), None);
     }

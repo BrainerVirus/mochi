@@ -96,7 +96,11 @@ const CODEX: ProviderDefinition = ProviderDefinition {
             label: "Web dashboard",
         },
     ],
-    auth_requirements: &[AuthRequirement::OAuth, AuthRequirement::BrowserCookies, AuthRequirement::CliSession],
+    auth_requirements: &[
+        AuthRequirement::OAuth,
+        AuthRequirement::BrowserCookies,
+        AuthRequirement::CliSession,
+    ],
     settings_fields: &[COOKIE_SOURCE, HISTORY_WINDOW],
     status_url: Some("https://status.openai.com"),
     supports_cost: true,
@@ -135,11 +139,15 @@ const CLAUDE: ProviderDefinition = ProviderDefinition {
         AuthRequirement::CliSession,
         AuthRequirement::BrowserCookies,
     ],
-    settings_fields: &[SettingsFieldDefinition {
-        key: "admin_api_key",
-        label: "Admin API key",
-        kind: SettingsFieldKind::ApiKey,
-    }, COOKIE_SOURCE, HISTORY_WINDOW],
+    settings_fields: &[
+        SettingsFieldDefinition {
+            key: "admin_api_key",
+            label: "Admin API key",
+            kind: SettingsFieldKind::ApiKey,
+        },
+        COOKIE_SOURCE,
+        HISTORY_WINDOW,
+    ],
     status_url: Some("https://status.anthropic.com"),
     supports_cost: true,
     implementation_status: ImplementationStatus::Stub,
@@ -246,15 +254,18 @@ const ZAI: ProviderDefinition = ProviderDefinition {
         label: "API quota",
     }],
     auth_requirements: &[AuthRequirement::ApiKey],
-    settings_fields: &[SettingsFieldDefinition {
-        key: "api_key",
-        label: "API key",
-        kind: SettingsFieldKind::ApiKey,
-    }, SettingsFieldDefinition {
-        key: "region_host",
-        label: "Region host",
-        kind: SettingsFieldKind::RegionHost,
-    }],
+    settings_fields: &[
+        SettingsFieldDefinition {
+            key: "api_key",
+            label: "API key",
+            kind: SettingsFieldKind::ApiKey,
+        },
+        SettingsFieldDefinition {
+            key: "region_host",
+            label: "Region host",
+            kind: SettingsFieldKind::RegionHost,
+        },
+    ],
     status_url: None,
     supports_cost: false,
     implementation_status: ImplementationStatus::Stub,
@@ -300,7 +311,16 @@ const AUGMENT: ProviderDefinition = ProviderDefinition {
 };
 
 const REGISTRY: [ProviderDefinition; 10] = [
-    CODEX, CLAUDE, CURSOR, GEMINI, COPILOT, ANTIGRAVITY, FACTORY, ZAI, KIRO, AUGMENT,
+    CODEX,
+    CLAUDE,
+    CURSOR,
+    GEMINI,
+    COPILOT,
+    ANTIGRAVITY,
+    FACTORY,
+    ZAI,
+    KIRO,
+    AUGMENT,
 ];
 
 pub fn provider_registry() -> &'static [ProviderDefinition] {
@@ -319,7 +339,10 @@ mod tests {
 
     #[test]
     fn registry_contains_all_v1_providers() {
-        let ids: HashSet<_> = provider_registry().iter().map(|definition| definition.id).collect();
+        let ids: HashSet<_> = provider_registry()
+            .iter()
+            .map(|definition| definition.id)
+            .collect();
         for id in ProviderId::all() {
             assert!(ids.contains(id), "missing metadata for {id:?}");
         }
