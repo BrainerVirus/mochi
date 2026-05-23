@@ -4,6 +4,7 @@ import { UsageSnapshotsPanel } from "@/components/tray/tray-panel-content";
 import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
+import { useTrayPanelFocusReset } from "@/hooks/use-tray-panel-focus-reset";
 import { useTrayPanelHeight } from "@/hooks/use-tray-panel-height";
 import { useTrayPanelShortcuts } from "@/hooks/use-tray-panel-shortcuts";
 import { useTrayPanelState } from "@/hooks/use-tray-panel-state";
@@ -30,6 +31,7 @@ export function TrayPanel() {
   } = useTrayPanelState();
 
   useTrayPanelHeight(layoutRef, selectedTab);
+  useTrayPanelFocusReset(layoutRef);
   useTrayPanelShortcuts({
     onRefresh: () => {
       void refreshAll();
