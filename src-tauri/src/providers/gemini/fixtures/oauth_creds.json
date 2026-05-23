@@ -1,0 +1,6 @@
+{
+  "access_token": "test-access-token",
+  "refresh_token": "test-refresh-token",
+  "id_token": "header.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20ifQ.sig",
+  "expiry_date": 4102444800000
+}

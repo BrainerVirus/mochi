@@ -2,6 +2,7 @@ mod claude;
 mod codex;
 mod copilot;
 mod cursor;
+mod gemini;
 mod static_provider;
 
 use std::sync::Arc;
@@ -12,6 +13,7 @@ pub use claude::ClaudeProvider;
 pub use codex::CodexProvider;
 pub use copilot::CopilotProvider;
 pub use cursor::CursorProvider;
+pub use gemini::GeminiProvider;
 use static_provider::StaticProvider;
 
 pub fn built_in_providers() -> Vec<Arc<dyn Provider>> {
@@ -19,7 +21,7 @@ pub fn built_in_providers() -> Vec<Arc<dyn Provider>> {
         Arc::new(CodexProvider),
         Arc::new(ClaudeProvider),
         Arc::new(CursorProvider),
-        Arc::new(StaticProvider::new(ProviderId::Gemini, "Gemini")),
+        Arc::new(GeminiProvider),
         Arc::new(CopilotProvider),
         Arc::new(StaticProvider::new(ProviderId::Antigravity, "Antigravity")),
         Arc::new(StaticProvider::new(ProviderId::Factory, "Factory/Droid")),

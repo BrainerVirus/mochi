@@ -21,7 +21,7 @@
 | Codex       | `codex`             | OAuth API → CLI RPC → web dashboard (manual cookie)              | OAuth tokens, manual browser cookie, `codex` CLI                             | `cookieSource`, battery saver, history window             | Statuspage.io (OpenAI)     | JSONL session scan (`CODEX_HOME`) | **done**    |
 | Claude      | `claude`            | OAuth API → Web API (manual cookie); Admin API + CLI PTY planned | OAuth (`~/.claude/.credentials.json`), `MOCHI_CLAUDE_*` env, browser session | Admin key, token accounts, `cookieSource`, history window | Statuspage.io (Anthropic)  | JSONL project logs (planned)      | **partial** |
 | Cursor      | `cursor`            | Web API (`MOCHI_CURSOR_COOKIE*`); browser import planned         | Manual cookie header via env/file                                            | `cookieSource`, manual cookie header                      | Statuspage.io (Cursor)     | —                                 | **partial** |
-| Gemini      | `gemini`            | OAuth-backed quota API (Gemini CLI credentials)                  | Google OAuth via Gemini CLI                                                  | CLI credential path overrides                             | Google Workspace incidents | —                                 | **stub**    |
+| Gemini      | `gemini`            | OAuth-backed quota API (Gemini CLI credentials)                  | Google OAuth via Gemini CLI (`~/.gemini/oauth_creds.json`, `MOCHI_GEMINI_*`) | CLI credential path overrides                             | Google Workspace incidents | —                                 | **partial** |
 | Copilot     | `copilot`           | OAuth token → `copilot_internal` API; device-flow UI planned     | `MOCHI_COPILOT_TOKEN*`, GitHub OAuth token(s)                                | Token accounts, enterprise host                           | Statuspage.io (GitHub)     | —                                 | **partial** |
 | Antigravity | `antigravity`       | Local LSP/HTTP probe (`GetUserStatus`)                           | Local Antigravity language server                                            | Host/port overrides                                       | Google Workspace incidents | —                                 | **stub**    |
 | Factory     | `factory` / `droid` | Web cookies → stored tokens → local storage → WorkOS cookies     | Factory/WorkOS session, bearer tokens                                        | `cookieSource`, manual cookie                             | status.factory.ai (link)   | —                                 | **stub**    |
@@ -39,7 +39,7 @@ Condensed from [CodexBar `docs/providers.md`](../../CodexBar/docs/providers.md).
 | OpenAI               | Admin API / legacy balance   | Admin or API key                | —                    | org usage         | —       |
 | Azure OpenAI         | API deployment probe         | API key + endpoint + deployment | Azure status link    | —                 | —       |
 | Claude               | oauth → web (admin/cli TBD)  | Admin, OAuth, cookies, CLI      | Anthropic Statuspage | session JSONL     | partial |
-| Gemini               | OAuth quota API              | Gemini CLI OAuth                | Google incidents     | —                 | stub    |
+| Gemini               | OAuth quota API              | Gemini CLI OAuth                | Google incidents     | —                 | partial |
 | Antigravity          | local probe                  | localhost LSP                   | Google incidents     | —                 | stub    |
 | Cursor               | web (`MOCHI_CURSOR_COOKIE*`) | manual cookie env/file          | Cursor Statuspage    | —                 | partial |
 | OpenCode             | web dashboard                | browser cookies                 | —                    | —                 | —       |
@@ -90,7 +90,7 @@ Condensed from [CodexBar `docs/providers.md`](../../CodexBar/docs/providers.md).
 | Cookie import                             | Yes         | None                       | 2+            |
 | Usage cache / LKG                         | Yes         | Live fetch every call      | 1             |
 | Provider metadata registry                | Yes         | Minimal `ProviderMetadata` | 1             |
-| Real fetch (9 stubs)                      | Yes         | Static snapshots           | 3–4           |
+| Real fetch (8 stubs)                      | Yes         | Static snapshots           | 3–4           |
 | Codex full parity                         | Yes         | Partial CLI/cookies        | 2             |
 | OS-native UI shells                       | N/A (Swift) | Custom shadcn              | 5             |
 | CLI parity                                | Yes         | Skeleton                   | 6             |
