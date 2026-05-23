@@ -25,11 +25,11 @@
 | **Copilot**     | Premium, Chat                                                        | Premium, Chat                                   | —                                                           | OAuth internal API → Premium / Chat                                | Device-flow login UI not in Mochi                                    |
 | **OpenCode**    | 5-hour, Weekly (+ Monthly when present)                              | 5-hour, Weekly, Monthly                         | —                                                           | Web `_server` → 5-hour, Weekly, optional Monthly                   | —                                                                    |
 | **OpenCode Go** | 5-hour, Weekly, Monthly + Zen balance                                | Same + Zen USD                                  | Zen pay-as-you-go (`providerCost`)                          | Web `/go` page + Zen balance parse                                 | —                                                                    |
-| **Antigravity** | Claude + Gemini Pro + Gemini Flash (per-model)                       | Model labels from probe                         | Google incidents                                            | **stub** (Session/Weekly placeholders)                             | Full local LSP `GetUserStatus` probe not implemented                 |
-| **Factory**     | Web usage lanes (plan-specific)                                      | Plan-specific                                   | factory.ai status link                                      | **stub**                                                           | Web cookie / token / WorkOS strategies not implemented               |
+| **Antigravity** | Claude + Gemini Pro + Gemini Flash (per-model)                       | Model labels from probe                         | Google incidents                                            | Local LSP probe → Claude / Gemini Pro / Gemini Flash               | OAuth multi-account + remote quota not ported                        |
+| **Factory**     | Web usage lanes (plan-specific)                                      | Standard / Premium                              | factory.ai status link                                      | Web cookies + CodexBar session → Standard / Premium                | WorkOS refresh + local storage token chain not ported                |
 | **z.ai**        | Token window + Monthly (+ short token window tertiary when multiple) | Dynamic window labels (`5 hours`, `Monthly`, …) | Optional model-usage charts                                 | API quota → token + monthly bars                                   | Model-usage chart UI not in Mochi                                    |
-| **Kiro**        | Credits %, optional bonus credits                                    | Plan name / credits                             | AWS Health link                                             | **stub**                                                           | `kiro-cli` PTY `/usage` not implemented                              |
-| **Augment**     | CLI / web usage lanes                                                | Plan-specific                                   | —                                                           | **stub**                                                           | `auggie` CLI + web cookie fallback not implemented                   |
+| **Kiro**        | Credits %, optional bonus credits                                    | Credits / Bonus                                 | AWS Health link                                             | `kiro-cli` `/usage` → Credits / Bonus                              | Context usage sub-metrics not ported                                 |
+| **Augment**     | CLI / web usage lanes                                                | Credits                                         | —                                                           | `auggie` CLI → web cookies → Credits                               | Session keepalive not ported                                         |
 
 ### Shared UI / metadata
 
@@ -44,20 +44,20 @@
 
 ## Mochi v1 providers (12) — summary
 
-| Provider    | CodexBar ID         | Usage windows (CodexBar labels)             | Strategies                                    | Auth                                      | Status                    | Cost                              | Mochi     |
-| ----------- | ------------------- | ------------------------------------------- | --------------------------------------------- | ----------------------------------------- | ------------------------- | --------------------------------- | --------- |
-| Codex       | `codex`             | Session / Daily / Weekly                    | OAuth API → CLI RPC → web dashboard           | OAuth, manual cookie, `codex` CLI         | Statuspage.io (OpenAI)    | JSONL session scan                | **done**  |
-| Claude      | `claude`            | Session, Weekly (+ Sonnet/Opus weekly)      | OAuth API → Web API                           | OAuth, `MOCHI_CLAUDE_*`, browser session  | Statuspage.io (Anthropic) | JSONL (planned) / web extra_usage | **done**† |
-| Cursor      | `cursor`            | Total, Auto + Composer, API + on-demand USD | Web API                                       | Manual cookie / Zen cookies               | Statuspage.io (Cursor)    | On-demand spend meter             | **done**  |
-| Gemini      | `gemini`            | Pro, Flash, Flash Lite                      | OAuth quota API                               | Gemini CLI OAuth                          | Google incidents (manual) | —                                 | **done**  |
-| Copilot     | `copilot`           | Premium, Chat                               | OAuth → `copilot_internal` API                | `MOCHI_COPILOT_TOKEN*`                    | Statuspage.io (GitHub)    | —                                 | **done**  |
-| OpenCode    | `opencode`          | 5-hour, Weekly (+ Monthly)                  | Web `_server` dashboard                       | Browser cookies, `MOCHI_OPENCODE_COOKIE*` | —                         | —                                 | **done**  |
-| OpenCode Go | `opencodego`        | 5-hour, Weekly, Monthly + Zen balance       | Web `_server` + `/go` page + workspace Zen    | Cookies + workspace ID                    | —                         | Zen pay-as-you-go balance         | **done**  |
-| Antigravity | `antigravity`       | Multi-model quotas                          | Local LSP probe                               | Local Antigravity language server         | Google incidents          | —                                 | **stub**  |
-| Factory     | `factory` / `droid` | Plan usage lanes                            | Web cookies → tokens → local storage → WorkOS | Factory/WorkOS session                    | status.factory.ai         | —                                 | **stub**  |
-| z.ai        | `zai`               | Token + monthly (+ short-window tertiary)   | API token → quota API                         | `api_key`, `Z_AI_API_KEY`, region host    | none                      | —                                 | **done**  |
-| Kiro        | `kiro`              | Credits (+ bonus)                           | CLI `/usage`                                  | `kiro-cli` login                          | AWS Health (link)         | —                                 | **stub**  |
-| Augment     | `augment`           | Plan usage lanes                            | CLI → web cookies                             | CLI session, browser cookies              | none                      | —                                 | **stub**  |
+| Provider    | CodexBar ID         | Usage windows (CodexBar labels)             | Strategies                                 | Auth                                      | Status                    | Cost                              | Mochi     |
+| ----------- | ------------------- | ------------------------------------------- | ------------------------------------------ | ----------------------------------------- | ------------------------- | --------------------------------- | --------- |
+| Codex       | `codex`             | Session / Daily / Weekly                    | OAuth API → CLI RPC → web dashboard        | OAuth, manual cookie, `codex` CLI         | Statuspage.io (OpenAI)    | JSONL session scan                | **done**  |
+| Claude      | `claude`            | Session, Weekly (+ Sonnet/Opus weekly)      | OAuth API → Web API                        | OAuth, `MOCHI_CLAUDE_*`, browser session  | Statuspage.io (Anthropic) | JSONL (planned) / web extra_usage | **done**† |
+| Cursor      | `cursor`            | Total, Auto + Composer, API + on-demand USD | Web API                                    | Manual cookie / Zen cookies               | Statuspage.io (Cursor)    | On-demand spend meter             | **done**  |
+| Gemini      | `gemini`            | Pro, Flash, Flash Lite                      | OAuth quota API                            | Gemini CLI OAuth                          | Google incidents (manual) | —                                 | **done**  |
+| Copilot     | `copilot`           | Premium, Chat                               | OAuth → `copilot_internal` API             | `MOCHI_COPILOT_TOKEN*`                    | Statuspage.io (GitHub)    | —                                 | **done**  |
+| OpenCode    | `opencode`          | 5-hour, Weekly (+ Monthly)                  | Web `_server` dashboard                    | Browser cookies, `MOCHI_OPENCODE_COOKIE*` | —                         | —                                 | **done**  |
+| OpenCode Go | `opencodego`        | 5-hour, Weekly, Monthly + Zen balance       | Web `_server` + `/go` page + workspace Zen | Cookies + workspace ID                    | —                         | Zen pay-as-you-go balance         | **done**  |
+| Antigravity | `antigravity`       | Multi-model quotas                          | Local LSP probe                            | Local Antigravity language server         | Google incidents          | —                                 | **done**† |
+| Factory     | `factory` / `droid` | Standard / Premium                          | Web cookies → CodexBar session             | Factory/WorkOS session                    | status.factory.ai         | —                                 | **done**† |
+| z.ai        | `zai`               | Token + monthly (+ short-window tertiary)   | API token → quota API                      | `api_key`, `Z_AI_API_KEY`, region host    | none                      | —                                 | **done**  |
+| Kiro        | `kiro`              | Credits (+ bonus)                           | CLI `/usage`                               | `kiro-cli` login                          | AWS Health (link)         | —                                 | **done**  |
+| Augment     | `augment`           | Credits                                     | CLI → web cookies                          | CLI session, browser cookies              | none                      | —                                 | **done**† |
 
 † Claude usage bars match; optional `extra_usage` cost meter still missing.
 
@@ -72,25 +72,25 @@ Condensed from [CodexBar `docs/providers.md`](../../CodexBar/docs/providers.md).
 | Azure OpenAI  | API deployment probe       | API key + endpoint         | Azure status link    | —             | —     |
 | Claude        | oauth → web                | Admin, OAuth, cookies, CLI | Anthropic Statuspage | session JSONL | done† |
 | Gemini        | OAuth quota API            | Gemini CLI OAuth           | Google incidents     | —             | done  |
-| Antigravity   | local probe                | localhost LSP              | Google incidents     | —             | stub  |
+| Antigravity   | local probe                | localhost LSP              | Google incidents     | —             | done† |
 | Cursor        | web cookies                | manual cookie              | Cursor Statuspage    | on-demand USD | done  |
 | OpenCode      | web dashboard              | browser cookies            | —                    | —             | done  |
 | OpenCode Go   | web dashboard              | cookies + workspace ID     | —                    | Zen balance   | done  |
-| Droid/Factory | web multi-fallback         | cookies, tokens, WorkOS    | factory.ai status    | —             | stub  |
+| Droid/Factory | web cookies + session      | cookies, CodexBar session  | factory.ai status    | —             | done† |
 | z.ai          | API quota                  | API token                  | —                    | —             | done  |
-| Kiro          | CLI `/usage`               | `kiro-cli` login           | AWS Health link      | —             | stub  |
-| Augment       | CLI → web                  | CLI / cookies              | —                    | —             | stub  |
+| Kiro          | CLI `/usage`               | `kiro-cli` login           | AWS Health link      | —             | done  |
+| Augment       | CLI → web                  | CLI / cookies              | —                    | —             | done† |
 | …             | (see CodexBar docs)        | …                          | …                    | …             | —     |
 
 ## Gap summary (v1)
 
-| Gap                                       | CodexBar    | Mochi today                         | Phase       |
-| ----------------------------------------- | ----------- | ----------------------------------- | ----------- |
-| Credential store (Keychain/libsecret/Win) | Yes         | Settings JSON (`provider_configs`)  | 1 (partial) |
-| Cookie import                             | Yes         | Cursor + OpenCode + CodexBar import | 2+          |
-| Usage cache / LKG                         | Yes         | Live fetch every call               | 1           |
-| Historical pace (Codex weekly)            | Yes         | Linear pace projection only         | 2+          |
-| Real fetch (4 stubs)                      | Yes         | Antigravity, Factory, Kiro, Augment | 3–4         |
-| Claude `extra_usage` cost bar             | Yes         | Not mapped                          | 2           |
-| OS-native UI shells                       | N/A (Swift) | Custom shadcn                       | 5           |
-| CLI parity                                | Yes         | Skeleton                            | 6           |
+| Gap                                       | CodexBar    | Mochi today                                                | Phase       |
+| ----------------------------------------- | ----------- | ---------------------------------------------------------- | ----------- |
+| Credential store (Keychain/libsecret/Win) | Yes         | Settings JSON (`provider_configs`)                         | 1 (partial) |
+| Cookie import                             | Yes         | Cursor + OpenCode + CodexBar import                        | 2+          |
+| Usage cache / LKG                         | Yes         | Live fetch every call                                      | 1           |
+| Historical pace (Codex weekly)            | Yes         | Linear pace projection only                                | 2+          |
+| Real fetch (4 stubs)                      | Yes         | Antigravity OAuth, Factory WorkOS chain, Augment keepalive | 5–6         |
+| Claude `extra_usage` cost bar             | Yes         | Not mapped                                                 | 2           |
+| OS-native UI shells                       | N/A (Swift) | Custom shadcn                                              | 5           |
+| CLI parity                                | Yes         | Skeleton                                                   | 6           |

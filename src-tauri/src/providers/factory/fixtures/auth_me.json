@@ -1,0 +1,19 @@
+{
+  "userProfile": {
+    "id": "user-1",
+    "email": "user@example.com"
+  },
+  "organization": {
+    "id": "org-1",
+    "name": "Acme",
+    "subscription": {
+      "factoryTier": "enterprise",
+      "orbSubscription": {
+        "plan": {
+          "name": "Pro"
+        },
+        "status": "active"
+      }
+    }
+  }
+}

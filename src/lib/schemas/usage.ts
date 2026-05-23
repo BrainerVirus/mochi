@@ -115,6 +115,7 @@ const PROVIDER_ID_ALIASES: Record<string, ProviderId> = {
   opencodego: "opencode-go",
   "open-code-go": "opencode-go",
   "open-code": "opencode",
+  droid: "factory",
 };
 
 export function normalizeProviderId(value: unknown): ProviderId | null {

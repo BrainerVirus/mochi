@@ -213,6 +213,11 @@ async fn enrich_provider_snapshot(
                 .enrich_snapshot(snapshot)
                 .await
         }
+        ProviderId::Factory => {
+            crate::providers::FactoryProvider
+                .enrich_snapshot(snapshot)
+                .await
+        }
         _ => Ok(snapshot),
     }
 }

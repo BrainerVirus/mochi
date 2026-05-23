@@ -15,7 +15,7 @@ mod safari;
 
 mod chromium;
 
-pub use catalog::{cursor_import_order, BrowserKind};
+pub use catalog::{cursor_import_order, default_import_order, BrowserKind};
 pub use import::{import_cookies, CookieImportQuery, ImportedCookies};
 
 pub mod opencode {

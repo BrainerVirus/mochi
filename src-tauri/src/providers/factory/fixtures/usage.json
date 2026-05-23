@@ -1,0 +1,17 @@
+{
+  "usage": {
+    "startDate": 1735689600000,
+    "endDate": 1738368000000,
+    "standard": {
+      "userTokens": 100,
+      "totalAllowance": 1000,
+      "usedRatio": 0.1
+    },
+    "premium": {
+      "userTokens": 25,
+      "totalAllowance": 50,
+      "usedRatio": 0.5
+    }
+  },
+  "userId": "user-1"
+}

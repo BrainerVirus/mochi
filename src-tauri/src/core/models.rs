@@ -49,7 +49,7 @@ impl ProviderId {
             "opencode" | "open-code" => Some(Self::OpenCode),
             "opencode-go" | "opencodego" | "open-code-go" => Some(Self::OpenCodeGo),
             "antigravity" => Some(Self::Antigravity),
-            "factory" => Some(Self::Factory),
+            "factory" | "droid" => Some(Self::Factory),
             "zai" => Some(Self::Zai),
             "kiro" => Some(Self::Kiro),
             "augment" => Some(Self::Augment),
@@ -61,6 +61,7 @@ impl ProviderId {
         match self {
             Self::OpenCode => &["open-code"],
             Self::OpenCodeGo => &["opencodego", "open-code-go"],
+            Self::Factory => &["droid"],
             _ => &[],
         }
     }
