@@ -85,8 +85,8 @@ pub async fn fetch_snapshot_with_client(
 mod tests {
     use super::*;
     use crate::core::test_env;
-    use async_trait::async_trait;
     use crate::core::usage_store::current_timestamp;
+    use async_trait::async_trait;
 
     struct MockDashboardClient {
         html: ProviderResult<String>,
