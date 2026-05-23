@@ -3,6 +3,7 @@ mod menu_bar_metric;
 mod panel;
 mod presentation;
 mod usage;
+mod vibrancy;
 
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},

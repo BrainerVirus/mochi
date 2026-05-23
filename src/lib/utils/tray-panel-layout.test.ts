@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   TRAY_PANEL_DEFAULT_MAX_HEIGHT_PX,
   TRAY_PANEL_MIN_HEIGHT_PX,
+  TRAY_PANEL_SHELL_CHROME_PX,
   TRAY_PANEL_VIEWPORT_MARGIN_PX,
   TRAY_PANEL_WIDTH_PX,
   clampTrayPanelHeight,
@@ -40,15 +41,19 @@ describe("trayPanelLayout", () => {
     ).toBe(449);
   });
 
-  it("measures unified tray content scroll height", () => {
+  it("includes shell top padding in measured tray height", () => {
     expect(measureTrayPanelLayoutHeight(null)).toBe(0);
+    expect(TRAY_PANEL_SHELL_CHROME_PX).toBe(12);
   });
 
   it("keeps the shell clipped with fully rounded corners", () => {
     const shell = trayPanelShellClassName();
     expect(shell).toContain("overflow-hidden");
     expect(shell).toContain("rounded-[var(--radius-tray-panel)]");
-    expect(shell).toContain("h-full");
+    expect(shell).toContain("h-auto");
+    expect(shell).not.toContain("h-full");
+    expect(shell).not.toContain("flex-1");
+    expect(shell).not.toContain("bg-background");
     expect(shell).toContain("tray-panel");
     expect(shell).toContain("pt-3");
   });

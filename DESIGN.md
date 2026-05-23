@@ -21,7 +21,7 @@ Mochi is a **calm usage companion** for AI coding tools. It should feel like **p
 ### macOS
 
 - **Font:** `-apple-system`, BlinkMacSystemFont, SF Pro Text
-- **Surfaces:** Light `#f5f5f7`, dark `#323232` — vibrancy-like flat fills (optional macOS window vibrancy is a stretch goal in Rust, not required for Phase 5)
+- **Surfaces:** Light `#f5f5f7`, dark `#323232` — native `NSVisualEffectMaterial::Popover` via `window-vibrancy` in Rust; webview layer stays transparent on macOS
 - **Radius:** ~10px tray panel (`--radius-tray-panel: 0.625rem`)
 - **Accent:** System blue `#007aff` / `#0a84ff` for focus rings and primary actions in tray
 - **Color scheme:** `prefers-color-scheme` drives tray and app dark mode
@@ -100,6 +100,8 @@ Never below ~11px effective size.
 
 - **Class:** `tray-panel` on shell (`TrayPanelShell`)
 - **Shape:** `rounded-[var(--radius-tray-panel)]` — platform-specific
+- **Backdrop:** macOS uses Rust `window-vibrancy` (`Popover` material); Windows tries Mica then Acrylic; Linux uses CSS `backdrop-filter` + semi-transparent tint
+- **Height:** `h-auto` shell sized to content; native window height sync includes `TRAY_PANEL_SHELL_CHROME_PX` (`pt-3`) — no `h-full` stretch gap below footer
 - **Surface:** System background; `ring-1 ring-border`; whisper shadow
 - **No nested Cards** — flat sections, `Separator` only
 
