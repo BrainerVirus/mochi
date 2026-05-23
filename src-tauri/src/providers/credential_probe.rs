@@ -57,6 +57,14 @@ fn provider_credential_detail(
         ProviderId::Copilot => {
             simple_credential_detail(super::copilot::has_credentials(config), None)
         }
+        ProviderId::OpenCode => opencode_credential_detail(config),
+        ProviderId::OpenCodeGo => {
+            let configured = super::opencodego::has_credentials(config);
+            ProviderCredentialDetail {
+                configured,
+                source: configured.then_some("Browser cookies".into()),
+            }
+        }
         ProviderId::Zai => {
             let configured = config.and_then(ProviderConfig::api_key_value).is_some()
                 || std::env::var("Z_AI_API_KEY")
@@ -74,6 +82,14 @@ fn provider_credential_detail(
                 .is_some();
             simple_credential_detail(configured, configured.then_some("Manual cookie".into()))
         }
+    }
+}
+
+fn opencode_credential_detail(config: Option<&ProviderConfig>) -> ProviderCredentialDetail {
+    let configured = super::opencode::has_credentials(config);
+    ProviderCredentialDetail {
+        configured,
+        source: configured.then_some("Browser cookies".into()),
     }
 }
 

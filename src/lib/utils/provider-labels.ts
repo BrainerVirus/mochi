@@ -6,6 +6,8 @@ const PROVIDER_LABELS: Record<ProviderId, string> = {
   cursor: "Cursor",
   gemini: "Gemini",
   copilot: "Copilot",
+  opencode: "OpenCode",
+  "opencode-go": "OpenCode Go",
   antigravity: "Antigravity",
   factory: "Factory",
   zai: "Z.ai",

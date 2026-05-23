@@ -18,6 +18,29 @@ mod chromium;
 pub use catalog::{cursor_import_order, BrowserKind};
 pub use import::{import_cookies, CookieImportQuery, ImportedCookies};
 
+pub mod opencode {
+    use super::{import, CookieImportQuery, ImportedCookies};
+
+    pub const DOMAINS: &[&str] = &["opencode.ai", "app.opencode.ai"];
+
+    pub const AUTH_COOKIE_NAMES: &[&str] = &["auth", "__Host-auth"];
+
+    /// OpenCode defaults to Chrome-first import in CodexBar to avoid extra browser prompts.
+    pub fn import_order() -> Vec<super::BrowserKind> {
+        vec![super::BrowserKind::Chrome]
+    }
+
+    pub fn import_from_browsers(home: &std::path::Path) -> Option<ImportedCookies> {
+        import::import_cookies(&CookieImportQuery {
+            home,
+            browsers: &import_order(),
+            domains: DOMAINS,
+            session_cookie_names: AUTH_COOKIE_NAMES,
+            require_session_name: true,
+        })
+    }
+}
+
 pub mod cursor {
     use super::{catalog, import, CookieImportQuery, ImportedCookies};
 

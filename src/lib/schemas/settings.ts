@@ -34,6 +34,8 @@ export const PROVIDER_LABELS: Record<z.infer<typeof ProviderIdSchema>, string> =
   cursor: "Cursor",
   gemini: "Gemini",
   copilot: "Copilot",
+  opencode: "OpenCode",
+  "opencode-go": "OpenCode Go",
   antigravity: "Antigravity",
   factory: "Factory/Droid",
   zai: "z.ai",

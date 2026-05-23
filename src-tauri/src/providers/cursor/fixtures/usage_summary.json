@@ -8,6 +8,8 @@
       "used": 1500,
       "limit": 5000,
       "remaining": 3500,
+      "autoPercentUsed": 12.0,
+      "apiPercentUsed": 3.0,
       "totalPercentUsed": 30.0
     },
     "onDemand": {

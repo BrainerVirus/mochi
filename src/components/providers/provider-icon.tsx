@@ -36,6 +36,8 @@ function ProviderLetter({ provider, className }: { provider: ProviderId; classNa
     cursor: "U",
     gemini: "G",
     copilot: "P",
+    opencode: "O",
+    "opencode-go": "G",
     antigravity: "A",
     factory: "F",
     zai: "Z",

@@ -1,6 +1,6 @@
 import { RefreshCwIcon } from "lucide-react";
 
-import type { ProviderId, UsageSnapshot } from "@/lib/schemas/usage";
+import { rateWindows, type ProviderId, type UsageSnapshot } from "@/lib/schemas/usage";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
 import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
@@ -10,6 +10,7 @@ import { formatUpdatedAgo } from "@/lib/utils/format-updated-ago";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
+import { ProviderCostSection } from "./provider-cost-section";
 import { ProviderUsageActions } from "./provider-usage-actions";
 import { UsageMeter } from "./usage-meter";
 
@@ -30,7 +31,7 @@ export function ProviderUsageSection({
   showProviderActions = false,
   fillActivationKey,
 }: ProviderUsageSectionProps) {
-  const windows = [snapshot.primary, ...(snapshot.secondary ? [snapshot.secondary] : [])];
+  const windows = rateWindows(snapshot);
 
   return (
     <section className="flex flex-col">
@@ -81,6 +82,13 @@ export function ProviderUsageSection({
             fillActivationKey={fillActivationKey}
           />
         ))}
+        {snapshot.provider_cost ? (
+          <ProviderCostSection
+            cost={snapshot.provider_cost}
+            compact
+            fillActivationKey={fillActivationKey}
+          />
+        ) : null}
       </div>
       {showProviderActions ? (
         <>

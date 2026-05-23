@@ -61,13 +61,32 @@ pub fn snapshot_from_usage_response(
         None
     };
 
-    Ok(UsageSnapshot::new(
+    let tertiary = if primary.label == "Session" {
+        window_from_payload(response.seven_day_sonnet.as_ref(), "Sonnet weekly")
+            .or_else(|| window_from_payload(response.seven_day_opus.as_ref(), "Opus weekly"))
+    } else {
+        window_from_payload(response.seven_day_sonnet.as_ref(), "Sonnet weekly")
+            .or_else(|| window_from_payload(response.seven_day_opus.as_ref(), "Opus weekly"))
+    };
+
+    let mut snapshot = UsageSnapshot::new(
         ProviderId::Claude,
         primary,
         secondary,
         updated_at,
         source,
-    ))
+    );
+
+    if let Some(tertiary) = tertiary.filter(|window| {
+        snapshot
+            .secondary
+            .as_ref()
+            .is_none_or(|secondary| secondary.label != window.label)
+    }) {
+        snapshot = snapshot.with_tertiary(tertiary);
+    }
+
+    Ok(snapshot)
 }
 
 fn window_from_payload(

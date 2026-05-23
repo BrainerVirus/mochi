@@ -34,6 +34,7 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 aes = "0.8"
 cbc = { version = "0.1", features = ["std"] }
 pbkdf2 = { version = "0.12", features = ["sha1"] }
+regex = "1.11"
 sha1 = "0.10"
 
 [target.'cfg(target_os = "macos")'.dependencies]
