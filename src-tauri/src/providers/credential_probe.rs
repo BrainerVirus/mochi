@@ -59,10 +59,13 @@ fn provider_credential_detail(
         }
         ProviderId::OpenCode => opencode_credential_detail(config),
         ProviderId::OpenCodeGo => {
-            let configured = super::opencodego::has_credentials(config);
+            let session = super::opencodego::credentials::resolve_session(config)
+                .ok()
+                .flatten();
+            let configured = session.is_some();
             ProviderCredentialDetail {
                 configured,
-                source: configured.then_some("Browser cookies".into()),
+                source: session.map(|resolved| resolved.source_label),
             }
         }
         ProviderId::Zai => {

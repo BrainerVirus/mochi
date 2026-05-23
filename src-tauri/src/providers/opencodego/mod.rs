@@ -10,7 +10,8 @@ use strategy::WebStrategy;
 
 use crate::core::models::{ProviderId, UsageSnapshot};
 use crate::core::provider::{Provider, ProviderEnrichment, ProviderMetadata, ProviderResult};
-use crate::providers::opencode;
+
+pub mod credentials;
 
 pub struct OpenCodeGoProvider;
 
@@ -34,8 +35,4 @@ impl ProviderEnrichment for OpenCodeGoProvider {
     async fn enrich_snapshot(&self, snapshot: UsageSnapshot) -> ProviderResult<UsageSnapshot> {
         Ok(snapshot)
     }
-}
-
-pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
-    opencode::has_credentials(config)
 }

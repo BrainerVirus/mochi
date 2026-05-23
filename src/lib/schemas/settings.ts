@@ -1,10 +1,24 @@
 import { z } from "zod";
 
-import { ProviderIdSchema } from "./usage";
+import { normalizeProviderId, ProviderIdSchema } from "./usage";
 
 export const UpdateChannelSchema = z.enum(["stable", "unstable"]);
 
 export type UpdateChannel = z.infer<typeof UpdateChannelSchema>;
+
+export const TokenAccountSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  token: z.string(),
+});
+
+export const TokenAccountDataSchema = z.object({
+  version: z.number().int(),
+  accounts: z.array(TokenAccountSchema),
+  activeIndex: z.number().int().nonnegative(),
+});
+
+export type TokenAccountData = z.infer<typeof TokenAccountDataSchema>;
 
 export const ProviderConfigSchema = z.object({
   cookie_source: z.string().optional(),
@@ -14,6 +28,8 @@ export const ProviderConfigSchema = z.object({
   history_window_days: z.number().int().min(1).max(365).optional(),
   region_host: z.string().optional(),
   token_account: z.string().optional(),
+  workspace_id: z.string().optional(),
+  token_accounts: TokenAccountDataSchema.optional(),
 });
 
 export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
@@ -21,7 +37,15 @@ export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
 export const MochiSettingsSchema = z.object({
   update_channel: UpdateChannelSchema,
   refresh_interval_seconds: z.number().int().min(30).max(86_400),
-  enabled_providers: z.array(ProviderIdSchema),
+  enabled_providers: z
+    .array(z.string())
+    .transform((providers) =>
+      providers.flatMap((provider) => {
+        const normalized = normalizeProviderId(provider);
+        return normalized ? [normalized] : [];
+      }),
+    )
+    .pipe(z.array(ProviderIdSchema)),
   show_notifications: z.boolean(),
   provider_configs: z.record(z.string(), ProviderConfigSchema).default({}),
 });

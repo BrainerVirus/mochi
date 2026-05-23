@@ -68,9 +68,13 @@ impl OpenCodeWebClient for HttpOpenCodeWebClient {
             Some(id) => id.to_string(),
             None => self.fetch_workspace_id(&session.cookie_header).await?,
         };
-        let subscription = self
-            .fetch_subscription(&session.cookie_header, &workspace_id)
-            .await?;
+        let subscription = if provider == ProviderId::OpenCodeGo {
+            self.fetch_go_usage_page(&session.cookie_header, &workspace_id)
+                .await?
+        } else {
+            self.fetch_subscription(&session.cookie_header, &workspace_id)
+                .await?
+        };
         let data = parse_subscription(&subscription, updated_at)?;
         let mut snapshot = snapshot_from_usage(&data, provider, updated_at, source)?;
 
@@ -147,6 +151,10 @@ impl HttpOpenCodeWebClient {
 
         if status.is_success() {
             Ok(text)
+        } else if status.as_u16() == 401 || status.as_u16() == 403 || looks_signed_out(&text) {
+            Err(ProviderError::Auth(
+                "opencode session unauthorized or expired".into(),
+            ))
         } else {
             Err(ProviderError::Fetch(format!(
                 "opencode page request failed: HTTP {}",
@@ -156,16 +164,82 @@ impl HttpOpenCodeWebClient {
     }
 }
 
+fn looks_signed_out(text: &str) -> bool {
+    let lower = text.to_lowercase();
+    lower.contains("login")
+        || lower.contains("sign in")
+        || lower.contains("auth/authorize")
+        || lower.contains("not associated with an account")
+        || lower.contains("actor of type \"public\"")
+}
+
 impl HttpOpenCodeWebClient {
+    async fn fetch_go_usage_page(
+        &self,
+        cookie_header: &str,
+        workspace_id: &str,
+    ) -> ProviderResult<String> {
+        let url = format!("{BASE_URL}/workspace/{workspace_id}/go");
+        let text = self.fetch_page_text(&url, cookie_header, &url).await?;
+
+        if looks_signed_out(&text) {
+            return Err(ProviderError::Auth(
+                "opencode go session unauthorized or expired".into(),
+            ));
+        }
+
+        if parse_subscription(&text, "1970-01-01T00:00:00Z").is_err()
+            && !text.contains("rollingUsage")
+            && !text.contains("usagePercent")
+        {
+            return Err(ProviderError::Parse(
+                "opencode go usage page missing usage fields".into(),
+            ));
+        }
+
+        Ok(text)
+    }
+
     async fn fetch_workspace_id(&self, cookie_header: &str) -> ProviderResult<String> {
         let text = self
             .fetch_server_text(WORKSPACES_SERVER_ID, "GET", None, cookie_header, BASE_URL)
             .await?;
 
+        if looks_signed_out(&text) {
+            return Err(ProviderError::Auth(
+                "opencode session unauthorized or expired".into(),
+            ));
+        }
+
         let mut ids = parse_workspace_ids(&text);
         if ids.is_empty() {
             if let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) {
                 collect_workspace_ids(&value, &mut ids);
+            }
+        }
+
+        if ids.is_empty() {
+            let fallback = self
+                .fetch_server_text(
+                    WORKSPACES_SERVER_ID,
+                    "POST",
+                    Some(vec!["[]".into()]),
+                    cookie_header,
+                    BASE_URL,
+                )
+                .await?;
+
+            if looks_signed_out(&fallback) {
+                return Err(ProviderError::Auth(
+                    "opencode session unauthorized or expired".into(),
+                ));
+            }
+
+            ids = parse_workspace_ids(&fallback);
+            if ids.is_empty() {
+                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&fallback) {
+                    collect_workspace_ids(&value, &mut ids);
+                }
             }
         }
 

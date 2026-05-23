@@ -111,8 +111,49 @@ export const UsageSnapshotsSchema = z.array(UsageSnapshotSchema);
 
 export type UsageSnapshots = z.infer<typeof UsageSnapshotsSchema>;
 
+const PROVIDER_ID_ALIASES: Record<string, ProviderId> = {
+  opencodego: "opencode-go",
+  "open-code-go": "opencode-go",
+  "open-code": "opencode",
+};
+
+export function normalizeProviderId(value: unknown): ProviderId | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = PROVIDER_ID_ALIASES[value] ?? value;
+  const parsed = ProviderIdSchema.safeParse(normalized);
+  return parsed.success ? parsed.data : null;
+}
+
+function normalizeUsageSnapshotInput(snapshot: unknown): unknown {
+  if (!snapshot || typeof snapshot !== "object" || !("provider" in snapshot)) {
+    return snapshot;
+  }
+
+  const provider = normalizeProviderId((snapshot as { provider: unknown }).provider);
+  if (!provider) {
+    return snapshot;
+  }
+
+  return { ...snapshot, provider };
+}
+
 export function parseUsageSnapshots(data: unknown): UsageSnapshots {
-  return UsageSnapshotsSchema.parse(data);
+  if (!Array.isArray(data)) {
+    return UsageSnapshotsSchema.parse(data);
+  }
+
+  const normalized = data.map(normalizeUsageSnapshotInput).filter((snapshot) => {
+    if (!snapshot || typeof snapshot !== "object" || !("provider" in snapshot)) {
+      return false;
+    }
+
+    return ProviderIdSchema.safeParse((snapshot as { provider: unknown }).provider).success;
+  });
+
+  return UsageSnapshotsSchema.parse(normalized);
 }
 
 export const UpdateInfoSchema = z.object({
