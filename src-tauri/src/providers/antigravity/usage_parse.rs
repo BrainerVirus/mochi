@@ -1,5 +1,7 @@
 //! Antigravity local LSP response parsing and window mapping.
 
+#![cfg_attr(not(unix), allow(dead_code))]
+
 use serde::Deserialize;
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
