@@ -74,6 +74,8 @@ function useHoverIndicatorSync(
   return { syncHover, hoveredIdRef, handleHoverEnd, handlePointerDown, handlePointerUp };
 }
 
+const ACTIVE_INDICATOR_LAYOUT_MAX_FRAMES = 120;
+
 function useActiveIndicatorLayout(
   trackRef: RefObject<HTMLDivElement | null>,
   activeIndicatorRef: RefObject<HTMLDivElement | null>,
@@ -86,8 +88,13 @@ function useActiveIndicatorLayout(
   hoveredIdRef: RefObject<string | null>,
 ) {
   useLayoutEffect(() => {
+    if (tabCount === 0) {
+      return undefined;
+    }
+
     let cancelled = false;
     let frameId = 0;
+    let attempts = 0;
 
     const run = () => {
       if (cancelled) {
@@ -96,7 +103,10 @@ function useActiveIndicatorLayout(
 
       const item = itemRefs.current?.get(value);
       if (!trackRef.current || !activeIndicatorRef.current || !item) {
-        frameId = requestAnimationFrame(run);
+        attempts += 1;
+        if (attempts < ACTIVE_INDICATOR_LAYOUT_MAX_FRAMES) {
+          frameId = requestAnimationFrame(run);
+        }
         return;
       }
 

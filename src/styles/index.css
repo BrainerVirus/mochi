@@ -347,17 +347,17 @@ html[data-tray-panel].dark body {
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
-    rgb(0 0 0 / 28%) 1.1rem,
-    rgb(0 0 0 / 72%) 2.25rem,
-    #000 3.5rem,
+    rgb(0 0 0 / 28%) 0.65rem,
+    rgb(0 0 0 / 72%) 1.25rem,
+    #000 2rem,
     #000 100%
   );
   mask-image: linear-gradient(
     to right,
     transparent 0%,
-    rgb(0 0 0 / 28%) 1.1rem,
-    rgb(0 0 0 / 72%) 2.25rem,
-    #000 3.5rem,
+    rgb(0 0 0 / 28%) 0.65rem,
+    rgb(0 0 0 / 72%) 1.25rem,
+    #000 2rem,
     #000 100%
   );
 }
@@ -366,17 +366,17 @@ html[data-tray-panel].dark body {
   -webkit-mask-image: linear-gradient(
     to right,
     #000 0%,
-    #000 calc(100% - 3.5rem),
-    rgb(0 0 0 / 72%) calc(100% - 2.25rem),
-    rgb(0 0 0 / 28%) calc(100% - 1.1rem),
+    #000 calc(100% - 2rem),
+    rgb(0 0 0 / 72%) calc(100% - 1.25rem),
+    rgb(0 0 0 / 28%) calc(100% - 0.65rem),
     transparent 100%
   );
   mask-image: linear-gradient(
     to right,
     #000 0%,
-    #000 calc(100% - 3.5rem),
-    rgb(0 0 0 / 72%) calc(100% - 2.25rem),
-    rgb(0 0 0 / 28%) calc(100% - 1.1rem),
+    #000 calc(100% - 2rem),
+    rgb(0 0 0 / 72%) calc(100% - 1.25rem),
+    rgb(0 0 0 / 28%) calc(100% - 0.65rem),
     transparent 100%
   );
 }
@@ -385,23 +385,23 @@ html[data-tray-panel].dark body {
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
-    rgb(0 0 0 / 28%) 1.1rem,
-    rgb(0 0 0 / 72%) 2.25rem,
-    #000 3.5rem,
-    #000 calc(100% - 3.5rem),
-    rgb(0 0 0 / 72%) calc(100% - 2.25rem),
-    rgb(0 0 0 / 28%) calc(100% - 1.1rem),
+    rgb(0 0 0 / 28%) 0.65rem,
+    rgb(0 0 0 / 72%) 1.25rem,
+    #000 2rem,
+    #000 calc(100% - 2rem),
+    rgb(0 0 0 / 72%) calc(100% - 1.25rem),
+    rgb(0 0 0 / 28%) calc(100% - 0.65rem),
     transparent 100%
   );
   mask-image: linear-gradient(
     to right,
     transparent 0%,
-    rgb(0 0 0 / 28%) 1.1rem,
-    rgb(0 0 0 / 72%) 2.25rem,
-    #000 3.5rem,
-    #000 calc(100% - 3.5rem),
-    rgb(0 0 0 / 72%) calc(100% - 2.25rem),
-    rgb(0 0 0 / 28%) calc(100% - 1.1rem),
+    rgb(0 0 0 / 28%) 0.65rem,
+    rgb(0 0 0 / 72%) 1.25rem,
+    #000 2rem,
+    #000 calc(100% - 2rem),
+    rgb(0 0 0 / 72%) calc(100% - 1.25rem),
+    rgb(0 0 0 / 28%) calc(100% - 0.65rem),
     transparent 100%
   );
 }
@@ -470,36 +470,6 @@ html[data-tray-panel].dark body {
 }
 
 /* Optional edge tint (gitlab BottomFade pattern) — transparent tail, no backdrop blur. */
-.scroll-fade-edge-right {
-  pointer-events: none;
-  position: absolute;
-  inset-block: 0;
-  right: 0;
-  z-index: 10;
-  width: 3.5rem;
-  background-image: linear-gradient(
-    to left,
-    transparent 0%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 45%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 90%
-  );
-}
-
-.scroll-fade-edge-left {
-  pointer-events: none;
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  z-index: 10;
-  width: 3.5rem;
-  background-image: linear-gradient(
-    to right,
-    transparent 0%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 45%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 90%
-  );
-}
-
 .scroll-fade-edge-bottom {
   pointer-events: none;
   position: absolute;

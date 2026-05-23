@@ -77,6 +77,13 @@ export function useScrollOverflow(
     }
 
     const next = measureScrollOverflowWithHysteresis(el, orientation, overflowRef.current);
+    if (
+      next.canScrollStart === overflowRef.current.canScrollStart &&
+      next.canScrollEnd === overflowRef.current.canScrollEnd
+    ) {
+      return;
+    }
+
     overflowRef.current = next;
     setCanScrollStart(next.canScrollStart);
     setCanScrollEnd(next.canScrollEnd);
@@ -88,15 +95,26 @@ export function useScrollOverflow(
       return () => {};
     }
 
-    checkOverflow();
-    el.addEventListener("scroll", checkOverflow, { passive: true });
+    let frameId = 0;
+    const observedChildren = new WeakSet<Element>();
 
-    const resizeObserver = new ResizeObserver(checkOverflow);
+    const scheduleOverflowCheck = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        checkOverflow();
+      });
+    };
+
+    scheduleOverflowCheck();
+    el.addEventListener("scroll", scheduleOverflowCheck, { passive: true });
+
+    const resizeObserver = new ResizeObserver(scheduleOverflowCheck);
     resizeObserver.observe(el);
 
     const observeScrollContent = () => {
       for (const child of el.children) {
-        if (child instanceof HTMLElement) {
+        if (child instanceof HTMLElement && !observedChildren.has(child)) {
+          observedChildren.add(child);
           resizeObserver.observe(child);
         }
       }
@@ -106,12 +124,13 @@ export function useScrollOverflow(
 
     const mutationObserver = new MutationObserver(() => {
       observeScrollContent();
-      checkOverflow();
+      scheduleOverflowCheck();
     });
-    mutationObserver.observe(el, { childList: true, subtree: true });
+    mutationObserver.observe(el, { childList: true });
 
     return () => {
-      el.removeEventListener("scroll", checkOverflow);
+      cancelAnimationFrame(frameId);
+      el.removeEventListener("scroll", scheduleOverflowCheck);
       resizeObserver.disconnect();
       mutationObserver.disconnect();
     };

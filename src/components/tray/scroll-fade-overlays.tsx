@@ -101,9 +101,7 @@ export function ScrollFadeEdgeOverlays({
   if (isHorizontal) {
     return (
       <>
-        <ScrollFadeEdge className="scroll-fade-edge-left" visible={canScrollStart} />
         <TrayTabChevron side="start" visible={canScrollStart} onCycle={onCycleBackward} />
-        <ScrollFadeEdge className="scroll-fade-edge-right" visible={canScrollEnd} />
         <TrayTabChevron side="end" visible={canScrollEnd} onCycle={onCycleForward} />
       </>
     );
