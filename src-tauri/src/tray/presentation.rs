@@ -101,9 +101,19 @@ pub fn pick_tray_snapshot(snapshots: &[UsageSnapshot]) -> Option<&UsageSnapshot>
         })
 }
 
-/// Global % left across providers: minimum remaining (tightest quota wins).
+/// Global % left across configured providers: arithmetic mean of each provider's
+/// primary remaining %. CodexBar averages session + weekly lanes per provider
+/// (`.average` metric preference); overview extends that idea across providers.
 pub fn aggregate_remaining_percent(snapshots: &[UsageSnapshot]) -> u8 {
-    snapshots.iter().map(remaining_percent).min().unwrap_or(100)
+    let percents: Vec<u8> = snapshots.iter().map(remaining_percent).collect();
+    if percents.is_empty() {
+        return 100;
+    }
+
+    let sum: u32 = percents.iter().map(|percent| u32::from(*percent)).sum();
+    (sum as f64 / percents.len() as f64)
+        .round()
+        .clamp(0.0, 100.0) as u8
 }
 
 pub fn remaining_percent(snapshot: &UsageSnapshot) -> u8 {
@@ -193,6 +203,16 @@ mod tests {
     }
 
     #[test]
+    fn aggregate_remaining_percent_averages_configured_providers() {
+        let snapshots = vec![
+            snapshot(ProviderId::Codex, 5.0),
+            snapshot(ProviderId::Cursor, 84.0),
+            snapshot(ProviderId::OpenCodeGo, 1.0),
+        ];
+        assert_eq!(aggregate_remaining_percent(&snapshots), 70);
+    }
+
+    #[test]
     fn resolve_overview_presentation_uses_aggregate_remaining() {
         let snapshots = vec![
             snapshot(ProviderId::Claude, 12.0),
@@ -200,8 +220,8 @@ mod tests {
         ];
         let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
         assert_eq!(presentation.selection, TraySelection::Overview);
-        assert_eq!(presentation.remaining_percent, 33);
-        assert_eq!(presentation.title, Some(tray_title_from_remaining(33)));
+        assert_eq!(presentation.remaining_percent, 61);
+        assert_eq!(presentation.title, Some(tray_title_from_remaining(61)));
         assert!(presentation.tooltip.contains("Overview"));
     }
 
@@ -217,7 +237,7 @@ mod tests {
             static_cursor,
         ];
         let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
-        assert_eq!(presentation.remaining_percent, 50);
+        assert_eq!(presentation.remaining_percent, 73);
     }
 
     #[test]
