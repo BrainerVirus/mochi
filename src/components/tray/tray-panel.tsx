@@ -43,7 +43,10 @@ export function TrayPanel() {
 
   return (
     <TrayPanelShell layoutRef={layoutRef}>
-      <section data-tray-panel-content className="mx-auto flex w-full max-w-[360px] flex-col">
+      <section
+        data-tray-panel-content
+        className="mx-auto flex w-full max-w-[360px] min-w-0 flex-col overflow-x-hidden"
+      >
         <UsageSnapshotsPanel
           error={error}
           isError={isError}

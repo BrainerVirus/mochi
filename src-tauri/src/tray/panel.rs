@@ -105,12 +105,16 @@ pub fn prepare_main_panel_window(window: &WebviewWindow) -> Result<(), Box<dyn s
     #[cfg(target_os = "macos")]
     let _ = window.set_visible_on_all_workspaces(true);
 
-    if let Err(error) = super::vibrancy::apply_tray_panel_vibrancy(window) {
+    if let Err(error) = ensure_tray_panel_vibrancy(window) {
         eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
     }
 
     let _ = window.hide();
     Ok(())
+}
+
+fn ensure_tray_panel_vibrancy(window: &WebviewWindow) -> Result<(), String> {
+    super::vibrancy::apply_tray_panel_vibrancy(window)
 }
 
 /// Updates positioner plugin state and caches the latest tray icon bounds.
@@ -268,6 +272,10 @@ pub fn open_tray_panel(app: &AppHandle, path: &str) {
 }
 
 fn open_visible_tray_panel(app: &AppHandle, window: &WebviewWindow) {
+    if let Err(error) = ensure_tray_panel_vibrancy(window) {
+        eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
+    }
+
     let _ = position_tray_panel(app, window);
     let _ = window.show();
     let _ = window.set_focus();
@@ -292,6 +300,9 @@ pub fn show_tray_panel_centered(app: &AppHandle, path: &str) {
     };
 
     let _ = app.emit("tray-navigate", path);
+    if let Err(error) = ensure_tray_panel_vibrancy(&window) {
+        eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
+    }
     let _ = window.move_window(Position::Center);
     let _ = window.show();
     let _ = window.set_focus();

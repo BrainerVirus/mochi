@@ -69,11 +69,12 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
 
       <ToggleGroup
         type="single"
+        orientation="horizontal"
         value={value}
         onValueChange={(next) => next && onValueChange(next)}
         spacing={0}
         variant="default"
-        className="relative z-10 h-full w-max min-w-full flex-nowrap items-stretch justify-start gap-0 bg-transparent p-0 shadow-none"
+        className="relative z-10 flex h-full w-max min-w-full flex-row flex-nowrap items-stretch justify-start gap-0 bg-transparent p-0 shadow-none"
       >
         {tabs.map((tab) => (
           <TraySegmentItem

@@ -40,7 +40,7 @@ export function RootComponent() {
     <html
       lang="en"
       data-platform={platform}
-      className={isTrayPanelWindow ? "h-auto bg-transparent" : undefined}
+      className={isTrayPanelWindow ? "h-full bg-transparent" : undefined}
     >
       <head>
         <HeadContent />
@@ -48,7 +48,7 @@ export function RootComponent() {
       <body
         className={
           isTrayPanelWindow
-            ? "flex h-auto min-h-0 flex-col overflow-hidden bg-transparent"
+            ? "flex h-full min-h-0 flex-col overflow-hidden bg-transparent"
             : undefined
         }
       >
