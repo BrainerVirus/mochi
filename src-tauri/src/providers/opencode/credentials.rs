@@ -4,7 +4,7 @@
 
 use crate::browser::opencode;
 use crate::core::provider::ProviderResult;
-use crate::settings::ProviderConfig;
+use crate::settings::{codexbar_import, ProviderConfig};
 
 const ENV_COOKIE: &str = "MOCHI_OPENCODE_COOKIE";
 const ENV_WORKSPACE_ID: &str = "MOCHI_OPENCODE_WORKSPACE_ID";
@@ -55,13 +55,35 @@ pub fn request_cookie_header(raw: &str) -> Option<String> {
 pub fn resolve_session(
     config: Option<&ProviderConfig>,
 ) -> ProviderResult<Option<ResolvedOpenCodeSession>> {
-    if config.is_some_and(ProviderConfig::cookie_source_is_off) {
+    let config = codexbar_import::merge_codexbar_token_accounts(config, "opencode");
+
+    if config
+        .as_ref()
+        .is_some_and(ProviderConfig::cookie_source_is_off)
+    {
         return Ok(None);
     }
 
-    let workspace_id = resolve_workspace_id(config);
+    let workspace_id = resolve_workspace_id(config.as_ref());
 
-    if let Some(manual) = config.and_then(ProviderConfig::manual_cookie_value) {
+    if let Some(token) = config
+        .as_ref()
+        .and_then(ProviderConfig::active_token_account)
+        .map(|account| account.token.as_str())
+    {
+        if let Some(cookie_header) = request_cookie_header(token) {
+            return Ok(Some(ResolvedOpenCodeSession {
+                cookie_header,
+                source_label: "Token account".into(),
+                workspace_id,
+            }));
+        }
+    }
+
+    if let Some(manual) = config
+        .as_ref()
+        .and_then(ProviderConfig::manual_cookie_value)
+    {
         if let Some(cookie_header) = request_cookie_header(manual) {
             return Ok(Some(ResolvedOpenCodeSession {
                 cookie_header,

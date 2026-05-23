@@ -76,7 +76,7 @@ pub fn read_cached_snapshots(store: &UsageStore, settings: &MochiSettings) -> Ve
 fn credential_pending_snapshot(provider_id: ProviderId) -> UsageSnapshot {
     UsageSnapshot::new(
         provider_id,
-        UsageWindow::new("Session", 0.0, None),
+        UsageWindow::new("Pending fetch", 100.0, None),
         None,
         current_timestamp(),
         "credentials-detected",

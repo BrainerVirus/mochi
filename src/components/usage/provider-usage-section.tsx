@@ -14,6 +14,36 @@ import { ProviderCostSection } from "./provider-cost-section";
 import { ProviderUsageActions } from "./provider-usage-actions";
 import { UsageMeter } from "./usage-meter";
 
+function reserveDetailLeft(remainingPercent: number): string | null {
+  return remainingPercent > 0 ? `${Math.round(remainingPercent)}% in reserve` : null;
+}
+
+function UsageWindowMeters({
+  windows,
+  fillActivationKey,
+}: {
+  windows: ReturnType<typeof rateWindows>;
+  fillActivationKey?: string;
+}) {
+  return (
+    <>
+      {windows.map((window) => (
+        <UsageMeter
+          key={`${fillActivationKey ?? "static"}-${window.label}`}
+          label={window.label}
+          usedPercent={window.used_percent}
+          remainingPercent={window.remaining_percent}
+          resetsAt={window.resets_at}
+          detailLeft={reserveDetailLeft(window.remaining_percent)}
+          detailRight={window.resets_at ? "Lasts until reset" : null}
+          compact
+          fillActivationKey={fillActivationKey}
+        />
+      ))}
+    </>
+  );
+}
+
 interface ProviderUsageSectionProps {
   snapshot: UsageSnapshot;
   onRefresh?: (provider: ProviderId) => void;
@@ -71,17 +101,10 @@ export function ProviderUsageSection({
       <div
         className={`${trayPanelSpacing.headerToMeters} flex flex-col ${trayPanelSpacing.meterGap}`}
       >
-        {windows.map((window) => (
-          <UsageMeter
-            key={`${fillActivationKey ?? "static"}-${window.label}`}
-            label={window.label}
-            usedPercent={window.used_percent}
-            remainingPercent={window.remaining_percent}
-            resetsAt={window.resets_at}
-            compact
-            fillActivationKey={fillActivationKey}
-          />
-        ))}
+        {snapshot.error ? (
+          <p className="text-destructive text-[11px] leading-snug">{snapshot.error}</p>
+        ) : null}
+        <UsageWindowMeters windows={windows} fillActivationKey={fillActivationKey} />
         {snapshot.provider_cost ? (
           <ProviderCostSection
             cost={snapshot.provider_cost}

@@ -6,7 +6,6 @@ mod strategy;
 
 use async_trait::async_trait;
 
-use credentials::resolve_session;
 use strategy::WebStrategy;
 
 use crate::core::models::{ProviderId, UsageSnapshot};
@@ -36,8 +35,4 @@ impl ProviderEnrichment for OpenCodeGoProvider {
     async fn enrich_snapshot(&self, snapshot: UsageSnapshot) -> ProviderResult<UsageSnapshot> {
         Ok(snapshot)
     }
-}
-
-pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
-    resolve_session(config).ok().flatten().is_some()
 }
