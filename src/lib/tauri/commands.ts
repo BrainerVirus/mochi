@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { detectPlatformFromNavigator, parsePlatformId } from "@/lib/platform/detect";
+import type { PlatformId } from "@/lib/platform/types";
 import {
   ProviderCatalogSchema,
   ProviderCredentialStatusSchema,
@@ -25,6 +27,15 @@ import { isTauriRuntime } from "@/lib/tauri/runtime";
 
 export function appVersion(): Promise<string> {
   return invoke<string>("app_version");
+}
+
+export async function getPlatform(): Promise<PlatformId> {
+  if (!isTauriRuntime()) {
+    return detectPlatformFromNavigator();
+  }
+
+  const result = await invoke<string>("get_platform");
+  return parsePlatformId(result);
 }
 
 export async function checkForUpdate(channel: string): Promise<UpdateInfo> {

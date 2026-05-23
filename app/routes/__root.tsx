@@ -4,6 +4,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEffect, useState } from "react";
 
 import { TrayEventBridge } from "@/components/tray/tray-event-bridge";
+import { detectPlatform, useSystemColorScheme, type PlatformId } from "@/lib/platform";
 import { queryClient } from "@/lib/query/client";
 
 import appCss from "@/styles/index.css?url";
@@ -24,6 +25,9 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const [isTrayPanelWindow, setIsTrayPanelWindow] = useState(false);
+  const [platform, setPlatform] = useState<PlatformId>("unknown");
+
+  useSystemColorScheme();
 
   useEffect(() => {
     if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
@@ -38,8 +42,16 @@ function RootComponent() {
     }
   }, []);
 
+  useEffect(() => {
+    void detectPlatform().then(setPlatform);
+  }, []);
+
   return (
-    <html lang="en" className={isTrayPanelWindow ? "h-full bg-transparent" : undefined}>
+    <html
+      lang="en"
+      data-platform={platform}
+      className={isTrayPanelWindow ? "h-full bg-transparent" : undefined}
+    >
       <head>
         <HeadContent />
       </head>

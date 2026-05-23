@@ -4,184 +4,159 @@
 
 ## 1. Visual Theme & Atmosphere
 
-Mochi is a **soft, calm usage companion** for AI coding tools. The interface should feel like a friendly kitchen counter note — warm, approachable, and never alarming until it truly needs to be. Data density is **compact but breathable**: tray panels and widgets show the essentials first, with room to expand into detail.
+Mochi is a **calm usage companion** for AI coding tools. It should feel like **part of the host OS** — a native menu-bar popover on macOS, a Fluent-adjacent flyout on Windows, and an Adwaita-friendly panel on Linux — not a custom dark skin pasted over every surface.
 
-The aesthetic is **Japanese confectionery-inspired minimalism**: rounded, pillowy surfaces, pastel accents, and cream backgrounds that read as gentle rather than clinical. Usage warnings escalate through color on meters and the brand mark ring, not through harsh reds or modal overload.
+**One React/Tauri codebase.** Platform character comes from CSS scoped by `data-platform` on `<html>` (set via Tauri `get_platform`) plus `prefers-color-scheme` for light/dark. Do not fork UI per OS in TypeScript unless behavior truly differs.
 
 **Key characteristics:**
 
-- Warm cream canvas with whisper-soft shadows
-- Pill-shaped badges and generously rounded cards (`rounded-mochi`, 1.5rem)
-- Pastel usage meters that shift from matcha → yuzu → ume as limits approach
-- Brand mark ring tint alongside numeric usage data
-- Light-first with a warm dark mode for late-night coding sessions
-- **Tray popover:** Always uses scoped `.tray-panel` dark charcoal theme (CodexBar-inspired density) with Mochi pastel meter accents — independent of app light/dark preference
-- **Menu bar tray icon:** Provider glyph + remaining `%` label (CodexBar “brand + percent” mode), not a usage-colored dot
+- **Tray panel:** System background/text colors; light and dark follow OS preference. Mochi pastel usage meters (matcha → yuzu → ume) remain the brand accent on meters and the mark ring only.
+- **Settings / About:** Full windows with native-adjacent surfaces; subtle Mochi warmth in light mode (cream-tinted shadcn tokens) while respecting system dark mode via `.dark` on `<html>`.
+- **Density:** Compact but breathable — preserve approved tray layout tokens in `tray-panel-spacing.ts`; do not regress tab cycling, scroll fades, GSAP height morph, or progress bar animation.
+- **Typography:** Platform system UI stacks in tray and app chrome; Geist remains available as fallback in the global theme.
+- **Icons:** Prefer system-native metaphors (SF Symbol–style on macOS where feasible); monochrome provider glyphs in the menu bar.
 
-## 2. Color Palette & Roles
+## 2. Platform Guidance
 
-### Foundation
+### macOS
 
-- **Steamed Rice Cream** (#FFF8F0) — Primary background (`bg-background`, `bg-mochi-cream`). The default canvas for tray panel, widget, and settings.
-- **Warm Parchment White** (#FFFFFF at 80–95% opacity) — Card and popover surfaces (`bg-card`). Slightly elevated from the cream background.
-- **Soft Cocoa Text** (#334155) — Primary foreground (`text-foreground`). Readable without harsh black contrast.
+- **Font:** `-apple-system`, BlinkMacSystemFont, SF Pro Text
+- **Surfaces:** Light `#f5f5f7`, dark `#323232` — vibrancy-like flat fills (optional macOS window vibrancy is a stretch goal in Rust, not required for Phase 5)
+- **Radius:** ~10px tray panel (`--radius-tray-panel: 0.625rem`)
+- **Accent:** System blue `#007aff` / `#0a84ff` for focus rings and primary actions in tray
+- **Color scheme:** `prefers-color-scheme` drives tray and app dark mode
 
-### Brand Accents
+### Windows
 
-- **Blush Mochi** (#FFB5C2) — Primary accent and default usage meter fill (`bg-mochi-blush`). Friendly highlight for active provider and normal usage states.
-- **Grilled Peach** (#FFB088) — Primary action color (`bg-primary`). Warm CTA buttons and focused controls.
-- **Matcha Calm** (#A3D9A5) — Success and healthy usage (`bg-mochi-matcha`). Under 60% usage, connected status, positive confirmations.
-- **Yuzu Glow** (#FFE4A1) — Warning band (`bg-mochi-yuzu`). 60–85% usage, approaching limits, stale-but-usable data.
-- **Ume Alert** (#FF8A8A) — Critical and destructive (`bg-mochi-ume`, `destructive`). 85%+ usage, errors, disconnects.
-- **Lavender Rest** (#C4B5E0) — Secondary accent (`bg-mochi-lavender`). Reset-soon states, secondary badges, subtle highlights.
+- **Font:** Segoe UI Variable, Segoe UI
+- **Surfaces:** Fluent light `#f3f3f3`, dark `#202020`
+- **Radius:** ~8px tray panel
+- **Accent:** Fluent blue `#005fb8` / `#60cdff` (high contrast in dark)
+- **Spacing:** Slightly roomier hit targets in footer menu rows
 
-### Structural
+### Linux
 
-- **Warm Stone Border** (#E7E0D8) — Borders and dividers (`border-border`). Barely-there separation on cream backgrounds.
-- **Muted Sage Gray** (#64748B) — Secondary text (`text-muted-foreground`). Labels, timestamps, provider metadata.
+- **Font:** system-ui, Cantarell, Ubuntu, Noto Sans (Adwaita-friendly)
+- **Surfaces:** Light `#fafafa`, dark `#242424`
+- **Radius:** ~6px tray panel — sharpest of the three
+- **Accent:** Adwaita blue `#3584e4` / `#62a0ea`
+- **Portals:** Keep styling portal-compatible (no macOS-only private APIs in shared CSS)
 
-### Functional Mapping (Usage States)
+### Implementation hooks
 
-| State            | Color         | Brand mark ring                                |
-| ---------------- | ------------- | ---------------------------------------------- |
-| Normal (<60%)    | Matcha Calm   | Muted sage arc, low opacity                    |
-| Warning (60–85%) | Yuzu Glow     | Yuzu arc, medium opacity                       |
-| Critical (>85%)  | Ume Alert     | Ume arc, full opacity, slightly heavier stroke |
-| Reset soon       | Lavender Rest | Lavender arc                                   |
-| All good         | Matcha Calm   | Matcha arc, high opacity                       |
+| Hook                                           | Purpose                                                               |
+| ---------------------------------------------- | --------------------------------------------------------------------- |
+| `<html data-platform="macos\|windows\|linux">` | Platform typography, radius, accent overrides                         |
+| `@media (prefers-color-scheme: dark)`          | Tray `.tray-panel` via `light-dark()`; app windows via `.dark` class  |
+| `.tray-panel`                                  | Scoped semantic tokens — **not** forced always-dark                   |
+| `.app-window`                                  | Settings/about shell — system surfaces + Mochi primary for brand CTAs |
 
-## 3. Typography Rules
+Rust command: `get_platform` → frontend `detectPlatform()`.
 
-**Primary font:** Geist Variable (sans-serif) — clean, modern, legible at small tray-panel sizes.
+## 3. Color Palette & Roles
 
-**Hierarchy:**
+### Mochi brand (usage meters & mark only)
 
-- **Panel title:** Semi-bold (600), 1.125rem, tight tracking
-- **Provider name:** Medium (500), 1rem
-- **Usage labels:** Regular (400), 0.75rem, muted foreground
-- **Percent values:** Medium (500), 0.75rem, tabular nums
-- **Tagline / brand:** Medium (500), 0.75rem, expanded letter-spacing (0.2em), uppercase
+| Name          | Hex     | Role                                |
+| ------------- | ------- | ----------------------------------- |
+| Matcha Calm   | #A3D9A5 | Healthy usage (<60%)                |
+| Yuzu Glow     | #FFE4A1 | Warning (60–85%)                    |
+| Ume Alert     | #FF8A8A | Critical (>85%), errors             |
+| Lavender Rest | #C4B5E0 | Reset-soon, secondary accent        |
+| Blush Mochi   | #FFB5C2 | Soft highlight (settings marketing) |
+| Grilled Peach | #FFB088 | Settings primary CTA (light mode)   |
 
-**Principles:**
+### Structural (semantic CSS variables)
 
-- Prefer `text-sm` and `text-xs` in compact tray/widget surfaces
-- Use tabular figures for percentages and countdowns
-- Never below 11px effective size for accessibility
+Tray and app windows use **`--background`**, **`--foreground`**, **`--muted`**, **`--border`**, etc. Platform blocks in `src/styles/index.css` map these to OS-like values. Do not hardcode charcoal `#171412` on the tray.
 
-## 4. Component Stylings
+### Functional mapping (usage states)
+
+| State            | Meter fill | Brand mark ring         |
+| ---------------- | ---------- | ----------------------- |
+| Normal (<60%)    | Matcha     | Muted sage arc          |
+| Warning (60–85%) | Yuzu       | Yuzu arc                |
+| Critical (>85%)  | Ume        | Ume arc, heavier stroke |
+| Reset soon       | Lavender   | Lavender arc            |
+
+## 4. Typography Rules
+
+**Tray panel:** `var(--font-platform)` — system UI per OS, `text-sm` / `text-xs` / tabular nums for percentages.
+
+**Settings / About:** Geist Variable with platform fallback in `--font-sans`.
+
+**Hierarchy (unchanged density):**
+
+- Panel title: semibold, ~1.125rem
+- Provider name: medium, 1rem
+- Usage labels: regular, 0.75rem, muted
+- Percent values: medium, tabular nums
+
+Never below ~11px effective size.
+
+## 5. Component Stylings
+
+### Tray panel shell
+
+- **Class:** `tray-panel` on shell (`TrayPanelShell`)
+- **Shape:** `rounded-[var(--radius-tray-panel)]` — platform-specific
+- **Surface:** System background; `ring-1 ring-border`; whisper shadow
+- **No nested Cards** — flat sections, `Separator` only
+
+### Usage meters
+
+- Pill tracks; Mochi matcha/yuzu/ume fills by threshold (unchanged logic)
+- `h-1` compact, `h-1.5` expanded
+- Show `% left` + reset countdown
+
+### Settings forms
+
+- shadcn `FieldGroup` + `Field`
+- Semantic tokens; primary stays Grilled Peach in light, adapts in dark
+- `.app-window` wrapper for dedicated Tauri windows
 
 ### Buttons
 
-- **Shape:** Generously rounded (`rounded-lg` to `rounded-full` for pill CTAs)
-- **Primary:** Grilled Peach background, cream-white text
-- **Secondary:** Warm Parchment with Warm Stone border
-- **Ghost:** Transparent with muted hover on cream
-- **Destructive:** Ume Alert at 10–20% opacity background, full ume text
+- Tray footer: native-adjacent ghost/list rows (existing `TrayMenuRow`)
+- Settings: shadcn variants on semantic colors
 
-### Cards & Containers
+## 6. Layout Principles (tray — preserved)
 
-- **Shape:** `rounded-mochi` (1.5rem) for hero cards; `rounded-lg` for nested items
-- **Background:** Warm Parchment White with 80% opacity option for overlay panels
-- **Shadow:** Whisper-soft (`shadow-sm`), ring-1 in Warm Stone Border
-- **Padding:** `p-4` compact, `p-6` for settings sections
-- **Tray panel exception:** Do **not** use `Card` on the tray route — use flat sections on the integrated dark `.tray-panel` surface instead.
+- Max ~360px wide; single integrated surface
+- Top tabs: Overview + per-provider; scroll fade masks; chevron cycle
+- Overview: 2×2 grid, bar chart, provider list
+- Footer: Refresh, Settings, About, Quit with shortcuts
+- Menu bar icon: provider glyph + remaining `%` label (not usage-colored dot)
+- Spacing: use `tray-panel-spacing.ts` tokens — **do not change** without UX review
 
-### Usage Meters
+## 7. shadcn Token Mapping
 
-- **Track:** Muted warm gray (`bg-muted`) on light surfaces; `bg-muted` on tray dark surface
-- **Fill:** State-driven — matcha → yuzu → ume gradient logic
-- **Height:** `h-1` in tray/compact mode, `h-1.5` in expanded
-- **Shape:** Pill track and fill (`rounded-full`)
-- **Labels:** Show `% left` (not `% used`) plus reset countdown when `resets_at` is present
+| Role                  | Token                        |
+| --------------------- | ---------------------------- |
+| System/app background | `--background`               |
+| Body text             | `--foreground`               |
+| Elevated surface      | `--card`                     |
+| Brand CTA (settings)  | `--primary`                  |
+| Borders               | `--border`                   |
+| Mochi usage colors    | Tailwind `mochi-*` utilities |
+| Tray corner radius    | `--radius-tray-panel`        |
 
-### Badges
+Custom Tailwind: `mochi-cream`, `mochi-blush`, `mochi-matcha`, `mochi-yuzu`, `mochi-peach`, `mochi-ume`, `mochi-lavender`, `rounded-mochi` (settings hero cards only — not tray shell).
 
-- **Shape:** Pill (`rounded-full`)
-- **Variants:** Secondary for source tags, outline for provider IDs, destructive tint for error/stale
+## 8. Motion & Brand Mark
 
-### Inputs & Forms (Settings)
+**MochiMark:** geometric quota ring; state via color only (matcha → yuzu → ume → lavender).
 
-- **Stroke:** 1px Warm Stone Border
-- **Background:** Steamed Rice Cream, shifts to white on focus
-- **Focus ring:** Grilled Peach at 50% opacity
-- **Layout:** `FieldGroup` + `Field` composition (shadcn forms)
+- GSAP for panel height morph and mark transitions
+- `prefers-reduced-motion`: instant swaps
+- Do not regress tray focus fix or meter fill animation
 
-### Alerts & Toasts
+## 9. Do / Don't
 
-- **Update prompt:** Card-style alert with primary + ghost actions
-- **Stale data:** Yuzu-tinted alert, never blocking
-- **Errors:** Ume-tinted alert with retry action
-
-## 5. Layout Principles
-
-### Surfaces
-
-- **Tray panel:** Max ~360px wide, **single integrated dark surface** (`.tray-panel` scoped theme), CodexBar-style information density. No nested cards — sections separated by `Separator` only.
-- **Widget:** Resizable 280–480px, density modes adjust padding and font scale
-- **Settings:** Max 720px centered, tabbed sections
-
-### Tray Panel Layout (required patterns)
-
-- **Single surface:** One charcoal panel shell (`tray-panel` class on `TrayPanelShell`); never stack `Card` inside the tray route.
-- **Top tabs:** Horizontal `Tabs` with `variant="line"` — Overview plus one tab per enabled provider. Each provider tab shows a **provider icon**, label, **remaining %**, and a mini usage bar (`h-0.5` Progress) tinted by usage state. Overflowing tabs use a **multi-stop fade mask** (`.scroll-fade-mask-x-end` / `.scroll-fade-mask-x-both` when scrolled) with hidden scrollbars and a ghost chevron to cycle hidden tabs — no visible x-axis scrollbar, no y-axis overflow on the tab row.
-- **Scroll masks:** Tray panel body scroll uses the same pattern vertically (`.scroll-fade-mask-y-end`, ghost chevron-down, `scrollbar-none`). Edge tints use soft transparent gradients (`.scroll-fade-edge-*`, gitlab `BottomFade` stops) over `mask-image` — never solid `bg-background` blocks or backdrop blur on the fade zone.
-- **Overview tab:** 2×2 metric grid (providers, highest %, average %, healthy count), compact bar chart, then flat provider meter list.
-- **Provider tab:** Flat section with thin meters, `% left` + reset countdown, source badge — no card wrapper.
-- **Footer menu:** Fixed bottom list (CodexBar-style) — Refresh (`⌘R`), Settings… (`⌘,`), About Mochi, Quit (`⌘Q`); row separators, muted shortcut hints on the right. No top header chrome.
-- **Typography:** Geist at `text-sm` / `text-xs` / `text-[10px]` labels; tabular nums for percentages.
-- **Meters:** Thin tracks (`h-1`), Mochi matcha/yuzu/ume fill by threshold; label row shows window name, `% left`, and reset time when available.
-
-### Menu bar tray icon (required)
-
-- **Provider glyph:** Monochrome 18×18 mark for the active provider (Codex chevron-in-square when Codex is selected; letter fallback for others).
-- **Percent label:** Remaining quota as compact text (e.g. `99%`) beside the glyph — matches CodexBar Display → “provider branding icons with a percent label”.
-- **Selection:** Prefer Codex when it has data; otherwise the provider closest to its limit (highest used %).
-- **Fallback:** Neutral Mochi/Codex glyph when no usage snapshots exist — never a green/yellow/red dot.
-- **Tooltip:** `Mochi — {Provider} · {N}% left`.
-- **Spacing:** `px-3` horizontal padding, `gap-3` between sections, `Separator` between logical groups.
-
-### Spacing
-
-- Base unit: 4px
-- Component gap: `gap-3` (12px) compact, `gap-4` (16px) normal
-- Section margin: `gap-6` between provider groups
-- Use `gap-*`, never `space-y-*`
-
-### Density Modes
-
-- **Compact:** `text-xs`, `p-3`, single-line meters
-- **Normal:** `text-sm`, `p-4`, standard meters + brand mark thumbnail
-- **Expanded:** `text-base`, `p-6`, dual meters + provider detail link
-
-## 6. shadcn Token Mapping
-
-When building UI, map Mochi semantics to shadcn tokens:
-
-| Mochi role           | shadcn token                 |
-| -------------------- | ---------------------------- |
-| Steamed Rice Cream   | `--background`               |
-| Soft Cocoa Text      | `--foreground`               |
-| Warm Parchment White | `--card`                     |
-| Grilled Peach        | `--primary`                  |
-| Blush Mochi          | `--accent`                   |
-| Warm Stone Border    | `--border`                   |
-| Muted Sage Gray      | `--muted-foreground`         |
-| Ume Alert            | `--destructive`              |
-| 1.5rem corners       | `--radius` / `rounded-mochi` |
-
-Custom Tailwind tokens (always available): `mochi-cream`, `mochi-blush`, `mochi-matcha`, `mochi-yuzu`, `mochi-peach`, `mochi-ume`, `mochi-lavender`, `rounded-mochi`.
-
-## 7. Motion & Brand Mark
-
-**MochiMark** is a sober, geometric quota indicator — inspired by Cursor/Vercel logo simplicity, not a cartoon mascot:
-
-- **Frame:** Rounded square (`currentColor`, ~30% opacity) — dashboard tile metaphor
-- **Arc:** Open usage ring (~270° sweep, gap at bottom-right) tinted by state (matcha → yuzu → ume → lavender)
-- **Center dot:** Solid `currentColor` focal point — minimal quota indicator
-- **State variation:** Ring color and opacity only — no expressions, blush, brackets, or chip pins
-- **Size:** `size-9` in tray header, `size-8` in widget; inline SVG only, no external assets
-
-- **GSAP** for mark state transitions and panel enter/exit
-- **Reduced motion:** Instant state swaps, no bounce
-- **Micro-interactions:** 200–300ms ease on meter fill width changes
-- Brand mark sits in tray header or widget title row; never obscures usage data
+| Do                                | Don't                                             |
+| --------------------------------- | ------------------------------------------------- |
+| Follow OS light/dark in tray      | Force always-dark `.tray-panel`                   |
+| Set `data-platform` from Tauri    | Ship macOS-only CSS without Win/Linux equivalents |
+| Keep Mochi colors on meters       | Paint entire tray in CodexBar charcoal            |
+| Use system fonts in tray          | Load display fonts in compact popover             |
+| Test on all three desktop targets | Assume vibrancy/blur on every platform            |
