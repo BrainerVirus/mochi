@@ -33,9 +33,10 @@ export function TrayPanelTabList({ tabs, value, onValueChange }: TrayPanelTabLis
   );
 
   return (
-    <div className="border-border border-b px-3 pb-2">
+    <div className="border-border min-w-0 border-b px-3 pb-2">
       <ScrollFadeRegion
         orientation="horizontal"
+        className="w-full min-w-0"
         rowHeightClassName={TRAY_SEGMENT_ROW_HEIGHT}
         scrollClassName="overscroll-x-contain"
         fadeInset={TAB_FADE_INSET}

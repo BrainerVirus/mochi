@@ -62,6 +62,18 @@ body {
   margin: 0;
 }
 
+/* Tray popover webview: transparent shell so native vibrancy/Mica shows through. */
+html[data-tray-panel],
+html[data-tray-panel] body {
+  height: 100%;
+  background-color: transparent;
+}
+
+html[data-tray-panel].dark,
+html[data-tray-panel].dark body {
+  background-color: transparent;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", var(--font-platform);
