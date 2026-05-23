@@ -37,6 +37,36 @@ export const FetchAttemptSchema = z.object({
 
 export type FetchAttempt = z.infer<typeof FetchAttemptSchema>;
 
+export const StatusIndicatorSchema = z.enum([
+  "none",
+  "minor",
+  "major",
+  "critical",
+  "maintenance",
+  "unknown",
+]);
+
+export type StatusIndicator = z.infer<typeof StatusIndicatorSchema>;
+
+export const ProviderStatusSchema = z.object({
+  indicator: StatusIndicatorSchema,
+  description: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+  url: z.string().nullable().optional(),
+});
+
+export type ProviderStatus = z.infer<typeof ProviderStatusSchema>;
+
+export const SessionCostSummarySchema = z.object({
+  window_days: z.number(),
+  input_tokens: z.number(),
+  cached_input_tokens: z.number(),
+  output_tokens: z.number(),
+  session_files_scanned: z.number(),
+});
+
+export type SessionCostSummary = z.infer<typeof SessionCostSummarySchema>;
+
 export const UsageSnapshotSchema = z.object({
   provider: ProviderIdSchema,
   primary: UsageWindowSchema,
@@ -47,6 +77,8 @@ export const UsageSnapshotSchema = z.object({
   is_stale: z.boolean().default(false),
   error: z.string().nullable().optional(),
   last_fetch_attempt: FetchAttemptSchema.nullable().optional(),
+  provider_status: ProviderStatusSchema.nullable().optional(),
+  session_cost: SessionCostSummarySchema.nullable().optional(),
 });
 
 export type UsageSnapshot = z.infer<typeof UsageSnapshotSchema>;

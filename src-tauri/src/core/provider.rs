@@ -53,3 +53,10 @@ pub trait Provider: Send + Sync {
     fn metadata(&self) -> ProviderMetadata;
     fn strategies(&self) -> Vec<Box<dyn FetchStrategy>>;
 }
+
+#[async_trait]
+pub trait ProviderEnrichment: Send + Sync {
+    async fn enrich_snapshot(&self, snapshot: UsageSnapshot) -> ProviderResult<UsageSnapshot> {
+        Ok(snapshot)
+    }
+}

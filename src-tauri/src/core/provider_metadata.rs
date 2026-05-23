@@ -104,7 +104,7 @@ const CODEX: ProviderDefinition = ProviderDefinition {
     settings_fields: &[COOKIE_SOURCE, HISTORY_WINDOW],
     status_url: Some("https://status.openai.com"),
     supports_cost: true,
-    implementation_status: ImplementationStatus::Partial,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const CLAUDE: ProviderDefinition = ProviderDefinition {
@@ -350,9 +350,9 @@ mod tests {
     }
 
     #[test]
-    fn codex_is_only_partial_implementation() {
+    fn codex_is_done_implementation() {
         let codex = definition_for(ProviderId::Codex).expect("codex definition");
-        assert_eq!(codex.implementation_status, ImplementationStatus::Partial);
+        assert_eq!(codex.implementation_status, ImplementationStatus::Done);
         assert!(codex.supports_cost);
     }
 

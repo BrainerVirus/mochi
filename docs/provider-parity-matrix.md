@@ -18,7 +18,7 @@
 
 | Provider    | CodexBar ID         | Strategies                                                          | Auth                                            | Settings fields                                           | Status                     | Cost                              | Mochi                                           |
 | ----------- | ------------------- | ------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------- | -------------------------- | --------------------------------- | ----------------------------------------------- |
-| Codex       | `codex`             | OAuth API → CLI RPC; optional web dashboard (`openai-web`)          | OAuth tokens, browser cookies, `codex` CLI      | `cookieSource`, battery saver, history window             | Statuspage.io (OpenAI)     | JSONL session scan (`CODEX_HOME`) | **partial** (OAuth + CLI RPC; web/cost pending) |
+| Codex       | `codex`             | OAuth API → CLI RPC → web dashboard (manual cookie)                   | OAuth tokens, manual browser cookie, `codex` CLI | `cookieSource`, battery saver, history window             | Statuspage.io (OpenAI)     | JSONL session scan (`CODEX_HOME`) | **done**                                        |
 | Claude      | `claude`            | Admin API; App Auto: OAuth → CLI PTY → Web API; CLI Auto: Web → CLI | Admin key, OAuth, browser cookies, `claude` CLI | Admin key, token accounts, `cookieSource`, history window | Statuspage.io (Anthropic)  | JSONL project logs                | **stub**                                        |
 | Cursor      | `cursor`            | Web API (cookies) → stored WebKit session                           | Browser cookies (`cursor.com`, `cursor.sh`)     | `cookieSource`, manual cookie header                      | Statuspage.io (Cursor)     | —                                 | **stub**                                        |
 | Gemini      | `gemini`            | OAuth-backed quota API (Gemini CLI credentials)                     | Google OAuth via Gemini CLI                     | CLI credential path overrides                             | Google Workspace incidents | —                                 | **stub**                                        |
@@ -35,7 +35,7 @@ Condensed from [CodexBar `docs/providers.md`](../../CodexBar/docs/providers.md).
 
 | Provider             | Strategies (summary)       | Auth (summary)                  | Status               | Cost              | Mochi                |
 | -------------------- | -------------------------- | ------------------------------- | -------------------- | ----------------- | -------------------- |
-| Codex                | oauth → cli; optional web  | OAuth, cookies, CLI             | OpenAI Statuspage    | session JSONL     | partial (OAuth done) |
+| Codex                | oauth → cli → web cookies  | OAuth, manual cookie, CLI       | OpenAI Statuspage    | session JSONL     | done                 |
 | OpenAI               | Admin API / legacy balance | Admin or API key                | —                    | org usage         | —                    |
 | Azure OpenAI         | API deployment probe       | API key + endpoint + deployment | Azure status link    | —                 | —                    |
 | Claude               | admin api; oauth/cli/web   | Admin, OAuth, cookies, CLI      | Anthropic Statuspage | session JSONL     | stub                 |

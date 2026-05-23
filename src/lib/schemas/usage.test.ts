@@ -54,6 +54,41 @@ describe("parseUsageSnapshots health metadata", () => {
   });
 });
 
+describe("parseUsageSnapshots provider metadata", () => {
+  it("accepts snapshots with provider status and session cost metadata", () => {
+    const snapshots = parseUsageSnapshots([
+      {
+        provider: "codex",
+        primary: {
+          label: "Session",
+          used_percent: 22,
+          remaining_percent: 78,
+          resets_at: null,
+        },
+        secondary: null,
+        updated_at: "2026-05-20T12:00:00Z",
+        source: "codex-oauth",
+        provider_status: {
+          indicator: "minor",
+          description: "Elevated API error rates",
+          updated_at: "2026-05-20T10:00:00Z",
+          url: "https://status.openai.com",
+        },
+        session_cost: {
+          window_days: 30,
+          input_tokens: 160,
+          cached_input_tokens: 40,
+          output_tokens: 16,
+          session_files_scanned: 1,
+        },
+      },
+    ]);
+
+    expect(snapshots[0]?.provider_status?.indicator).toBe("minor");
+    expect(snapshots[0]?.session_cost?.input_tokens).toBe(160);
+  });
+});
+
 describe("parseUsageSnapshots", () => {
   it("accepts a valid usage snapshot array", () => {
     const snapshots = parseUsageSnapshots([
