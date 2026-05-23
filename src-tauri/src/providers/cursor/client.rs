@@ -9,13 +9,13 @@ use async_trait::async_trait;
 use super::credentials::resolve_manual_cookie;
 use super::usage_parse::CursorUsageSummary;
 use crate::core::provider::{ProviderError, ProviderResult};
+use crate::settings::ProviderConfig;
 
 const BASE_URL: &str = "https://cursor.com";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[async_trait]
 pub trait CursorWebClient: Send + Sync {
-    async fn resolve_cookie(&self) -> ProviderResult<String>;
     async fn fetch_usage_summary(&self, cookie_header: &str) -> ProviderResult<CursorUsageSummary>;
 }
 
@@ -42,10 +42,6 @@ impl Default for HttpCursorWebClient {
 
 #[async_trait]
 impl CursorWebClient for HttpCursorWebClient {
-    async fn resolve_cookie(&self) -> ProviderResult<String> {
-        resolve_manual_cookie()?.ok_or(ProviderError::NotConfigured)
-    }
-
     async fn fetch_usage_summary(&self, cookie_header: &str) -> ProviderResult<CursorUsageSummary> {
         let url = format!("{BASE_URL}/api/usage-summary");
         let response = self
@@ -79,8 +75,9 @@ impl CursorWebClient for HttpCursorWebClient {
 pub async fn fetch_snapshot_with_client(
     client: &dyn CursorWebClient,
     updated_at: &str,
+    config: Option<&ProviderConfig>,
 ) -> ProviderResult<crate::core::models::UsageSnapshot> {
-    let cookie = client.resolve_cookie().await?;
+    let cookie = resolve_manual_cookie(config)?.ok_or(ProviderError::NotConfigured)?;
     let summary = client.fetch_usage_summary(&cookie).await?;
     super::usage_parse::snapshot_from_usage_summary(&summary, updated_at, "cursor-web")
 }
@@ -96,10 +93,6 @@ mod tests {
 
     #[async_trait]
     impl CursorWebClient for MockCursorWebClient {
-        async fn resolve_cookie(&self) -> ProviderResult<String> {
-            Ok("WorkosCursorSessionToken=test".into())
-        }
-
         async fn fetch_usage_summary(
             &self,
             _cookie_header: &str,
@@ -123,9 +116,16 @@ mod tests {
             summary: Ok(summary),
         };
 
-        let snapshot = fetch_snapshot_with_client(&client, "2026-05-22T12:00:00Z")
-            .await
-            .expect("snapshot");
+        let snapshot = fetch_snapshot_with_client(
+            &client,
+            "2026-05-22T12:00:00Z",
+            Some(&crate::settings::ProviderConfig {
+                manual_cookie: Some("WorkosCursorSessionToken=test".into()),
+                ..Default::default()
+            }),
+        )
+        .await
+        .expect("snapshot");
 
         assert_eq!(snapshot.source, "cursor-web");
         assert_eq!(snapshot.primary.used_percent, 30.0);

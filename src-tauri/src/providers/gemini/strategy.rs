@@ -86,7 +86,7 @@ mod tests {
     #[tokio::test]
     async fn oauth_quota_strategy_returns_snapshot_from_client() {
         let strategy = OAuthQuotaStrategy::with_client(Arc::new(MockGeminiQuotaClient));
-        let snapshot = strategy.fetch(&FetchContext).await.expect("fetch");
+        let snapshot = strategy.fetch(&FetchContext::empty()).await.expect("fetch");
 
         assert_eq!(snapshot.source, "gemini-oauth-quota");
         assert_eq!(snapshot.primary.label, "Pro");

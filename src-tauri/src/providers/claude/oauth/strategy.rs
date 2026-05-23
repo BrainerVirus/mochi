@@ -143,7 +143,7 @@ mod tests {
         }));
 
         let snapshot = strategy
-            .fetch(&FetchContext)
+            .fetch(&FetchContext::empty())
             .await
             .expect("oauth fetch should succeed");
 
@@ -158,7 +158,10 @@ mod tests {
             usage: Ok(fixture_usage()),
         }));
 
-        let available = strategy.is_available(&FetchContext).await.expect("check");
+        let available = strategy
+            .is_available(&FetchContext::empty())
+            .await
+            .expect("check");
         assert!(!available);
     }
 
@@ -172,7 +175,10 @@ mod tests {
             usage: Err(ProviderError::Auth("expired".into())),
         }));
 
-        let error = strategy.fetch(&FetchContext).await.expect_err("auth fail");
+        let error = strategy
+            .fetch(&FetchContext::empty())
+            .await
+            .expect_err("auth fail");
         assert!(strategy.should_fallback(&error));
     }
 }

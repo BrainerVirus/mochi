@@ -8,4 +8,5 @@ mod credentials;
 mod parse;
 mod strategy;
 
+pub(crate) use credentials::{codex_auth_path, load_credentials_from_path};
 pub use strategy::OAuthStrategy;

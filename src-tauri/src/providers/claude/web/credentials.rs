@@ -5,12 +5,21 @@
 use std::path::Path;
 
 use crate::core::provider::{ProviderError, ProviderResult};
+use crate::settings::ProviderConfig;
 
 pub const ENV_SESSION_KEY: &str = "MOCHI_CLAUDE_SESSION_KEY";
 pub const ENV_COOKIE: &str = "MOCHI_CLAUDE_COOKIE";
 pub const ENV_COOKIE_FILE: &str = "MOCHI_CLAUDE_COOKIE_FILE";
 
-pub fn resolve_session_key() -> ProviderResult<Option<String>> {
+pub fn resolve_session_key(config: Option<&ProviderConfig>) -> ProviderResult<Option<String>> {
+    if let Some(cookie) = config.and_then(ProviderConfig::manual_cookie_value) {
+        return session_key_from_cookie_header(cookie);
+    }
+
+    resolve_session_key_from_env()
+}
+
+pub fn resolve_session_key_from_env() -> ProviderResult<Option<String>> {
     if let Ok(value) = std::env::var(ENV_SESSION_KEY) {
         let trimmed = value.trim();
         if !trimmed.is_empty() {

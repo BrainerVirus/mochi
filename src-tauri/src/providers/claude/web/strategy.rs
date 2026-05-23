@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use super::client::{ClaudeWebClient, HttpClaudeWebClient};
-use crate::core::models::UsageSnapshot;
+use super::credentials::resolve_session_key;
+use crate::core::models::{ProviderId, UsageSnapshot};
 use crate::core::provider::{
     FetchContext, FetchKind, FetchStrategy, ProviderError, ProviderResult,
 };
@@ -43,16 +44,13 @@ impl FetchStrategy for WebStrategy {
         FetchKind::BrowserCookies
     }
 
-    async fn is_available(&self, _ctx: &FetchContext) -> ProviderResult<bool> {
-        match self.client.resolve_session_key().await {
-            Ok(_) => Ok(true),
-            Err(ProviderError::NotConfigured) => Ok(false),
-            Err(error) => Err(error),
-        }
+    async fn is_available(&self, ctx: &FetchContext) -> ProviderResult<bool> {
+        Ok(resolve_session_key(ctx.config(ProviderId::Claude))?.is_some())
     }
 
-    async fn fetch(&self, _ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
-        let session_key = self.client.resolve_session_key().await?;
+    async fn fetch(&self, ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
+        let session_key = resolve_session_key(ctx.config(ProviderId::Claude))?
+            .ok_or(ProviderError::NotConfigured)?;
         let usage = self.client.fetch_usage(&session_key).await?;
         snapshot_from_usage_response(&usage, &current_timestamp(), "claude-web")
     }
@@ -74,10 +72,6 @@ mod tests {
 
     #[async_trait]
     impl ClaudeWebClient for MockClaudeWebClient {
-        async fn resolve_session_key(&self) -> ProviderResult<String> {
-            Ok("sk-ant-test".into())
-        }
-
         async fn fetch_usage(&self, _session_key: &str) -> ProviderResult<ClaudeUsageResponse> {
             match &self.usage {
                 Ok(response) => Ok(response.clone()),
@@ -100,7 +94,16 @@ mod tests {
             usage: Ok(fixture_usage()),
         }));
 
-        let snapshot = strategy.fetch(&FetchContext).await.expect("web fetch");
+        let mut ctx = FetchContext::empty();
+        ctx.provider_configs.insert(
+            "claude".into(),
+            crate::settings::ProviderConfig {
+                manual_cookie: Some("sessionKey=sk-ant-test".into()),
+                ..Default::default()
+            },
+        );
+
+        let snapshot = strategy.fetch(&ctx).await.expect("web fetch");
 
         assert_eq!(snapshot.source, "claude-web");
         assert_eq!(snapshot.primary.used_percent, 9.0);
@@ -112,17 +115,16 @@ mod tests {
 
         #[async_trait]
         impl ClaudeWebClient for UnconfiguredClient {
-            async fn resolve_session_key(&self) -> ProviderResult<String> {
-                Err(ProviderError::NotConfigured)
-            }
-
             async fn fetch_usage(&self, _session_key: &str) -> ProviderResult<ClaudeUsageResponse> {
                 Err(ProviderError::NotConfigured)
             }
         }
 
         let strategy = WebStrategy::with_client(Arc::new(UnconfiguredClient));
-        let available = strategy.is_available(&FetchContext).await.expect("check");
+        let available = strategy
+            .is_available(&FetchContext::empty())
+            .await
+            .expect("check");
         assert!(!available);
     }
 }

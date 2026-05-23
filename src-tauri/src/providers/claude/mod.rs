@@ -46,6 +46,14 @@ impl ProviderEnrichment for ClaudeProvider {
     }
 }
 
+pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
+    oauth::credentials::load_credentials().is_ok()
+        || web::resolve_session_key(config).ok().flatten().is_some()
+        || config
+            .and_then(crate::settings::ProviderConfig::admin_api_key_value)
+            .is_some()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

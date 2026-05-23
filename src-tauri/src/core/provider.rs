@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::core::models::{ProviderId, UsageSnapshot};
+use crate::settings::{MochiSettings, ProviderConfig};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderMetadata {
@@ -38,7 +40,26 @@ pub enum ProviderError {
 
 pub type ProviderResult<T> = Result<T, ProviderError>;
 
-pub struct FetchContext;
+#[derive(Debug, Clone, Default)]
+pub struct FetchContext {
+    pub provider_configs: HashMap<String, ProviderConfig>,
+}
+
+impl FetchContext {
+    pub fn empty() -> Self {
+        Self::default()
+    }
+
+    pub fn from_settings(settings: &MochiSettings) -> Self {
+        Self {
+            provider_configs: settings.provider_configs.clone(),
+        }
+    }
+
+    pub fn config(&self, provider: ProviderId) -> Option<&ProviderConfig> {
+        self.provider_configs.get(provider.as_str())
+    }
+}
 
 #[async_trait]
 pub trait FetchStrategy: Send + Sync {

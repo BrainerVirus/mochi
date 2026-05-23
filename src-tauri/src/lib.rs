@@ -15,10 +15,13 @@ use tauri_plugin_opener::OpenerExt;
 
 use cli::{Cli, Command};
 use core::usage_store::UsageStore;
-use settings::{get_settings, save_settings, SettingsState};
+use settings::{
+    get_provider_catalog, get_provider_credential_status, get_settings, save_settings,
+    SettingsState,
+};
 use tray::{
-    maybe_show_main_for_dev, open_app_window, set_tray_panel_height, setup_main_panel, setup_tray,
-    show_main_panel, sync_tray_usage,
+    maybe_show_main_for_dev, open_app_window, set_tray_panel_height, setup_app_windows,
+    setup_main_panel, setup_tray, show_main_panel, sync_tray_usage,
 };
 use widget::{hide_widget, setup_widget, show_widget, toggle_widget};
 
@@ -55,6 +58,7 @@ pub fn run() -> anyhow::Result<()> {
             app.manage(SettingsState::new(app.handle())?);
             app.manage(UsageStore::new(None));
             setup_main_panel(app.handle())?;
+            setup_app_windows(app.handle())?;
             setup_tray(app.handle())?;
             setup_widget(app.handle())?;
             maybe_show_main_for_dev(app.handle());
@@ -65,6 +69,8 @@ pub fn run() -> anyhow::Result<()> {
             quit_app,
             get_settings,
             save_settings,
+            get_provider_catalog,
+            get_provider_credential_status,
             status::get_usage_snapshots,
             status::refresh_provider,
             show_main_panel,

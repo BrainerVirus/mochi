@@ -3,8 +3,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use super::client::{CopilotUsageClient, HttpCopilotUsageClient};
+use super::credentials::resolve_token;
 use super::usage_parse::snapshot_from_usage_response;
-use crate::core::models::UsageSnapshot;
+use crate::core::models::{ProviderId, UsageSnapshot};
 use crate::core::provider::{
     FetchContext, FetchKind, FetchStrategy, ProviderError, ProviderResult,
 };
@@ -43,16 +44,13 @@ impl FetchStrategy for OAuthInternalStrategy {
         FetchKind::OAuth
     }
 
-    async fn is_available(&self, _ctx: &FetchContext) -> ProviderResult<bool> {
-        match self.client.resolve_token().await {
-            Ok(_) => Ok(true),
-            Err(ProviderError::NotConfigured) => Ok(false),
-            Err(error) => Err(error),
-        }
+    async fn is_available(&self, ctx: &FetchContext) -> ProviderResult<bool> {
+        Ok(resolve_token(ctx.config(ProviderId::Copilot))?.is_some())
     }
 
-    async fn fetch(&self, _ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
-        let token = self.client.resolve_token().await?;
+    async fn fetch(&self, ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
+        let token =
+            resolve_token(ctx.config(ProviderId::Copilot))?.ok_or(ProviderError::NotConfigured)?;
         let usage = self.client.fetch_usage(&token).await?;
         snapshot_from_usage_response(&usage, &current_timestamp(), "copilot-oauth-internal")
     }
@@ -76,10 +74,6 @@ mod tests {
 
     #[async_trait]
     impl CopilotUsageClient for MockCopilotUsageClient {
-        async fn resolve_token(&self) -> ProviderResult<String> {
-            Ok("gho_test".into())
-        }
-
         async fn fetch_usage(
             &self,
             _token: &str,
@@ -107,7 +101,16 @@ mod tests {
             usage: Ok(fixture_usage()),
         }));
 
-        let snapshot = strategy.fetch(&FetchContext).await.expect("copilot fetch");
+        let mut ctx = FetchContext::empty();
+        ctx.provider_configs.insert(
+            "copilot".into(),
+            crate::settings::ProviderConfig {
+                token_account: Some("gho_test".into()),
+                ..Default::default()
+            },
+        );
+
+        let snapshot = strategy.fetch(&ctx).await.expect("copilot fetch");
 
         assert_eq!(snapshot.source, "copilot-oauth-internal");
         assert_eq!(snapshot.primary.label, "Premium");
@@ -120,10 +123,6 @@ mod tests {
 
         #[async_trait]
         impl CopilotUsageClient for UnconfiguredClient {
-            async fn resolve_token(&self) -> ProviderResult<String> {
-                Err(ProviderError::NotConfigured)
-            }
-
             async fn fetch_usage(
                 &self,
                 _token: &str,
@@ -133,7 +132,10 @@ mod tests {
         }
 
         let strategy = OAuthInternalStrategy::with_client(Arc::new(UnconfiguredClient));
-        let available = strategy.is_available(&FetchContext).await.expect("check");
+        let available = strategy
+            .is_available(&FetchContext::empty())
+            .await
+            .expect("check");
         assert!(!available);
     }
 }

@@ -7,4 +7,5 @@ mod client;
 mod credentials;
 mod strategy;
 
+pub(crate) use credentials::resolve_session_key;
 pub use strategy::WebStrategy;

@@ -53,6 +53,7 @@ mod tests {
             refresh_interval_seconds: 120,
             enabled_providers: vec!["claude".into(), "cursor".into()],
             show_notifications: false,
+            provider_configs: Default::default(),
         };
 
         save_settings(&path, &settings).expect("settings should save");

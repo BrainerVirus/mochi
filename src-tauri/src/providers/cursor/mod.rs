@@ -47,6 +47,13 @@ impl ProviderEnrichment for CursorProvider {
     }
 }
 
+pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
+    credentials::resolve_manual_cookie(config)
+        .ok()
+        .flatten()
+        .is_some()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

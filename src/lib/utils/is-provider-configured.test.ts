@@ -47,6 +47,28 @@ describe("isProviderConfigured", () => {
   it("returns true when updated_at reflects a real fetch", () => {
     expect(isProviderConfigured(snapshot())).toBe(true);
   });
+
+  it("returns true for credential-detected pending snapshots", () => {
+    expect(
+      isProviderConfigured(
+        snapshot({
+          source: "credentials-detected",
+          health: "error",
+          primary: {
+            label: "Session",
+            used_percent: 0,
+            remaining_percent: 100,
+            resets_at: null,
+          },
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it("returns true for stale or error snapshots with real timestamps", () => {
+    expect(isProviderConfigured(snapshot({ health: "stale", is_stale: true }))).toBe(true);
+    expect(isProviderConfigured(snapshot({ health: "error" }))).toBe(true);
+  });
 });
 
 describe("filterConfiguredSnapshots", () => {

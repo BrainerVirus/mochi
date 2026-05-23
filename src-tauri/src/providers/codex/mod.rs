@@ -52,6 +52,14 @@ impl ProviderEnrichment for CodexProvider {
     }
 }
 
+pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
+    cookies::resolve_manual_cookie(config)
+        .ok()
+        .flatten()
+        .is_some()
+        || oauth::load_credentials_from_path(&oauth::codex_auth_path()).is_ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,7 +132,10 @@ mod tests {
 
         let strategy = BrowserCookiesStrategy::with_client(Arc::new(FixtureDashboardClient));
 
-        let snapshot = strategy.fetch(&FetchContext).await.expect("cookie fetch");
+        let snapshot = strategy
+            .fetch(&FetchContext::empty())
+            .await
+            .expect("cookie fetch");
 
         assert_eq!(snapshot.source, "codex-browser-cookies");
         assert_eq!(snapshot.primary.used_percent, 78.0);

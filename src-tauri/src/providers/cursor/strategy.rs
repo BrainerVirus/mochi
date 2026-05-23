@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use super::client::{fetch_snapshot_with_client, CursorWebClient, HttpCursorWebClient};
+use crate::core::models::ProviderId;
 use crate::core::models::UsageSnapshot;
 use crate::core::provider::{
     FetchContext, FetchKind, FetchStrategy, ProviderError, ProviderResult,
@@ -42,12 +43,17 @@ impl FetchStrategy for WebStrategy {
         FetchKind::BrowserCookies
     }
 
-    async fn is_available(&self, _ctx: &FetchContext) -> ProviderResult<bool> {
-        Ok(super::credentials::resolve_manual_cookie()?.is_some())
+    async fn is_available(&self, ctx: &FetchContext) -> ProviderResult<bool> {
+        Ok(super::credentials::resolve_manual_cookie(ctx.config(ProviderId::Cursor))?.is_some())
     }
 
-    async fn fetch(&self, _ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
-        fetch_snapshot_with_client(self.client.as_ref(), &current_timestamp()).await
+    async fn fetch(&self, ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
+        fetch_snapshot_with_client(
+            self.client.as_ref(),
+            &current_timestamp(),
+            ctx.config(ProviderId::Cursor),
+        )
+        .await
     }
 
     fn should_fallback(&self, error: &ProviderError) -> bool {
@@ -76,10 +82,6 @@ mod tests {
 
     #[async_trait]
     impl CursorWebClient for MockCursorWebClient {
-        async fn resolve_cookie(&self) -> ProviderResult<String> {
-            Ok("WorkosCursorSessionToken=test".into())
-        }
-
         async fn fetch_usage_summary(
             &self,
             _cookie_header: &str,
@@ -119,7 +121,10 @@ mod tests {
             summary: Ok(summary),
         }));
 
-        let snapshot = strategy.fetch(&FetchContext).await.expect("cursor fetch");
+        let snapshot = strategy
+            .fetch(&FetchContext::empty())
+            .await
+            .expect("cursor fetch");
         assert_eq!(snapshot.source, "cursor-web");
         assert_eq!(snapshot.primary.used_percent, 30.0);
 
@@ -135,7 +140,10 @@ mod tests {
         std::env::remove_var("MOCHI_CURSOR_COOKIE_FILE");
 
         let strategy = WebStrategy::new();
-        let available = strategy.is_available(&FetchContext).await.expect("check");
+        let available = strategy
+            .is_available(&FetchContext::empty())
+            .await
+            .expect("check");
         assert!(!available);
     }
 }
