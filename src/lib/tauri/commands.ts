@@ -4,6 +4,7 @@ import {
   ProviderCatalogSchema,
   ProviderCredentialStatusSchema,
   type ProviderCatalogEntry,
+  type ProviderCredentialDetail,
 } from "@/lib/schemas/provider-catalog";
 import {
   DEFAULT_MOCHI_SETTINGS,
@@ -88,7 +89,9 @@ export async function getProviderCatalog(): Promise<ProviderCatalogEntry[]> {
   return ProviderCatalogSchema.parse(result);
 }
 
-export async function getProviderCredentialStatus(): Promise<Record<string, boolean>> {
+export async function getProviderCredentialStatus(): Promise<
+  Record<string, ProviderCredentialDetail>
+> {
   const result = await invoke<unknown>("get_provider_credential_status");
   return ProviderCredentialStatusSchema.parse(result);
 }

@@ -44,7 +44,7 @@ impl FetchStrategy for WebStrategy {
     }
 
     async fn is_available(&self, ctx: &FetchContext) -> ProviderResult<bool> {
-        Ok(super::credentials::resolve_manual_cookie(ctx.config(ProviderId::Cursor))?.is_some())
+        Ok(super::credentials::resolve_cookie(ctx.config(ProviderId::Cursor))?.is_some())
     }
 
     async fn fetch(&self, ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {

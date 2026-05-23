@@ -34,4 +34,11 @@ export type ProviderCatalogEntry = z.infer<typeof ProviderCatalogEntrySchema>;
 
 export const ProviderCatalogSchema = z.array(ProviderCatalogEntrySchema);
 
-export const ProviderCredentialStatusSchema = z.record(z.string(), z.boolean());
+export const ProviderCredentialDetailSchema = z.object({
+  configured: z.boolean(),
+  source: z.string().optional(),
+});
+
+export const ProviderCredentialStatusSchema = z.record(z.string(), ProviderCredentialDetailSchema);
+
+export type ProviderCredentialDetail = z.infer<typeof ProviderCredentialDetailSchema>;

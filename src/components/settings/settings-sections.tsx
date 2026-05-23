@@ -45,8 +45,10 @@ export function ProviderSettingsSection({ settings, onChange }: ProviderSettings
                   <CardTitle className="text-base">{PROVIDER_LABELS[provider]}</CardTitle>
                   <CardDescription className="flex flex-wrap items-center gap-2">
                     {entry ? <Badge variant="outline">{entry.implementationStatus}</Badge> : null}
-                    {credentialStatus[provider] ? (
-                      <Badge variant="secondary">Credentials detected</Badge>
+                    {credentialStatus[provider]?.configured ? (
+                      <Badge variant="secondary">
+                        {credentialStatus[provider]?.source ?? "Credentials detected"}
+                      </Badge>
                     ) : (
                       <Badge variant="outline">Not configured</Badge>
                     )}

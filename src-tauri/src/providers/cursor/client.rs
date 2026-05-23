@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 
-use super::credentials::resolve_manual_cookie;
+use super::credentials::resolve_cookie;
 use super::usage_parse::CursorUsageSummary;
 use crate::core::provider::{ProviderError, ProviderResult};
 use crate::settings::ProviderConfig;
@@ -77,7 +77,9 @@ pub async fn fetch_snapshot_with_client(
     updated_at: &str,
     config: Option<&ProviderConfig>,
 ) -> ProviderResult<crate::core::models::UsageSnapshot> {
-    let cookie = resolve_manual_cookie(config)?.ok_or(ProviderError::NotConfigured)?;
+    let cookie = resolve_cookie(config)?
+        .map(|resolved| resolved.header)
+        .ok_or(ProviderError::NotConfigured)?;
     let summary = client.fetch_usage_summary(&cookie).await?;
     super::usage_parse::snapshot_from_usage_summary(&summary, updated_at, "cursor-web")
 }

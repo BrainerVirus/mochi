@@ -73,6 +73,12 @@ impl ProviderConfig {
             .as_deref()
             .is_some_and(|value| value.eq_ignore_ascii_case("off"))
     }
+
+    pub fn cookie_source_is_manual(&self) -> bool {
+        self.cookie_source
+            .as_deref()
+            .is_some_and(|value| value.eq_ignore_ascii_case("manual"))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

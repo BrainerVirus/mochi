@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod browser;
 pub mod cli;
 pub mod core;
 pub mod providers;

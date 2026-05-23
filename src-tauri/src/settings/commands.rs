@@ -115,7 +115,10 @@ pub fn get_provider_catalog() -> Vec<ProviderCatalogEntry> {
 #[tauri::command]
 pub fn get_provider_credential_status(
     state: State<'_, SettingsState>,
-) -> Result<std::collections::HashMap<String, bool>, String> {
+) -> Result<
+    std::collections::HashMap<String, crate::providers::credential_probe::ProviderCredentialDetail>,
+    String,
+> {
     let settings = state.current()?;
     Ok(credential_status_map(&settings))
 }
