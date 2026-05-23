@@ -63,7 +63,7 @@ export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) 
     <div
       ref={columnRef}
       className={cn(
-        "pointer-events-none absolute inset-y-0 z-20 flex w-7 items-center justify-center",
+        "pointer-events-none absolute inset-y-0 z-30 flex w-8 items-center justify-center",
         isStart ? "left-0" : "right-0",
         !visible && "invisible opacity-0",
       )}
@@ -77,14 +77,16 @@ export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) 
         aria-label={isStart ? "Show previous tabs" : "Show more tabs"}
         onClick={onCycle}
         className={cn(
-          "pointer-events-auto shrink-0 cursor-pointer rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+          "pointer-events-auto shrink-0 cursor-pointer rounded-full",
+          "bg-background/85 text-foreground shadow-sm ring-1 ring-border/50 backdrop-blur-sm",
+          "hover:bg-background hover:text-foreground",
           !visible && "pointer-events-none",
         )}
       >
         {isStart ? (
-          <ChevronLeftIcon className="size-3.5" aria-hidden />
+          <ChevronLeftIcon className="size-3.5 stroke-[2.5]" aria-hidden />
         ) : (
-          <ChevronRightIcon className="size-3.5" aria-hidden />
+          <ChevronRightIcon className="size-3.5 stroke-[2.5]" aria-hidden />
         )}
       </Button>
     </div>

@@ -8,6 +8,14 @@ export interface IndicatorMetrics {
   width: number;
 }
 
+export type ActiveIndicatorPlan = { mode: "snap" } | { mode: "tween"; start?: IndicatorMetrics };
+
+export interface ActiveIndicatorOptions {
+  animate: boolean;
+  handoffStart?: IndicatorMetrics | null;
+  reducedMotion?: boolean;
+}
+
 export function metricsFromClientRects(
   trackRect: Pick<DOMRect, "left">,
   itemRect: Pick<DOMRect, "left" | "width">,
@@ -16,6 +24,13 @@ export function metricsFromClientRects(
     x: itemRect.left - trackRect.left,
     width: itemRect.width,
   };
+}
+
+export function computeIndicatorTarget(
+  trackRect: Pick<DOMRect, "left">,
+  itemRect: Pick<DOMRect, "left" | "width">,
+): IndicatorMetrics {
+  return metricsFromClientRects(trackRect, itemRect);
 }
 
 export function measureSegmentItem(track: HTMLElement, item: HTMLElement): IndicatorMetrics {
@@ -41,6 +56,10 @@ export function isHoverIndicatorVisible(indicator: HTMLElement): boolean {
   return toNumericGsapProperty(gsap.getProperty(indicator, "autoAlpha")) > 0;
 }
 
+export function isIndicatorPlaced(metrics: IndicatorMetrics): boolean {
+  return metrics.width > 0;
+}
+
 export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -53,34 +72,100 @@ export function shouldAnimateActiveIndicator(
   return !reducedMotion && animate && prevMetrics !== null;
 }
 
+export function resolveHoverHandoffStart({
+  hoveredId,
+  targetTabId,
+  hoverVisible,
+  hoverMetrics,
+}: {
+  hoveredId: string | null;
+  targetTabId: string;
+  hoverVisible: boolean;
+  hoverMetrics: IndicatorMetrics;
+}): IndicatorMetrics | null {
+  if (!hoverVisible || hoveredId !== targetTabId) {
+    return null;
+  }
+
+  return hoverMetrics;
+}
+
+export function resolveActiveIndicatorPlan({
+  target,
+  current,
+  handoffStart,
+  animate,
+  reducedMotion,
+}: {
+  target: IndicatorMetrics;
+  current: IndicatorMetrics;
+  handoffStart: IndicatorMetrics | null;
+  animate: boolean;
+  reducedMotion: boolean;
+}): ActiveIndicatorPlan {
+  if (!animate || reducedMotion) {
+    return { mode: "snap" };
+  }
+
+  if (handoffStart) {
+    return { mode: "tween", start: handoffStart };
+  }
+
+  if (!isIndicatorPlaced(current)) {
+    return { mode: "snap" };
+  }
+
+  if (current.x === target.x && current.width === target.width) {
+    return { mode: "snap" };
+  }
+
+  return { mode: "tween" };
+}
+
 export function applyActiveIndicatorPosition(
   indicator: HTMLElement,
   metrics: IndicatorMetrics,
-  prevMetrics: IndicatorMetrics | null,
-  animate: boolean,
+  options: ActiveIndicatorOptions,
 ) {
-  const { x, width } = metrics;
+  const reducedMotion = options.reducedMotion ?? prefersReducedMotion();
+  const plan = resolveActiveIndicatorPlan({
+    target: metrics,
+    current: readIndicatorMetrics(indicator),
+    handoffStart: options.handoffStart ?? null,
+    animate: options.animate,
+    reducedMotion,
+  });
 
-  if (!shouldAnimateActiveIndicator(prevMetrics, animate)) {
-    gsap.set(indicator, { x, width, autoAlpha: 1, force3D: true });
+  if (plan.mode === "snap") {
+    gsap.set(indicator, { x: metrics.x, width: metrics.width, autoAlpha: 1, force3D: true });
     return;
   }
 
-  gsap.fromTo(
-    indicator,
-    { x: prevMetrics!.x, width: prevMetrics!.width, autoAlpha: 1 },
-    {
-      x,
-      width,
+  if (plan.start) {
+    gsap.set(indicator, {
+      x: plan.start.x,
+      width: plan.start.width,
       autoAlpha: 1,
-      duration: TRAY_INDICATOR_DURATION_S,
-      ease: TRAY_INDICATOR_EASE,
-      overwrite: "auto",
-    },
-  );
+      force3D: true,
+    });
+  }
+
+  gsap.to(indicator, {
+    x: metrics.x,
+    width: metrics.width,
+    autoAlpha: 1,
+    duration: TRAY_INDICATOR_DURATION_S,
+    ease: TRAY_INDICATOR_EASE,
+    overwrite: "auto",
+  });
 }
 
-export function createHoverIndicatorQuickTo(indicator: HTMLElement) {
+export interface HoverIndicatorQuickTo {
+  x: gsap.QuickToFunc;
+  width: gsap.QuickToFunc;
+}
+
+export function createHoverIndicatorQuickTo(indicator: HTMLElement): HoverIndicatorQuickTo {
   return {
     x: gsap.quickTo(indicator, "x", {
       duration: TRAY_INDICATOR_DURATION_S,
@@ -96,11 +181,12 @@ export function createHoverIndicatorQuickTo(indicator: HTMLElement) {
 export function applyHoverIndicatorPosition(
   indicator: HTMLElement,
   metrics: IndicatorMetrics,
-  quickTo: { x: gsap.QuickToFunc; width: gsap.QuickToFunc } | null,
+  quickTo: HoverIndicatorQuickTo | null,
   activeValue: string,
   hoveredId: string,
+  reducedMotion = prefersReducedMotion(),
 ) {
-  if (prefersReducedMotion()) {
+  if (reducedMotion) {
     gsap.set(indicator, { ...metrics, opacity: hoveredId === activeValue ? 0 : 1, force3D: true });
     return;
   }
@@ -133,29 +219,38 @@ export function mergeHoverIntoActiveStart(
   hoveredId: string,
   targetTabId: string,
 ): IndicatorMetrics | null {
-  if (hoveredId !== targetTabId || !isHoverIndicatorVisible(hoverIndicator)) {
+  const handoff = resolveHoverHandoffStart({
+    hoveredId,
+    targetTabId,
+    hoverVisible: isHoverIndicatorVisible(hoverIndicator),
+    hoverMetrics: readIndicatorMetrics(hoverIndicator),
+  });
+
+  if (!handoff) {
     return null;
   }
 
   gsap.killTweensOf(hoverIndicator);
-  const metrics = readIndicatorMetrics(hoverIndicator);
   hideHoverIndicator(hoverIndicator, false);
-  return metrics;
+  return handoff;
+}
+
+export function shouldHideHoverOnLeave(suppressHoverEnd: boolean): boolean {
+  return !suppressHoverEnd;
 }
 
 export function syncActiveSegmentIndicator(
   track: HTMLElement | null,
   indicator: HTMLElement | null,
   item: HTMLButtonElement | undefined,
-  prevMetrics: IndicatorMetrics | null,
-  animate: boolean,
+  options: ActiveIndicatorOptions,
 ) {
   if (!track || !indicator || !item) {
     return null;
   }
 
   const metrics = measureSegmentItem(track, item);
-  applyActiveIndicatorPosition(indicator, metrics, prevMetrics, animate);
+  applyActiveIndicatorPosition(indicator, metrics, options);
   return metrics;
 }
 
@@ -163,7 +258,7 @@ export function syncHoverSegmentIndicator(
   track: HTMLElement | null,
   indicator: HTMLElement | null,
   item: HTMLButtonElement | undefined,
-  quickTo: { x: gsap.QuickToFunc; width: gsap.QuickToFunc } | null,
+  quickTo: HoverIndicatorQuickTo | null,
   activeValue: string,
   hoveredId: string,
 ) {
