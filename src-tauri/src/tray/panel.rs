@@ -31,6 +31,7 @@ pub struct TrayIconRect {
 pub struct TrayIconRectState(pub Mutex<Option<TrayIconRect>>);
 
 /// Returns whether `MOCHI_DEV_SHOW_MAIN` requests opening the panel at startup.
+#[cfg(debug_assertions)]
 pub fn dev_show_main_enabled() -> bool {
     std::env::var_os("MOCHI_DEV_SHOW_MAIN").is_some_and(|value| value != "0" && value != "false")
 }
