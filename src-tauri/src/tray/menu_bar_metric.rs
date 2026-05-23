@@ -1,6 +1,25 @@
-//! CodexBar `MenuBarMetricWindowResolver` automatic-mode parity for tray % display.
+//! Per-provider tray % window selection (session-equivalent remaining).
 //!
-//! Reference: `CodexBar/Sources/CodexBar/MenuBarMetricWindowResolver.swift`
+//! Each provider exposes different usage windows; the tray title shows the closest
+//! "current session" concept for that provider — not the tightest quota across lanes.
+//!
+//! Reference: `CodexBar/Sources/CodexBar/MenuBarMetricWindowResolver.swift` (automatic
+//! mode), with Cursor using primary (`Total`) instead of CodexBar's most-constrained.
+//!
+//! | Provider     | Tray window        |
+//! |--------------|--------------------|
+//! | Codex        | Session (primary)  |
+//! | Claude       | Session (primary)  |
+//! | Cursor       | Total (primary)    |
+//! | Gemini       | Pro (primary)      |
+//! | Copilot      | tighter of Premium/Chat |
+//! | OpenCode     | 5-hour (primary)   |
+//! | OpenCode Go  | 5-hour (primary)   |
+//! | Antigravity  | primary lane       |
+//! | Factory      | secondary ?? primary |
+//! | Z.ai         | tightest of 5h/Token vs monthly |
+//! | Kiro         | Session (primary)  |
+//! | Augment      | Session (primary)  |
 
 use crate::core::models::{ProviderCostSnapshot, ProviderId, UsageSnapshot, UsageWindow};
 
@@ -33,11 +52,11 @@ pub fn automatic_menu_bar_window(snapshot: &UsageSnapshot) -> Option<&UsageWindo
         }
         ProviderId::Factory => snapshot.secondary.as_ref().or(Some(&snapshot.primary)),
         ProviderId::Copilot => Some(copilot_automatic_window(snapshot)),
-        ProviderId::Cursor => most_constrained_all(snapshot),
+        // Cursor has no session window; Total is the billing-period primary metric.
+        ProviderId::Cursor => Some(&snapshot.primary),
         ProviderId::Claude => Some(&snapshot.primary),
-        // OpenCode family exposes 5-hour / weekly / monthly lanes; the tightest quota
-        // matches Cursor-style automatic resolution and reflects binding weekly/monthly limits.
-        ProviderId::OpenCode | ProviderId::OpenCodeGo => most_constrained_all(snapshot),
+        // OpenCode family: 5-hour rolling window is the session equivalent.
+        ProviderId::OpenCode | ProviderId::OpenCodeGo => Some(&snapshot.primary),
         _ => Some(&snapshot.primary),
     }
 }
@@ -67,17 +86,6 @@ fn window_for_lane(snapshot: &UsageSnapshot, lane: WindowLane) -> Option<&UsageW
     }
 }
 
-fn most_constrained_all(snapshot: &UsageSnapshot) -> Option<&UsageWindow> {
-    let mut windows = vec![&snapshot.primary];
-    if let Some(secondary) = &snapshot.secondary {
-        windows.push(secondary);
-    }
-    if let Some(tertiary) = &snapshot.tertiary {
-        windows.push(tertiary);
-    }
-    most_constrained_slice(&windows)
-}
-
 fn most_constrained_pair<'a>(
     left: Option<&'a UsageWindow>,
     right: Option<&'a UsageWindow>,
@@ -94,14 +102,6 @@ fn most_constrained_pair<'a>(
         (None, Some(right)) => Some(right),
         (None, None) => None,
     }
-}
-
-fn most_constrained_slice<'a>(windows: &[&'a UsageWindow]) -> Option<&'a UsageWindow> {
-    windows.iter().copied().max_by(|left, right| {
-        left.used_percent
-            .partial_cmp(&right.used_percent)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    })
 }
 
 fn copilot_automatic_window(snapshot: &UsageSnapshot) -> &UsageWindow {
@@ -178,14 +178,14 @@ mod tests {
     }
 
     #[test]
-    fn cursor_automatic_uses_most_constrained_window() {
+    fn cursor_automatic_uses_total_primary_not_api() {
         let snap = snapshot(
             ProviderId::Cursor,
-            window("Total", 10.0),
-            Some(window("Auto + Composer", 20.0)),
-            Some(window("API", 95.0)),
+            window("Total", 84.0),
+            Some(window("Auto + Composer", 79.0)),
+            Some(window("API", 100.0)),
         );
-        assert_eq!(tray_remaining_percent(&snap), 5);
+        assert_eq!(tray_remaining_percent(&snap), 16);
     }
 
     #[test]
@@ -222,25 +222,25 @@ mod tests {
     }
 
     #[test]
-    fn opencode_go_automatic_uses_tightest_rate_window() {
+    fn opencode_go_automatic_uses_five_hour_session_not_weekly() {
         let snap = snapshot(
             ProviderId::OpenCodeGo,
             window("5-hour", 0.0),
             Some(window("Weekly", 99.0)),
             Some(window("Monthly", 12.0)),
         );
-        assert_eq!(tray_remaining_percent(&snap), 1);
+        assert_eq!(tray_remaining_percent(&snap), 100);
     }
 
     #[test]
-    fn opencode_automatic_uses_tightest_rate_window() {
+    fn opencode_automatic_uses_five_hour_session_not_weekly() {
         let snap = snapshot(
             ProviderId::OpenCode,
             window("5-hour", 0.0),
             Some(window("Weekly", 75.0)),
             None,
         );
-        assert_eq!(tray_remaining_percent(&snap), 25);
+        assert_eq!(tray_remaining_percent(&snap), 100);
     }
 
     #[test]
