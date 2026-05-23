@@ -1,4 +1,5 @@
 mod icon;
+mod menu_bar_metric;
 mod panel;
 mod presentation;
 mod usage;
