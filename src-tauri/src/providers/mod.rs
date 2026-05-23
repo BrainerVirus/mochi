@@ -1,8 +1,9 @@
-mod claude;
-mod codex;
-mod copilot;
-mod cursor;
-mod gemini;
+pub(crate) mod claude;
+pub(crate) mod codex;
+pub(crate) mod copilot;
+pub mod credential_probe;
+pub(crate) mod cursor;
+pub(crate) mod gemini;
 mod static_provider;
 
 use std::sync::Arc;

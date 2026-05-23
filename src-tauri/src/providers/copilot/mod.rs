@@ -8,6 +8,8 @@ mod credentials;
 mod strategy;
 mod usage_parse;
 
+pub(crate) use credentials::resolve_token;
+
 use async_trait::async_trait;
 
 use strategy::OAuthInternalStrategy;
@@ -45,6 +47,10 @@ impl ProviderEnrichment for CopilotProvider {
 
         Ok(snapshot)
     }
+}
+
+pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
+    resolve_token(config).ok().flatten().is_some()
 }
 
 #[cfg(test)]

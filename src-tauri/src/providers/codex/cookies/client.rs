@@ -6,6 +6,7 @@ use super::credentials::resolve_manual_cookie;
 use super::parse::snapshot_from_dashboard_html;
 use crate::core::models::UsageSnapshot;
 use crate::core::provider::{ProviderError, ProviderResult};
+use crate::settings::ProviderConfig;
 
 const DASHBOARD_URL: &str = "https://chatgpt.com/codex/settings/usage";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
@@ -74,8 +75,9 @@ impl CodexWebDashboardClient for HttpCodexWebDashboardClient {
 pub async fn fetch_snapshot_with_client(
     client: &dyn CodexWebDashboardClient,
     updated_at: &str,
+    config: Option<&ProviderConfig>,
 ) -> ProviderResult<UsageSnapshot> {
-    let cookie = resolve_manual_cookie()?.ok_or(ProviderError::NotConfigured)?;
+    let cookie = resolve_manual_cookie(config)?.ok_or(ProviderError::NotConfigured)?;
 
     let html = client.fetch_dashboard_html(&cookie).await?;
     snapshot_from_dashboard_html(&html, updated_at)
@@ -128,7 +130,7 @@ mod tests {
             html: Ok(include_str!("../fixtures/dashboard_usage.html").to_string()),
         };
 
-        let snapshot = fetch_snapshot_with_client(&client, &current_timestamp())
+        let snapshot = fetch_snapshot_with_client(&client, &current_timestamp(), None)
             .await
             .expect("snapshot");
 

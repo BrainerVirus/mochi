@@ -6,12 +6,21 @@
 use std::path::Path;
 
 use crate::core::provider::{ProviderError, ProviderResult};
+use crate::settings::ProviderConfig;
 
 const ENV_TOKEN: &str = "MOCHI_COPILOT_TOKEN";
 const ENV_TOKEN_FILE: &str = "MOCHI_COPILOT_TOKEN_FILE";
 const ENV_ENTERPRISE_HOST: &str = "MOCHI_COPILOT_ENTERPRISE_HOST";
 
-pub fn resolve_token() -> ProviderResult<Option<String>> {
+pub fn resolve_token(config: Option<&ProviderConfig>) -> ProviderResult<Option<String>> {
+    if let Some(token) = config.and_then(ProviderConfig::token_account_value) {
+        return Ok(Some(token.to_string()));
+    }
+
+    resolve_token_from_env()
+}
+
+pub fn resolve_token_from_env() -> ProviderResult<Option<String>> {
     if let Ok(value) = std::env::var(ENV_TOKEN) {
         let trimmed = value.trim();
         if !trimmed.is_empty() {

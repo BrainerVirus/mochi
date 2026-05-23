@@ -149,7 +149,7 @@ mod tests {
         }));
 
         let snapshot = strategy
-            .fetch(&FetchContext)
+            .fetch(&FetchContext::empty())
             .await
             .expect("oauth fetch should succeed");
 
@@ -166,7 +166,7 @@ mod tests {
         }));
 
         let available = strategy
-            .is_available(&FetchContext)
+            .is_available(&FetchContext::empty())
             .await
             .expect("availability check");
 
@@ -181,7 +181,7 @@ mod tests {
         }));
 
         let error = strategy
-            .fetch(&FetchContext)
+            .fetch(&FetchContext::empty())
             .await
             .expect_err("expired token should fail");
 

@@ -1,6 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import {
+  ProviderCatalogSchema,
+  ProviderCredentialStatusSchema,
+  type ProviderCatalogEntry,
+  type ProviderCredentialDetail,
+} from "@/lib/schemas/provider-catalog";
+import {
   DEFAULT_MOCHI_SETTINGS,
   MochiSettingsSchema,
   type MochiSettings,
@@ -76,6 +82,18 @@ export function showMainPanel(): Promise<void> {
 
 export function openAppWindow(path: string): Promise<void> {
   return invoke<void>("open_app_window", { path });
+}
+
+export async function getProviderCatalog(): Promise<ProviderCatalogEntry[]> {
+  const result = await invoke<unknown>("get_provider_catalog");
+  return ProviderCatalogSchema.parse(result);
+}
+
+export async function getProviderCredentialStatus(): Promise<
+  Record<string, ProviderCredentialDetail>
+> {
+  const result = await invoke<unknown>("get_provider_credential_status");
+  return ProviderCredentialStatusSchema.parse(result);
 }
 
 export function openExternalUrl(url: string): Promise<void> {

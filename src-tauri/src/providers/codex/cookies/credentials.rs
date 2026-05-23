@@ -1,11 +1,20 @@
 use std::path::Path;
 
 use crate::core::provider::{ProviderError, ProviderResult};
+use crate::settings::ProviderConfig;
 
 const ENV_COOKIE: &str = "MOCHI_CODEX_COOKIE";
 const ENV_COOKIE_FILE: &str = "MOCHI_CODEX_COOKIE_FILE";
 
-pub fn resolve_manual_cookie() -> ProviderResult<Option<String>> {
+pub fn resolve_manual_cookie(config: Option<&ProviderConfig>) -> ProviderResult<Option<String>> {
+    if let Some(cookie) = config.and_then(ProviderConfig::manual_cookie_value) {
+        return Ok(Some(normalize_cookie_header(cookie)));
+    }
+
+    resolve_manual_cookie_from_env()
+}
+
+pub fn resolve_manual_cookie_from_env() -> ProviderResult<Option<String>> {
     if let Ok(value) = std::env::var(ENV_COOKIE) {
         let trimmed = value.trim();
         if !trimmed.is_empty() {

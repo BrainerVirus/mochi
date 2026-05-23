@@ -1,7 +1,8 @@
 use std::sync::Mutex;
 
 use tauri::{
-    tray::TrayIconEvent, AppHandle, Emitter, Manager, Runtime, WebviewWindow, WindowEvent,
+    tray::TrayIconEvent, AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindow,
+    WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_positioner::{Position, WindowExt};
 
@@ -32,6 +33,47 @@ pub struct TrayIconRectState(pub Mutex<Option<TrayIconRect>>);
 /// Returns whether `MOCHI_DEV_SHOW_MAIN` requests opening the panel at startup.
 pub fn dev_show_main_enabled() -> bool {
     std::env::var_os("MOCHI_DEV_SHOW_MAIN").is_some_and(|value| value != "0" && value != "false")
+}
+
+pub fn setup_app_windows(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
+        prepare_app_window(&window)?;
+    }
+
+    Ok(())
+}
+
+pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::error::Error>> {
+    let window_for_events = window.clone();
+    window.on_window_event(move |event| {
+        if let WindowEvent::CloseRequested { api, .. } = event {
+            api.prevent_close();
+            let _ = window_for_events.hide();
+        }
+    });
+
+    Ok(())
+}
+
+fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
+    if let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
+        return Ok(window);
+    }
+
+    WebviewWindowBuilder::new(
+        app,
+        SETTINGS_WINDOW_LABEL,
+        WebviewUrl::App("/settings".into()),
+    )
+    .title("Mochi")
+    .inner_size(720.0, 640.0)
+    .min_inner_size(480.0, 480.0)
+    .center()
+    .build()
+    .inspect(|window| {
+        let _ = prepare_app_window(window);
+    })
+    .map_err(|error| error.to_string())
 }
 
 pub fn setup_main_panel(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -173,9 +215,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
         let _ = tray_panel.hide();
     }
 
-    let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) else {
-        return Err(format!("missing app window: {SETTINGS_WINDOW_LABEL}"));
-    };
+    let window = ensure_settings_window(&app)?;
 
     app.emit("app-navigate", path.as_str())
         .map_err(|error| error.to_string())?;

@@ -1,5 +1,6 @@
-import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+
+import { openAppWindow } from "@/lib/tauri/commands";
 
 function isMetaShortcut(event: KeyboardEvent): boolean {
   return event.metaKey || event.ctrlKey;
@@ -11,8 +12,6 @@ interface TrayPanelShortcutHandlers {
 }
 
 export function useTrayPanelShortcuts({ onRefresh, onQuit }: TrayPanelShortcutHandlers) {
-  const navigate = useNavigate();
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isMetaShortcut(event) || event.altKey) {
@@ -29,7 +28,7 @@ export function useTrayPanelShortcuts({ onRefresh, onQuit }: TrayPanelShortcutHa
 
       if (key === ",") {
         event.preventDefault();
-        void navigate({ to: "/settings" });
+        void openAppWindow("/settings");
         return;
       }
 
@@ -43,5 +42,5 @@ export function useTrayPanelShortcuts({ onRefresh, onQuit }: TrayPanelShortcutHa
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [navigate, onQuit, onRefresh]);
+  }, [onQuit, onRefresh]);
 }

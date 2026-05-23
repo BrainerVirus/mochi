@@ -48,6 +48,21 @@ impl ProviderId {
             _ => None,
         }
     }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Codex => "codex",
+            Self::Claude => "claude",
+            Self::Cursor => "cursor",
+            Self::Gemini => "gemini",
+            Self::Copilot => "copilot",
+            Self::Antigravity => "antigravity",
+            Self::Factory => "factory",
+            Self::Zai => "zai",
+            Self::Kiro => "kiro",
+            Self::Augment => "augment",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]

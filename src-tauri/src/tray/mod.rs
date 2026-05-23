@@ -16,7 +16,7 @@ use crate::status;
 
 pub use panel::{
     maybe_show_main_for_dev, open_app_window, open_tray_panel, record_tray_icon_event,
-    set_tray_panel_height, setup_main_panel, show_main_panel, show_tray_panel,
+    set_tray_panel_height, setup_app_windows, setup_main_panel, show_main_panel, show_tray_panel,
     show_tray_panel_centered, MAIN_PANEL_LABEL, SETTINGS_WINDOW_LABEL,
 };
 pub use presentation::{
@@ -57,7 +57,7 @@ pub async fn sync_tray_usage(
     selection: Option<String>,
 ) -> Result<(), String> {
     let settings = settings_state.current()?;
-    let snapshots = status::refresh_enabled_snapshots(&usage_store, &settings.enabled_providers)
+    let snapshots = status::refresh_enabled_snapshots(&usage_store, &settings)
         .await
         .map_err(|error| error.to_string())?;
 

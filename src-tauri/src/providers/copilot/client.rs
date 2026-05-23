@@ -7,7 +7,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use super::credentials::{resolve_enterprise_host, resolve_token, usage_url};
+use super::credentials::{resolve_enterprise_host, usage_url};
 use super::usage_parse::{parse_usage_response, CopilotUsageResponse};
 use crate::core::provider::{ProviderError, ProviderResult};
 
@@ -15,7 +15,6 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[async_trait]
 pub trait CopilotUsageClient: Send + Sync {
-    async fn resolve_token(&self) -> ProviderResult<String>;
     async fn fetch_usage(&self, token: &str) -> ProviderResult<CopilotUsageResponse>;
 }
 
@@ -46,10 +45,6 @@ impl Default for HttpCopilotUsageClient {
 
 #[async_trait]
 impl CopilotUsageClient for HttpCopilotUsageClient {
-    async fn resolve_token(&self) -> ProviderResult<String> {
-        resolve_token()?.ok_or(ProviderError::NotConfigured)
-    }
-
     async fn fetch_usage(&self, token: &str) -> ProviderResult<CopilotUsageResponse> {
         let url = usage_url(self.enterprise_host.as_deref());
         let response = self
@@ -98,10 +93,6 @@ mod tests {
 
     #[async_trait]
     impl CopilotUsageClient for MockCopilotUsageClient {
-        async fn resolve_token(&self) -> ProviderResult<String> {
-            Ok("gho_test".into())
-        }
-
         async fn fetch_usage(&self, _token: &str) -> ProviderResult<CopilotUsageResponse> {
             match &self.usage {
                 Ok(response) => Ok(response.clone()),
@@ -123,8 +114,7 @@ mod tests {
         let client = MockCopilotUsageClient {
             usage: Ok(usage.clone()),
         };
-        let token = client.resolve_token().await.expect("token");
-        let fetched = client.fetch_usage(&token).await.expect("usage");
+        let fetched = client.fetch_usage("gho_test").await.expect("usage");
         assert_eq!(
             fetched.quota_snapshots.premium_interactions.is_some(),
             usage.quota_snapshots.premium_interactions.is_some()

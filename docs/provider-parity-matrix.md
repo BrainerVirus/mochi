@@ -34,7 +34,7 @@
 Condensed from [CodexBar `docs/providers.md`](../../CodexBar/docs/providers.md). Mochi v1 targets the 10 rows above; remaining rows are Phase B+ backlog.
 
 | Provider             | Strategies (summary)         | Auth (summary)                  | Status               | Cost              | Mochi   |
-| -------------------- | ---------------------------- | ------------------------------- | -------------------- | ----------------- | ------- |
+| -------------------- | ---------------------------- | ------------------------------- | -------------------- | ----------------- | ------- | -------------------------------------------------- |
 | Codex                | oauth → cli → web cookies    | OAuth, manual cookie, CLI       | OpenAI Statuspage    | session JSONL     | done    |
 | OpenAI               | Admin API / legacy balance   | Admin or API key                | —                    | org usage         | —       |
 | Azure OpenAI         | API deployment probe         | API key + endpoint + deployment | Azure status link    | —                 | —       |
@@ -43,7 +43,7 @@ Condensed from [CodexBar `docs/providers.md`](../../CodexBar/docs/providers.md).
 | Antigravity          | local probe                  | localhost LSP                   | Google incidents     | —                 | stub    |
 | Cursor               | web (`MOCHI_CURSOR_COOKIE*`) | manual cookie env/file          | Cursor Statuspage    | —                 | partial |
 | OpenCode             | web dashboard                | browser cookies                 | —                    | —                 | —       |
-| OpenCode Go          | web dashboard                | cookies + workspace ID          | —                    | —                 | —       |
+| OpenCode Go          | web dashboard                | cookies + workspace ID          | —                    | —                 | —       | **not in v1** (CodexBar only; 46-provider backlog) |
 | Alibaba Coding Plan  | web RPC; API fallback        | cookies, API key                | Aliyun status link   | —                 | —       |
 | Droid/Factory        | web multi-fallback           | cookies, tokens, WorkOS         | factory.ai status    | —                 | stub    |
 | z.ai                 | API quota                    | API token                       | —                    | —                 | stub    |
@@ -84,14 +84,14 @@ Condensed from [CodexBar `docs/providers.md`](../../CodexBar/docs/providers.md).
 
 ## Gap summary (v1)
 
-| Gap                                       | CodexBar    | Mochi today                | Phase         |
-| ----------------------------------------- | ----------- | -------------------------- | ------------- |
-| Credential store (Keychain/libsecret/Win) | Yes         | None                       | 1 (stub) → 2+ |
-| Cookie import                             | Yes         | None                       | 2+            |
-| Usage cache / LKG                         | Yes         | Live fetch every call      | 1             |
-| Provider metadata registry                | Yes         | Minimal `ProviderMetadata` | 1             |
-| Real fetch (8 stubs)                      | Yes         | Static snapshots           | 3–4           |
-| Codex full parity                         | Yes         | Partial CLI/cookies        | 2             |
-| OS-native UI shells                       | N/A (Swift) | Custom shadcn              | 5             |
-| CLI parity                                | Yes         | Skeleton                   | 6             |
-| Release smoke                             | Yes         | Shallow                    | 7             |
+| Gap                                       | CodexBar    | Mochi today                          | Phase       |
+| ----------------------------------------- | ----------- | ------------------------------------ | ----------- |
+| Credential store (Keychain/libsecret/Win) | Yes         | Settings JSON (`provider_configs`)   | 1 (partial) |
+| Cookie import                             | Yes         | None                                 | 2+          |
+| Usage cache / LKG                         | Yes         | Live fetch every call                | 1           |
+| Provider metadata registry                | Yes         | `get_provider_catalog` + settings UI | 1 (partial) |
+| Real fetch (8 stubs)                      | Yes         | Static snapshots                     | 3–4         |
+| Codex full parity                         | Yes         | Partial CLI/cookies                  | 2           |
+| OS-native UI shells                       | N/A (Swift) | Custom shadcn                        | 5           |
+| CLI parity                                | Yes         | Skeleton                             | 6           |
+| Release smoke                             | Yes         | Shallow                              | 7           |

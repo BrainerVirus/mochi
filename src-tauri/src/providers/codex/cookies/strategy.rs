@@ -6,7 +6,7 @@ use super::client::{
     fetch_snapshot_with_client, CodexWebDashboardClient, HttpCodexWebDashboardClient,
 };
 use super::credentials::resolve_manual_cookie;
-use crate::core::models::UsageSnapshot;
+use crate::core::models::{ProviderId, UsageSnapshot};
 use crate::core::provider::{
     FetchContext, FetchKind, FetchStrategy, ProviderError, ProviderResult,
 };
@@ -45,12 +45,17 @@ impl FetchStrategy for BrowserCookiesStrategy {
         FetchKind::BrowserCookies
     }
 
-    async fn is_available(&self, _ctx: &FetchContext) -> ProviderResult<bool> {
-        Ok(resolve_manual_cookie()?.is_some())
+    async fn is_available(&self, ctx: &FetchContext) -> ProviderResult<bool> {
+        Ok(resolve_manual_cookie(ctx.config(ProviderId::Codex))?.is_some())
     }
 
-    async fn fetch(&self, _ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
-        fetch_snapshot_with_client(self.client.as_ref(), &current_timestamp()).await
+    async fn fetch(&self, ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
+        fetch_snapshot_with_client(
+            self.client.as_ref(),
+            &current_timestamp(),
+            ctx.config(ProviderId::Codex),
+        )
+        .await
     }
 
     fn should_fallback(&self, error: &ProviderError) -> bool {
@@ -111,7 +116,7 @@ mod tests {
 
         let strategy = BrowserCookiesStrategy::new();
         assert!(strategy
-            .is_available(&FetchContext)
+            .is_available(&FetchContext::empty())
             .await
             .expect("availability"));
 
@@ -128,7 +133,7 @@ mod tests {
         let strategy = BrowserCookiesStrategy::new();
 
         let error = strategy
-            .fetch(&FetchContext)
+            .fetch(&FetchContext::empty())
             .await
             .expect_err("missing cookie should fail");
 
@@ -158,7 +163,7 @@ mod tests {
         }));
 
         let error = strategy
-            .fetch(&FetchContext)
+            .fetch(&FetchContext::empty())
             .await
             .expect_err("auth should fail");
 

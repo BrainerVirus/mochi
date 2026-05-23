@@ -7,7 +7,6 @@ use std::time::Duration;
 use async_trait::async_trait;
 use serde::Deserialize;
 
-use super::credentials::resolve_session_key;
 use crate::core::provider::{ProviderError, ProviderResult};
 use crate::providers::claude::usage_parse::ClaudeUsageResponse;
 
@@ -26,7 +25,6 @@ struct ClaudeOrganization {
 
 #[async_trait]
 pub trait ClaudeWebClient: Send + Sync {
-    async fn resolve_session_key(&self) -> ProviderResult<String>;
     async fn fetch_usage(&self, session_key: &str) -> ProviderResult<ClaudeUsageResponse>;
 }
 
@@ -53,10 +51,6 @@ impl Default for HttpClaudeWebClient {
 
 #[async_trait]
 impl ClaudeWebClient for HttpClaudeWebClient {
-    async fn resolve_session_key(&self) -> ProviderResult<String> {
-        resolve_session_key()?.ok_or(ProviderError::NotConfigured)
-    }
-
     async fn fetch_usage(&self, session_key: &str) -> ProviderResult<ClaudeUsageResponse> {
         let org_id = self.fetch_organization_id(session_key).await?;
         self.fetch_org_usage(session_key, &org_id).await
@@ -149,10 +143,6 @@ mod tests {
 
     #[async_trait]
     impl ClaudeWebClient for MockClaudeWebClient {
-        async fn resolve_session_key(&self) -> ProviderResult<String> {
-            Ok("sk-ant-test".into())
-        }
-
         async fn fetch_usage(&self, _session_key: &str) -> ProviderResult<ClaudeUsageResponse> {
             match &self.usage {
                 Ok(response) => Ok(response.clone()),
@@ -181,8 +171,7 @@ mod tests {
         let client = MockClaudeWebClient {
             usage: Ok(fixture_usage()),
         };
-        let key = client.resolve_session_key().await.expect("key");
-        let usage = client.fetch_usage(&key).await.expect("usage");
+        let usage = client.fetch_usage("sk-ant-test").await.expect("usage");
         assert!(usage.five_hour.is_some());
     }
 }

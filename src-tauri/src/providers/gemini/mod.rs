@@ -8,6 +8,8 @@ mod oauth_client;
 mod strategy;
 mod usage_parse;
 
+pub(crate) use credentials::credentials_path;
+
 use async_trait::async_trait;
 
 use strategy::OAuthQuotaStrategy;
@@ -38,6 +40,13 @@ impl ProviderEnrichment for GeminiProvider {
         // Google Workspace incidents page is not Statuspage.io; skip live polling for now.
         Ok(snapshot)
     }
+}
+
+pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
+    credentials_path().is_file()
+        || config
+            .and_then(crate::settings::ProviderConfig::api_key_value)
+            .is_some()
 }
 
 #[cfg(test)]

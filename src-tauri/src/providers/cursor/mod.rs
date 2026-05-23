@@ -1,7 +1,7 @@
 //! Cursor provider — web cookie session + usage-summary API.
 //!
-//! Ported from CodexBar `docs/cursor.md` (MIT). Browser cookie import and WebKit
-//! session storage are planned follow-ups.
+//! Ported from CodexBar `docs/cursor.md` (MIT). Browser cookie auto-import uses
+//! Safari, Chromium, and Gecko profiles (including Zen) on macOS.
 
 mod client;
 mod credentials;
@@ -45,6 +45,19 @@ impl ProviderEnrichment for CursorProvider {
 
         Ok(snapshot)
     }
+}
+
+pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
+    credentials::resolve_cookie(config).ok().flatten().is_some()
+}
+
+pub(crate) fn credential_source_label(
+    config: Option<&crate::settings::ProviderConfig>,
+) -> Option<String> {
+    credentials::resolve_cookie(config)
+        .ok()
+        .flatten()
+        .map(|resolved| resolved.source.label())
 }
 
 #[cfg(test)]
