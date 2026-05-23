@@ -39,9 +39,7 @@ export function fixNitroRolldownBuild(): Plugin {
         return;
       }
 
-      const injectPluginIndex = plugins.findIndex(
-        (plugin) => plugin?.name === "inject",
-      );
+      const injectPluginIndex = plugins.findIndex((plugin) => plugin?.name === "inject");
       if (injectPluginIndex === -1) {
         return;
       }
