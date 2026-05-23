@@ -26,7 +26,7 @@ jobs:
           - platform: macos-26-intel
             target: macos-x64
             args: --target x86_64-apple-darwin
-          - platform: windows-2025
+          - platform: windows-2025-vs2026
             target: windows-x64
             args: ""
           - platform: ubuntu-24.04
