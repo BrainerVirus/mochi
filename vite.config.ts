@@ -6,6 +6,8 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
+import { fixNitroRolldownBuild } from "./vite.fix-nitro-rolldown";
+
 export default defineConfig({
   clearScreen: false,
   server: {
@@ -23,5 +25,6 @@ export default defineConfig({
     }),
     viteReact(),
     nitro(),
+    fixNitroRolldownBuild(),
   ],
 });
