@@ -104,6 +104,11 @@ pub fn prepare_main_panel_window(window: &WebviewWindow) -> Result<(), Box<dyn s
     // Keeps the popover visible when switching spaces on macOS.
     #[cfg(target_os = "macos")]
     let _ = window.set_visible_on_all_workspaces(true);
+
+    if let Err(error) = super::vibrancy::apply_tray_panel_vibrancy(window) {
+        eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
+    }
+
     let _ = window.hide();
     Ok(())
 }

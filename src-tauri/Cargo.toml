@@ -30,6 +30,7 @@ time = { version = "0.3", features = ["formatting", "parsing"] }
 tiny-skia = "0.11"
 usvg = "0.44"
 tokio = { version = "1.41", features = ["io-util", "macros", "process", "rt-multi-thread", "time"] }
+window-vibrancy = "0.6"
 rusqlite = { version = "0.32", features = ["bundled"] }
 aes = "0.8"
 cbc = { version = "0.1", features = ["std"] }
