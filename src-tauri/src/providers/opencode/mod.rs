@@ -1,5 +1,5 @@
-mod client;
-mod credentials;
+pub(crate) mod client;
+pub(crate) mod credentials;
 pub(crate) mod strategy;
 mod usage_parse;
 mod zen_balance;

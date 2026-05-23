@@ -8,7 +8,9 @@ pub enum ProviderId {
     Cursor,
     Gemini,
     Copilot,
+    #[serde(rename = "opencode", alias = "open-code")]
     OpenCode,
+    #[serde(rename = "opencode-go", alias = "opencodego", alias = "open-code-go")]
     OpenCodeGo,
     Antigravity,
     Factory,
@@ -44,14 +46,22 @@ impl ProviderId {
             "cursor" => Some(Self::Cursor),
             "gemini" => Some(Self::Gemini),
             "copilot" => Some(Self::Copilot),
-            "opencode" => Some(Self::OpenCode),
-            "opencode-go" => Some(Self::OpenCodeGo),
+            "opencode" | "open-code" => Some(Self::OpenCode),
+            "opencode-go" | "opencodego" | "open-code-go" => Some(Self::OpenCodeGo),
             "antigravity" => Some(Self::Antigravity),
             "factory" => Some(Self::Factory),
             "zai" => Some(Self::Zai),
             "kiro" => Some(Self::Kiro),
             "augment" => Some(Self::Augment),
             _ => None,
+        }
+    }
+
+    pub fn config_key_aliases(self) -> &'static [&'static str] {
+        match self {
+            Self::OpenCode => &["open-code"],
+            Self::OpenCodeGo => &["opencodego", "open-code-go"],
+            _ => &[],
         }
     }
 
@@ -307,6 +317,37 @@ mod tests {
     fn provider_id_parses_kebab_case_values() {
         assert_eq!(ProviderId::parse("factory"), Some(ProviderId::Factory));
         assert_eq!(ProviderId::parse("unknown"), None);
+    }
+
+    #[test]
+    fn provider_id_parses_codexbar_aliases() {
+        assert_eq!(
+            ProviderId::parse("opencodego"),
+            Some(ProviderId::OpenCodeGo)
+        );
+        assert_eq!(
+            ProviderId::parse("open-code-go"),
+            Some(ProviderId::OpenCodeGo)
+        );
+        assert_eq!(ProviderId::parse("open-code"), Some(ProviderId::OpenCode));
+    }
+
+    #[test]
+    fn provider_id_serializes_canonical_strings() {
+        assert_eq!(
+            serde_json::to_string(&ProviderId::OpenCodeGo).unwrap(),
+            "\"opencode-go\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ProviderId::OpenCode).unwrap(),
+            "\"opencode\""
+        );
+    }
+
+    #[test]
+    fn provider_id_deserializes_codexbar_aliases() {
+        let opencode_go: ProviderId = serde_json::from_str("\"opencodego\"").unwrap();
+        assert_eq!(opencode_go, ProviderId::OpenCodeGo);
     }
 
     #[test]

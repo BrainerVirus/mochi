@@ -235,9 +235,14 @@ const OPENCODE_GO: ProviderDefinition = ProviderDefinition {
         COOKIE_SOURCE,
         MANUAL_COOKIE,
         SettingsFieldDefinition {
-            key: "token_account",
-            label: "Workspace ID",
+            key: "token_accounts",
+            label: "Session tokens",
             kind: SettingsFieldKind::TokenAccount,
+        },
+        SettingsFieldDefinition {
+            key: "workspace_id",
+            label: "Workspace ID (optional)",
+            kind: SettingsFieldKind::RegionHost,
         },
     ],
     status_url: None,

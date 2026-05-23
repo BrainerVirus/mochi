@@ -57,7 +57,17 @@ impl FetchContext {
     }
 
     pub fn config(&self, provider: ProviderId) -> Option<&ProviderConfig> {
-        self.provider_configs.get(provider.as_str())
+        if let Some(config) = self.provider_configs.get(provider.as_str()) {
+            return Some(config);
+        }
+
+        for alias in provider.config_key_aliases() {
+            if let Some(config) = self.provider_configs.get(*alias) {
+                return Some(config);
+            }
+        }
+
+        None
     }
 }
 

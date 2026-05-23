@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import type { ProviderCatalogEntry } from "@/lib/schemas/provider-catalog";
 import type { ProviderConfig } from "@/lib/schemas/settings";
 
+import { TokenAccountsField, WorkspaceIdField } from "./provider-token-fields";
+
 interface ProviderConfigFieldsProps {
   entry: ProviderCatalogEntry;
   config: ProviderConfig;
@@ -35,6 +37,18 @@ function renderProviderField(
   }
 
   if (field.kind === "token-account") {
+    if (field.key === "token_accounts") {
+      return (
+        <TokenAccountsField
+          key={field.key}
+          field={field}
+          entry={entry}
+          config={config}
+          onChange={onChange}
+        />
+      );
+    }
+
     return renderTokenAccountField(field, entry, config, onChange);
   }
 
@@ -43,6 +57,18 @@ function renderProviderField(
   }
 
   if (field.kind === "region-host") {
+    if (field.key === "workspace_id") {
+      return (
+        <WorkspaceIdField
+          key={field.key}
+          field={field}
+          entry={entry}
+          config={config}
+          onChange={onChange}
+        />
+      );
+    }
+
     return renderRegionHostField(field, entry, config, onChange);
   }
 
@@ -99,15 +125,16 @@ function renderManualCookieField(
       <Label htmlFor={`${entry.id}-${field.key}`}>{field.label}</Label>
       <Input
         id={`${entry.id}-${field.key}`}
-        placeholder="session=…; other=…"
+        placeholder="oc_locale=en; auth=Fe26.2…"
         value={config.manual_cookie ?? ""}
         onChange={(event) => {
           onChange({ manual_cookie: event.target.value });
         }}
       />
       <p className="text-muted-foreground text-xs">
-        Paste the HTTP Cookie header from browser DevTools, or set{" "}
-        <code className="text-xs">MOCHI_{entry.id.toUpperCase()}_COOKIE</code> in your environment.
+        Paste the full cookie string from browser DevTools, or set{" "}
+        <code className="text-xs">MOCHI_{entry.id.toUpperCase().replace("-", "_")}_COOKIE</code> in
+        your environment.
       </p>
     </div>
   );

@@ -1,18 +1,30 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 
+use super::credentials::resolve_session;
 use crate::core::models::{ProviderId, UsageSnapshot};
-use crate::core::provider::{FetchContext, FetchKind, FetchStrategy, ProviderResult};
-use crate::providers::opencode::strategy::WebStrategy as OpenCodeWebStrategy;
+use crate::core::provider::{
+    FetchContext, FetchKind, FetchStrategy, ProviderError, ProviderResult,
+};
+use crate::core::usage_store::current_timestamp;
+use crate::providers::opencode::client::{HttpOpenCodeWebClient, OpenCodeWebClient};
 
 pub struct WebStrategy {
-    inner: OpenCodeWebStrategy,
+    client: Arc<dyn OpenCodeWebClient>,
 }
 
 impl WebStrategy {
     pub fn new() -> Self {
         Self {
-            inner: OpenCodeWebStrategy::new(ProviderId::OpenCodeGo, "opencode-go-web"),
+            client: Arc::new(HttpOpenCodeWebClient::new()),
         }
+    }
+}
+
+impl Default for WebStrategy {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -23,18 +35,35 @@ impl FetchStrategy for WebStrategy {
     }
 
     fn kind(&self) -> FetchKind {
-        self.inner.kind()
+        FetchKind::BrowserCookies
     }
 
     async fn is_available(&self, ctx: &FetchContext) -> ProviderResult<bool> {
-        self.inner.is_available(ctx).await
+        Ok(resolve_session(ctx.config(ProviderId::OpenCodeGo))?.is_some())
     }
 
     async fn fetch(&self, ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
-        self.inner.fetch(ctx).await
+        let session = resolve_session(ctx.config(ProviderId::OpenCodeGo))?
+            .ok_or(ProviderError::NotConfigured)?;
+
+        self.client
+            .fetch_usage(
+                &session,
+                ProviderId::OpenCodeGo,
+                &current_timestamp(),
+                self.id(),
+            )
+            .await
     }
 
-    fn should_fallback(&self, error: &crate::core::provider::ProviderError) -> bool {
-        self.inner.should_fallback(error)
+    fn should_fallback(&self, error: &ProviderError) -> bool {
+        matches!(
+            error,
+            ProviderError::NotConfigured
+                | ProviderError::Auth(_)
+                | ProviderError::Timeout
+                | ProviderError::Fetch(_)
+                | ProviderError::Parse(_)
+        )
     }
 }

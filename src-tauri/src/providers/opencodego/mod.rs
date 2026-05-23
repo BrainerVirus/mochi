@@ -6,11 +6,13 @@ mod strategy;
 
 use async_trait::async_trait;
 
+use credentials::resolve_session;
 use strategy::WebStrategy;
 
 use crate::core::models::{ProviderId, UsageSnapshot};
 use crate::core::provider::{Provider, ProviderEnrichment, ProviderMetadata, ProviderResult};
-use crate::providers::opencode;
+
+pub mod credentials;
 
 pub struct OpenCodeGoProvider;
 
@@ -37,5 +39,5 @@ impl ProviderEnrichment for OpenCodeGoProvider {
 }
 
 pub(crate) fn has_credentials(config: Option<&crate::settings::ProviderConfig>) -> bool {
-    opencode::has_credentials(config)
+    resolve_session(config).ok().flatten().is_some()
 }

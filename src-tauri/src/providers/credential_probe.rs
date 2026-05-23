@@ -60,10 +60,22 @@ fn provider_credential_detail(
         ProviderId::OpenCode => opencode_credential_detail(config),
         ProviderId::OpenCodeGo => {
             let configured = super::opencodego::has_credentials(config);
-            ProviderCredentialDetail {
-                configured,
-                source: configured.then_some("Browser cookies".into()),
-            }
+            let source = if config
+                .and_then(ProviderConfig::active_token_account)
+                .is_some()
+            {
+                Some("Token account".into())
+            } else if config
+                .and_then(ProviderConfig::manual_cookie_value)
+                .is_some()
+            {
+                Some("Manual".into())
+            } else if configured {
+                Some("Browser cookies".into())
+            } else {
+                None
+            };
+            ProviderCredentialDetail { configured, source }
         }
         ProviderId::Zai => {
             let configured = config.and_then(ProviderConfig::api_key_value).is_some()

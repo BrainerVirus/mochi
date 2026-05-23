@@ -17,7 +17,10 @@ pub fn load_settings(path: &Path) -> MochiSettings {
         Err(_) => return MochiSettings::default(),
     };
 
-    serde_json::from_str(&contents).unwrap_or_else(|_| MochiSettings::default())
+    let mut settings: MochiSettings =
+        serde_json::from_str(&contents).unwrap_or_else(|_| MochiSettings::default());
+    settings.normalize_provider_ids();
+    settings
 }
 
 pub fn save_settings(path: &Path, settings: &MochiSettings) -> Result<(), String> {

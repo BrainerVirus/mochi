@@ -112,22 +112,54 @@ describe("parseUsageSnapshots", () => {
     expect(snapshots[0]?.is_stale).toBe(false);
   });
 
-  it("rejects snapshots with invalid provider ids", () => {
-    expect(() =>
-      parseUsageSnapshots([
-        {
-          provider: "unknown-provider",
-          primary: {
-            label: "Session",
-            used_percent: 0,
-            remaining_percent: 100,
-            resets_at: null,
-          },
-          secondary: null,
-          updated_at: "2026-05-20T12:00:00Z",
-          source: "Unknown",
+  it("filters out snapshots with invalid provider ids", () => {
+    const snapshots = parseUsageSnapshots([
+      {
+        provider: "claude",
+        primary: {
+          label: "Session",
+          used_percent: 0,
+          remaining_percent: 100,
+          resets_at: null,
         },
-      ]),
-    ).toThrow(/Invalid option|invalid/i);
+        secondary: null,
+        updated_at: "2026-05-20T12:00:00Z",
+        source: "Unknown",
+      },
+      {
+        provider: "unknown-provider",
+        primary: {
+          label: "Session",
+          used_percent: 0,
+          remaining_percent: 100,
+          resets_at: null,
+        },
+        secondary: null,
+        updated_at: "2026-05-20T12:00:00Z",
+        source: "Unknown",
+      },
+    ]);
+
+    expect(snapshots).toHaveLength(1);
+    expect(snapshots[0]?.provider).toBe("claude");
+  });
+
+  it("normalizes codexbar provider ids before parsing", () => {
+    const snapshots = parseUsageSnapshots([
+      {
+        provider: "opencodego",
+        primary: {
+          label: "Session",
+          used_percent: 12,
+          remaining_percent: 88,
+          resets_at: null,
+        },
+        secondary: null,
+        updated_at: "2026-05-20T12:00:00Z",
+        source: "web",
+      },
+    ]);
+
+    expect(snapshots[0]?.provider).toBe("opencode-go");
   });
 });
