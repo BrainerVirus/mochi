@@ -1,5 +1,6 @@
 use crate::core::models::{ProviderId, UsageSnapshot};
 use crate::status::filter_configured_snapshots;
+use crate::tray::menu_bar_metric::tray_remaining_percent;
 
 /// Which tray tab drives menu bar icon and title.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -102,10 +103,9 @@ pub fn pick_tray_snapshot(snapshots: &[UsageSnapshot]) -> Option<&UsageSnapshot>
 }
 
 /// Global % left across configured providers: arithmetic mean of each provider's
-/// primary remaining %. CodexBar averages session + weekly lanes per provider
-/// (`.average` metric preference); overview extends that idea across providers.
+/// tray metric remaining % (CodexBar automatic `MenuBarMetricWindowResolver` per provider).
 pub fn aggregate_remaining_percent(snapshots: &[UsageSnapshot]) -> u8 {
-    let percents: Vec<u8> = snapshots.iter().map(remaining_percent).collect();
+    let percents: Vec<u8> = snapshots.iter().map(tray_remaining_percent).collect();
     if percents.is_empty() {
         return 100;
     }
@@ -117,7 +117,7 @@ pub fn aggregate_remaining_percent(snapshots: &[UsageSnapshot]) -> u8 {
 }
 
 pub fn remaining_percent(snapshot: &UsageSnapshot) -> u8 {
-    snapshot.primary.remaining_percent.round().clamp(0.0, 100.0) as u8
+    tray_remaining_percent(snapshot)
 }
 
 /// Menu bar title beside template icon (CodexBar-style leading space on macOS).
@@ -250,6 +250,19 @@ mod tests {
             resolve_tray_presentation(&snapshots, TraySelection::Provider(ProviderId::Codex));
         assert_eq!(presentation.remaining_percent, 99);
         assert!(presentation.tooltip.contains("Codex"));
+    }
+
+    #[test]
+    fn resolve_opencode_go_provider_presentation_uses_tightest_window() {
+        let mut opencode_go = snapshot(ProviderId::OpenCodeGo, 0.0);
+        opencode_go.secondary = Some(UsageWindow::new("Weekly", 99.0, None));
+        opencode_go.tertiary = Some(UsageWindow::new("Monthly", 12.0, None));
+
+        let snapshots = vec![snapshot(ProviderId::Codex, 1.0), opencode_go];
+        let presentation =
+            resolve_tray_presentation(&snapshots, TraySelection::Provider(ProviderId::OpenCodeGo));
+        assert_eq!(presentation.remaining_percent, 1);
+        assert!(presentation.tooltip.contains("OpenCode Go"));
     }
 
     #[test]
