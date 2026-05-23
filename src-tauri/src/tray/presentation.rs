@@ -203,6 +203,36 @@ mod tests {
     }
 
     #[test]
+    fn aggregate_remaining_percent_uses_per_provider_tray_metrics() {
+        let cursor = UsageSnapshot::new(
+            ProviderId::Cursor,
+            UsageWindow::new("Total", 84.0, None),
+            Some(UsageWindow::new("Auto + Composer", 79.0, None)),
+            "2026-05-22T12:00:00Z",
+            "test",
+        )
+        .with_tertiary(UsageWindow::new("API", 100.0, None));
+        let opencode_go = UsageSnapshot::new(
+            ProviderId::OpenCodeGo,
+            UsageWindow::new("5-hour", 0.0, None),
+            Some(UsageWindow::new("Weekly", 99.0, None)),
+            "2026-05-22T12:00:00Z",
+            "test",
+        );
+        let codex = UsageSnapshot::new(
+            ProviderId::Codex,
+            UsageWindow::new("Session", 8.0, None),
+            Some(UsageWindow::new("Weekly", 40.0, None)),
+            "2026-05-22T12:00:00Z",
+            "test",
+        );
+
+        // Codex 92% + Cursor 16% (Total) + OpenCode Go 100% (5-hour) => mean 69.33 => 69
+        let snapshots = vec![codex, cursor, opencode_go];
+        assert_eq!(aggregate_remaining_percent(&snapshots), 69);
+    }
+
+    #[test]
     fn aggregate_remaining_percent_averages_configured_providers() {
         let snapshots = vec![
             snapshot(ProviderId::Codex, 5.0),
@@ -253,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn resolve_opencode_go_provider_presentation_uses_tightest_window() {
+    fn resolve_opencode_go_provider_presentation_uses_five_hour_session() {
         let mut opencode_go = snapshot(ProviderId::OpenCodeGo, 0.0);
         opencode_go.secondary = Some(UsageWindow::new("Weekly", 99.0, None));
         opencode_go.tertiary = Some(UsageWindow::new("Monthly", 12.0, None));
@@ -261,7 +291,7 @@ mod tests {
         let snapshots = vec![snapshot(ProviderId::Codex, 1.0), opencode_go];
         let presentation =
             resolve_tray_presentation(&snapshots, TraySelection::Provider(ProviderId::OpenCodeGo));
-        assert_eq!(presentation.remaining_percent, 1);
+        assert_eq!(presentation.remaining_percent, 100);
         assert!(presentation.tooltip.contains("OpenCode Go"));
     }
 
