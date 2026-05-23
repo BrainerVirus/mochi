@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { useRef } from "react";
 
+import { TrayTabChevron } from "@/components/tray/tray-tab-chevron";
 import {
   animateOverflowVisibility,
   SCROLL_OVERFLOW_SLIDE_PX,
@@ -14,13 +15,7 @@ import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP);
 
-function ScrollFadeEdge({
-  className,
-  visible,
-}: {
-  className: string;
-  visible: boolean;
-}) {
+function ScrollFadeEdge({ className, visible }: { className: string; visible: boolean }) {
   const edgeRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -107,7 +102,9 @@ export function ScrollFadeEdgeOverlays({
     return (
       <>
         <ScrollFadeEdge className="scroll-fade-edge-left" visible={canScrollStart} />
+        <TrayTabChevron side="start" visible={canScrollStart} onCycle={onCycleBackward} />
         <ScrollFadeEdge className="scroll-fade-edge-right" visible={canScrollEnd} />
+        <TrayTabChevron side="end" visible={canScrollEnd} onCycle={onCycleForward} />
       </>
     );
   }

@@ -479,9 +479,9 @@ html[data-tray-panel].dark body {
   width: 3.5rem;
   background-image: linear-gradient(
     to left,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 10%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 55%,
-    transparent 100%
+    transparent 0%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 45%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 90%
   );
 }
 
@@ -494,9 +494,9 @@ html[data-tray-panel].dark body {
   width: 3.5rem;
   background-image: linear-gradient(
     to right,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 10%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 55%,
-    transparent 100%
+    transparent 0%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 45%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 90%
   );
 }
 
@@ -509,9 +509,9 @@ html[data-tray-panel].dark body {
   height: 3.5rem;
   background-image: linear-gradient(
     to top,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 10%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 55%,
-    transparent 100%
+    transparent 0%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 45%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 90%
   );
 }
 
@@ -524,9 +524,9 @@ html[data-tray-panel].dark body {
   height: 3.5rem;
   background-image: linear-gradient(
     to bottom,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 10%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 55%,
-    transparent 100%
+    transparent 0%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 45%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 90%
   );
 }
 
