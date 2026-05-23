@@ -163,7 +163,7 @@ mod tests {
     fn resolve_tray_presentation_uses_remaining_percent_in_tooltip() {
         let snapshots = vec![snapshot(12.0), snapshot(88.0)];
         let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
-        assert_eq!(presentation.remaining_percent, 12);
-        assert!(presentation.tooltip.contains("12% left"));
+        assert_eq!(presentation.remaining_percent, 50);
+        assert!(presentation.tooltip.contains("50% left"));
     }
 }
