@@ -69,10 +69,7 @@ fn provider_credential_detail(
             }
         }
         ProviderId::Zai => {
-            let configured = config.and_then(ProviderConfig::api_key_value).is_some()
-                || std::env::var("Z_AI_API_KEY")
-                    .ok()
-                    .is_some_and(|value| !value.trim().is_empty());
+            let configured = super::zai::has_credentials(config);
             simple_credential_detail(configured, configured.then_some("API key".into()))
         }
         ProviderId::Kiro => {
@@ -123,7 +120,7 @@ fn provider_has_non_cookie_credentials(
         ProviderId::Claude => super::claude::has_credentials(config),
         ProviderId::Gemini => super::gemini::has_credentials(config),
         ProviderId::Copilot => super::copilot::has_credentials(config),
-        ProviderId::Zai => config.and_then(ProviderConfig::api_key_value).is_some(),
+        ProviderId::Zai => super::zai::has_credentials(config),
         _ => false,
     }
 }

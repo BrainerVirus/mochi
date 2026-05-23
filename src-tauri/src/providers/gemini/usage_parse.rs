@@ -112,21 +112,38 @@ pub fn snapshot_from_quotas(
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
+    let flash_lite_min = quotas
+        .iter()
+        .filter(|quota| is_flash_lite_model(&quota.model_id))
+        .min_by(|left, right| {
+            left.percent_left
+                .partial_cmp(&right.percent_left)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
     let primary = pro_min
         .map(|quota| usage_window_from_quota("Pro", quota))
         .or_else(|| flash_min.map(|quota| usage_window_from_quota("Flash", quota)))
+        .or_else(|| flash_lite_min.map(|quota| usage_window_from_quota("Flash Lite", quota)))
         .ok_or_else(|| ProviderError::Parse("gemini usage missing rate windows".into()))?;
 
-    let secondary =
-        pro_min.and_then(|_| flash_min.map(|quota| usage_window_from_quota("Flash", quota)));
+    let secondary = if pro_min.is_some() {
+        flash_min.map(|quota| usage_window_from_quota("Flash", quota))
+    } else {
+        None
+    };
 
-    Ok(UsageSnapshot::new(
-        ProviderId::Gemini,
-        primary,
-        secondary,
-        updated_at,
-        source,
-    ))
+    let mut snapshot =
+        UsageSnapshot::new(ProviderId::Gemini, primary, secondary, updated_at, source);
+
+    if let Some(flash_lite) = flash_lite_min
+        .filter(|_| pro_min.is_some() || flash_min.is_some())
+        .map(|quota| usage_window_from_quota("Flash Lite", quota))
+    {
+        snapshot = snapshot.with_tertiary(flash_lite);
+    }
+
+    Ok(snapshot)
 }
 
 pub fn parse_tier_id(data: &str) -> Option<GeminiUserTier> {
@@ -266,6 +283,25 @@ mod tests {
         assert_eq!(snapshot.primary.used_percent, 40.0);
         assert_eq!(snapshot.secondary.as_ref().expect("flash").label, "Flash");
         assert_eq!(snapshot.secondary.expect("flash").used_percent, 10.0);
+        let flash_lite = snapshot.tertiary.expect("flash lite");
+        assert_eq!(flash_lite.label, "Flash Lite");
+        assert_eq!(flash_lite.used_percent, 20.0);
+    }
+
+    #[test]
+    fn omits_flash_lite_tertiary_when_only_flash_lite_buckets_exist() {
+        let data = r#"{
+            "buckets": [
+                {"modelId": "gemini-2.5-flash-lite", "remainingFraction": 0.5}
+            ]
+        }"#;
+        let quotas = parse_quota_response(data).expect("parse");
+        let snapshot = snapshot_from_quotas(&quotas, "2026-05-22T12:00:00Z", "gemini-oauth-quota")
+            .expect("snapshot");
+
+        assert_eq!(snapshot.primary.label, "Flash Lite");
+        assert!(snapshot.secondary.is_none());
+        assert!(snapshot.tertiary.is_none());
     }
 
     #[test]

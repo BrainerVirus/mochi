@@ -7,6 +7,7 @@ pub(crate) mod gemini;
 pub(crate) mod opencode;
 pub(crate) mod opencodego;
 mod static_provider;
+pub(crate) mod zai;
 
 use std::sync::Arc;
 
@@ -20,6 +21,7 @@ pub use gemini::GeminiProvider;
 pub use opencode::OpenCodeProvider;
 pub use opencodego::OpenCodeGoProvider;
 use static_provider::StaticProvider;
+pub use zai::ZaiProvider;
 
 pub fn built_in_providers() -> Vec<Arc<dyn Provider>> {
     vec![
@@ -32,7 +34,7 @@ pub fn built_in_providers() -> Vec<Arc<dyn Provider>> {
         Arc::new(OpenCodeGoProvider),
         Arc::new(StaticProvider::new(ProviderId::Antigravity, "Antigravity")),
         Arc::new(StaticProvider::new(ProviderId::Factory, "Factory/Droid")),
-        Arc::new(StaticProvider::new(ProviderId::Zai, "z.ai")),
+        Arc::new(ZaiProvider),
         Arc::new(StaticProvider::new(ProviderId::Kiro, "Kiro")),
         Arc::new(StaticProvider::new(ProviderId::Augment, "Augment")),
     ]

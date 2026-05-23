@@ -12,19 +12,29 @@ pub fn snapshot_from_dashboard_html(html: &str, updated_at: &str) -> ProviderRes
     }
 
     let body_text = visible_text_from_html(html);
-    let (primary, secondary) = parse_rate_limits(&body_text);
+    let (session, daily, weekly) = parse_rate_limits(&body_text);
 
-    let primary = primary.ok_or_else(|| {
+    let primary = session.ok_or_else(|| {
         ProviderError::Parse("codex web dashboard missing primary rate limit".into())
     })?;
 
-    Ok(UsageSnapshot::new(
+    let weekly_for_tertiary = weekly.clone();
+    let has_daily = daily.is_some();
+    let secondary = daily.or(weekly);
+    let tertiary = has_daily.then_some(weekly_for_tertiary).flatten();
+
+    let mut snapshot = UsageSnapshot::new(
         ProviderId::Codex,
         primary,
         secondary,
         updated_at,
         "codex-browser-cookies",
-    ))
+    );
+    if let Some(tertiary) = tertiary {
+        snapshot = snapshot.with_tertiary(tertiary);
+    }
+
+    Ok(snapshot)
 }
 
 pub fn parse_auth_status(html: &str) -> Option<String> {
@@ -36,7 +46,13 @@ pub fn parse_auth_status(html: &str) -> Option<String> {
         .map(str::to_string)
 }
 
-pub fn parse_rate_limits(body_text: &str) -> (Option<UsageWindow>, Option<UsageWindow>) {
+pub fn parse_rate_limits(
+    body_text: &str,
+) -> (
+    Option<UsageWindow>,
+    Option<UsageWindow>,
+    Option<UsageWindow>,
+) {
     let cleaned = body_text.replace('\r', "\n");
     let lines: Vec<String> = cleaned
         .lines()
@@ -45,9 +61,10 @@ pub fn parse_rate_limits(body_text: &str) -> (Option<UsageWindow>, Option<UsageW
         .map(str::to_string)
         .collect();
 
-    let primary = parse_rate_window(&lines, is_five_hour_limit_line, "Session");
-    let secondary = parse_rate_window(&lines, is_weekly_limit_line, "Weekly");
-    (primary, secondary)
+    let session = parse_rate_window(&lines, is_five_hour_limit_line, "Session");
+    let daily = parse_rate_window(&lines, is_daily_limit_line, "Daily");
+    let weekly = parse_rate_window(&lines, is_weekly_limit_line, "Weekly");
+    (session, daily, weekly)
 }
 
 fn parse_rate_window(
@@ -97,6 +114,13 @@ fn is_five_hour_limit_line(line: &str) -> bool {
         || lower.contains("5-hour")
         || lower.contains("5 hour")
         || lower.contains("5 h")
+}
+
+fn is_daily_limit_line(line: &str) -> bool {
+    let lower = line.to_lowercase();
+    (lower.contains("daily") || lower.contains("24-hour") || lower.contains("24 hour"))
+        && !is_five_hour_limit_line(line)
+        && !is_weekly_limit_line(line)
 }
 
 fn is_weekly_limit_line(line: &str) -> bool {
