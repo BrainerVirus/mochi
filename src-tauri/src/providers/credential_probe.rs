@@ -73,14 +73,34 @@ fn provider_credential_detail(
             simple_credential_detail(configured, configured.then_some("API key".into()))
         }
         ProviderId::Kiro => {
-            let configured = kiro_cli_available();
+            let configured = super::kiro::has_credentials();
             simple_credential_detail(configured, configured.then_some("CLI".into()))
         }
-        ProviderId::Antigravity | ProviderId::Factory | ProviderId::Augment => {
-            let configured = config
-                .and_then(ProviderConfig::manual_cookie_value)
-                .is_some();
-            simple_credential_detail(configured, configured.then_some("Manual cookie".into()))
+        ProviderId::Antigravity => {
+            let configured = super::antigravity::is_probe_available();
+            simple_credential_detail(configured, configured.then_some("Local probe".into()))
+        }
+        ProviderId::Factory => {
+            let configured = super::factory::has_credentials(config).unwrap_or(false);
+            ProviderCredentialDetail {
+                configured,
+                source: if configured {
+                    Some("Browser cookies".into())
+                } else {
+                    None
+                },
+            }
+        }
+        ProviderId::Augment => {
+            let configured = super::augment::has_credentials(config).unwrap_or(false);
+            ProviderCredentialDetail {
+                configured,
+                source: if configured {
+                    Some("CLI or cookies".into())
+                } else {
+                    None
+                },
+            }
         }
     }
 }
@@ -123,19 +143,6 @@ fn provider_has_non_cookie_credentials(
         ProviderId::Zai => super::zai::has_credentials(config),
         _ => false,
     }
-}
-
-fn kiro_cli_available() -> bool {
-    std::env::var_os("PATH").is_some_and(|paths| {
-        std::env::split_paths(&paths).any(|dir| {
-            let candidate = dir.join(if cfg!(windows) {
-                "kiro-cli.exe"
-            } else {
-                "kiro-cli"
-            });
-            candidate.is_file()
-        })
-    })
 }
 
 #[cfg(test)]

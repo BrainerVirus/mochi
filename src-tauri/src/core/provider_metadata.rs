@@ -263,7 +263,7 @@ const ANTIGRAVITY: ProviderDefinition = ProviderDefinition {
     settings_fields: &[],
     status_url: Some("https://www.google.com/appsstatus/dashboard/incidents"),
     supports_cost: false,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const FACTORY: ProviderDefinition = ProviderDefinition {
@@ -286,7 +286,7 @@ const FACTORY: ProviderDefinition = ProviderDefinition {
     settings_fields: &[COOKIE_SOURCE, MANUAL_COOKIE],
     status_url: Some("https://status.factory.ai"),
     supports_cost: false,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const ZAI: ProviderDefinition = ProviderDefinition {
@@ -329,7 +329,7 @@ const KIRO: ProviderDefinition = ProviderDefinition {
     settings_fields: &[],
     status_url: Some("https://health.aws.amazon.com/health/status"),
     supports_cost: false,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const AUGMENT: ProviderDefinition = ProviderDefinition {
@@ -352,7 +352,7 @@ const AUGMENT: ProviderDefinition = ProviderDefinition {
     settings_fields: &[COOKIE_SOURCE, MANUAL_COOKIE],
     status_url: None,
     supports_cost: false,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const REGISTRY: [ProviderDefinition; 12] = [
