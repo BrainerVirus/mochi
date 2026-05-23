@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 type ScrollFadeOrientation = "horizontal" | "vertical";
 
@@ -11,20 +11,54 @@ interface ScrollOverflowMetrics {
   scrollWidth: number;
 }
 
+export const SCROLL_OVERFLOW_SHOW_THRESHOLD = 4;
+export const SCROLL_OVERFLOW_HIDE_THRESHOLD = 1;
+
 export function measureScrollOverflow(
   el: ScrollOverflowMetrics,
   orientation: ScrollFadeOrientation,
 ): { canScrollStart: boolean; canScrollEnd: boolean } {
   if (orientation === "horizontal") {
     return {
-      canScrollStart: el.scrollLeft > 1,
-      canScrollEnd: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+      canScrollStart: el.scrollLeft > SCROLL_OVERFLOW_HIDE_THRESHOLD,
+      canScrollEnd:
+        el.scrollLeft + el.clientWidth < el.scrollWidth - SCROLL_OVERFLOW_HIDE_THRESHOLD,
     };
   }
 
   return {
-    canScrollStart: el.scrollTop > 1,
-    canScrollEnd: el.scrollTop + el.clientHeight < el.scrollHeight - 1,
+    canScrollStart: el.scrollTop > SCROLL_OVERFLOW_HIDE_THRESHOLD,
+    canScrollEnd: el.scrollTop + el.clientHeight < el.scrollHeight - SCROLL_OVERFLOW_HIDE_THRESHOLD,
+  };
+}
+
+export function measureScrollOverflowWithHysteresis(
+  el: ScrollOverflowMetrics,
+  orientation: ScrollFadeOrientation,
+  previous: { canScrollStart: boolean; canScrollEnd: boolean },
+): { canScrollStart: boolean; canScrollEnd: boolean } {
+  if (orientation === "horizontal") {
+    const maxScrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+
+    return {
+      canScrollStart: previous.canScrollStart
+        ? el.scrollLeft > SCROLL_OVERFLOW_HIDE_THRESHOLD
+        : el.scrollLeft > SCROLL_OVERFLOW_SHOW_THRESHOLD,
+      canScrollEnd: previous.canScrollEnd
+        ? el.scrollLeft < maxScrollLeft - SCROLL_OVERFLOW_HIDE_THRESHOLD
+        : el.scrollLeft < maxScrollLeft - SCROLL_OVERFLOW_SHOW_THRESHOLD,
+    };
+  }
+
+  const maxScrollTop = Math.max(0, el.scrollHeight - el.clientHeight);
+
+  return {
+    canScrollStart: previous.canScrollStart
+      ? el.scrollTop > SCROLL_OVERFLOW_HIDE_THRESHOLD
+      : el.scrollTop > SCROLL_OVERFLOW_SHOW_THRESHOLD,
+    canScrollEnd: previous.canScrollEnd
+      ? el.scrollTop < maxScrollTop - SCROLL_OVERFLOW_HIDE_THRESHOLD
+      : el.scrollTop < maxScrollTop - SCROLL_OVERFLOW_SHOW_THRESHOLD,
   };
 }
 
@@ -34,6 +68,7 @@ export function useScrollOverflow(
 ) {
   const [canScrollStart, setCanScrollStart] = useState(false);
   const [canScrollEnd, setCanScrollEnd] = useState(false);
+  const overflowRef = useRef({ canScrollStart: false, canScrollEnd: false });
 
   const checkOverflow = useCallback(() => {
     const el = scrollRef.current;
@@ -41,7 +76,8 @@ export function useScrollOverflow(
       return;
     }
 
-    const next = measureScrollOverflow(el, orientation);
+    const next = measureScrollOverflowWithHysteresis(el, orientation, overflowRef.current);
+    overflowRef.current = next;
     setCanScrollStart(next.canScrollStart);
     setCanScrollEnd(next.canScrollEnd);
   }, [orientation, scrollRef]);
