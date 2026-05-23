@@ -8,11 +8,10 @@ use async_trait::async_trait;
 use time::OffsetDateTime;
 
 use super::credentials::{
-    claude_credentials_path, load_credentials, load_credentials_from_path,
-    ClaudeOAuthCredentials,
+    claude_credentials_path, load_credentials, load_credentials_from_path, ClaudeOAuthCredentials,
 };
-use crate::providers::claude::usage_parse::ClaudeUsageResponse;
 use crate::core::provider::{ProviderError, ProviderResult};
+use crate::providers::claude::usage_parse::ClaudeUsageResponse;
 
 const USAGE_URL: &str = "https://api.anthropic.com/api/oauth/usage";
 const REFRESH_URL: &str = "https://platform.claude.com/v1/oauth/token";
@@ -167,9 +166,8 @@ impl ClaudeOAuthClient for HttpClaudeOAuthClient {
             .or_else(|| credentials.refresh_token.clone());
 
         let expires_in = json.get("expires_in").and_then(|value| value.as_u64());
-        let expires_at = expires_in.map(|seconds| {
-            OffsetDateTime::now_utc() + time::Duration::seconds(seconds as i64)
-        });
+        let expires_at = expires_in
+            .map(|seconds| OffsetDateTime::now_utc() + time::Duration::seconds(seconds as i64));
 
         Ok(ClaudeOAuthCredentials {
             access_token: access_token.to_string(),
@@ -234,7 +232,10 @@ mod tests {
             }
         }
 
-        async fn save_credentials(&self, _credentials: &ClaudeOAuthCredentials) -> ProviderResult<()> {
+        async fn save_credentials(
+            &self,
+            _credentials: &ClaudeOAuthCredentials,
+        ) -> ProviderResult<()> {
             Ok(())
         }
 
@@ -273,7 +274,10 @@ mod tests {
         };
 
         let creds = client.load_credentials().await.expect("credentials");
-        let usage = client.fetch_usage(&creds.access_token).await.expect("usage");
+        let usage = client
+            .fetch_usage(&creds.access_token)
+            .await
+            .expect("usage");
         assert!(usage.five_hour.is_some());
     }
 }

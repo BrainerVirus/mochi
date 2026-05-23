@@ -100,10 +100,7 @@ mod tests {
             usage: Ok(fixture_usage()),
         }));
 
-        let snapshot = strategy
-            .fetch(&FetchContext)
-            .await
-            .expect("web fetch");
+        let snapshot = strategy.fetch(&FetchContext).await.expect("web fetch");
 
         assert_eq!(snapshot.source, "claude-web");
         assert_eq!(snapshot.primary.used_percent, 9.0);

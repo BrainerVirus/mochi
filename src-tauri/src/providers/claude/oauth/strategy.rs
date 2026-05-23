@@ -65,10 +65,7 @@ impl FetchStrategy for OAuthStrategy {
             self.client.save_credentials(&credentials).await?;
         }
 
-        let usage = self
-            .client
-            .fetch_usage(&credentials.access_token)
-            .await?;
+        let usage = self.client.fetch_usage(&credentials.access_token).await?;
 
         snapshot_from_usage_response(&usage, &current_timestamp(), "claude-oauth")
     }
@@ -138,8 +135,10 @@ mod tests {
     #[tokio::test]
     async fn oauth_strategy_returns_snapshot_when_token_valid() {
         let strategy = OAuthStrategy::with_client(Arc::new(MockClaudeOAuthClient {
-            credentials: Ok(parse_credentials(include_str!("../fixtures/credentials.json"))
-                .expect("credentials")),
+            credentials: Ok(
+                parse_credentials(include_str!("../fixtures/credentials.json"))
+                    .expect("credentials"),
+            ),
             usage: Ok(fixture_usage()),
         }));
 
@@ -166,8 +165,10 @@ mod tests {
     #[tokio::test]
     async fn oauth_auth_errors_fallback_to_web() {
         let strategy = OAuthStrategy::with_client(Arc::new(MockClaudeOAuthClient {
-            credentials: Ok(parse_credentials(include_str!("../fixtures/credentials.json"))
-                .expect("credentials")),
+            credentials: Ok(
+                parse_credentials(include_str!("../fixtures/credentials.json"))
+                    .expect("credentials"),
+            ),
             usage: Err(ProviderError::Auth("expired".into())),
         }));
 

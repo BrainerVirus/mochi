@@ -81,7 +81,11 @@ impl HttpClaudeWebClient {
                     .as_ref()
                     .is_some_and(|caps| caps.iter().any(|cap| cap == "chat"))
             })
-            .or_else(|| organizations.iter().find(|org| org.is_api_only != Some(true)))
+            .or_else(|| {
+                organizations
+                    .iter()
+                    .find(|org| org.is_api_only != Some(true))
+            })
             .or_else(|| organizations.first())
             .ok_or_else(|| ProviderError::Parse("claude web: no organization".into()))?;
 
@@ -129,7 +133,9 @@ impl HttpClaudeWebClient {
 
 fn map_web_error(error: ProviderError, step: &str) -> ProviderError {
     match error {
-        ProviderError::Fetch(message) => ProviderError::Fetch(format!("claude web {step}: {message}")),
+        ProviderError::Fetch(message) => {
+            ProviderError::Fetch(format!("claude web {step}: {message}"))
+        }
         other => other,
     }
 }

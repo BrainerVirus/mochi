@@ -37,16 +37,11 @@ pub fn snapshot_from_usage_response(
     updated_at: &str,
     source: &str,
 ) -> ProviderResult<UsageSnapshot> {
-    let primary = window_from_payload(
-        response.five_hour.as_ref(),
-        "Session",
-    )
-    .or_else(|| window_from_payload(response.seven_day.as_ref(), "Weekly"))
-    .or_else(|| {
-        window_from_payload(response.seven_day_oauth_apps.as_ref(), "Weekly")
-    })
-    .or_else(|| window_from_payload(response.seven_day_sonnet.as_ref(), "Weekly"))
-    .or_else(|| window_from_payload(response.seven_day_opus.as_ref(), "Weekly"));
+    let primary = window_from_payload(response.five_hour.as_ref(), "Session")
+        .or_else(|| window_from_payload(response.seven_day.as_ref(), "Weekly"))
+        .or_else(|| window_from_payload(response.seven_day_oauth_apps.as_ref(), "Weekly"))
+        .or_else(|| window_from_payload(response.seven_day_sonnet.as_ref(), "Weekly"))
+        .or_else(|| window_from_payload(response.seven_day_opus.as_ref(), "Weekly"));
 
     let primary = primary.ok_or_else(|| {
         if response.extra_usage.as_ref().and_then(|e| e.is_enabled) == Some(true) {
@@ -60,9 +55,7 @@ pub fn snapshot_from_usage_response(
 
     let secondary = if primary.label == "Session" {
         window_from_payload(response.seven_day.as_ref(), "Weekly")
-            .or_else(|| {
-                window_from_payload(response.seven_day_sonnet.as_ref(), "Sonnet weekly")
-            })
+            .or_else(|| window_from_payload(response.seven_day_sonnet.as_ref(), "Sonnet weekly"))
             .or_else(|| window_from_payload(response.seven_day_opus.as_ref(), "Opus weekly"))
     } else {
         None
@@ -77,7 +70,10 @@ pub fn snapshot_from_usage_response(
     ))
 }
 
-fn window_from_payload(payload: Option<&UsageWindowPayload>, label: &'static str) -> Option<UsageWindow> {
+fn window_from_payload(
+    payload: Option<&UsageWindowPayload>,
+    label: &'static str,
+) -> Option<UsageWindow> {
     let payload = payload?;
     let used = payload.utilization?;
     Some(UsageWindow::new(
@@ -120,10 +116,7 @@ mod tests {
                 .expect("snapshot");
 
         assert_eq!(snapshot.primary.used_percent, 9.0);
-        assert_eq!(
-            snapshot.secondary.expect("weekly").used_percent,
-            22.0
-        );
+        assert_eq!(snapshot.secondary.expect("weekly").used_percent, 22.0);
     }
 
     #[test]

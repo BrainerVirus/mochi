@@ -166,7 +166,7 @@ const CURSOR: ProviderDefinition = ProviderDefinition {
     settings_fields: &[COOKIE_SOURCE, MANUAL_COOKIE],
     status_url: Some("https://status.cursor.com"),
     supports_cost: false,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Partial,
 };
 
 const GEMINI: ProviderDefinition = ProviderDefinition {
@@ -202,7 +202,7 @@ const COPILOT: ProviderDefinition = ProviderDefinition {
     }],
     status_url: Some("https://www.githubstatus.com"),
     supports_cost: false,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Partial,
 };
 
 const ANTIGRAVITY: ProviderDefinition = ProviderDefinition {

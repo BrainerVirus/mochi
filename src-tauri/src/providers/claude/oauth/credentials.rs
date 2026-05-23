@@ -39,7 +39,11 @@ pub fn claude_credentials_path() -> PathBuf {
 
     std::env::var_os("HOME")
         .or_else(|| std::env::var_os("USERPROFILE"))
-        .map(|home| PathBuf::from(home).join(".claude").join(".credentials.json"))
+        .map(|home| {
+            PathBuf::from(home)
+                .join(".claude")
+                .join(".credentials.json")
+        })
         .unwrap_or_else(|| PathBuf::from(".claude/.credentials.json"))
 }
 
@@ -94,9 +98,7 @@ pub fn parse_credentials(data: &str) -> ProviderResult<ClaudeOAuthCredentials> {
     let expires_at = oauth
         .get("expiresAt")
         .and_then(|value| value.as_f64())
-        .and_then(|millis| {
-            OffsetDateTime::from_unix_timestamp((millis / 1000.0) as i64).ok()
-        });
+        .and_then(|millis| OffsetDateTime::from_unix_timestamp((millis / 1000.0) as i64).ok());
 
     let scopes = oauth
         .get("scopes")

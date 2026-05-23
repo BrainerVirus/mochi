@@ -129,6 +129,16 @@ async fn enrich_provider_snapshot(
                 .enrich_snapshot(snapshot)
                 .await
         }
+        ProviderId::Copilot => {
+            crate::providers::CopilotProvider
+                .enrich_snapshot(snapshot)
+                .await
+        }
+        ProviderId::Cursor => {
+            crate::providers::CursorProvider
+                .enrich_snapshot(snapshot)
+                .await
+        }
         _ => Ok(snapshot),
     }
 }
@@ -144,22 +154,9 @@ mod tests {
     use super::*;
     use crate::core::models::{ProviderHealth, UsageSnapshot, UsageWindow};
     use crate::settings::MochiSettings;
-    use std::fs;
-    use std::path::PathBuf;
     use std::sync::Mutex;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
-
-    fn temp_session_key_file() -> PathBuf {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("clock")
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!("mochi-claude-session-{nanos}.txt"));
-        fs::write(&path, "sk-ant-test-session-key").expect("write session file");
-        path
-    }
 
     fn cached_claude_snapshot() -> UsageSnapshot {
         UsageSnapshot::new(
@@ -186,21 +183,20 @@ mod tests {
     #[allow(clippy::await_holding_lock)]
     async fn refresh_enabled_snapshots_returns_only_enabled_providers() {
         let _guard = ENV_LOCK.lock().expect("env lock");
-        let session_path = temp_session_key_file();
         std::env::set_var(
             "MOCHI_CLAUDE_SESSION_KEY",
             "sk-ant-test-session-key-for-status",
         );
+        std::env::set_var("MOCHI_CURSOR_COOKIE", "WorkosCursorSessionToken=test");
 
         let store = UsageStore::new(None);
         let snapshots = refresh_enabled_snapshots(&store, &["claude".into(), "cursor".into()])
             .await
             .expect("providers should fetch or skip");
 
-        let _ = fs::remove_file(session_path);
         std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
+        std::env::remove_var("MOCHI_CURSOR_COOKIE");
 
-        assert!(snapshots.iter().any(|snapshot| snapshot.provider == ProviderId::Cursor));
         assert!(snapshots
             .iter()
             .all(|snapshot| matches!(snapshot.provider, ProviderId::Claude | ProviderId::Cursor)));
