@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const traySegmentItemClassName = cn(
   "relative z-10 inline-flex h-full min-w-[4.75rem] max-w-[7.5rem] shrink-0 flex-none cursor-pointer flex-row items-center justify-center gap-1.5 rounded-none border-0 px-3 shadow-none",
   "bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground",
-  "data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=on]:shadow-none",
+  "data-[state=on]:bg-transparent data-[state=on]:font-semibold data-[state=on]:text-foreground data-[state=on]:shadow-none",
   "first:rounded-none last:rounded-none",
 );
 

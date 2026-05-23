@@ -49,21 +49,24 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
       ref={trackRef}
       className={cn(
         TRAY_SEGMENT_ROW_HEIGHT,
-        "relative isolate w-max min-w-full rounded-lg bg-muted/40 p-0.5",
+        "relative isolate w-max min-w-full rounded-lg bg-[var(--tray-segment-track)] p-0.5",
       )}
     >
       <div
         ref={hoverIndicatorRef}
         data-segment-hover-indicator
         aria-hidden
-        className={cn(indicatorLayerClassName, "z-[1] bg-background/25 invisible")}
+        className={cn(indicatorLayerClassName, "z-[1] invisible bg-[var(--tray-segment-hover)]")}
         style={{ width: 0 }}
       />
       <div
         ref={activeIndicatorRef}
         data-segment-indicator
         aria-hidden
-        className={cn(indicatorLayerClassName, "z-[2] bg-background invisible shadow-sm")}
+        className={cn(
+          indicatorLayerClassName,
+          "z-[2] invisible bg-[var(--tray-segment-active)] shadow-sm ring-1 ring-[var(--tray-panel-stroke)]",
+        )}
         style={{ width: 0 }}
       />
 

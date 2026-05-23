@@ -54,7 +54,8 @@ describe("trayPanelLayout", () => {
     expect(shell).toContain("h-full");
     expect(shell).toContain("flex-1");
     expect(shell).not.toContain("h-auto");
-    expect(shell).not.toContain("bg-background");
+    expect(shell).not.toContain("ring-1");
+    expect(shell).not.toContain("shadow-sm");
     expect(shell).toContain("tray-panel");
     expect(shell).toContain("pt-3");
   });
