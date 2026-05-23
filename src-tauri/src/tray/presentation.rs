@@ -130,6 +130,8 @@ pub fn provider_display_name(provider: ProviderId) -> &'static str {
         ProviderId::Cursor => "Cursor",
         ProviderId::Gemini => "Gemini",
         ProviderId::Copilot => "Copilot",
+        ProviderId::OpenCode => "OpenCode",
+        ProviderId::OpenCodeGo => "OpenCode Go",
         ProviderId::Antigravity => "Antigravity",
         ProviderId::Factory => "Factory",
         ProviderId::Zai => "Z.ai",

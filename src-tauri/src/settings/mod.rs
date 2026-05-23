@@ -102,6 +102,8 @@ impl Default for MochiSettings {
                 "cursor".into(),
                 "gemini".into(),
                 "copilot".into(),
+                "opencode".into(),
+                "opencode-go".into(),
                 "antigravity".into(),
                 "factory".into(),
                 "zai".into(),

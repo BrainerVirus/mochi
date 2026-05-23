@@ -168,6 +168,18 @@ fn provider_svg(provider: ProviderId) -> &'static str {
                 "/../src/assets/providers/copilot.svg"
             ))
         }
+        ProviderId::OpenCode => {
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/opencode.svg"
+            ))
+        }
+        ProviderId::OpenCodeGo => {
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../src/assets/providers/opencode-go.svg"
+            ))
+        }
         ProviderId::Antigravity => include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../src/assets/providers/antigravity.svg"

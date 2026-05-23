@@ -14,6 +14,7 @@ function snapshot(usedPercent: number): UsageSnapshot {
       resets_at: null,
     },
     secondary: null,
+    extra_windows: [],
     updated_at: "1970-01-01T00:00:00Z",
     source: "test",
     health: "ok",

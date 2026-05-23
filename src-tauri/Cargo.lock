@@ -2544,6 +2544,7 @@ dependencies = [
  "cbc",
  "clap",
  "pbkdf2",
+ "regex",
  "reqwest 0.12.28",
  "resvg",
  "rusqlite",

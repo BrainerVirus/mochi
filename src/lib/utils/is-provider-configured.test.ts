@@ -18,6 +18,7 @@ function snapshot(overrides: Partial<UsageSnapshot> = {}): UsageSnapshot {
       resets_at: "2026-05-21T18:00:00Z",
     },
     secondary: null,
+    extra_windows: [],
     updated_at: "2026-05-21T12:00:00Z",
     source: "codex-cli",
     health: "ok",

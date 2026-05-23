@@ -8,6 +8,8 @@ pub enum ProviderId {
     Cursor,
     Gemini,
     Copilot,
+    OpenCode,
+    OpenCodeGo,
     Antigravity,
     Factory,
     Zai,
@@ -16,12 +18,14 @@ pub enum ProviderId {
 }
 
 impl ProviderId {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 12] = [
         Self::Codex,
         Self::Claude,
         Self::Cursor,
         Self::Gemini,
         Self::Copilot,
+        Self::OpenCode,
+        Self::OpenCodeGo,
         Self::Antigravity,
         Self::Factory,
         Self::Zai,
@@ -40,6 +44,8 @@ impl ProviderId {
             "cursor" => Some(Self::Cursor),
             "gemini" => Some(Self::Gemini),
             "copilot" => Some(Self::Copilot),
+            "opencode" => Some(Self::OpenCode),
+            "opencode-go" => Some(Self::OpenCodeGo),
             "antigravity" => Some(Self::Antigravity),
             "factory" => Some(Self::Factory),
             "zai" => Some(Self::Zai),
@@ -56,6 +62,8 @@ impl ProviderId {
             Self::Cursor => "cursor",
             Self::Gemini => "gemini",
             Self::Copilot => "copilot",
+            Self::OpenCode => "opencode",
+            Self::OpenCodeGo => "opencode-go",
             Self::Antigravity => "antigravity",
             Self::Factory => "factory",
             Self::Zai => "zai",
@@ -125,6 +133,36 @@ pub struct FetchAttempt {
     pub attempted_at: String,
 }
 
+/// Provider-specific spend/budget (e.g. Cursor on-demand, OpenCode Go Zen balance).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderCostSnapshot {
+    pub used: f64,
+    pub limit: f64,
+    pub currency_code: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub period: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resets_at: Option<String>,
+}
+
+impl ProviderCostSnapshot {
+    pub fn new(
+        used: f64,
+        limit: f64,
+        currency_code: impl Into<String>,
+        period: Option<String>,
+        resets_at: Option<String>,
+    ) -> Self {
+        Self {
+            used,
+            limit,
+            currency_code: currency_code.into(),
+            period,
+            resets_at,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UsageWindow {
     pub label: String,
@@ -150,6 +188,12 @@ pub struct UsageSnapshot {
     pub provider: ProviderId,
     pub primary: UsageWindow,
     pub secondary: Option<UsageWindow>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tertiary: Option<UsageWindow>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub extra_windows: Vec<UsageWindow>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_cost: Option<ProviderCostSnapshot>,
     pub updated_at: String,
     pub source: String,
     #[serde(default)]
@@ -178,6 +222,9 @@ impl UsageSnapshot {
             provider,
             primary,
             secondary,
+            tertiary: None,
+            extra_windows: Vec::new(),
+            provider_cost: None,
             updated_at: updated_at.into(),
             source: source.into(),
             health: ProviderHealth::Ok,
@@ -187,6 +234,36 @@ impl UsageSnapshot {
             provider_status: None,
             session_cost: None,
         }
+    }
+
+    pub fn with_tertiary(mut self, window: UsageWindow) -> Self {
+        self.tertiary = Some(window);
+        self
+    }
+
+    pub fn with_extra_windows(mut self, windows: Vec<UsageWindow>) -> Self {
+        self.extra_windows = windows;
+        self
+    }
+
+    pub fn with_provider_cost(mut self, cost: ProviderCostSnapshot) -> Self {
+        self.provider_cost = Some(cost);
+        self
+    }
+
+    /// Ordered rate-limit windows for UI rendering (primary → secondary → tertiary → extras).
+    pub fn rate_windows(&self) -> Vec<&UsageWindow> {
+        let mut windows = vec![&self.primary];
+        if let Some(secondary) = &self.secondary {
+            windows.push(secondary);
+        }
+        if let Some(tertiary) = &self.tertiary {
+            windows.push(tertiary);
+        }
+        for window in &self.extra_windows {
+            windows.push(window);
+        }
+        windows
     }
 
     pub fn with_health(mut self, health: ProviderHealth) -> Self {

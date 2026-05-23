@@ -27,6 +27,14 @@ export const PROVIDER_EXTERNAL_LINKS: Record<ProviderId, ProviderExternalLinks> 
     dashboardUrl: "https://github.com/settings/copilot",
     statusPageUrl: "https://www.githubstatus.com/",
   },
+  opencode: {
+    dashboardUrl: "https://opencode.ai",
+    statusPageUrl: null,
+  },
+  "opencode-go": {
+    dashboardUrl: "https://opencode.ai",
+    statusPageUrl: null,
+  },
   antigravity: {
     dashboardUrl: null,
     statusPageUrl: null,

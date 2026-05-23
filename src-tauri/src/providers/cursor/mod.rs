@@ -25,7 +25,7 @@ impl Provider for CursorProvider {
             id: ProviderId::Cursor,
             display_name: "Cursor".to_string(),
             supports_status: true,
-            supports_cost: false,
+            supports_cost: true,
         }
     }
 
@@ -81,6 +81,6 @@ mod tests {
         let metadata = CursorProvider.metadata();
         assert_eq!(metadata.id, ProviderId::Cursor);
         assert!(metadata.supports_status);
-        assert!(!metadata.supports_cost);
+        assert!(metadata.supports_cost);
     }
 }

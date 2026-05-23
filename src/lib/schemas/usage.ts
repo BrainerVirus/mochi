@@ -6,6 +6,8 @@ export const ProviderIdSchema = z.enum([
   "cursor",
   "gemini",
   "copilot",
+  "opencode",
+  "opencode-go",
   "antigravity",
   "factory",
   "zai",
@@ -14,6 +16,16 @@ export const ProviderIdSchema = z.enum([
 ]);
 
 export type ProviderId = z.infer<typeof ProviderIdSchema>;
+
+export const ProviderCostSnapshotSchema = z.object({
+  used: z.number(),
+  limit: z.number(),
+  currency_code: z.string(),
+  period: z.string().nullable().optional(),
+  resets_at: z.string().nullable().optional(),
+});
+
+export type ProviderCostSnapshot = z.infer<typeof ProviderCostSnapshotSchema>;
 
 export const UsageWindowSchema = z.object({
   label: z.string(),
@@ -71,6 +83,9 @@ export const UsageSnapshotSchema = z.object({
   provider: ProviderIdSchema,
   primary: UsageWindowSchema,
   secondary: UsageWindowSchema.nullable(),
+  tertiary: UsageWindowSchema.nullable().optional(),
+  extra_windows: z.array(UsageWindowSchema).default([]),
+  provider_cost: ProviderCostSnapshotSchema.nullable().optional(),
   updated_at: z.string(),
   source: z.string(),
   health: ProviderHealthSchema.default("ok"),
@@ -82,6 +97,15 @@ export const UsageSnapshotSchema = z.object({
 });
 
 export type UsageSnapshot = z.infer<typeof UsageSnapshotSchema>;
+
+export function rateWindows(snapshot: UsageSnapshot): UsageWindow[] {
+  return [
+    snapshot.primary,
+    ...(snapshot.secondary ? [snapshot.secondary] : []),
+    ...(snapshot.tertiary ? [snapshot.tertiary] : []),
+    ...snapshot.extra_windows,
+  ];
+}
 
 export const UsageSnapshotsSchema = z.array(UsageSnapshotSchema);
 

@@ -19,6 +19,7 @@ function snapshot(
       resets_at: null,
     },
     secondary: null,
+    extra_windows: [],
     updated_at: configured ? "2026-05-21T12:00:00Z" : STATIC_SNAPSHOT_EPOCH,
     source: configured ? "codex-cli" : "Claude",
     health: "ok",

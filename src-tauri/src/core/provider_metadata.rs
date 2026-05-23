@@ -165,7 +165,7 @@ const CURSOR: ProviderDefinition = ProviderDefinition {
     auth_requirements: &[AuthRequirement::BrowserCookies],
     settings_fields: &[COOKIE_SOURCE, MANUAL_COOKIE],
     status_url: Some("https://status.cursor.com"),
-    supports_cost: false,
+    supports_cost: true,
     implementation_status: ImplementationStatus::Partial,
 };
 
@@ -202,6 +202,46 @@ const COPILOT: ProviderDefinition = ProviderDefinition {
     }],
     status_url: Some("https://www.githubstatus.com"),
     supports_cost: false,
+    implementation_status: ImplementationStatus::Partial,
+};
+
+const OPENCODE: ProviderDefinition = ProviderDefinition {
+    id: ProviderId::OpenCode,
+    codexbar_id: "opencode",
+    display_name: "OpenCode",
+    strategies: &[StrategyDefinition {
+        id: "opencode-web",
+        kind: FetchKind::BrowserCookies,
+        label: "Web dashboard",
+    }],
+    auth_requirements: &[AuthRequirement::BrowserCookies],
+    settings_fields: &[COOKIE_SOURCE, MANUAL_COOKIE],
+    status_url: None,
+    supports_cost: false,
+    implementation_status: ImplementationStatus::Partial,
+};
+
+const OPENCODE_GO: ProviderDefinition = ProviderDefinition {
+    id: ProviderId::OpenCodeGo,
+    codexbar_id: "opencodego",
+    display_name: "OpenCode Go",
+    strategies: &[StrategyDefinition {
+        id: "opencode-go-web",
+        kind: FetchKind::BrowserCookies,
+        label: "Web dashboard",
+    }],
+    auth_requirements: &[AuthRequirement::BrowserCookies],
+    settings_fields: &[
+        COOKIE_SOURCE,
+        MANUAL_COOKIE,
+        SettingsFieldDefinition {
+            key: "token_account",
+            label: "Workspace ID",
+            kind: SettingsFieldKind::TokenAccount,
+        },
+    ],
+    status_url: None,
+    supports_cost: true,
     implementation_status: ImplementationStatus::Partial,
 };
 
@@ -310,12 +350,14 @@ const AUGMENT: ProviderDefinition = ProviderDefinition {
     implementation_status: ImplementationStatus::Stub,
 };
 
-const REGISTRY: [ProviderDefinition; 10] = [
+const REGISTRY: [ProviderDefinition; 12] = [
     CODEX,
     CLAUDE,
     CURSOR,
     GEMINI,
     COPILOT,
+    OPENCODE,
+    OPENCODE_GO,
     ANTIGRAVITY,
     FACTORY,
     ZAI,
