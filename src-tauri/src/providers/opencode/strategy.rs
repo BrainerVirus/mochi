@@ -41,8 +41,8 @@ impl FetchStrategy for WebStrategy {
     }
 
     async fn fetch(&self, ctx: &FetchContext) -> ProviderResult<UsageSnapshot> {
-        let session = resolve_session(ctx.config(self.provider))?
-            .ok_or(ProviderError::NotConfigured)?;
+        let session =
+            resolve_session(ctx.config(self.provider))?.ok_or(ProviderError::NotConfigured)?;
 
         self.client
             .fetch_usage(

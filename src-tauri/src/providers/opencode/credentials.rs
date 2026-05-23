@@ -16,7 +16,9 @@ pub struct ResolvedOpenCodeSession {
     pub workspace_id: Option<String>,
 }
 
-pub fn resolve_session(config: Option<&ProviderConfig>) -> ProviderResult<Option<ResolvedOpenCodeSession>> {
+pub fn resolve_session(
+    config: Option<&ProviderConfig>,
+) -> ProviderResult<Option<ResolvedOpenCodeSession>> {
     if config.is_some_and(ProviderConfig::cookie_source_is_off) {
         return Ok(None);
     }
@@ -87,10 +89,7 @@ pub fn normalize_workspace_id(raw: &str) -> Option<String> {
 }
 
 fn normalize_cookie_header(raw: &str) -> String {
-    raw.trim()
-        .trim_start_matches("Cookie:")
-        .trim()
-        .to_string()
+    raw.trim().trim_start_matches("Cookie:").trim().to_string()
 }
 
 fn user_home_dir() -> Option<std::path::PathBuf> {

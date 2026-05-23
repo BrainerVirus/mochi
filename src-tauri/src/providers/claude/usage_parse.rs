@@ -69,13 +69,8 @@ pub fn snapshot_from_usage_response(
             .or_else(|| window_from_payload(response.seven_day_opus.as_ref(), "Opus weekly"))
     };
 
-    let mut snapshot = UsageSnapshot::new(
-        ProviderId::Claude,
-        primary,
-        secondary,
-        updated_at,
-        source,
-    );
+    let mut snapshot =
+        UsageSnapshot::new(ProviderId::Claude, primary, secondary, updated_at, source);
 
     if let Some(tertiary) = tertiary.filter(|window| {
         snapshot

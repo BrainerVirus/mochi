@@ -38,12 +38,18 @@ pub fn parse_subscription(text: &str, now: &str) -> ProviderResult<OpenCodeUsage
         }
     }
 
-    let rolling_percent = extract_f64(r"rollingUsage[^}]*?usagePercent\s*:\s*([0-9]+(?:\.[0-9]+)?)", text)
-        .ok_or_else(|| ProviderError::Parse("opencode missing rolling usagePercent".into()))?;
+    let rolling_percent = extract_f64(
+        r"rollingUsage[^}]*?usagePercent\s*:\s*([0-9]+(?:\.[0-9]+)?)",
+        text,
+    )
+    .ok_or_else(|| ProviderError::Parse("opencode missing rolling usagePercent".into()))?;
     let rolling_reset = extract_i64(r"rollingUsage[^}]*?resetInSec\s*:\s*([0-9]+)", text)
         .ok_or_else(|| ProviderError::Parse("opencode missing rolling resetInSec".into()))?;
-    let weekly_percent = extract_f64(r"weeklyUsage[^}]*?usagePercent\s*:\s*([0-9]+(?:\.[0-9]+)?)", text)
-        .ok_or_else(|| ProviderError::Parse("opencode missing weekly usagePercent".into()))?;
+    let weekly_percent = extract_f64(
+        r"weeklyUsage[^}]*?usagePercent\s*:\s*([0-9]+(?:\.[0-9]+)?)",
+        text,
+    )
+    .ok_or_else(|| ProviderError::Parse("opencode missing weekly usagePercent".into()))?;
     let weekly_reset = extract_i64(r"weeklyUsage[^}]*?resetInSec\s*:\s*([0-9]+)", text)
         .ok_or_else(|| ProviderError::Parse("opencode missing weekly resetInSec".into()))?;
 
@@ -112,9 +118,36 @@ fn parse_usage_dictionary(value: &Value, now: OffsetDateTime) -> Option<OpenCode
         }
     }
 
-    let rolling = first_object(value, &["rollingUsage", "rolling", "rolling_usage", "rollingWindow", "rolling_window"])?;
-    let weekly = first_object(value, &["weeklyUsage", "weekly", "weekly_usage", "weeklyWindow", "weekly_window"])?;
-    let monthly = first_object(value, &["monthlyUsage", "monthly", "monthly_usage", "monthlyWindow", "monthly_window"]);
+    let rolling = first_object(
+        value,
+        &[
+            "rollingUsage",
+            "rolling",
+            "rolling_usage",
+            "rollingWindow",
+            "rolling_window",
+        ],
+    )?;
+    let weekly = first_object(
+        value,
+        &[
+            "weeklyUsage",
+            "weekly",
+            "weekly_usage",
+            "weeklyWindow",
+            "weekly_window",
+        ],
+    )?;
+    let monthly = first_object(
+        value,
+        &[
+            "monthlyUsage",
+            "monthly",
+            "monthly_usage",
+            "monthlyWindow",
+            "monthly_window",
+        ],
+    );
 
     build_snapshot(rolling, weekly, monthly, now)
 }
@@ -130,9 +163,7 @@ fn build_snapshot(
     let rolling_reset = window_reset_in_sec(rolling, now)?;
     let weekly_reset = window_reset_in_sec(weekly, now)?;
     let (monthly_percent, monthly_reset) = monthly
-        .and_then(|value| {
-            Some((window_percent(value)?, window_reset_in_sec(value, now)?))
-        })
+        .and_then(|value| Some((window_percent(value)?, window_reset_in_sec(value, now)?)))
         .map(|(percent, reset)| (Some(percent), Some(reset)))
         .unwrap_or((None, None));
 
@@ -166,7 +197,11 @@ fn window_percent(value: &Value) -> Option<f32> {
         "usage",
     ] {
         if let Some(number) = json_number(value.get(key)?) {
-            let percent = if number <= 1.0 { number * 100.0 } else { number };
+            let percent = if number <= 1.0 {
+                number * 100.0
+            } else {
+                number
+            };
             return Some(percent.clamp(0.0, 100.0) as f32);
         }
     }
@@ -196,7 +231,14 @@ fn window_reset_in_sec(value: &Value, now: OffsetDateTime) -> Option<i64> {
         }
     }
 
-    for key in ["resetAt", "resetsAt", "reset_at", "resets_at", "nextReset", "next_reset"] {
+    for key in [
+        "resetAt",
+        "resetsAt",
+        "reset_at",
+        "resets_at",
+        "nextReset",
+        "next_reset",
+    ] {
         if let Some(raw) = value.get(key).and_then(|value| value.as_str()) {
             if let Ok(reset_at) = OffsetDateTime::parse(raw, &Rfc3339) {
                 return Some((reset_at - now).whole_seconds().max(0));

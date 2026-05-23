@@ -5,7 +5,9 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE, COOKIE, ORIGIN, REFERER, USER_AGENT};
+use reqwest::header::{
+    HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE, COOKIE, ORIGIN, REFERER, USER_AGENT,
+};
 
 use super::credentials::ResolvedOpenCodeSession;
 use super::usage_parse::{parse_subscription, parse_workspace_ids, snapshot_from_usage};
@@ -15,8 +17,10 @@ use crate::core::provider::{ProviderError, ProviderResult};
 
 const BASE_URL: &str = "https://opencode.ai";
 const SERVER_URL: &str = "https://opencode.ai/_server";
-const WORKSPACES_SERVER_ID: &str = "def39973159c7f0483d8793a822b8dbb10d067e12c65455fcb4608459ba0234f";
-const SUBSCRIPTION_SERVER_ID: &str = "7abeebee372f304e050aaaf92be863f4a86490e382f8c79db68fd94040d691b4";
+const WORKSPACES_SERVER_ID: &str =
+    "def39973159c7f0483d8793a822b8dbb10d067e12c65455fcb4608459ba0234f";
+const SUBSCRIPTION_SERVER_ID: &str =
+    "7abeebee372f304e050aaaf92be863f4a86490e382f8c79db68fd94040d691b4";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[async_trait]
@@ -92,10 +96,7 @@ impl HttpOpenCodeWebClient {
         workspace_id: &str,
     ) -> Option<f64> {
         let url = format!("{BASE_URL}/workspace/{workspace_id}");
-        let text = self
-            .fetch_page_text(&url, cookie_header, &url)
-            .await
-            .ok()?;
+        let text = self.fetch_page_text(&url, cookie_header, &url).await.ok()?;
         parse_zen_balance(&text)
     }
 
@@ -120,11 +121,14 @@ impl HttpOpenCodeWebClient {
         headers.insert(ORIGIN, HeaderValue::from_static(BASE_URL));
         headers.insert(
             REFERER,
-            HeaderValue::from_str(referer).map_err(|error| ProviderError::Fetch(error.to_string()))?,
+            HeaderValue::from_str(referer)
+                .map_err(|error| ProviderError::Fetch(error.to_string()))?,
         );
         headers.insert(
             ACCEPT,
-            HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+            HeaderValue::from_static(
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            ),
         );
 
         let response = self
@@ -155,13 +159,7 @@ impl HttpOpenCodeWebClient {
 impl HttpOpenCodeWebClient {
     async fn fetch_workspace_id(&self, cookie_header: &str) -> ProviderResult<String> {
         let text = self
-            .fetch_server_text(
-                WORKSPACES_SERVER_ID,
-                "GET",
-                None,
-                cookie_header,
-                BASE_URL,
-            )
+            .fetch_server_text(WORKSPACES_SERVER_ID, "GET", None, cookie_header, BASE_URL)
             .await?;
 
         let mut ids = parse_workspace_ids(&text);
@@ -171,9 +169,9 @@ impl HttpOpenCodeWebClient {
             }
         }
 
-        ids.into_iter().next().ok_or_else(|| {
-            ProviderError::Parse("opencode missing workspace id".into())
-        })
+        ids.into_iter()
+            .next()
+            .ok_or_else(|| ProviderError::Parse("opencode missing workspace id".into()))
     }
 
     async fn fetch_subscription(
@@ -200,7 +198,8 @@ impl HttpOpenCodeWebClient {
         cookie_header: &str,
         referer: &str,
     ) -> ProviderResult<String> {
-        let mut url = reqwest::Url::parse(SERVER_URL).map_err(|error| ProviderError::Fetch(error.to_string()))?;
+        let mut url = reqwest::Url::parse(SERVER_URL)
+            .map_err(|error| ProviderError::Fetch(error.to_string()))?;
         {
             let mut query = url.query_pairs_mut();
             query.append_pair("id", server_id);
@@ -213,8 +212,16 @@ impl HttpOpenCodeWebClient {
         }
 
         let mut headers = HeaderMap::new();
-        headers.insert(COOKIE, HeaderValue::from_str(cookie_header).map_err(|error| ProviderError::Fetch(error.to_string()))?);
-        headers.insert("X-Server-Id", HeaderValue::from_str(server_id).map_err(|error| ProviderError::Fetch(error.to_string()))?);
+        headers.insert(
+            COOKIE,
+            HeaderValue::from_str(cookie_header)
+                .map_err(|error| ProviderError::Fetch(error.to_string()))?,
+        );
+        headers.insert(
+            "X-Server-Id",
+            HeaderValue::from_str(server_id)
+                .map_err(|error| ProviderError::Fetch(error.to_string()))?,
+        );
         headers.insert(
             "X-Server-Instance",
             HeaderValue::from_str(&format!(
@@ -233,13 +240,23 @@ impl HttpOpenCodeWebClient {
             ),
         );
         headers.insert(ORIGIN, HeaderValue::from_static(BASE_URL));
-        headers.insert(REFERER, HeaderValue::from_str(referer).map_err(|error| ProviderError::Fetch(error.to_string()))?);
+        headers.insert(
+            REFERER,
+            HeaderValue::from_str(referer)
+                .map_err(|error| ProviderError::Fetch(error.to_string()))?,
+        );
         headers.insert(
             ACCEPT,
             HeaderValue::from_static("text/javascript, application/json;q=0.9, */*;q=0.8"),
         );
 
-        let mut request = self.http.request(reqwest::Method::from_bytes(method.as_bytes()).unwrap_or(reqwest::Method::GET), url).headers(headers);
+        let mut request = self
+            .http
+            .request(
+                reqwest::Method::from_bytes(method.as_bytes()).unwrap_or(reqwest::Method::GET),
+                url,
+            )
+            .headers(headers);
         if method != "GET" {
             if let Some(args) = args {
                 request = request.header(CONTENT_TYPE, "application/json").json(&args);

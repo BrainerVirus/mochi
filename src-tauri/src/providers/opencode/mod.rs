@@ -24,7 +24,10 @@ impl Provider for OpenCodeProvider {
     }
 
     fn strategies(&self) -> Vec<Box<dyn crate::core::provider::FetchStrategy>> {
-        vec![Box::new(WebStrategy::new(ProviderId::OpenCode, "opencode-web"))]
+        vec![Box::new(WebStrategy::new(
+            ProviderId::OpenCode,
+            "opencode-web",
+        ))]
     }
 }
 

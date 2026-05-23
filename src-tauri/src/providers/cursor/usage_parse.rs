@@ -78,7 +78,8 @@ pub fn snapshot_from_usage_summary(
     );
 
     if let Some(api_percent) = api_percent {
-        snapshot = snapshot.with_tertiary(UsageWindow::new("API", api_percent, billing_reset.clone()));
+        snapshot =
+            snapshot.with_tertiary(UsageWindow::new("API", api_percent, billing_reset.clone()));
     }
 
     if let Some(cost) = provider_cost(summary, billing_reset) {
@@ -88,7 +89,10 @@ pub fn snapshot_from_usage_summary(
     Ok(snapshot)
 }
 
-fn provider_cost(summary: &CursorUsageSummary, billing_reset: Option<String>) -> Option<ProviderCostSnapshot> {
+fn provider_cost(
+    summary: &CursorUsageSummary,
+    billing_reset: Option<String>,
+) -> Option<ProviderCostSnapshot> {
     let on_demand = summary.individual_usage.as_ref()?.on_demand.as_ref()?;
     let used_cents = on_demand.used.unwrap_or(0) as f64;
     let limit_cents = on_demand.limit.map(|value| value as f64);
@@ -114,9 +118,7 @@ fn plan_percent_used(summary: &CursorUsageSummary) -> f32 {
         .as_ref()
         .and_then(|usage| usage.plan.as_ref());
 
-    if let Some(total) = plan
-        .and_then(|plan| normalize_percent(plan.total_percent_used))
-    {
+    if let Some(total) = plan.and_then(|plan| normalize_percent(plan.total_percent_used)) {
         return total;
     }
 
@@ -228,8 +230,8 @@ mod tests {
             team_usage: None,
         };
 
-        let snapshot =
-            snapshot_from_usage_summary(&summary, "2026-05-22T12:00:00Z", "cursor-web").expect("snapshot");
+        let snapshot = snapshot_from_usage_summary(&summary, "2026-05-22T12:00:00Z", "cursor-web")
+            .expect("snapshot");
 
         assert_eq!(snapshot.primary.label, "Total");
         assert!((snapshot.primary.used_percent - 0.441_025_64).abs() < 1e-6);
@@ -295,8 +297,8 @@ mod tests {
             team_usage: None,
         };
 
-        let snapshot =
-            snapshot_from_usage_summary(&summary, "2026-05-22T12:00:00Z", "cursor-web").expect("snapshot");
+        let snapshot = snapshot_from_usage_summary(&summary, "2026-05-22T12:00:00Z", "cursor-web")
+            .expect("snapshot");
         let cost = snapshot.provider_cost.expect("budget");
         assert_eq!(cost.used, 0.0);
         assert_eq!(cost.limit, 75.0);

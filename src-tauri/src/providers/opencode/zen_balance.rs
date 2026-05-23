@@ -25,7 +25,8 @@ pub fn parse_zen_balance(text: &str) -> Option<f64> {
             .and_then(|value| parse_amount(value.as_str()));
     }
 
-    let nearby = Regex::new(r"(?i)(?:balance|残高)[\s\S]{0,120}?\$\s*([0-9][0-9,]*(?:\.[0-9]+)?)").ok()?;
+    let nearby =
+        Regex::new(r"(?i)(?:balance|残高)[\s\S]{0,120}?\$\s*([0-9][0-9,]*(?:\.[0-9]+)?)").ok()?;
     nearby
         .captures(text)
         .and_then(|capture| capture.get(1))
@@ -93,10 +94,7 @@ fn json_amount(value: &Value) -> Option<f64> {
 }
 
 fn parse_amount(raw: &str) -> Option<f64> {
-    raw.trim()
-        .replace(',', "")
-        .parse()
-        .ok()
+    raw.trim().replace(',', "").parse().ok()
 }
 
 #[cfg(test)]
