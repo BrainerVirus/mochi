@@ -1,0 +1,28 @@
+{
+  "billingCycleStart": "2025-01-01T00:00:00.000Z",
+  "billingCycleEnd": "2025-02-01T00:00:00.000Z",
+  "membershipType": "pro",
+  "individualUsage": {
+    "plan": {
+      "enabled": true,
+      "used": 1500,
+      "limit": 5000,
+      "remaining": 3500,
+      "totalPercentUsed": 30.0
+    },
+    "onDemand": {
+      "enabled": true,
+      "used": 500,
+      "limit": 10000,
+      "remaining": 9500
+    }
+  },
+  "teamUsage": {
+    "onDemand": {
+      "enabled": true,
+      "used": 2000,
+      "limit": 50000,
+      "remaining": 48000
+    }
+  }
+}

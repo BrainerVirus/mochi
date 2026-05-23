@@ -55,14 +55,13 @@ impl ProviderEnrichment for CodexProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc;
 
     use crate::core::models::UsageWindow;
     use crate::core::provider::{FetchContext, FetchStrategy};
+    use crate::core::test_env;
     use crate::providers::codex::cookies::BrowserCookiesStrategy;
     use crate::providers::codex::cookies::CodexWebDashboardClient;
-
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn strategies_prefer_oauth_before_cli_rpc_and_cookies() {
@@ -108,7 +107,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn browser_cookie_strategy_parses_dashboard_fixture() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         let path = std::env::temp_dir().join(format!(
             "mochi-codex-cookie-{}",
             std::time::SystemTime::now()

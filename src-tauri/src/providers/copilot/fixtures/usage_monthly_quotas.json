@@ -1,0 +1,11 @@
+{
+  "copilot_plan": "business",
+  "monthly_quotas": {
+    "chat": 500,
+    "completions": 300
+  },
+  "limited_user_quotas": {
+    "chat": 125,
+    "completions": 60
+  }
+}

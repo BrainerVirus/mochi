@@ -1,0 +1,9 @@
+{
+  "membershipType": "hobby",
+  "individualUsage": {
+    "plan": {
+      "used": 0,
+      "limit": 2000
+    }
+  }
+}

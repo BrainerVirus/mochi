@@ -69,10 +69,9 @@ impl FetchStrategy for BrowserCookiesStrategy {
 mod tests {
     use super::super::client::CodexWebDashboardClient;
     use super::*;
+    use crate::core::test_env;
     use async_trait::async_trait;
-    use std::sync::{Arc, Mutex};
-
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
+    use std::sync::Arc;
 
     struct MockDashboardClient {
         html: ProviderResult<String>,
@@ -95,7 +94,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn is_available_when_manual_cookie_configured() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         let path = std::env::temp_dir().join(format!(
             "mochi-codex-cookie-{}",
             std::time::SystemTime::now()
@@ -123,7 +122,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn fetch_reports_not_configured_without_cookie() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         std::env::remove_var("MOCHI_CODEX_COOKIE");
         std::env::remove_var("MOCHI_CODEX_COOKIE_FILE");
         let strategy = BrowserCookiesStrategy::new();
@@ -139,7 +138,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn browser_cookie_fetch_can_fallback_on_auth_errors() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         let path = std::env::temp_dir().join(format!(
             "mochi-codex-cookie-{}",
             std::time::SystemTime::now()
