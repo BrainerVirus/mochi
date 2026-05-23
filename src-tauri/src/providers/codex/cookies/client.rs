@@ -84,12 +84,9 @@ pub async fn fetch_snapshot_with_client(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::test_env;
     use async_trait::async_trait;
-    use std::sync::Mutex;
-
     use crate::core::usage_store::current_timestamp;
-
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     struct MockDashboardClient {
         html: ProviderResult<String>,
@@ -112,7 +109,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn fetch_snapshot_parses_dashboard_fixture() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         let path = std::env::temp_dir().join(format!(
             "mochi-codex-cookie-{}",
             std::time::SystemTime::now()

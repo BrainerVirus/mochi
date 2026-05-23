@@ -67,10 +67,8 @@ mod tests {
     use super::super::client::CursorWebClient;
     use super::super::usage_parse::CursorUsageSummary;
     use super::*;
+    use crate::core::test_env;
     use async_trait::async_trait;
-    use std::sync::Mutex;
-
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     struct MockCursorWebClient {
         summary: ProviderResult<CursorUsageSummary>,
@@ -100,7 +98,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn web_strategy_returns_snapshot_with_cookie() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         let path = std::env::temp_dir().join(format!(
             "mochi-cursor-cookie-{}",
             std::time::SystemTime::now()
@@ -132,7 +130,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn web_strategy_unavailable_without_cookie() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         std::env::remove_var("MOCHI_CURSOR_COOKIE");
         std::env::remove_var("MOCHI_CURSOR_COOKIE_FILE");
 

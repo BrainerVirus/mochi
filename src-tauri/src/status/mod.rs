@@ -153,10 +153,8 @@ fn find_provider(provider_id: ProviderId) -> Option<std::sync::Arc<dyn Provider>
 mod tests {
     use super::*;
     use crate::core::models::{ProviderHealth, UsageSnapshot, UsageWindow};
+    use crate::core::test_env;
     use crate::settings::MochiSettings;
-    use std::sync::Mutex;
-
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     fn cached_claude_snapshot() -> UsageSnapshot {
         UsageSnapshot::new(
@@ -182,7 +180,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn refresh_enabled_snapshots_returns_only_enabled_providers() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         std::env::set_var(
             "MOCHI_CLAUDE_SESSION_KEY",
             "sk-ant-test-session-key-for-status",
@@ -215,7 +213,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn refresh_enabled_snapshots_populates_cache_for_get() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         std::env::set_var(
             "MOCHI_CLAUDE_SESSION_KEY",
             "sk-ant-test-session-key-for-cache",
@@ -267,7 +265,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn refresh_provider_returns_snapshot_for_known_provider() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = test_env::LOCK.lock().expect("env lock");
         std::env::set_var(
             "MOCHI_CLAUDE_SESSION_KEY",
             "sk-ant-test-session-key-for-refresh",
