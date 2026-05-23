@@ -12,7 +12,7 @@ use tauri::{
 use crate::core::models::UsageSnapshot;
 use crate::core::usage_store::UsageStore;
 use crate::settings::SettingsState;
-use crate::status;
+use crate::status::read_cached_snapshots;
 
 pub use panel::{
     maybe_show_main_for_dev, open_app_window, open_tray_panel, record_tray_icon_event,
@@ -57,9 +57,7 @@ pub async fn sync_tray_usage(
     selection: Option<String>,
 ) -> Result<(), String> {
     let settings = settings_state.current()?;
-    let snapshots = status::refresh_enabled_snapshots(&usage_store, &settings)
-        .await
-        .map_err(|error| error.to_string())?;
+    let snapshots = read_cached_snapshots(&usage_store, &settings);
 
     let tray_selection = TraySelection::parse(selection.as_deref());
     apply_tray_usage(&app, &snapshots, tray_selection)
@@ -156,7 +154,7 @@ mod tests {
             ProviderId::Claude,
             UsageWindow::new("Session", used_percent, None),
             None,
-            "1970-01-01T00:00:00Z",
+            "2026-05-20T12:00:00Z",
             "test",
         )
     }

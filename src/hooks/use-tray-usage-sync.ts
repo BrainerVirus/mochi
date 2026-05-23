@@ -8,6 +8,11 @@ export function useTrayUsageSync() {
   const { data, isSuccess } = useUsageData();
   const selectedTab = useTrayUiStore((state) => state.selectedTab);
 
+  // Tab changes and tray open: update menu bar from Rust cache immediately (no live fetch).
+  useEffect(() => {
+    void syncTrayUsage(selectedTab);
+  }, [selectedTab]);
+
   useEffect(() => {
     if (!isSuccess) {
       return;

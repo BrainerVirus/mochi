@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
 import { useTrayPanelRefresh } from "@/hooks/use-tray-panel-refresh";
@@ -29,6 +29,10 @@ export function useTrayPanelState() {
 
   const snapshots = filterSnapshotsForTrayPanel(data ?? [], enabledProviders);
   const tabs = buildTrayPanelTabs(data ?? [], enabledProviders);
+
+  useEffect(() => {
+    void syncTrayUsage(selectedTab);
+  }, [selectedTab]);
 
   function handleTabChange(value: string) {
     const nextTab = parseTrayTabChange(value);

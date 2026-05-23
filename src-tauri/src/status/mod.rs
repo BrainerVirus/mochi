@@ -1,4 +1,4 @@
-use crate::core::models::{ProviderId, UsageSnapshot, UsageWindow};
+use crate::core::models::{ProviderHealth, ProviderId, UsageSnapshot, UsageWindow};
 use crate::core::provider::{
     FetchContext, Provider, ProviderEnrichment, ProviderError, ProviderResult,
 };
@@ -47,6 +47,32 @@ pub async fn refresh_provider(
             }
         }
     }
+}
+
+/// Matches frontend `isProviderConfigured` — real fetch, credential pending, or stale/error cache.
+pub fn is_snapshot_configured(snapshot: &UsageSnapshot) -> bool {
+    const STATIC_SNAPSHOT_EPOCH: &str = "1970-01-01T00:00:00Z";
+
+    if snapshot.updated_at == STATIC_SNAPSHOT_EPOCH {
+        return false;
+    }
+
+    if snapshot.source == "credentials-detected" {
+        return true;
+    }
+
+    matches!(
+        snapshot.health,
+        ProviderHealth::Ok | ProviderHealth::Stale | ProviderHealth::Error
+    )
+}
+
+pub fn filter_configured_snapshots(snapshots: &[UsageSnapshot]) -> Vec<UsageSnapshot> {
+    snapshots
+        .iter()
+        .filter(|snapshot| is_snapshot_configured(snapshot))
+        .cloned()
+        .collect()
 }
 
 pub fn read_cached_snapshots(store: &UsageStore, settings: &MochiSettings) -> Vec<UsageSnapshot> {
@@ -219,6 +245,28 @@ mod tests {
             "2026-05-20T12:00:00Z",
             "cached",
         )
+    }
+
+    #[test]
+    fn filter_configured_snapshots_excludes_static_placeholders() {
+        let configured = UsageSnapshot::new(
+            ProviderId::Codex,
+            UsageWindow::new("Session", 40.0, None),
+            None,
+            "2026-05-20T12:00:00Z",
+            "codex-cli",
+        );
+        let static_placeholder = UsageSnapshot::new(
+            ProviderId::Cursor,
+            UsageWindow::new("Session", 0.0, None),
+            None,
+            "1970-01-01T00:00:00Z",
+            "Claude",
+        );
+
+        let filtered = filter_configured_snapshots(&[configured, static_placeholder]);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].provider, ProviderId::Codex);
     }
 
     #[test]
