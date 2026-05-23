@@ -4,7 +4,9 @@ interface AppWindowShellProps {
   children: ReactNode;
 }
 
-/** Cream Mochi shell for dedicated Tauri windows (settings, about). */
+/** Native-adjacent shell for dedicated Tauri windows (settings, about). */
 export function AppWindowShell({ children }: AppWindowShellProps) {
-  return <div className="bg-background text-foreground min-h-svh w-full">{children}</div>;
+  return (
+    <div className="app-window bg-background text-foreground min-h-svh w-full">{children}</div>
+  );
 }

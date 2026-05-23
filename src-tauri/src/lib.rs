@@ -32,6 +32,19 @@ fn app_version() -> &'static str {
 }
 
 #[tauri::command]
+fn get_platform() -> &'static str {
+    if cfg!(target_os = "macos") {
+        "macos"
+    } else if cfg!(target_os = "windows") {
+        "windows"
+    } else if cfg!(all(unix, not(target_os = "macos"))) {
+        "linux"
+    } else {
+        "unknown"
+    }
+}
+
+#[tauri::command]
 fn quit_app(app: tauri::AppHandle) {
     app.exit(0);
 }
@@ -67,6 +80,7 @@ pub fn run() -> anyhow::Result<()> {
         })
         .invoke_handler(tauri::generate_handler![
             app_version,
+            get_platform,
             quit_app,
             get_settings,
             save_settings,

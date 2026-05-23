@@ -47,7 +47,7 @@ describe("trayPanelLayout", () => {
   it("keeps the shell clipped with fully rounded corners", () => {
     const shell = trayPanelShellClassName();
     expect(shell).toContain("overflow-hidden");
-    expect(shell).toContain("rounded-mochi");
+    expect(shell).toContain("rounded-[var(--radius-tray-panel)]");
     expect(shell).toContain("h-full");
     expect(shell).toContain("tray-panel");
     expect(shell).toContain("pt-3");

@@ -1,14 +1,8 @@
-import { QueryClientProvider } from "@tanstack/react-query";
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { useEffect, useState } from "react";
+import { createRootRoute } from "@tanstack/react-router";
 
-import { TrayEventBridge } from "@/components/tray/tray-event-bridge";
-import { queryClient } from "@/lib/query/client";
+import { RootComponent } from "@/components/layout/root-component";
 
 import appCss from "@/styles/index.css?url";
-
-const TRAY_PANEL_WINDOW_LABEL = "main";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -21,41 +15,3 @@ export const Route = createRootRoute({
   }),
   component: RootComponent,
 });
-
-function RootComponent() {
-  const [isTrayPanelWindow, setIsTrayPanelWindow] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
-      return;
-    }
-
-    try {
-      const webviewWindow = getCurrentWebviewWindow();
-      setIsTrayPanelWindow(webviewWindow.label === TRAY_PANEL_WINDOW_LABEL);
-    } catch {
-      setIsTrayPanelWindow(false);
-    }
-  }, []);
-
-  return (
-    <html lang="en" className={isTrayPanelWindow ? "h-full bg-transparent" : undefined}>
-      <head>
-        <HeadContent />
-      </head>
-      <body
-        className={
-          isTrayPanelWindow
-            ? "flex h-full min-h-0 flex-col overflow-hidden bg-transparent"
-            : undefined
-        }
-      >
-        <QueryClientProvider client={queryClient}>
-          <TrayEventBridge />
-          <Outlet />
-        </QueryClientProvider>
-        <Scripts />
-      </body>
-    </html>
-  );
-}

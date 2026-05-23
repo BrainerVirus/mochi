@@ -22,6 +22,8 @@
 
 :root {
   color-scheme: light dark;
+  --radius-tray-panel: 0.75rem;
+  --font-platform: system-ui, sans-serif;
   --background: #fff8f0;
   --foreground: #334155;
   --card: #fffcf8;
@@ -62,7 +64,7 @@ body {
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", sans-serif;
+  --font-sans: "Geist Variable", var(--font-platform);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -137,32 +139,106 @@ body {
   --sidebar-ring: #ffb088;
 }
 
-/* Tray popover: integrated dark surface (CodexBar-style density, Mochi accents). */
+/* Platform chrome — set on <html data-platform="…"> from Tauri detection. */
+[data-platform="macos"] {
+  --font-platform: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --radius-tray-panel: 0.625rem;
+}
+
+[data-platform="windows"] {
+  --font-platform: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --radius-tray-panel: 0.5rem;
+}
+
+[data-platform="linux"] {
+  --font-platform: system-ui, Cantarell, "Ubuntu", "Noto Sans", sans-serif;
+  --radius-tray-panel: 0.375rem;
+}
+
+/* Dedicated windows: system surfaces with subtle Mochi warmth in light mode. */
+.app-window {
+  --background: light-dark(#fafafa, #1c1c1e);
+  --foreground: light-dark(#1d1d1f, #f5f5f7);
+  --card: light-dark(#ffffff, #2c2c2e);
+  --card-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --popover: light-dark(#ffffff, #2c2c2e);
+  --popover-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --secondary: light-dark(#f2f2f7, #3a3a3c);
+  --secondary-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --muted: light-dark(#f2f2f7, #3a3a3c);
+  --muted-foreground: light-dark(#6e6e73, #98989d);
+  --border: light-dark(#d1d1d6, #48484a);
+  --input: light-dark(#d1d1d6, #48484a);
+  --radius: light-dark(0.75rem, 0.625rem);
+}
+
+[data-platform="macos"] .app-window {
+  --radius: light-dark(0.625rem, 0.5rem);
+}
+
+[data-platform="windows"] .app-window {
+  --radius: light-dark(0.5rem, 0.375rem);
+}
+
+[data-platform="linux"] .app-window {
+  --radius: light-dark(0.375rem, 0.25rem);
+}
+
+/* Tray popover: OS-native surfaces; light/dark follows prefers-color-scheme. */
 .tray-panel {
-  color-scheme: dark;
-  --background: #171412;
-  --foreground: #f5efe8;
-  --card: #211d1a;
-  --card-foreground: #f5efe8;
-  --popover: #211d1a;
-  --popover-foreground: #f5efe8;
-  --primary: #7dd3c0;
-  --primary-foreground: #171412;
-  --secondary: #2a2522;
-  --secondary-foreground: #f5efe8;
-  --muted: #2a2522;
-  --muted-foreground: #9ca3af;
-  --accent: #c4b5e0;
-  --accent-foreground: #171412;
+  color-scheme: light dark;
+  font-family: var(--font-platform);
+  --background: light-dark(#f5f5f7, #2c2c2e);
+  --foreground: light-dark(#1d1d1f, #f5f5f7);
+  --card: light-dark(#ffffff, #3a3a3c);
+  --card-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --popover: light-dark(#ffffff, #3a3a3c);
+  --popover-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --primary: light-dark(#007aff, #0a84ff);
+  --primary-foreground: light-dark(#ffffff, #ffffff);
+  --secondary: light-dark(#e5e5ea, #48484a);
+  --secondary-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --muted: light-dark(#e5e5ea, #48484a);
+  --muted-foreground: light-dark(#6e6e73, #98989d);
+  --accent: light-dark(#c4b5e0, #c4b5e0);
+  --accent-foreground: light-dark(#1d1d1f, #1d1d1f);
   --destructive: #ff8a8a;
-  --border: #3a3430;
-  --input: #3a3430;
-  --ring: #7dd3c0;
-  --chart-1: #7dd3c0;
+  --border: light-dark(#d1d1d6, #48484a);
+  --input: light-dark(#d1d1d6, #48484a);
+  --ring: light-dark(#007aff, #0a84ff);
+  --chart-1: #a3d9a5;
   --chart-2: #ffe4a1;
   --chart-3: #ffb088;
   --chart-4: #ffb5c2;
   --chart-5: #c4b5e0;
+}
+
+[data-platform="macos"] .tray-panel {
+  --background: light-dark(#f5f5f7, #323232);
+  --foreground: light-dark(#1d1d1f, #f5f5f7);
+  --primary: light-dark(#007aff, #0a84ff);
+  --ring: light-dark(#007aff, #0a84ff);
+}
+
+[data-platform="windows"] .tray-panel {
+  --background: light-dark(#f3f3f3, #202020);
+  --foreground: light-dark(#1a1a1a, #ffffff);
+  --primary: light-dark(#005fb8, #60cdff);
+  --primary-foreground: light-dark(#ffffff, #000000);
+  --ring: light-dark(#005fb8, #60cdff);
+  --border: light-dark(#e5e5e5, #3d3d3d);
+  --muted: light-dark(#f9f9f9, #2d2d2d);
+  --muted-foreground: light-dark(#616161, #c8c8c8);
+}
+
+[data-platform="linux"] .tray-panel {
+  --background: light-dark(#fafafa, #242424);
+  --foreground: light-dark(#2e3436, #ffffff);
+  --primary: light-dark(#3584e4, #62a0ea);
+  --ring: light-dark(#3584e4, #62a0ea);
+  --border: light-dark(#deddda, #4d4d4d);
+  --muted: light-dark(#f6f5f4, #303030);
+  --muted-foreground: light-dark(#5e5c64, #bababa);
 }
 
 @utility scrollbar-none {
