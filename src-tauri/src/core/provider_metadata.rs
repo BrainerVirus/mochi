@@ -150,7 +150,7 @@ const CLAUDE: ProviderDefinition = ProviderDefinition {
     ],
     status_url: Some("https://status.anthropic.com"),
     supports_cost: true,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Partial,
 };
 
 const CURSOR: ProviderDefinition = ProviderDefinition {

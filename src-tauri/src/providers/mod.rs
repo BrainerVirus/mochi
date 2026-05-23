@@ -1,3 +1,4 @@
+mod claude;
 mod codex;
 mod static_provider;
 
@@ -5,13 +6,14 @@ use std::sync::Arc;
 
 use crate::core::models::ProviderId;
 use crate::core::provider::Provider;
+pub use claude::ClaudeProvider;
 pub use codex::CodexProvider;
 use static_provider::StaticProvider;
 
 pub fn built_in_providers() -> Vec<Arc<dyn Provider>> {
     vec![
         Arc::new(CodexProvider),
-        Arc::new(StaticProvider::new(ProviderId::Claude, "Claude")),
+        Arc::new(ClaudeProvider),
         Arc::new(StaticProvider::new(ProviderId::Cursor, "Cursor")),
         Arc::new(StaticProvider::new(ProviderId::Gemini, "Gemini")),
         Arc::new(StaticProvider::new(ProviderId::Copilot, "Copilot")),
