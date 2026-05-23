@@ -175,13 +175,12 @@ fn parse_usage_dictionary(value: &Value, now: OffsetDateTime) -> Option<OpenCode
         ],
     );
 
-    build_snapshot(rolling, weekly, monthly, now)
-        .map(|mut data| {
-            if data.renews_at.is_none() {
-                data.renews_at = renew_at_value(value, now);
-            }
-            data
-        })
+    build_snapshot(rolling, weekly, monthly, now).map(|mut data| {
+        if data.renews_at.is_none() {
+            data.renews_at = renew_at_value(value, now);
+        }
+        data
+    })
 }
 
 fn build_snapshot(
@@ -210,7 +209,11 @@ fn build_snapshot(
     })
 }
 
-fn parse_usage_nested(value: &Value, now: OffsetDateTime, depth: usize) -> Option<OpenCodeUsageData> {
+fn parse_usage_nested(
+    value: &Value,
+    now: OffsetDateTime,
+    depth: usize,
+) -> Option<OpenCodeUsageData> {
     let object = value.as_object()?;
     if depth > 3 {
         return None;
@@ -304,7 +307,8 @@ fn parse_usage_from_candidates(value: &Value, now: OffsetDateTime) -> Option<Ope
         &monthly_candidates
             .iter()
             .filter(|candidate| {
-                candidate.path_lower != rolling.path_lower && candidate.path_lower != weekly.path_lower
+                candidate.path_lower != rolling.path_lower
+                    && candidate.path_lower != weekly.path_lower
             })
             .cloned()
             .collect::<Vec<_>>(),
@@ -365,31 +369,31 @@ fn pick_candidate(
         .or_else(|| pick_from_candidates(fallback, pick_shorter))
 }
 
-fn pick_from_candidates(candidates: &[WindowCandidate], pick_shorter: bool) -> Option<WindowCandidate> {
+fn pick_from_candidates(
+    candidates: &[WindowCandidate],
+    pick_shorter: bool,
+) -> Option<WindowCandidate> {
     if candidates.is_empty() {
         return None;
     }
 
-    candidates
-        .iter()
-        .cloned()
-        .min_by(|lhs, rhs| {
-            if pick_shorter {
-                if lhs.reset_in_sec == rhs.reset_in_sec {
-                    rhs.percent
-                        .partial_cmp(&lhs.percent)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                } else {
-                    lhs.reset_in_sec.cmp(&rhs.reset_in_sec)
-                }
-            } else if lhs.reset_in_sec == rhs.reset_in_sec {
+    candidates.iter().cloned().min_by(|lhs, rhs| {
+        if pick_shorter {
+            if lhs.reset_in_sec == rhs.reset_in_sec {
                 rhs.percent
                     .partial_cmp(&lhs.percent)
                     .unwrap_or(std::cmp::Ordering::Equal)
             } else {
-                rhs.reset_in_sec.cmp(&lhs.reset_in_sec)
+                lhs.reset_in_sec.cmp(&rhs.reset_in_sec)
             }
-        })
+        } else if lhs.reset_in_sec == rhs.reset_in_sec {
+            rhs.percent
+                .partial_cmp(&lhs.percent)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        } else {
+            rhs.reset_in_sec.cmp(&lhs.reset_in_sec)
+        }
+    })
 }
 
 fn renew_at_value(value: &Value, now: OffsetDateTime) -> Option<String> {
@@ -603,7 +607,10 @@ mod tests {
         )
         .expect("snapshot");
         assert_eq!(snapshot.primary.label, "5-hour");
-        assert_eq!(snapshot.tertiary.as_ref().expect("monthly").label, "Monthly");
+        assert_eq!(
+            snapshot.tertiary.as_ref().expect("monthly").label,
+            "Monthly"
+        );
     }
 
     #[test]
