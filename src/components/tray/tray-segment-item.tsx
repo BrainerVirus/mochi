@@ -18,11 +18,15 @@ export function TraySegmentItem({
   setItemRef,
   onHover,
   onHoverEnd,
+  onPointerDown,
+  onPointerUp,
 }: {
   tab: TrayPanelTab;
   setItemRef: (id: string, element: HTMLButtonElement | null) => void;
   onHover: (id: string) => void;
   onHoverEnd: () => void;
+  onPointerDown: (id: string) => void;
+  onPointerUp: () => void;
 }) {
   return (
     <ToggleGroupItem
@@ -37,6 +41,9 @@ export function TraySegmentItem({
       onMouseLeave={onHoverEnd}
       onFocus={() => onHover(tab.id)}
       onBlur={onHoverEnd}
+      onPointerDown={() => onPointerDown(tab.id)}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
     >
       {tab.id === "overview" ? (
         <LayoutGridIcon className="size-4 shrink-0 opacity-90" aria-hidden />

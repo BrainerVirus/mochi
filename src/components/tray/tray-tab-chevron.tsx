@@ -1,7 +1,19 @@
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+"use client";
 
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { useRef } from "react";
+
+import {
+  SCROLL_OVERFLOW_FADE_DURATION_S,
+  SCROLL_OVERFLOW_FADE_EASE,
+  SCROLL_OVERFLOW_SLIDE_PX,
+} from "@/components/tray/use-gsap-overflow-visibility";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+gsap.registerPlugin(useGSAP);
 
 export type TrayTabChevronSide = "start" | "end";
 
@@ -13,16 +25,47 @@ interface TrayTabChevronProps {
 
 /** Full-height overlay column; icon centered on the tab strip, not the scroll viewport baseline. */
 export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) {
+  const columnRef = useRef<HTMLDivElement>(null);
   const isStart = side === "start";
+  const hiddenX = isStart ? -SCROLL_OVERFLOW_SLIDE_PX : SCROLL_OVERFLOW_SLIDE_PX;
+
+  useGSAP(
+    () => {
+      const column = columnRef.current;
+      if (!column) {
+        return undefined;
+      }
+
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        gsap.set(column, { autoAlpha: visible ? 1 : 0, x: 0 });
+      });
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.to(column, {
+          autoAlpha: visible ? 1 : 0,
+          x: visible ? 0 : hiddenX,
+          duration: SCROLL_OVERFLOW_FADE_DURATION_S,
+          ease: SCROLL_OVERFLOW_FADE_EASE,
+          overwrite: "auto",
+        });
+      });
+
+      return () => {
+        mm.revert();
+      };
+    },
+    { dependencies: [hiddenX, visible], scope: columnRef, revertOnUpdate: true },
+  );
 
   return (
     <div
+      ref={columnRef}
       className={cn(
-        "pointer-events-none absolute top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
+        "pointer-events-none absolute top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center",
         isStart ? "left-0" : "right-0",
-        visible ? "translate-x-0 opacity-100" : "pointer-events-none opacity-0",
-        isStart && !visible && "-translate-x-1",
-        !isStart && !visible && "translate-x-1",
+        !visible && "invisible opacity-0",
       )}
       aria-hidden={!visible}
     >

@@ -22,6 +22,25 @@ export function measureSegmentItem(track: HTMLElement, item: HTMLElement): Indic
   return metricsFromClientRects(track.getBoundingClientRect(), item.getBoundingClientRect());
 }
 
+function toNumericGsapProperty(value: string | number): number {
+  if (typeof value === "number") {
+    return value;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+export function readIndicatorMetrics(indicator: HTMLElement): IndicatorMetrics {
+  return {
+    x: toNumericGsapProperty(gsap.getProperty(indicator, "x")),
+    width: toNumericGsapProperty(gsap.getProperty(indicator, "width")),
+  };
+}
+
+export function isHoverIndicatorVisible(indicator: HTMLElement): boolean {
+  return toNumericGsapProperty(gsap.getProperty(indicator, "autoAlpha")) > 0;
+}
+
 export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -101,11 +120,27 @@ export function applyHoverIndicatorPosition(
 }
 
 export function hideHoverIndicator(indicator: HTMLElement, animate: boolean) {
+  gsap.killTweensOf(indicator, "autoAlpha");
   gsap.to(indicator, {
     autoAlpha: 0,
     duration: animate && !prefersReducedMotion() ? 0.15 : 0,
     overwrite: "auto",
   });
+}
+
+export function mergeHoverIntoActiveStart(
+  hoverIndicator: HTMLElement,
+  hoveredId: string,
+  targetTabId: string,
+): IndicatorMetrics | null {
+  if (hoveredId !== targetTabId || !isHoverIndicatorVisible(hoverIndicator)) {
+    return null;
+  }
+
+  gsap.killTweensOf(hoverIndicator);
+  const metrics = readIndicatorMetrics(hoverIndicator);
+  hideHoverIndicator(hoverIndicator, false);
+  return metrics;
 }
 
 export function syncActiveSegmentIndicator(

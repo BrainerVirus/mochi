@@ -273,8 +273,8 @@ html[data-tray-panel].dark body {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  /* Native Popover vibrancy + NSWindow clip provide the single outer edge. */
-  border-radius: 0;
+  /* Clip web content to native window corners without duplicating the outer stroke. */
+  border-radius: var(--radius-tray-panel);
   box-shadow: none;
   max-height: 100%;
   --background: transparent;

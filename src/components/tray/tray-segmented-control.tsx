@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, type RefObject } from "react";
 
 import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
@@ -21,37 +21,15 @@ interface TraySegmentedControlProps {
   onValueChange: (value: string) => void;
 }
 
-export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegmentedControlProps) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const activeIndicatorRef = useRef<HTMLDivElement>(null);
-  const hoverIndicatorRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-
-  const setItemRef = useCallback((id: string, element: HTMLButtonElement | null) => {
-    if (element) {
-      itemRefs.current.set(id, element);
-      return;
-    }
-    itemRefs.current.delete(id);
-  }, []);
-
-  const { syncHoverIndicator } = useTraySegmentIndicators(
-    trackRef,
-    activeIndicatorRef,
-    hoverIndicatorRef,
-    value,
-    tabs.length,
-    itemRefs,
-  );
-
+function TraySegmentIndicators({
+  hoverIndicatorRef,
+  activeIndicatorRef,
+}: {
+  hoverIndicatorRef: RefObject<HTMLDivElement | null>;
+  activeIndicatorRef: RefObject<HTMLDivElement | null>;
+}) {
   return (
-    <div
-      ref={trackRef}
-      className={cn(
-        TRAY_SEGMENT_ROW_HEIGHT,
-        "relative isolate w-max min-w-full rounded-lg bg-[var(--tray-segment-track)] p-0.5",
-      )}
-    >
+    <>
       <div
         ref={hoverIndicatorRef}
         data-segment-hover-indicator
@@ -69,12 +47,66 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
         )}
         style={{ width: 0 }}
       />
+    </>
+  );
+}
+
+export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegmentedControlProps) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const activeIndicatorRef = useRef<HTMLDivElement>(null);
+  const hoverIndicatorRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  const setItemRef = useCallback((id: string, element: HTMLButtonElement | null) => {
+    if (element) {
+      itemRefs.current.set(id, element);
+      return;
+    }
+    itemRefs.current.delete(id);
+  }, []);
+
+  const {
+    syncHoverIndicator,
+    handleHoverEnd,
+    handlePointerDown,
+    handlePointerUp,
+    handleSegmentValueChange,
+  } = useTraySegmentIndicators(
+    trackRef,
+    activeIndicatorRef,
+    hoverIndicatorRef,
+    value,
+    tabs.length,
+    itemRefs,
+  );
+
+  const handleValueChange = useCallback(
+    (next: string) => {
+      if (next) {
+        handleSegmentValueChange(next, onValueChange);
+      }
+    },
+    [handleSegmentValueChange, onValueChange],
+  );
+
+  return (
+    <div
+      ref={trackRef}
+      className={cn(
+        TRAY_SEGMENT_ROW_HEIGHT,
+        "relative isolate w-max min-w-full rounded-lg bg-[var(--tray-segment-track)] p-0.5",
+      )}
+    >
+      <TraySegmentIndicators
+        hoverIndicatorRef={hoverIndicatorRef}
+        activeIndicatorRef={activeIndicatorRef}
+      />
 
       <ToggleGroup
         type="single"
         orientation="horizontal"
         value={value}
-        onValueChange={(next) => next && onValueChange(next)}
+        onValueChange={handleValueChange}
         spacing={0}
         variant="default"
         className="relative z-10 flex h-full w-max min-w-full flex-row flex-nowrap items-stretch justify-start gap-0 bg-transparent p-0 shadow-none"
@@ -85,7 +117,9 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
             tab={tab}
             setItemRef={setItemRef}
             onHover={(id) => syncHoverIndicator(id, true)}
-            onHoverEnd={() => syncHoverIndicator(null, true)}
+            onHoverEnd={handleHoverEnd}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
           />
         ))}
       </ToggleGroup>

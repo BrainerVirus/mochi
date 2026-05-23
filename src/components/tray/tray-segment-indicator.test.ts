@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  mergeHoverIntoActiveStart,
   metricsFromClientRects,
   shouldAnimateActiveIndicator,
 } from "@/components/tray/tray-segment-indicator";
@@ -27,5 +28,11 @@ describe("shouldAnimateActiveIndicator", () => {
 
   it("snaps when animation is disabled", () => {
     expect(shouldAnimateActiveIndicator(prev, false, false)).toBe(false);
+  });
+});
+
+describe("mergeHoverIntoActiveStart", () => {
+  it("returns null when the hovered tab does not match the selection", () => {
+    expect(mergeHoverIntoActiveStart({} as HTMLElement, "alpha", "beta")).toBeNull();
   });
 });
