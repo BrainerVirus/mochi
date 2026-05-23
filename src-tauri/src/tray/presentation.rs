@@ -1,6 +1,5 @@
 use crate::core::models::{ProviderId, UsageSnapshot};
-
-use super::usage::aggregate_used_percent;
+use crate::status::filter_configured_snapshots;
 
 /// Which tray tab drives menu bar icon and title.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,7 +40,8 @@ pub fn resolve_tray_presentation(
 }
 
 fn resolve_overview_presentation(snapshots: &[UsageSnapshot]) -> TrayIconPresentation {
-    if snapshots.is_empty() {
+    let configured = filter_configured_snapshots(snapshots);
+    if configured.is_empty() {
         return TrayIconPresentation {
             selection: TraySelection::Overview,
             remaining_percent: 100,
@@ -50,7 +50,7 @@ fn resolve_overview_presentation(snapshots: &[UsageSnapshot]) -> TrayIconPresent
         };
     }
 
-    let remaining = aggregate_remaining_percent(snapshots);
+    let remaining = aggregate_remaining_percent(&configured);
     let title = Some(tray_title_from_remaining(remaining));
     let tooltip = format!("Mochi — Overview · {remaining}% left");
 
@@ -101,9 +101,9 @@ pub fn pick_tray_snapshot(snapshots: &[UsageSnapshot]) -> Option<&UsageSnapshot>
         })
 }
 
+/// Global % left across providers: minimum remaining (tightest quota wins).
 pub fn aggregate_remaining_percent(snapshots: &[UsageSnapshot]) -> u8 {
-    let used = aggregate_used_percent(snapshots);
-    (100_u8.saturating_sub(used)).min(100)
+    snapshots.iter().map(remaining_percent).min().unwrap_or(100)
 }
 
 pub fn remaining_percent(snapshot: &UsageSnapshot) -> u8 {
@@ -150,7 +150,7 @@ mod tests {
             provider,
             UsageWindow::new("Session", used_percent, None),
             None,
-            "1970-01-01T00:00:00Z",
+            "2026-05-20T12:00:00Z",
             "test",
         )
     }
@@ -203,6 +203,21 @@ mod tests {
         assert_eq!(presentation.remaining_percent, 33);
         assert_eq!(presentation.title, Some(tray_title_from_remaining(33)));
         assert!(presentation.tooltip.contains("Overview"));
+    }
+
+    #[test]
+    fn resolve_overview_presentation_ignores_unconfigured_static_snapshots() {
+        let mut static_cursor = snapshot(ProviderId::Cursor, 99.0);
+        static_cursor.updated_at = "1970-01-01T00:00:00Z".to_string();
+        static_cursor.source = "Cursor".to_string();
+
+        let snapshots = vec![
+            snapshot(ProviderId::Codex, 5.0),
+            snapshot(ProviderId::Claude, 50.0),
+            static_cursor,
+        ];
+        let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
+        assert_eq!(presentation.remaining_percent, 50);
     }
 
     #[test]
