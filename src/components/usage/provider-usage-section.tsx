@@ -10,13 +10,11 @@ import { formatUpdatedAgo } from "@/lib/utils/format-updated-ago";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
+import { reserveDetailLeft, reserveDetailRight } from "@/lib/utils/usage-pace";
+
 import { ProviderCostSection } from "./provider-cost-section";
 import { ProviderUsageActions } from "./provider-usage-actions";
 import { UsageMeter } from "./usage-meter";
-
-function reserveDetailLeft(remainingPercent: number): string | null {
-  return remainingPercent > 0 ? `${Math.round(remainingPercent)}% in reserve` : null;
-}
 
 function UsageWindowMeters({
   windows,
@@ -34,8 +32,8 @@ function UsageWindowMeters({
           usedPercent={window.used_percent}
           remainingPercent={window.remaining_percent}
           resetsAt={window.resets_at}
-          detailLeft={reserveDetailLeft(window.remaining_percent)}
-          detailRight={window.resets_at ? "Lasts until reset" : null}
+          detailLeft={reserveDetailLeft(window)}
+          detailRight={reserveDetailRight(window)}
           compact
           fillActivationKey={fillActivationKey}
         />

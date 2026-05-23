@@ -150,7 +150,7 @@ const CLAUDE: ProviderDefinition = ProviderDefinition {
     ],
     status_url: Some("https://status.anthropic.com"),
     supports_cost: true,
-    implementation_status: ImplementationStatus::Partial,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const CURSOR: ProviderDefinition = ProviderDefinition {
@@ -166,7 +166,7 @@ const CURSOR: ProviderDefinition = ProviderDefinition {
     settings_fields: &[COOKIE_SOURCE, MANUAL_COOKIE],
     status_url: Some("https://status.cursor.com"),
     supports_cost: true,
-    implementation_status: ImplementationStatus::Partial,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const GEMINI: ProviderDefinition = ProviderDefinition {
@@ -182,7 +182,7 @@ const GEMINI: ProviderDefinition = ProviderDefinition {
     settings_fields: &[],
     status_url: Some("https://www.google.com/appsstatus/dashboard/incidents"),
     supports_cost: false,
-    implementation_status: ImplementationStatus::Partial,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const COPILOT: ProviderDefinition = ProviderDefinition {
@@ -202,7 +202,7 @@ const COPILOT: ProviderDefinition = ProviderDefinition {
     }],
     status_url: Some("https://www.githubstatus.com"),
     supports_cost: false,
-    implementation_status: ImplementationStatus::Partial,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const OPENCODE: ProviderDefinition = ProviderDefinition {
@@ -218,7 +218,7 @@ const OPENCODE: ProviderDefinition = ProviderDefinition {
     settings_fields: &[COOKIE_SOURCE, MANUAL_COOKIE],
     status_url: None,
     supports_cost: false,
-    implementation_status: ImplementationStatus::Partial,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const OPENCODE_GO: ProviderDefinition = ProviderDefinition {
@@ -247,7 +247,7 @@ const OPENCODE_GO: ProviderDefinition = ProviderDefinition {
     ],
     status_url: None,
     supports_cost: true,
-    implementation_status: ImplementationStatus::Partial,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const ANTIGRAVITY: ProviderDefinition = ProviderDefinition {
@@ -313,7 +313,7 @@ const ZAI: ProviderDefinition = ProviderDefinition {
     ],
     status_url: None,
     supports_cost: false,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Done,
 };
 
 const KIRO: ProviderDefinition = ProviderDefinition {

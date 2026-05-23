@@ -1,0 +1,30 @@
+{
+  "code": 200,
+  "msg": "Operation successful",
+  "success": true,
+  "data": {
+    "limits": [
+      {
+        "type": "TIME_LIMIT",
+        "unit": 5,
+        "number": 1,
+        "usage": 100,
+        "currentValue": 40,
+        "remaining": 60,
+        "percentage": 40,
+        "usageDetails": []
+      },
+      {
+        "type": "TOKENS_LIMIT",
+        "unit": 3,
+        "number": 5,
+        "usage": 40000000,
+        "currentValue": 13628365,
+        "remaining": 26371635,
+        "percentage": 34,
+        "nextResetTime": 1768507567547
+      }
+    ],
+    "planName": "Pro"
+  }
+}

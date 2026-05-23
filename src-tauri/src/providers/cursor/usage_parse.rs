@@ -72,7 +72,9 @@ pub fn snapshot_from_usage_summary(
     let mut snapshot = UsageSnapshot::new(
         ProviderId::Cursor,
         UsageWindow::new("Total", plan_percent, billing_reset.clone()),
-        auto_percent.map(|percent| UsageWindow::new("Auto", percent, billing_reset.clone())),
+        auto_percent.map(|percent| {
+            UsageWindow::new("Auto + Composer", percent, billing_reset.clone())
+        }),
         updated_at,
         source,
     );
@@ -196,7 +198,7 @@ mod tests {
         );
 
         let secondary = snapshot.secondary.expect("auto");
-        assert_eq!(secondary.label, "Auto");
+        assert_eq!(secondary.label, "Auto + Composer");
         assert_eq!(secondary.used_percent, 12.0);
         let tertiary = snapshot.tertiary.expect("api");
         assert_eq!(tertiary.label, "API");
@@ -235,7 +237,9 @@ mod tests {
 
         assert_eq!(snapshot.primary.label, "Total");
         assert!((snapshot.primary.used_percent - 0.441_025_64).abs() < 1e-6);
-        assert!((snapshot.secondary.expect("auto").used_percent - 0.36).abs() < 1e-6);
+        let secondary = snapshot.secondary.as_ref().expect("auto");
+        assert_eq!(secondary.label, "Auto + Composer");
+        assert!((secondary.used_percent - 0.36).abs() < 1e-6);
         assert!((snapshot.tertiary.expect("api").used_percent - 0.711_111_1).abs() < 1e-6);
         assert!(snapshot.provider_cost.is_none());
     }
