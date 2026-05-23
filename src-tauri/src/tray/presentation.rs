@@ -259,10 +259,8 @@ mod tests {
         opencode_go.tertiary = Some(UsageWindow::new("Monthly", 12.0, None));
 
         let snapshots = vec![snapshot(ProviderId::Codex, 1.0), opencode_go];
-        let presentation = resolve_tray_presentation(
-            &snapshots,
-            TraySelection::Provider(ProviderId::OpenCodeGo),
-        );
+        let presentation =
+            resolve_tray_presentation(&snapshots, TraySelection::Provider(ProviderId::OpenCodeGo));
         assert_eq!(presentation.remaining_percent, 1);
         assert!(presentation.tooltip.contains("OpenCode Go"));
     }

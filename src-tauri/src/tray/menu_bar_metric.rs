@@ -27,8 +27,10 @@ pub fn automatic_menu_bar_window(snapshot: &UsageSnapshot) -> Option<&UsageWindo
                 WindowLane::Tertiary,
             ],
         ),
-        ProviderId::Zai => most_constrained_pair(Some(&snapshot.primary), snapshot.tertiary.as_ref())
-            .or(snapshot.secondary.as_ref()),
+        ProviderId::Zai => {
+            most_constrained_pair(Some(&snapshot.primary), snapshot.tertiary.as_ref())
+                .or(snapshot.secondary.as_ref())
+        }
         ProviderId::Factory => snapshot.secondary.as_ref().or(Some(&snapshot.primary)),
         ProviderId::Copilot => Some(copilot_automatic_window(snapshot)),
         ProviderId::Cursor => most_constrained_all(snapshot),
@@ -41,9 +43,7 @@ pub fn automatic_menu_bar_window(snapshot: &UsageSnapshot) -> Option<&UsageWindo
 }
 
 fn window_remaining_percent(window: &UsageWindow) -> u8 {
-    (100.0 - window.used_percent)
-        .round()
-        .clamp(0.0, 100.0) as u8
+    (100.0 - window.used_percent).round().clamp(0.0, 100.0) as u8
 }
 
 #[derive(Clone, Copy)]
@@ -158,13 +158,8 @@ mod tests {
         secondary: Option<UsageWindow>,
         tertiary: Option<UsageWindow>,
     ) -> UsageSnapshot {
-        let mut snapshot = UsageSnapshot::new(
-            provider,
-            primary,
-            secondary,
-            "2026-05-22T12:00:00Z",
-            "test",
-        );
+        let mut snapshot =
+            UsageSnapshot::new(provider, primary, secondary, "2026-05-22T12:00:00Z", "test");
         if let Some(tertiary) = tertiary {
             snapshot = snapshot.with_tertiary(tertiary);
         }
@@ -261,12 +256,7 @@ mod tests {
 
     #[test]
     fn claude_automatic_uses_enterprise_spend_limit_when_session_is_placeholder() {
-        let mut snap = snapshot(
-            ProviderId::Claude,
-            window("Session", 0.0),
-            None,
-            None,
-        );
+        let mut snap = snapshot(ProviderId::Claude, window("Session", 0.0), None, None);
         snap.provider_cost = Some(ProviderCostSnapshot::new(
             67.03,
             1000.0,
