@@ -1,5 +1,7 @@
 use crate::core::models::{ProviderId, UsageSnapshot};
-use crate::core::provider::{FetchContext, Provider, ProviderError};
+use crate::core::provider::{
+    FetchContext, Provider, ProviderEnrichment, ProviderError, ProviderResult,
+};
 use crate::core::usage_store::{failed_attempt, UsageStore};
 use crate::providers::built_in_providers;
 use crate::settings::SettingsState;
@@ -100,13 +102,30 @@ async fn fetch_provider_snapshot(
         }
 
         match strategy.fetch(&ctx).await {
-            Ok(snapshot) => return Ok(Some(snapshot)),
+            Ok(snapshot) => {
+                let enriched = enrich_provider_snapshot(provider_id, snapshot).await?;
+                return Ok(Some(enriched));
+            }
             Err(error) if strategy.should_fallback(&error) => continue,
             Err(error) => return Err(error),
         }
     }
 
     Ok(None)
+}
+
+async fn enrich_provider_snapshot(
+    provider_id: ProviderId,
+    snapshot: UsageSnapshot,
+) -> ProviderResult<UsageSnapshot> {
+    match provider_id {
+        ProviderId::Codex => {
+            crate::providers::CodexProvider
+                .enrich_snapshot(snapshot)
+                .await
+        }
+        _ => Ok(snapshot),
+    }
 }
 
 fn find_provider(provider_id: ProviderId) -> Option<std::sync::Arc<dyn Provider>> {

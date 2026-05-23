@@ -1,0 +1,11 @@
+{
+  "page": {
+    "id": "openai",
+    "name": "OpenAI",
+    "updated_at": "2026-05-20T10:00:00.000Z"
+  },
+  "status": {
+    "indicator": "minor",
+    "description": "Elevated API error rates"
+  }
+}

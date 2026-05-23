@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::core::models::ProviderId;
 use crate::core::provider::Provider;
-use codex::CodexProvider;
+pub use codex::CodexProvider;
 use static_provider::StaticProvider;
 
 pub fn built_in_providers() -> Vec<Arc<dyn Provider>> {

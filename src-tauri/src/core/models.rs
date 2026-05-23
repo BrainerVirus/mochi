@@ -59,13 +59,46 @@ pub enum ProviderHealth {
     Error,
 }
 
+/// Statuspage.io indicator mapped for provider incident overlays.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "kebab-case")]
+pub enum StatusIndicator {
+    #[default]
+    None,
+    Minor,
+    Major,
+    Critical,
+    Maintenance,
+    Unknown,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderStatus {
-    pub health: ProviderHealth,
+    pub indicator: StatusIndicator,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub message: Option<String>,
+    pub description: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub last_attempt_at: Option<String>,
+    pub updated_at: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
+impl ProviderStatus {
+    pub fn has_incident(&self) -> bool {
+        !matches!(
+            self.indicator,
+            StatusIndicator::None | StatusIndicator::Unknown
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SessionCostSummary {
+    pub window_days: u32,
+    pub input_tokens: u64,
+    pub cached_input_tokens: u64,
+    pub output_tokens: u64,
+    pub session_files_scanned: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -112,6 +145,10 @@ pub struct UsageSnapshot {
     pub error: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_fetch_attempt: Option<FetchAttempt>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_status: Option<ProviderStatus>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_cost: Option<SessionCostSummary>,
 }
 
 impl UsageSnapshot {
@@ -132,6 +169,8 @@ impl UsageSnapshot {
             is_stale: false,
             error: None,
             last_fetch_attempt: None,
+            provider_status: None,
+            session_cost: None,
         }
     }
 
