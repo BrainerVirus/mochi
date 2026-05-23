@@ -6,6 +6,7 @@ use crate::browser::catalog::BrowserKind;
 use crate::browser::domains::CookiePair;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ChromiumCookieStore {
     pub browser: BrowserKind,
     pub label: String,
