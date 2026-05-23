@@ -182,7 +182,7 @@ const GEMINI: ProviderDefinition = ProviderDefinition {
     settings_fields: &[],
     status_url: Some("https://www.google.com/appsstatus/dashboard/incidents"),
     supports_cost: false,
-    implementation_status: ImplementationStatus::Stub,
+    implementation_status: ImplementationStatus::Partial,
 };
 
 const COPILOT: ProviderDefinition = ProviderDefinition {
