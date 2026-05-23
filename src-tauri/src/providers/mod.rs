@@ -6,8 +6,8 @@ pub(crate) mod cursor;
 pub(crate) mod gemini;
 pub(crate) mod opencode;
 pub(crate) mod opencodego;
-pub(crate) mod zai;
 mod static_provider;
+pub(crate) mod zai;
 
 use std::sync::Arc;
 
@@ -20,8 +20,8 @@ pub use cursor::CursorProvider;
 pub use gemini::GeminiProvider;
 pub use opencode::OpenCodeProvider;
 pub use opencodego::OpenCodeGoProvider;
-pub use zai::ZaiProvider;
 use static_provider::StaticProvider;
+pub use zai::ZaiProvider;
 
 pub fn built_in_providers() -> Vec<Arc<dyn Provider>> {
     vec![

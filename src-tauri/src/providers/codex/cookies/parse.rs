@@ -48,7 +48,11 @@ pub fn parse_auth_status(html: &str) -> Option<String> {
 
 pub fn parse_rate_limits(
     body_text: &str,
-) -> (Option<UsageWindow>, Option<UsageWindow>, Option<UsageWindow>) {
+) -> (
+    Option<UsageWindow>,
+    Option<UsageWindow>,
+    Option<UsageWindow>,
+) {
     let cleaned = body_text.replace('\r', "\n");
     let lines: Vec<String> = cleaned
         .lines()

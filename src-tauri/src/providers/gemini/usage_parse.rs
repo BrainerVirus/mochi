@@ -124,9 +124,7 @@ pub fn snapshot_from_quotas(
     let primary = pro_min
         .map(|quota| usage_window_from_quota("Pro", quota))
         .or_else(|| flash_min.map(|quota| usage_window_from_quota("Flash", quota)))
-        .or_else(|| {
-            flash_lite_min.map(|quota| usage_window_from_quota("Flash Lite", quota))
-        })
+        .or_else(|| flash_lite_min.map(|quota| usage_window_from_quota("Flash Lite", quota)))
         .ok_or_else(|| ProviderError::Parse("gemini usage missing rate windows".into()))?;
 
     let secondary = if pro_min.is_some() {
@@ -135,13 +133,8 @@ pub fn snapshot_from_quotas(
         None
     };
 
-    let mut snapshot = UsageSnapshot::new(
-        ProviderId::Gemini,
-        primary,
-        secondary,
-        updated_at,
-        source,
-    );
+    let mut snapshot =
+        UsageSnapshot::new(ProviderId::Gemini, primary, secondary, updated_at, source);
 
     if let Some(flash_lite) = flash_lite_min
         .filter(|_| pro_min.is_some() || flash_min.is_some())

@@ -72,9 +72,8 @@ pub fn snapshot_from_usage_summary(
     let mut snapshot = UsageSnapshot::new(
         ProviderId::Cursor,
         UsageWindow::new("Total", plan_percent, billing_reset.clone()),
-        auto_percent.map(|percent| {
-            UsageWindow::new("Auto + Composer", percent, billing_reset.clone())
-        }),
+        auto_percent
+            .map(|percent| UsageWindow::new("Auto + Composer", percent, billing_reset.clone())),
         updated_at,
         source,
     );

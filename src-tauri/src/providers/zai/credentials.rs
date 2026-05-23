@@ -67,9 +67,7 @@ pub fn quota_url(region: ZaiRegion) -> String {
 
     match region {
         ZaiRegion::Global => "https://api.z.ai/api/monitor/usage/quota/limit".into(),
-        ZaiRegion::BigModelCn => {
-            "https://open.bigmodel.cn/api/monitor/usage/quota/limit".into()
-        }
+        ZaiRegion::BigModelCn => "https://open.bigmodel.cn/api/monitor/usage/quota/limit".into(),
     }
 }
 

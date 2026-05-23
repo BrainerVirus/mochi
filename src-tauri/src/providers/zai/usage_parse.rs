@@ -247,7 +247,10 @@ mod tests {
         assert_eq!(snapshot.provider, ProviderId::Zai);
         assert_eq!(snapshot.primary.label, "5 hours");
         assert_eq!(snapshot.primary.used_percent, 34.0);
-        assert_eq!(snapshot.secondary.as_ref().expect("monthly").label, "Monthly");
+        assert_eq!(
+            snapshot.secondary.as_ref().expect("monthly").label,
+            "Monthly"
+        );
         assert_eq!(snapshot.secondary.expect("monthly").used_percent, 40.0);
     }
 }

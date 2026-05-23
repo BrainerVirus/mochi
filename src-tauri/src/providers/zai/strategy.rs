@@ -89,7 +89,12 @@ mod tests {
     #[tokio::test]
     async fn fixture_client_maps_quota_snapshot() {
         let snapshot = FixtureClient
-            .fetch_usage("token", "https://api.z.ai", "2026-05-22T12:00:00Z", "zai-api-quota")
+            .fetch_usage(
+                "token",
+                "https://api.z.ai",
+                "2026-05-22T12:00:00Z",
+                "zai-api-quota",
+            )
             .await
             .expect("fetch");
 
