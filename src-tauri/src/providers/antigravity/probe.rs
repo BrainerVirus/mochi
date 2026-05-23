@@ -2,24 +2,34 @@
 //!
 //! Ported from CodexBar `AntigravityStatusProbe.swift` (MIT).
 
+#[cfg(unix)]
 use std::process::Command as StdCommand;
+#[cfg(unix)]
 use std::time::Duration;
 
+#[cfg(unix)]
 use regex::Regex;
+#[cfg(unix)]
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
+#[cfg(unix)]
 use reqwest::Client;
 
+#[cfg(unix)]
 use super::usage_parse::{
     parse_command_model_response, parse_user_status_response, snapshot_from_models,
 };
 use crate::core::models::UsageSnapshot;
 use crate::core::provider::{ProviderError, ProviderResult};
 
+#[cfg(unix)]
 const GET_USER_STATUS: &str = "/exa.language_server_pb.LanguageServerService/GetUserStatus";
+#[cfg(unix)]
 const GET_COMMAND_MODEL_CONFIGS: &str =
     "/exa.language_server_pb.LanguageServerService/GetCommandModelConfigs";
+#[cfg(unix)]
 const GET_UNLEASH_DATA: &str = "/exa.language_server_pb.LanguageServerService/GetUnleashData";
 
+#[cfg(unix)]
 #[derive(Debug, Clone)]
 struct ProcessInfo {
     csrf_token: String,
@@ -196,6 +206,7 @@ async fn post_probe(
         .map_err(|error| ProviderError::Fetch(error.to_string()))
 }
 
+#[cfg(unix)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ProbeEndpoint {
     scheme: &'static str,
@@ -230,6 +241,7 @@ fn connection_candidates(process: &ProcessInfo, ports: &[u16]) -> Vec<ProbeEndpo
     candidates
 }
 
+#[cfg(unix)]
 fn default_request_body() -> serde_json::Value {
     serde_json::json!({
         "metadata": {
@@ -241,6 +253,7 @@ fn default_request_body() -> serde_json::Value {
     })
 }
 
+#[cfg(unix)]
 fn probe_headers(csrf_token: &str) -> ProviderResult<HeaderMap> {
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -253,6 +266,7 @@ fn probe_headers(csrf_token: &str) -> ProviderResult<HeaderMap> {
     Ok(headers)
 }
 
+#[cfg(unix)]
 fn localhost_client() -> ProviderResult<Client> {
     Client::builder()
         .timeout(Duration::from_secs(8))
@@ -261,6 +275,7 @@ fn localhost_client() -> ProviderResult<Client> {
         .map_err(|error| ProviderError::Fetch(error.to_string()))
 }
 
+#[cfg(unix)]
 fn is_antigravity_language_server(line: &str) -> bool {
     let lowered = line.to_lowercase();
     if !lowered.contains("language_server") {
@@ -269,6 +284,7 @@ fn is_antigravity_language_server(line: &str) -> bool {
     lowered.contains("--app_data_dir antigravity") || lowered.contains("/antigravity/")
 }
 
+#[cfg(unix)]
 fn extract_flag(line: &str, flag: &str) -> Option<String> {
     let pattern = format!(r"{flag}\s+(\S+)");
     Regex::new(&pattern)
@@ -288,7 +304,7 @@ pub fn is_probe_available() -> bool {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod tests {
     use super::*;
 
