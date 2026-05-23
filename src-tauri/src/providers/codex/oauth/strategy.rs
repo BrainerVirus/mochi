@@ -74,9 +74,9 @@ impl FetchStrategy for OAuthStrategy {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::credentials::CodexOAuthCredentials;
     use super::super::parse::CodexUsageResponse;
+    use super::*;
     use time::OffsetDateTime;
 
     struct MockCodexOAuthClient {
