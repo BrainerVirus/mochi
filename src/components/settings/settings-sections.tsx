@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { ProviderIcon } from "@/components/providers/provider-icon";
 import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
-import { Badge } from "@/components/ui/badge";
 import {
   Field,
   FieldContent,
@@ -18,6 +18,14 @@ import type { ProviderId } from "@/lib/schemas/usage";
 import { getProviderCatalog, getProviderCredentialStatus } from "@/lib/tauri/commands";
 
 import { ProviderConfigFields } from "./provider-config-fields";
+
+function formatCredentialStatusLabel(configured: boolean, source?: string): string {
+  if (!configured) {
+    return "Not configured";
+  }
+
+  return source ?? "Configured";
+}
 
 interface ProviderSettingsSectionProps {
   settings: MochiSettings;
@@ -93,26 +101,25 @@ function ProviderSettingsRow({
   onToggle: () => void;
   onConfigChange: (patch: Partial<MochiSettings["provider_configs"][ProviderId]>) => void;
 }) {
+  const statusLabel = formatCredentialStatusLabel(
+    credentialStatus?.configured ?? false,
+    credentialStatus?.source,
+  );
+
   return (
     <div>
       {showSeparator ? <Separator /> : null}
-      <Field orientation="horizontal" className="items-start justify-between gap-3 py-2.5">
+      <Field orientation="horizontal" className="items-center justify-between gap-3 py-2.5">
         <FieldContent className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <FieldLabel className="text-sm font-medium">{PROVIDER_LABELS[provider]}</FieldLabel>
-            {entry ? (
-              <Badge variant="outline" className="text-[10px]">
-                {entry.implementationStatus}
-              </Badge>
-            ) : null}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <ProviderIcon provider={provider} className="size-4 shrink-0" />
+            <FieldLabel className="shrink-0 text-sm font-medium">
+              {PROVIDER_LABELS[provider]}
+            </FieldLabel>
+            <span className="text-muted-foreground min-w-0 truncate text-[11px]">
+              · {statusLabel}
+            </span>
           </div>
-          {credentialStatus?.configured ? (
-            <Badge variant="secondary" className="mt-1 text-[10px]">
-              {credentialStatus.source ?? "Configured"}
-            </Badge>
-          ) : (
-            <FieldDescription className="text-[11px]">Not configured</FieldDescription>
-          )}
         </FieldContent>
         <Switch
           checked={enabled}

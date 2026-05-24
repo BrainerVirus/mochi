@@ -216,11 +216,20 @@ html[data-app-window].dark body {
   --border: light-dark(#d1d1d6, #48484a);
   --input: light-dark(#d1d1d6, #48484a);
   --ring: light-dark(#007aff, #0a84ff);
-  --radius: light-dark(0.75rem, 0.625rem);
+  /* Single-value radius — light-dark() breaks calc(var(--radius) * …) utilities. */
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --switch-thumb: #ffffff;
 }
 
 [data-platform="macos"] .app-window {
-  --radius: light-dark(0.625rem, 0.5rem);
+  --radius: 0.625rem;
   --app-glass-tint: transparent;
   --scroll-fade-tint: light-dark(
     color-mix(in oklab, #f5f5f7 92%, transparent),
@@ -276,11 +285,29 @@ html[data-app-window].dark body {
 }
 
 [data-platform="windows"] .app-window {
-  --radius: light-dark(0.5rem, 0.375rem);
+  --radius: 0.5rem;
 }
 
 [data-platform="linux"] .app-window {
-  --radius: light-dark(0.375rem, 0.25rem);
+  --radius: 0.375rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-window {
+    --radius: 0.5rem;
+  }
+
+  [data-platform="macos"] .app-window {
+    --radius: 0.5rem;
+  }
+
+  [data-platform="windows"] .app-window {
+    --radius: 0.375rem;
+  }
+
+  [data-platform="linux"] .app-window {
+    --radius: 0.25rem;
+  }
 }
 
 .app-window--about {
