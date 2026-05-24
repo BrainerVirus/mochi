@@ -251,13 +251,17 @@ function renderHistoryWindowField(
       </FieldContent>
       <Input
         id={`${entry.id}-${field.key}`}
-        type="number"
-        min={1}
-        max={365}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         className="h-7 w-20 shrink-0 tabular-nums"
         value={config.history_window_days ?? 30}
         onChange={(event) => {
-          const value = Number(event.target.value);
+          const raw = event.target.value.replace(/\D/g, "");
+          if (raw === "") {
+            return;
+          }
+          const value = Number.parseInt(raw, 10);
           if (Number.isFinite(value)) {
             onChange({ history_window_days: value });
           }

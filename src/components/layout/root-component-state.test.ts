@@ -6,6 +6,7 @@ describe("getHydrationSafeRootState", () => {
   it("uses server-safe defaults so Tauri-only window state is applied after hydration", () => {
     expect(getHydrationSafeRootState()).toEqual({
       isTrayPanelWindow: false,
+      isAppWindow: false,
       platform: "unknown",
     });
   });

@@ -62,15 +62,19 @@ body {
   margin: 0;
 }
 
-/* Tray popover webview: transparent shell so native vibrancy/Mica shows through. */
+/* Native glass shells: transparent html/body so vibrancy/Mica shows through. */
 html[data-tray-panel],
-html[data-tray-panel] body {
+html[data-tray-panel] body,
+html[data-app-window],
+html[data-app-window] body {
   height: 100%;
   background-color: transparent;
 }
 
 html[data-tray-panel].dark,
-html[data-tray-panel].dark body {
+html[data-tray-panel].dark body,
+html[data-app-window].dark,
+html[data-app-window].dark body {
   background-color: transparent;
 }
 
@@ -238,6 +242,7 @@ html[data-tray-panel].dark body {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  box-shadow: none;
   --background: transparent;
   --foreground: light-dark(#1d1d1f, #f5f5f7);
   --card: light-dark(
@@ -256,11 +261,17 @@ html[data-tray-panel].dark body {
     color-mix(in oklab, #000000 5%, transparent),
     color-mix(in oklab, #ffffff 8%, transparent)
   );
+  --muted-foreground: light-dark(#6e6e73, #98989d);
   --border: light-dark(
     color-mix(in oklab, #000000 12%, transparent),
     color-mix(in oklab, #ffffff 14%, transparent)
   );
+  --input: light-dark(
+    color-mix(in oklab, #000000 12%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
   --primary: light-dark(#007aff, #0a84ff);
+  --primary-foreground: light-dark(#ffffff, #ffffff);
   --ring: light-dark(#007aff, #0a84ff);
 }
 
@@ -281,6 +292,7 @@ html[data-tray-panel].dark body {
 
 [data-platform="macos"] .app-window--about {
   --app-glass-tint: transparent;
+  background: transparent;
 }
 
 /* Tray popover: OS-native translucent surfaces; light/dark follows prefers-color-scheme. */

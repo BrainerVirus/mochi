@@ -67,11 +67,14 @@ pub fn apply_app_window_vibrancy(window: &WebviewWindow) -> Result<(), String> {
         window
             .set_effects(
                 EffectsBuilder::new()
-                    .effect(Effect::Sidebar)
+                    .effect(Effect::Popover)
                     .state(EffectState::Active)
+                    .radius(TRAY_PANEL_CORNER_RADIUS_MACOS)
                     .build(),
             )
             .map_err(|error| error.to_string())?;
+
+        let _ = window.set_shadow(true);
 
         Ok(())
     }

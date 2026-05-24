@@ -138,30 +138,7 @@ interface GeneralSettingsSectionProps {
 export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSectionProps) {
   return (
     <FieldGroup className="gap-0">
-      <Field orientation="horizontal" className="items-center justify-between gap-3 py-2.5">
-        <FieldContent className="min-w-0">
-          <FieldLabel htmlFor="refresh-interval" className="text-sm font-medium">
-            Refresh interval
-          </FieldLabel>
-          <FieldDescription className="text-[11px]">
-            How often Mochi checks usage (seconds).
-          </FieldDescription>
-        </FieldContent>
-        <Input
-          id="refresh-interval"
-          type="number"
-          min={30}
-          max={86_400}
-          className="h-7 w-20 shrink-0 tabular-nums"
-          value={settings.refresh_interval_seconds}
-          onChange={(event) => {
-            const value = Number(event.target.value);
-            if (Number.isFinite(value)) {
-              onChange({ refresh_interval_seconds: value });
-            }
-          }}
-        />
-      </Field>
+      <RefreshIntervalField settings={settings} onChange={onChange} />
 
       <Separator />
 
@@ -213,5 +190,44 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
         />
       </Field>
     </FieldGroup>
+  );
+}
+
+function RefreshIntervalField({
+  settings,
+  onChange,
+}: {
+  settings: MochiSettings;
+  onChange: (patch: Partial<MochiSettings>) => void;
+}) {
+  return (
+    <Field orientation="horizontal" className="items-center justify-between gap-3 py-2.5">
+      <FieldContent className="min-w-0">
+        <FieldLabel htmlFor="refresh-interval" className="text-sm font-medium">
+          Refresh interval
+        </FieldLabel>
+        <FieldDescription className="text-[11px]">
+          How often Mochi checks usage (seconds).
+        </FieldDescription>
+      </FieldContent>
+      <Input
+        id="refresh-interval"
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        className="h-7 w-20 shrink-0 tabular-nums"
+        value={settings.refresh_interval_seconds}
+        onChange={(event) => {
+          const raw = event.target.value.replace(/\D/g, "");
+          if (raw === "") {
+            return;
+          }
+          const value = Number.parseInt(raw, 10);
+          if (Number.isFinite(value)) {
+            onChange({ refresh_interval_seconds: value });
+          }
+        }}
+      />
+    </Field>
   );
 }
