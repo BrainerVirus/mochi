@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import { SettingsTabSegmentedControl } from "@/components/tray/tray-segmented-control";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -9,6 +7,7 @@ import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
 import { resolveSettingsFormState } from "./settings-form-state";
 import { GeneralSettingsSection, ProviderSettingsSection } from "./settings-sections";
+import { useSettingsTabState } from "./settings-tab-state";
 
 const SETTINGS_TABS = [
   { id: "general", label: "General" },
@@ -51,7 +50,7 @@ interface SettingsEditorProps {
 }
 
 function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEditorProps) {
-  const [activeTab, setActiveTab] = useState<string>("general");
+  const [activeTab, setActiveTab] = useSettingsTabState();
 
   function patchSettings(patch: Partial<MochiSettings>) {
     onSave({ ...settings, ...patch });
@@ -67,6 +66,7 @@ function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEdito
           items={[...SETTINGS_TABS]}
           value={activeTab}
           onValueChange={setActiveTab}
+          contentReady={!isLoading}
         />
       </div>
 

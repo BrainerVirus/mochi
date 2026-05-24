@@ -30,6 +30,7 @@ interface PageTabSegmentedControlProps {
   value: string;
   onValueChange: (value: string) => void;
   className?: string;
+  contentReady?: boolean;
 }
 
 /** Tray page-level tab strip (providers overview, per-provider tabs). */
@@ -56,6 +57,7 @@ export function SettingsTabSegmentedControl({
   value,
   onValueChange,
   className,
+  contentReady = true,
 }: PageTabSegmentedControlProps) {
   return (
     <AppSegmentedControl
@@ -63,6 +65,7 @@ export function SettingsTabSegmentedControl({
       value={value}
       onValueChange={onValueChange}
       className={className}
+      contentReady={contentReady}
       {...SETTINGS_PAGE_TAB_DEFAULTS}
     />
   );

@@ -27,8 +27,11 @@ export function usesSegmentActiveIndicator(variant: AppSegmentedControlVariant):
   return variant === "page-tabs" || variant === "inline";
 }
 
-export function usesSegmentHoverIndicator(variant: AppSegmentedControlVariant): boolean {
-  return variant === "page-tabs";
+export function usesSegmentHoverIndicator(
+  variant: AppSegmentedControlVariant,
+  layout: AppSegmentedControlLayout = "tray",
+): boolean {
+  return variant === "page-tabs" && layout === "tray";
 }
 
 /** Fixed radius tokens — tray page tabs only; not used in settings (.app-window --radius). */
@@ -127,7 +130,10 @@ function useAppSegmentControlState(
   value: string,
   itemCount: number,
   onValueChange: (value: string) => void,
-  indicatorOptions: UseTraySegmentIndicatorsOptions & { enabled: boolean },
+  indicatorOptions: UseTraySegmentIndicatorsOptions & {
+    enabled: boolean;
+    contentReady?: boolean;
+  },
 ) {
   const trackRef = useRef<HTMLDivElement>(null);
   const activeIndicatorRef = useRef<HTMLDivElement>(null);
@@ -142,7 +148,7 @@ function useAppSegmentControlState(
     itemRefs.current.delete(id);
   }, []);
 
-  const { syncHoverIndicator, handleRailLeave, handleSegmentValueChange } =
+  const { syncHoverIndicator, handleRailLeave, handleSegmentValueChange, pillReady } =
     useTraySegmentIndicators(
       trackRef,
       activeIndicatorRef,
@@ -150,7 +156,10 @@ function useAppSegmentControlState(
       value,
       indicatorOptions.enabled ? itemCount : 0,
       itemRefs,
-      { showHover: indicatorOptions.showHover },
+      {
+        showHover: indicatorOptions.showHover,
+        contentReady: indicatorOptions.contentReady,
+      },
     );
 
   const handleValueChange = useCallback(
@@ -174,6 +183,7 @@ function useAppSegmentControlState(
     syncHoverIndicator,
     handleRailLeave,
     handleValueChange,
+    pillReady,
   };
 }
 
@@ -187,6 +197,8 @@ interface AppSegmentedControlProps {
   variant?: AppSegmentedControlVariant;
   /** Page-tabs only: tray keeps pill radii + scroll; settings uses full width + --radius rounding. */
   layout?: AppSegmentedControlLayout;
+  /** When false, tab pill snaps until content is ready (e.g. settings query loading). */
+  contentReady?: boolean;
 }
 
 function SegmentToggleItems({
@@ -195,15 +207,16 @@ function SegmentToggleItems({
   stretchItems,
   setItemRef,
   syncHoverIndicator,
+  showHover,
 }: {
   items: AppSegmentItem[];
   variant: AppSegmentedControlVariant;
   stretchItems: boolean;
   setItemRef: (id: string, element: HTMLButtonElement | null) => void;
   syncHoverIndicator: (id: string) => void;
+  showHover: boolean;
 }) {
   const isPageTabs = variant === "page-tabs";
-  const showHover = usesSegmentHoverIndicator(variant);
   const usesIndicators = usesSegmentActiveIndicator(variant);
 
   return items.map((item) => (
@@ -244,6 +257,7 @@ export function AppSegmentedControl({
   stretchItems = true,
   variant = "page-tabs",
   layout = "tray",
+  contentReady = true,
 }: AppSegmentedControlProps) {
   const isPageTabs = usesPageTabIndicators(variant);
   const showHover = usesSegmentHoverIndicator(variant);
@@ -255,10 +269,12 @@ export function AppSegmentedControl({
   const state = useAppSegmentControlState(value, items.length, onValueChange, {
     enabled: usesIndicators,
     showHover,
+    contentReady,
   });
   const trackClassName = isPageTabs
     ? "bg-[var(--app-segment-track)]"
     : "bg-[var(--app-segment-inline-track)]";
+  const blockInteractionUntilPlaced = usesIndicators && layout === "settings" && !state.pillReady;
 
   return (
     <div
@@ -272,6 +288,7 @@ export function AppSegmentedControl({
         isPageTabs ? pageTabRadius.track : "rounded-lg",
         trackClassName,
         stretchItems ? "w-full" : "w-max min-w-full",
+        blockInteractionUntilPlaced && "pointer-events-none",
         className,
       )}
     >
@@ -300,6 +317,7 @@ export function AppSegmentedControl({
           stretchItems={stretchItems}
           setItemRef={state.setItemRef}
           syncHoverIndicator={state.syncHoverIndicator}
+          showHover={showHover}
         />
       </ToggleGroup>
     </div>

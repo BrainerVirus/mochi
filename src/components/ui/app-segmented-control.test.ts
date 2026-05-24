@@ -35,8 +35,9 @@ describe("usesSegmentActiveIndicator", () => {
 });
 
 describe("usesSegmentHoverIndicator", () => {
-  it("enables hover pill only for page tabs", () => {
-    expect(usesSegmentHoverIndicator("page-tabs")).toBe(true);
+  it("enables hover pill only for tray page tabs", () => {
+    expect(usesSegmentHoverIndicator("page-tabs", "tray")).toBe(true);
+    expect(usesSegmentHoverIndicator("page-tabs", "settings")).toBe(false);
     expect(usesSegmentHoverIndicator("inline")).toBe(false);
   });
 });

@@ -1,20 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 import {
   createHoverIndicatorQuickTo,
   executeTraySegmentIndicatorCommand,
-  observeSegmentTrackResize,
-  readIndicatorMetrics,
   releaseSegmentIndicators,
-  syncActiveSegmentIndicator,
 } from "@/components/tray/tray-segment-indicator";
 import {
   createTraySegmentIndicatorMachine,
   transitionTraySegmentIndicator,
   type TraySegmentIndicatorCommand,
 } from "@/components/tray/tray-segment-indicator-machine";
+import { useActiveIndicatorSync } from "@/components/tray/use-tray-segment-indicator-sync";
 
 function useIndicatorCleanup(
   activeIndicatorRef: RefObject<HTMLDivElement | null>,
@@ -93,111 +91,35 @@ function useIndicatorMachineHandlers(
   };
 }
 
-function useActiveIndicatorLayout(
-  activeIndicatorRef: RefObject<HTMLDivElement | null>,
-  tabCount: number,
-  syncIndicators: (animateActive: boolean) => boolean,
-  value: string,
-) {
-  useLayoutEffect(() => {
-    if (tabCount === 0) {
-      return;
-    }
-
-    const activeIndicator = activeIndicatorRef.current;
-    const animateActive = activeIndicator ? readIndicatorMetrics(activeIndicator).width > 0 : false;
-
-    syncIndicators(animateActive);
-  }, [tabCount, syncIndicators, value, activeIndicatorRef]);
-}
-
-function useClearHoverOnValueChange(value: string, handleRailLeave: () => void) {
-  const previousValueRef = useRef(value);
-
-  useLayoutEffect(() => {
-    if (previousValueRef.current === value) {
-      return;
-    }
-
-    previousValueRef.current = value;
-    handleRailLeave();
-  }, [handleRailLeave, value]);
-}
-
-function useSegmentTrackResize(
-  trackRef: RefObject<HTMLDivElement | null>,
-  syncIndicators: (animateActive: boolean) => boolean,
-) {
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) {
-      return undefined;
-    }
-
-    const resizeObserver = observeSegmentTrackResize(track, () => {
-      syncIndicators(false);
-    });
-
-    return () => resizeObserver.disconnect();
-  }, [syncIndicators, trackRef]);
-}
-
-function useActiveIndicatorSync(
-  trackRef: RefObject<HTMLDivElement | null>,
-  activeIndicatorRef: RefObject<HTMLDivElement | null>,
-  itemRefs: RefObject<Map<string, HTMLButtonElement>>,
-  value: string,
-  tabCount: number,
-  handleRailLeave: () => void,
-) {
-  const syncActive = useCallback(
-    (animate: boolean) => {
-      syncActiveSegmentIndicator(
-        trackRef.current,
-        activeIndicatorRef.current,
-        itemRefs.current?.get(value),
-        {
-          animate,
-        },
-      );
-    },
-    [activeIndicatorRef, itemRefs, trackRef, value],
-  );
-
-  const syncIndicators = useCallback(
-    (animateActive: boolean) => {
-      const item = itemRefs.current?.get(value);
-      const activeIndicator = activeIndicatorRef.current;
-      if (!trackRef.current || !activeIndicator || !item) {
-        return false;
-      }
-
-      syncActive(animateActive);
-
-      return true;
-    },
-    [activeIndicatorRef, itemRefs, syncActive, trackRef, value],
-  );
-
-  useClearHoverOnValueChange(value, handleRailLeave);
-  useActiveIndicatorLayout(activeIndicatorRef, tabCount, syncIndicators, value);
-  useSegmentTrackResize(trackRef, syncIndicators);
-}
-
 export interface UseTraySegmentIndicatorsOptions {
   /** When false, only the active pill animates — no cursor-following hover pill. */
   showHover?: boolean;
+  /** When false, snap on tab change and re-place when it becomes true (settings load). Default true. */
+  contentReady?: boolean;
 }
 
 /**
- * Page tabs animate via machine SELECT (moveActive) for hover handoff; inline
- * defers to the value layout effect so metrics are read after DOM commit
- * (font-weight / equal-width flex) and never double-tween on click.
+ * Tray page tabs animate via machine SELECT (moveActive) for hover handoff; inline
+ * and settings page tabs defer to the value layout effect so metrics are read after
+ * DOM commit and never double-tween on click.
  */
 export function shouldRunMachineSelectOnValueChange(
   options: Pick<UseTraySegmentIndicatorsOptions, "showHover">,
 ): boolean {
   return options.showHover ?? true;
+}
+
+export function shouldSyncActiveOnValueChange(
+  options: Pick<UseTraySegmentIndicatorsOptions, "showHover">,
+): boolean {
+  return !shouldRunMachineSelectOnValueChange(options);
+}
+
+export function shouldAnimateActiveOnValueChange(
+  indicatorPlaced: boolean,
+  contentReady: boolean,
+): boolean {
+  return indicatorPlaced && contentReady;
 }
 
 export function useTraySegmentIndicators(
@@ -210,7 +132,14 @@ export function useTraySegmentIndicators(
   options: UseTraySegmentIndicatorsOptions = {},
 ) {
   const showHover = options.showHover ?? true;
+  const contentReady = options.contentReady ?? true;
+  const syncOnValueChange = shouldSyncActiveOnValueChange({ showHover });
   const hoverQuickToRef = useRef<ReturnType<typeof createHoverIndicatorQuickTo> | null>(null);
+  const indicatorPlacedRef = useRef(false);
+  const [pillReady, setPillReady] = useState(false);
+  const handlePlaced = useCallback((placed: boolean) => {
+    setPillReady(placed);
+  }, []);
 
   useIndicatorCleanup(activeIndicatorRef, hoverIndicatorRef, hoverQuickToRef);
 
@@ -225,7 +154,18 @@ export function useTraySegmentIndicators(
   const { handleHover, handleRailLeave, handleSelect } =
     useIndicatorMachineHandlers(executeCommands);
 
-  useActiveIndicatorSync(trackRef, activeIndicatorRef, itemRefs, value, tabCount, handleRailLeave);
+  useActiveIndicatorSync(
+    trackRef,
+    activeIndicatorRef,
+    itemRefs,
+    value,
+    tabCount,
+    handleRailLeave,
+    indicatorPlacedRef,
+    syncOnValueChange,
+    contentReady,
+    handlePlaced,
+  );
 
   const handleSegmentValueChange = useCallback(
     (next: string, onValueChange: (value: string) => void) => {
@@ -241,5 +181,6 @@ export function useTraySegmentIndicators(
     syncHoverIndicator: showHover ? handleHover : () => {},
     handleRailLeave: showHover ? handleRailLeave : () => {},
     handleSegmentValueChange,
+    pillReady,
   };
 }
