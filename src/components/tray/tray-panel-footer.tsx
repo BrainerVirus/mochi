@@ -35,7 +35,6 @@ export function TrayPanelFooter({ isRefreshing, onRefresh, onQuit }: TrayPanelFo
   });
 
   const items: TrayMenuItem[] = [
-    ...updateItems,
     {
       id: "refresh",
       label: "Refresh",
@@ -53,6 +52,7 @@ export function TrayPanelFooter({ isRefreshing, onRefresh, onQuit }: TrayPanelFo
         void openAppWindow("/settings");
       },
     },
+    ...updateItems,
     {
       id: "about",
       label: "About Mochi",

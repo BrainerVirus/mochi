@@ -23,12 +23,13 @@ interface UpdatePageContentProps {
 export function UpdatePageContent(props: UpdatePageContentProps) {
   const sections = useMemo(() => splitPatchNotesSections(props.notes), [props.notes]);
   const install = useUpdateInstall();
+  const hasScrollableNotes = sections.length > 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       <UpdatePageHeader {...props} sections={sections} installPhase={install.phase} />
       <Separator />
-      <UpdateNotesBody {...props} sections={sections} />
+      <UpdateNotesBody {...props} sections={sections} scrollable={hasScrollableNotes} />
       <UpdatePageFooter {...props} install={install} />
     </div>
   );
@@ -53,12 +54,12 @@ function UpdatePageHeader({
       : "You're up to date";
 
   return (
-    <header className={`shrink-0 ${trayPanelSpacing.contentX} pt-4 pb-3`}>
+    <header className={`shrink-0 ${trayPanelSpacing.contentX} pt-3 pb-2`}>
       <div className="flex items-start gap-3">
-        {showChibi ? <MochiChibi className="size-12 shrink-0" /> : null}
+        {showChibi ? <MochiChibi className="size-10 shrink-0" /> : null}
         <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold tracking-tight">{title}</h1>
-          <p className="text-muted-foreground mt-1 text-xs">
+          <p className="text-muted-foreground mt-0.5 text-xs">
             {notesOnly ? "Release notes from your last update check." : `Channel: ${channel}`}
           </p>
         </div>
@@ -73,27 +74,37 @@ function UpdateNotesBody({
   isChecking,
   checkError,
   sections,
+  scrollable,
 }: Pick<UpdatePageContentProps, "notesOnly" | "updateAvailable" | "isChecking" | "checkError"> & {
   sections: PatchNotesSection[];
+  scrollable: boolean;
 }) {
-  return (
-    <ScrollFadeRegion
-      orientation="vertical"
-      className="min-h-0 flex-1"
-      scrollClassName="overscroll-y-contain"
-    >
-      <div className={`${trayPanelSpacing.contentX} py-3`}>
-        {checkError ? <p className="text-destructive text-xs">{checkError}</p> : null}
-        {sections.length > 0 ? (
-          <PatchNotesSections sections={sections} />
-        ) : (
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            {resolveEmptyNotesMessage({ notesOnly, isChecking, updateAvailable })}
-          </p>
-        )}
-      </div>
-    </ScrollFadeRegion>
+  const content = (
+    <>
+      {checkError ? <p className="text-destructive text-xs">{checkError}</p> : null}
+      {sections.length > 0 ? (
+        <PatchNotesSections sections={sections} />
+      ) : (
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          {resolveEmptyNotesMessage({ notesOnly, isChecking, updateAvailable })}
+        </p>
+      )}
+    </>
   );
+
+  if (scrollable) {
+    return (
+      <ScrollFadeRegion
+        orientation="vertical"
+        className="min-h-0 flex-1"
+        scrollClassName="overscroll-y-contain"
+      >
+        <div className={`${trayPanelSpacing.contentX} py-2`}>{content}</div>
+      </ScrollFadeRegion>
+    );
+  }
+
+  return <div className={`shrink-0 ${trayPanelSpacing.contentX} py-2`}>{content}</div>;
 }
 
 function PatchNotesSections({ sections }: { sections: PatchNotesSection[] }) {
@@ -124,18 +135,12 @@ function UpdatePageFooter({
 }: Pick<UpdatePageContentProps, "notesOnly" | "updateAvailable" | "isChecking" | "onRecheck"> & {
   install: ReturnType<typeof useUpdateInstall>;
 }) {
+  const footerClassName = `mt-auto shrink-0 ${trayPanelSpacing.contentX} pb-3 pt-2`;
+
   if (notesOnly) {
     return (
-      <footer
-        className={`shrink-0 ${trayPanelSpacing.contentX} ${trayPanelSpacing.footerBottom} py-2`}
-      >
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          disabled={isChecking}
-          onClick={onRecheck}
-        >
+      <footer className={footerClassName}>
+        <Button type="button" className="w-full" disabled={isChecking} onClick={onRecheck}>
           {isChecking ? "Checking…" : "Check for updates"}
         </Button>
       </footer>
@@ -147,9 +152,7 @@ function UpdatePageFooter({
     install.phase === "downloading" || install.phase === "installing" || install.isPending;
 
   return (
-    <footer
-      className={`shrink-0 ${trayPanelSpacing.contentX} ${trayPanelSpacing.footerBottom} pt-2`}
-    >
+    <footer className={footerClassName}>
       {showProgress ? (
         <div className="space-y-2 pb-2">
           <Progress value={progressPercent} className="h-1.5" />
@@ -164,8 +167,7 @@ function UpdatePageFooter({
       <div className="flex gap-2">
         <Button
           type="button"
-          variant="outline"
-          className="flex-1"
+          className={updateAvailable ? "flex-1" : "w-full"}
           disabled={isChecking || install.isPending}
           onClick={onRecheck}
         >

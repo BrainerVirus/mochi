@@ -21,8 +21,8 @@ pub const ABOUT_WINDOW_WIDTH: f64 = 340.0;
 pub const ABOUT_WINDOW_HEIGHT: f64 = 280.0;
 
 /// Compact update window size (logical px).
-pub const UPDATE_WINDOW_WIDTH: f64 = 380.0;
-pub const UPDATE_WINDOW_HEIGHT: f64 = 420.0;
+pub const UPDATE_WINDOW_WIDTH: f64 = 340.0;
+pub const UPDATE_WINDOW_HEIGHT: f64 = 280.0;
 
 /// Matches `src/lib/utils/tray-panel-layout.ts` and `tauri.conf.json` main window width.
 pub const TRAY_PANEL_WIDTH: f64 = 360.0;
