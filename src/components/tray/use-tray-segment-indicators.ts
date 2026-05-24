@@ -3,123 +3,67 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 
 import {
-  clearTraySegmentHover,
-  clearTraySegmentPointerHover,
-  createTraySegmentHoverState,
-  getTraySegmentHoverTarget,
-  setTraySegmentPointerHover,
-  type TraySegmentHoverState,
-} from "@/components/tray/tray-segment-hover-state";
-import {
   createHoverIndicatorQuickTo,
-  hideHoverIndicator,
-  mergeHoverIntoActiveStart,
+  executeTraySegmentIndicatorCommand,
   observeSegmentTrackResize,
   readIndicatorMetrics,
-  shouldHideHoverOnLeave,
   syncActiveSegmentIndicator,
-  syncHoverSegmentIndicator,
-  type IndicatorMetrics,
 } from "@/components/tray/tray-segment-indicator";
+import {
+  createTraySegmentIndicatorMachine,
+  transitionTraySegmentIndicator,
+  type TraySegmentIndicatorCommand,
+} from "@/components/tray/tray-segment-indicator-machine";
 
-function useHoverIndicatorHandlers(
-  hoverStateRef: RefObject<TraySegmentHoverState>,
-  suppressHoverEndRef: RefObject<boolean>,
-  syncCurrentHover: (animate: boolean) => void,
-) {
-  const handleHover = useCallback(
-    (tabId: string) => {
-      setTraySegmentPointerHover(hoverStateRef.current, tabId);
-      syncCurrentHover(true);
-    },
-    [hoverStateRef, syncCurrentHover],
-  );
-
-  const handleHoverEnd = useCallback(
-    (tabId: string) => {
-      if (!shouldHideHoverOnLeave(suppressHoverEndRef.current)) {
-        return;
-      }
-      clearTraySegmentPointerHover(hoverStateRef.current, tabId);
-      syncCurrentHover(true);
-    },
-    [hoverStateRef, suppressHoverEndRef, syncCurrentHover],
-  );
-
-  const handlePointerDown = useCallback(
-    (tabId: string) => {
-      suppressHoverEndRef.current = true;
-      setTraySegmentPointerHover(hoverStateRef.current, tabId);
-      syncCurrentHover(false);
-    },
-    [hoverStateRef, suppressHoverEndRef, syncCurrentHover],
-  );
-
-  const handlePointerUp = useCallback(() => {
-    suppressHoverEndRef.current = false;
-  }, [suppressHoverEndRef]);
-
-  return { handleHover, handleHoverEnd, handlePointerDown, handlePointerUp };
-}
-
-function useHoverIndicatorSync(
+function useIndicatorCommandExecutor(
   trackRef: RefObject<HTMLDivElement | null>,
+  activeIndicatorRef: RefObject<HTMLDivElement | null>,
   hoverIndicatorRef: RefObject<HTMLDivElement | null>,
   itemRefs: RefObject<Map<string, HTMLButtonElement>>,
   value: string,
 ) {
-  const hoverStateRef = useRef(createTraySegmentHoverState());
   const hoverQuickToRef = useRef<ReturnType<typeof createHoverIndicatorQuickTo> | null>(null);
-  const suppressHoverEndRef = useRef(false);
 
-  const syncHover = useCallback(
-    (tabId: string | null, animate: boolean) => {
+  return useCallback(
+    (commands: TraySegmentIndicatorCommand[]) => {
       const indicator = hoverIndicatorRef.current;
-      if (!indicator) {
-        return;
+      if (indicator) {
+        hoverQuickToRef.current ??= createHoverIndicatorQuickTo(indicator);
       }
 
-      if (!tabId) {
-        hideHoverIndicator(indicator, animate);
-        return;
+      for (const command of commands) {
+        executeTraySegmentIndicatorCommand(command, {
+          track: trackRef.current,
+          hoverIndicator: indicator,
+          activeIndicator: activeIndicatorRef.current,
+          itemRefs: itemRefs.current,
+          hoverQuickTo: hoverQuickToRef.current,
+          activeValue: value,
+        });
       }
-
-      const item = itemRefs.current?.get(tabId);
-      if (!item) {
-        return;
-      }
-
-      hoverQuickToRef.current ??= createHoverIndicatorQuickTo(indicator);
-
-      syncHoverSegmentIndicator(
-        trackRef.current,
-        indicator,
-        item,
-        hoverQuickToRef.current,
-        value,
-        tabId,
-      );
     },
-    [hoverIndicatorRef, itemRefs, trackRef, value],
+    [activeIndicatorRef, hoverIndicatorRef, itemRefs, trackRef, value],
   );
+}
 
-  const syncCurrentHover = useCallback(
-    (animate: boolean) => {
-      syncHover(getTraySegmentHoverTarget(hoverStateRef.current), animate);
+function useIndicatorMachineHandlers(
+  executeCommands: (commands: TraySegmentIndicatorCommand[]) => void,
+) {
+  const machineStateRef = useRef(createTraySegmentIndicatorMachine());
+
+  const transition = useCallback(
+    (event: Parameters<typeof transitionTraySegmentIndicator>[1]) => {
+      const result = transitionTraySegmentIndicator(machineStateRef.current, event);
+      machineStateRef.current = result.state;
+      executeCommands(result.commands);
     },
-    [syncHover],
+    [executeCommands],
   );
-
-  const { handleHover, handleHoverEnd, handlePointerDown, handlePointerUp } =
-    useHoverIndicatorHandlers(hoverStateRef, suppressHoverEndRef, syncCurrentHover);
 
   return {
-    syncCurrentHover,
-    hoverStateRef,
-    handleHover,
-    handleHoverEnd,
-    handlePointerDown,
-    handlePointerUp,
+    handleHover: (tabId: string) => transition({ type: "ITEM_ENTER", tabId }),
+    handleRailLeave: () => transition({ type: "RAIL_LEAVE" }),
+    handleSelect: (tabId: string) => transition({ type: "SELECT", tabId }),
   };
 }
 
@@ -141,11 +85,7 @@ function useActiveIndicatorLayout(
   }, [tabCount, syncIndicators, value, activeIndicatorRef]);
 }
 
-function useClearHoverOnValueChange(
-  value: string,
-  hoverIndicatorRef: RefObject<HTMLDivElement | null>,
-  hoverStateRef: RefObject<TraySegmentHoverState>,
-) {
+function useClearHoverOnValueChange(value: string, handleRailLeave: () => void) {
   const previousValueRef = useRef(value);
 
   useLayoutEffect(() => {
@@ -154,12 +94,8 @@ function useClearHoverOnValueChange(
     }
 
     previousValueRef.current = value;
-    clearTraySegmentHover(hoverStateRef.current);
-    const hoverIndicator = hoverIndicatorRef.current;
-    if (hoverIndicator) {
-      hideHoverIndicator(hoverIndicator, false);
-    }
-  }, [hoverIndicatorRef, hoverStateRef, value]);
+    handleRailLeave();
+  }, [handleRailLeave, value]);
 }
 
 function useSegmentTrackResize(
@@ -183,15 +119,11 @@ function useSegmentTrackResize(
 function useActiveIndicatorSync(
   trackRef: RefObject<HTMLDivElement | null>,
   activeIndicatorRef: RefObject<HTMLDivElement | null>,
-  hoverIndicatorRef: RefObject<HTMLDivElement | null>,
   itemRefs: RefObject<Map<string, HTMLButtonElement>>,
   value: string,
   tabCount: number,
-  syncCurrentHover: (animate: boolean) => void,
-  hoverStateRef: RefObject<ReturnType<typeof createTraySegmentHoverState>>,
+  handleRailLeave: () => void,
 ) {
-  const handoffStartRef = useRef<IndicatorMetrics | null>(null);
-
   const syncActive = useCallback(
     (animate: boolean) => {
       syncActiveSegmentIndicator(
@@ -200,10 +132,8 @@ function useActiveIndicatorSync(
         itemRefs.current?.get(value),
         {
           animate,
-          handoffStart: handoffStartRef.current,
         },
       );
-      handoffStartRef.current = null;
     },
     [activeIndicatorRef, itemRefs, trackRef, value],
   );
@@ -218,35 +148,14 @@ function useActiveIndicatorSync(
 
       syncActive(animateActive);
 
-      syncCurrentHover(false);
-
       return true;
     },
-    [activeIndicatorRef, itemRefs, syncActive, syncCurrentHover, trackRef, value],
+    [activeIndicatorRef, itemRefs, syncActive, trackRef, value],
   );
 
-  const prepareActiveFromHover = useCallback(
-    (targetTabId: string) => {
-      const hoverIndicator = hoverIndicatorRef.current;
-      const hoveredId = getTraySegmentHoverTarget(hoverStateRef.current);
-      if (!hoverIndicator || !hoveredId) {
-        return;
-      }
-
-      const handoff = mergeHoverIntoActiveStart(hoverIndicator, hoveredId, targetTabId);
-      if (handoff) {
-        handoffStartRef.current = handoff;
-        clearTraySegmentPointerHover(hoverStateRef.current, hoveredId);
-      }
-    },
-    [hoverIndicatorRef, hoverStateRef],
-  );
-
-  useClearHoverOnValueChange(value, hoverIndicatorRef, hoverStateRef);
+  useClearHoverOnValueChange(value, handleRailLeave);
   useActiveIndicatorLayout(activeIndicatorRef, tabCount, syncIndicators, value);
   useSegmentTrackResize(trackRef, syncIndicators);
-
-  return { prepareActiveFromHover };
 }
 
 export function useTraySegmentIndicators(
@@ -257,40 +166,29 @@ export function useTraySegmentIndicators(
   tabCount: number,
   itemRefs: RefObject<Map<string, HTMLButtonElement>>,
 ) {
-  const {
-    syncCurrentHover,
-    hoverStateRef,
-    handleHover,
-    handleHoverEnd,
-    handlePointerDown,
-    handlePointerUp,
-  } = useHoverIndicatorSync(trackRef, hoverIndicatorRef, itemRefs, value);
-
-  const { prepareActiveFromHover } = useActiveIndicatorSync(
+  const executeCommands = useIndicatorCommandExecutor(
     trackRef,
     activeIndicatorRef,
     hoverIndicatorRef,
     itemRefs,
     value,
-    tabCount,
-    syncCurrentHover,
-    hoverStateRef,
   );
+  const { handleHover, handleRailLeave, handleSelect } =
+    useIndicatorMachineHandlers(executeCommands);
+
+  useActiveIndicatorSync(trackRef, activeIndicatorRef, itemRefs, value, tabCount, handleRailLeave);
 
   const handleSegmentValueChange = useCallback(
     (next: string, onValueChange: (value: string) => void) => {
-      prepareActiveFromHover(next);
+      handleSelect(next);
       onValueChange(next);
     },
-    [prepareActiveFromHover],
+    [handleSelect],
   );
 
   return {
     syncHoverIndicator: handleHover,
-    prepareActiveFromHover,
-    handleHoverEnd,
-    handlePointerDown,
-    handlePointerUp,
+    handleRailLeave,
     handleSegmentValueChange,
   };
 }

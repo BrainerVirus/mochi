@@ -4,12 +4,10 @@ import {
   applyActiveIndicatorPosition,
   applyHoverIndicatorPosition,
   computeIndicatorTarget,
-  mergeHoverIntoActiveStart,
   metricsFromClientRects,
   readIndicatorMetrics,
   resolveActiveIndicatorPlan,
   shouldAnimateActiveIndicator,
-  shouldHideHoverOnLeave,
   type HoverIndicatorQuickTo,
 } from "@/components/tray/tray-segment-indicator";
 
@@ -81,7 +79,6 @@ describe("resolveActiveIndicatorPlan", () => {
       resolveActiveIndicatorPlan({
         target,
         current: { x: 0, width: 0 },
-        handoffStart: null,
         animate: true,
         reducedMotion: false,
       }),
@@ -93,30 +90,21 @@ describe("resolveActiveIndicatorPlan", () => {
       resolveActiveIndicatorPlan({
         target,
         current: { x: 40, width: 68 },
-        handoffStart: null,
         animate: true,
         reducedMotion: false,
       }),
     ).toEqual({ mode: "tween" });
   });
 
-  it("tweens from the hover handoff position when click merges mid-hover", () => {
+  it("keeps active movement anchored to the current active pill during hover clicks", () => {
     expect(
       resolveActiveIndicatorPlan({
         target,
         current: { x: 40, width: 68 },
-        handoffStart: { x: 95, width: 70 },
         animate: true,
         reducedMotion: false,
       }),
-    ).toEqual({ mode: "tween", start: { x: 95, width: 70 } });
-  });
-});
-
-describe("shouldHideHoverOnLeave", () => {
-  it("keeps the active pill untouched while pointer-down suppresses hover end", () => {
-    expect(shouldHideHoverOnLeave(true)).toBe(false);
-    expect(shouldHideHoverOnLeave(false)).toBe(true);
+    ).toEqual({ mode: "tween" });
   });
 });
 
@@ -142,6 +130,29 @@ describe("applyHoverIndicatorPosition", () => {
 
     expect(quickX).toHaveBeenCalledWith(88);
     expect(quickWidth).toHaveBeenCalledWith(64);
+  });
+
+  it("places fresh hover targets without gliding from the hidden previous tab", () => {
+    const quickX = mockQuickTo();
+    const quickWidth = mockQuickTo();
+
+    applyHoverIndicatorPosition(
+      indicator,
+      { x: 144, width: 72 },
+      { x: quickX, width: quickWidth },
+      "alpha",
+      "delta",
+      false,
+      true,
+    );
+
+    expect(quickX).not.toHaveBeenCalled();
+    expect(quickWidth).not.toHaveBeenCalled();
+    expect(gsapMocks.set).toHaveBeenCalledWith(
+      indicator,
+      expect.objectContaining({ x: 144, width: 72 }),
+    );
+    expect(gsapMocks.to).toHaveBeenCalledWith(indicator, expect.objectContaining({ autoAlpha: 1 }));
   });
 });
 
@@ -202,53 +213,18 @@ describe("applyActiveIndicatorPosition", () => {
     );
   });
 
-  it("starts the active tween from the hover handoff position, not x=0", () => {
+  it("does not teleport active to hover metrics before tweening", () => {
     applyActiveIndicatorPosition(
       indicator,
       { x: 120, width: 72 },
-      { animate: true, reducedMotion: false, handoffStart: { x: 95, width: 70 } },
+      { animate: true, reducedMotion: false },
     );
 
-    expect(gsapMocks.set).toHaveBeenCalledWith(
-      indicator,
-      expect.objectContaining({ x: 95, width: 70, autoAlpha: 1 }),
-    );
+    expect(gsapMocks.set).not.toHaveBeenCalled();
     expect(gsapMocks.to).toHaveBeenCalledWith(
       indicator,
       expect.objectContaining({ x: 120, width: 72 }),
     );
-  });
-});
-
-describe("mergeHoverIntoActiveStart", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    gsapMocks.getProperty.mockImplementation((_target, prop) => {
-      if (prop === "x") return 55;
-      if (prop === "width") return 66;
-      if (prop === "autoAlpha") return 1;
-      return 0;
-    });
-  });
-
-  it("returns null when the hovered tab does not match the selection", () => {
-    expect(mergeHoverIntoActiveStart(mockIndicator(), "alpha", "beta")).toBeNull();
-  });
-
-  it("returns the hover pill metrics when clicking the hovered tab", () => {
-    expect(mergeHoverIntoActiveStart(mockIndicator(), "alpha", "alpha")).toEqual({
-      x: 55,
-      width: 66,
-    });
-  });
-
-  it("does not kill the hover x/width quickTo tween during active handoff", () => {
-    const indicator = mockIndicator();
-
-    mergeHoverIntoActiveStart(indicator, "alpha", "alpha");
-
-    expect(gsapMocks.killTweensOf).not.toHaveBeenCalledWith(indicator);
-    expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(indicator, "autoAlpha");
   });
 });
 

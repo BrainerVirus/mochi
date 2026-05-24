@@ -1,5 +1,7 @@
 import gsap from "gsap";
 
+import type { TraySegmentIndicatorCommand } from "@/components/tray/tray-segment-indicator-machine";
+
 export const TRAY_INDICATOR_DURATION_S = 0.35;
 export const TRAY_INDICATOR_EASE = "power3.inOut";
 
@@ -8,11 +10,10 @@ export interface IndicatorMetrics {
   width: number;
 }
 
-export type ActiveIndicatorPlan = { mode: "snap" } | { mode: "tween"; start?: IndicatorMetrics };
+export type ActiveIndicatorPlan = { mode: "snap" } | { mode: "tween" };
 
 export interface ActiveIndicatorOptions {
   animate: boolean;
-  handoffStart?: IndicatorMetrics | null;
   reducedMotion?: boolean;
 }
 
@@ -52,10 +53,6 @@ export function readIndicatorMetrics(indicator: HTMLElement): IndicatorMetrics {
   };
 }
 
-export function isHoverIndicatorVisible(indicator: HTMLElement): boolean {
-  return toNumericGsapProperty(gsap.getProperty(indicator, "autoAlpha")) > 0;
-}
-
 export function isIndicatorPlaced(metrics: IndicatorMetrics): boolean {
   return metrics.width > 0;
 }
@@ -72,47 +69,19 @@ export function shouldAnimateActiveIndicator(
   return !reducedMotion && animate && prevMetrics !== null;
 }
 
-export function resolveHoverHandoffStart({
-  hoveredId,
-  targetTabId,
-  hoverVisible,
-  hoverMetrics,
-}: {
-  hoveredId: string | null;
-  targetTabId: string;
-  hoverVisible: boolean;
-  hoverMetrics: IndicatorMetrics;
-}): IndicatorMetrics | null {
-  if (hoveredId !== targetTabId) {
-    return null;
-  }
-
-  if (!hoverVisible && !isIndicatorPlaced(hoverMetrics)) {
-    return null;
-  }
-
-  return isIndicatorPlaced(hoverMetrics) ? hoverMetrics : null;
-}
-
 export function resolveActiveIndicatorPlan({
   target,
   current,
-  handoffStart,
   animate,
   reducedMotion,
 }: {
   target: IndicatorMetrics;
   current: IndicatorMetrics;
-  handoffStart: IndicatorMetrics | null;
   animate: boolean;
   reducedMotion: boolean;
 }): ActiveIndicatorPlan {
   if (!animate || reducedMotion) {
     return { mode: "snap" };
-  }
-
-  if (handoffStart) {
-    return { mode: "tween", start: handoffStart };
   }
 
   if (!isIndicatorPlaced(current)) {
@@ -135,7 +104,6 @@ export function applyActiveIndicatorPosition(
   const plan = resolveActiveIndicatorPlan({
     target: metrics,
     current: readIndicatorMetrics(indicator),
-    handoffStart: options.handoffStart ?? null,
     animate: options.animate,
     reducedMotion,
   });
@@ -143,15 +111,6 @@ export function applyActiveIndicatorPosition(
   if (plan.mode === "snap") {
     gsap.set(indicator, { x: metrics.x, width: metrics.width, autoAlpha: 1, force3D: true });
     return;
-  }
-
-  if (plan.start) {
-    gsap.set(indicator, {
-      x: plan.start.x,
-      width: plan.start.width,
-      autoAlpha: 1,
-      force3D: true,
-    });
   }
 
   gsap.to(indicator, {
@@ -189,13 +148,16 @@ export function applyHoverIndicatorPosition(
   activeValue: string,
   hoveredId: string,
   reducedMotion = prefersReducedMotion(),
+  fresh = false,
 ) {
   if (reducedMotion) {
     gsap.set(indicator, { ...metrics, opacity: hoveredId === activeValue ? 0 : 1, force3D: true });
     return;
   }
 
-  if (quickTo) {
+  if (fresh) {
+    gsap.set(indicator, { ...metrics, force3D: true });
+  } else if (quickTo) {
     quickTo.x(metrics.x);
     quickTo.width(metrics.width);
   } else {
@@ -218,30 +180,6 @@ export function hideHoverIndicator(indicator: HTMLElement, animate: boolean) {
   });
 }
 
-export function mergeHoverIntoActiveStart(
-  hoverIndicator: HTMLElement,
-  hoveredId: string,
-  targetTabId: string,
-): IndicatorMetrics | null {
-  const handoff = resolveHoverHandoffStart({
-    hoveredId,
-    targetTabId,
-    hoverVisible: isHoverIndicatorVisible(hoverIndicator),
-    hoverMetrics: readIndicatorMetrics(hoverIndicator),
-  });
-
-  if (!handoff) {
-    return null;
-  }
-
-  hideHoverIndicator(hoverIndicator, false);
-  return handoff;
-}
-
-export function shouldHideHoverOnLeave(suppressHoverEnd: boolean): boolean {
-  return !suppressHoverEnd;
-}
-
 export function syncActiveSegmentIndicator(
   track: HTMLElement | null,
   indicator: HTMLElement | null,
@@ -257,25 +195,57 @@ export function syncActiveSegmentIndicator(
   return metrics;
 }
 
-export function syncHoverSegmentIndicator(
-  track: HTMLElement | null,
-  indicator: HTMLElement | null,
-  item: HTMLButtonElement | undefined,
-  quickTo: HoverIndicatorQuickTo | null,
-  activeValue: string,
-  hoveredId: string,
+export interface TraySegmentIndicatorExecutorContext {
+  track: HTMLElement | null;
+  hoverIndicator: HTMLElement | null;
+  activeIndicator: HTMLElement | null;
+  itemRefs: Map<string, HTMLButtonElement>;
+  hoverQuickTo: HoverIndicatorQuickTo | null;
+  activeValue: string;
+  reducedMotion?: boolean;
+}
+
+function itemForCommand(
+  itemRefs: Map<string, HTMLButtonElement>,
+  tabId: string,
+): HTMLButtonElement | undefined {
+  return itemRefs.get(tabId);
+}
+
+export function executeTraySegmentIndicatorCommand(
+  command: TraySegmentIndicatorCommand,
+  context: TraySegmentIndicatorExecutorContext,
 ) {
-  if (!track || !indicator || !item) {
+  if (command.type === "hideHover") {
+    if (context.hoverIndicator) {
+      hideHoverIndicator(context.hoverIndicator, !command.immediate);
+    }
     return;
   }
 
-  applyHoverIndicatorPosition(
-    indicator,
-    measureSegmentItem(track, item),
-    quickTo,
-    activeValue,
-    hoveredId,
-  );
+  if (command.type === "placeHover" || command.type === "moveHover") {
+    const item = itemForCommand(context.itemRefs, command.tabId);
+    if (!context.track || !context.hoverIndicator || !item) {
+      return;
+    }
+
+    applyHoverIndicatorPosition(
+      context.hoverIndicator,
+      measureSegmentItem(context.track, item),
+      command.type === "moveHover" ? context.hoverQuickTo : null,
+      context.activeValue,
+      command.tabId,
+      context.reducedMotion,
+      command.type === "placeHover",
+    );
+    return;
+  }
+
+  const item = itemForCommand(context.itemRefs, command.tabId);
+  syncActiveSegmentIndicator(context.track, context.activeIndicator, item, {
+    animate: command.type === "moveActive",
+    reducedMotion: context.reducedMotion,
+  });
 }
 
 export function observeSegmentTrackResize(

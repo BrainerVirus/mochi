@@ -65,20 +65,15 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
     itemRefs.current.delete(id);
   }, []);
 
-  const {
-    syncHoverIndicator,
-    handleHoverEnd,
-    handlePointerDown,
-    handlePointerUp,
-    handleSegmentValueChange,
-  } = useTraySegmentIndicators(
-    trackRef,
-    activeIndicatorRef,
-    hoverIndicatorRef,
-    value,
-    tabs.length,
-    itemRefs,
-  );
+  const { syncHoverIndicator, handleRailLeave, handleSegmentValueChange } =
+    useTraySegmentIndicators(
+      trackRef,
+      activeIndicatorRef,
+      hoverIndicatorRef,
+      value,
+      tabs.length,
+      itemRefs,
+    );
 
   const handleValueChange = useCallback(
     (next: string) => {
@@ -92,6 +87,7 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
   return (
     <div
       ref={trackRef}
+      onPointerLeave={handleRailLeave}
       className={cn(
         TRAY_SEGMENT_ROW_HEIGHT,
         "relative isolate w-max min-w-full rounded-lg bg-[var(--tray-segment-track)] p-0.5",
@@ -117,9 +113,6 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
             tab={tab}
             setItemRef={setItemRef}
             onHover={syncHoverIndicator}
-            onHoverEnd={handleHoverEnd}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
           />
         ))}
       </ToggleGroup>
