@@ -30,8 +30,8 @@ const pageTabItemClassName = cn(
 
 const inlineItemClassName = cn(
   "inline-flex h-full min-w-0 flex-1 cursor-pointer flex-row items-center justify-center gap-1.5 rounded-md border-0 px-3 shadow-none",
-  "bg-transparent text-muted-foreground hover:bg-[var(--app-segment-inline-hover)] hover:text-foreground",
-  "data-[state=on]:bg-[var(--app-segment-inline-selected)] data-[state=on]:font-medium data-[state=on]:text-primary data-[state=on]:shadow-none",
+  "bg-transparent text-muted-foreground hover:text-foreground",
+  "data-[state=on]:bg-primary data-[state=on]:font-medium data-[state=on]:text-primary-foreground data-[state=on]:shadow-none",
 );
 
 function SegmentIndicators({
@@ -54,10 +54,7 @@ function SegmentIndicators({
         ref={activeIndicatorRef}
         data-segment-indicator
         aria-hidden
-        className={cn(
-          indicatorLayerClassName,
-          "z-[2] invisible bg-[var(--app-segment-active)] shadow-sm ring-1 ring-[var(--app-segment-stroke)]",
-        )}
+        className={cn(indicatorLayerClassName, "z-[2] invisible bg-[var(--app-segment-active)]")}
         style={{ width: 0 }}
       />
     </>

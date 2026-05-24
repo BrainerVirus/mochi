@@ -38,7 +38,7 @@ export function ReleaseNotesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(32rem,85vh)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
+      <DialogContent className="app-window-dialog flex max-h-[min(32rem,85vh)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
         <DialogHeader className="shrink-0 border-b px-4 pt-4 pb-3 text-left">
           <DialogTitle>What&apos;s new</DialogTitle>
           <DialogDescription>

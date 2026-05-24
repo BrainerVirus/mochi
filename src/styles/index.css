@@ -184,12 +184,12 @@ html[data-app-window].dark body {
     color-mix(in oklab, #ffffff 8%, transparent)
   );
   --app-segment-hover: light-dark(
-    color-mix(in oklab, var(--primary) 8%, transparent),
-    color-mix(in oklab, var(--primary) 14%, transparent)
+    color-mix(in srgb, var(--primary) 15%, transparent),
+    color-mix(in srgb, var(--primary) 15%, transparent)
   );
   --app-segment-active: light-dark(
-    color-mix(in oklab, var(--primary) 14%, transparent),
-    color-mix(in oklab, var(--primary) 22%, transparent)
+    color-mix(in srgb, var(--primary) 25%, transparent),
+    color-mix(in srgb, var(--primary) 25%, transparent)
   );
   --app-segment-inline-track: light-dark(
     color-mix(in oklab, #000000 5%, transparent),
@@ -260,12 +260,12 @@ html[data-app-window].dark body {
     color-mix(in oklab, #ffffff 7%, transparent)
   );
   --app-segment-hover: light-dark(
-    color-mix(in oklab, var(--primary) 10%, transparent),
-    color-mix(in oklab, var(--primary) 14%, transparent)
+    color-mix(in srgb, var(--primary) 15%, transparent),
+    color-mix(in srgb, var(--primary) 15%, transparent)
   );
   --app-segment-active: light-dark(
-    color-mix(in oklab, var(--primary) 16%, transparent),
-    color-mix(in oklab, var(--primary) 24%, transparent)
+    color-mix(in srgb, var(--primary) 25%, transparent),
+    color-mix(in srgb, var(--primary) 25%, transparent)
   );
   background: transparent;
   backdrop-filter: none;
@@ -426,12 +426,12 @@ html[data-app-window].dark body {
     color-mix(in oklab, #ffffff 8%, transparent)
   );
   --tray-segment-hover: light-dark(
-    color-mix(in oklab, var(--primary) 8%, transparent),
-    color-mix(in oklab, var(--primary) 14%, transparent)
+    color-mix(in srgb, var(--primary) 15%, transparent),
+    color-mix(in srgb, var(--primary) 15%, transparent)
   );
   --tray-segment-active: light-dark(
-    color-mix(in oklab, var(--primary) 14%, transparent),
-    color-mix(in oklab, var(--primary) 22%, transparent)
+    color-mix(in srgb, var(--primary) 25%, transparent),
+    color-mix(in srgb, var(--primary) 25%, transparent)
   );
   --app-segment-inline-track: light-dark(
     color-mix(in oklab, #000000 5%, transparent),
@@ -495,12 +495,12 @@ html[data-app-window].dark body {
     color-mix(in oklab, #ffffff 7%, transparent)
   );
   --tray-segment-hover: light-dark(
-    color-mix(in oklab, var(--primary) 10%, transparent),
-    color-mix(in oklab, var(--primary) 14%, transparent)
+    color-mix(in srgb, var(--primary) 15%, transparent),
+    color-mix(in srgb, var(--primary) 15%, transparent)
   );
   --tray-segment-active: light-dark(
-    color-mix(in oklab, var(--primary) 16%, transparent),
-    color-mix(in oklab, var(--primary) 24%, transparent)
+    color-mix(in srgb, var(--primary) 25%, transparent),
+    color-mix(in srgb, var(--primary) 25%, transparent)
   );
   background: transparent;
   backdrop-filter: none;
@@ -740,6 +740,87 @@ html[data-app-window].dark body {
 [data-platform="macos"] .app-window .scroll-fade-edge-top,
 [data-platform="macos"] .app-window .scroll-fade-edge-bottom {
   background-image: none;
+}
+
+/*
+ * Portaled dialogs render on <body>, outside .tray-panel / .app-window shells.
+ * Scope native glass + semantic tokens so buttons and text match dedicated windows.
+ */
+html[data-app-window] [data-slot="dialog-overlay"],
+html[data-tray-panel] [data-slot="dialog-overlay"] {
+  background: rgb(0 0 0 / 40%);
+}
+
+html[data-app-window] [data-slot="dialog-content"],
+html[data-tray-panel] [data-slot="dialog-content"],
+.app-window-dialog {
+  color-scheme: light dark;
+  font-family: var(--font-platform);
+  color: light-dark(#1d1d1f, #f5f5f7);
+  background: light-dark(
+    color-mix(in oklab, #ffffff 88%, transparent),
+    color-mix(in oklab, #3a3a3c 92%, transparent)
+  );
+  border-color: light-dark(
+    color-mix(in oklab, #000000 12%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  --background: light-dark(#f5f5f7, #2c2c2e);
+  --foreground: light-dark(#1d1d1f, #f5f5f7);
+  --card: light-dark(#ffffff, #3a3a3c);
+  --card-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --popover: light-dark(
+    color-mix(in oklab, #ffffff 88%, transparent),
+    color-mix(in oklab, #3a3a3c 92%, transparent)
+  );
+  --popover-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --primary: light-dark(#007aff, #0a84ff);
+  --primary-foreground: light-dark(#ffffff, #ffffff);
+  --secondary: light-dark(#e5e5ea, #48484a);
+  --secondary-foreground: light-dark(#1d1d1f, #f5f5f7);
+  --muted: light-dark(#e5e5ea, #48484a);
+  --muted-foreground: light-dark(#6e6e73, #98989d);
+  --border: light-dark(
+    color-mix(in oklab, #000000 12%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
+  --input: light-dark(
+    color-mix(in oklab, #000000 12%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
+  --ring: light-dark(#007aff, #0a84ff);
+}
+
+[data-platform="macos"] html[data-app-window] [data-slot="dialog-content"],
+[data-platform="macos"] html[data-tray-panel] [data-slot="dialog-content"],
+[data-platform="macos"] .app-window-dialog {
+  background: light-dark(
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 10%, transparent)
+  );
+  --popover: light-dark(
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 10%, transparent)
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+[data-platform="windows"] html[data-app-window] [data-slot="dialog-content"],
+[data-platform="windows"] html[data-tray-panel] [data-slot="dialog-content"],
+[data-platform="windows"] .app-window-dialog {
+  --primary: light-dark(#005fb8, #60cdff);
+  --primary-foreground: light-dark(#ffffff, #000000);
+  --ring: light-dark(#005fb8, #60cdff);
+}
+
+[data-platform="linux"] html[data-app-window] [data-slot="dialog-content"],
+[data-platform="linux"] html[data-tray-panel] [data-slot="dialog-content"],
+[data-platform="linux"] .app-window-dialog {
+  --primary: light-dark(#3584e4, #62a0ea);
+  --ring: light-dark(#3584e4, #62a0ea);
 }
 
 @layer base {

@@ -129,13 +129,7 @@ function UpdateActions({
 }) {
   return (
     <div className="flex flex-wrap gap-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={isFetching || installPending}
-        onClick={onCheck}
-      >
+      <Button type="button" size="sm" disabled={isFetching || installPending} onClick={onCheck}>
         {isFetching ? "Checking…" : "Check for updates"}
       </Button>
       {showInstall ? (
@@ -143,7 +137,7 @@ function UpdateActions({
           Install update
         </Button>
       ) : null}
-      <Button type="button" variant="ghost" size="sm" onClick={onOpenNotes}>
+      <Button type="button" variant="outline" size="sm" onClick={onOpenNotes}>
         What&apos;s new
       </Button>
     </div>
