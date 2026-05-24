@@ -4,6 +4,9 @@ use tauri::{
     tray::TrayIconEvent, AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindow,
     WebviewWindowBuilder, WindowEvent,
 };
+
+#[cfg(target_os = "macos")]
+use crate::macos::{set_regular_activation_policy, sync_activation_policy_for_visible_windows};
 use tauri_plugin_positioner::{Position, WindowExt};
 
 pub const MAIN_PANEL_LABEL: &str = "main";
@@ -63,11 +66,25 @@ pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::err
     window.on_window_event(move |event| {
         if let WindowEvent::CloseRequested { api, .. } = event {
             api.prevent_close();
+            let app = window_for_events.app_handle();
             let _ = window_for_events.hide();
+            let _ = emit_tray_navigate(&app, "/");
+            #[cfg(target_os = "macos")]
+            sync_activation_policy_for_visible_windows(&app);
         }
     });
 
     Ok(())
+}
+
+fn emit_tray_navigate(app: &AppHandle, path: &str) -> Result<(), String> {
+    app.emit_to(MAIN_PANEL_LABEL, "tray-navigate", path)
+        .map_err(|error| error.to_string())
+}
+
+fn emit_app_navigate(app: &AppHandle, path: &str) -> Result<(), String> {
+    app.emit_to(SETTINGS_WINDOW_LABEL, "app-navigate", path)
+        .map_err(|error| error.to_string())
 }
 
 fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
@@ -267,6 +284,7 @@ pub fn show_main_panel(app: AppHandle) {
 #[tauri::command]
 pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     if let Some(tray_panel) = app.get_webview_window(MAIN_PANEL_LABEL) {
+        let _ = emit_tray_navigate(&app, "/");
         let _ = tray_panel.hide();
     }
 
@@ -291,8 +309,10 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
         eprintln!("[mochi] app window vibrancy unavailable: {error}");
     }
 
-    app.emit("app-navigate", path.as_str())
-        .map_err(|error| error.to_string())?;
+    emit_app_navigate(&app, path.as_str())?;
+
+    #[cfg(target_os = "macos")]
+    set_regular_activation_policy(&app);
 
     if window.is_visible().unwrap_or(false) {
         window.set_focus().map_err(|error| error.to_string())?;
@@ -309,7 +329,7 @@ pub fn show_tray_panel(app: &AppHandle, path: &str) {
         return;
     };
 
-    let _ = app.emit("tray-navigate", path);
+    let _ = emit_tray_navigate(app, path);
 
     if window.is_visible().unwrap_or(false) {
         let _ = window.hide();
@@ -325,7 +345,7 @@ pub fn open_tray_panel(app: &AppHandle, path: &str) {
         return;
     };
 
-    let _ = app.emit("tray-navigate", path);
+    let _ = emit_tray_navigate(app, path);
 
     if window.is_visible().unwrap_or(false) {
         let _ = window.set_focus();
@@ -363,7 +383,7 @@ pub fn show_tray_panel_centered(app: &AppHandle, path: &str) {
         return;
     };
 
-    let _ = app.emit("tray-navigate", path);
+    let _ = emit_tray_navigate(app, path);
     if let Err(error) = ensure_tray_panel_vibrancy(&window) {
         eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
     }
@@ -476,5 +496,11 @@ mod tests {
             super::app_window_size_for_path("/about"),
             (ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT)
         );
+    }
+
+    #[test]
+    fn navigation_events_target_dedicated_window_labels() {
+        assert_eq!(MAIN_PANEL_LABEL, "main");
+        assert_eq!(SETTINGS_WINDOW_LABEL, "settings");
     }
 }
