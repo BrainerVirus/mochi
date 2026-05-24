@@ -1,13 +1,19 @@
-import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 
+import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import { useSaveSettings, useSettings } from "@/hooks/use-tray-events";
 import type { MochiSettings } from "@/lib/schemas/settings";
+import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
 import { resolveSettingsFormState } from "./settings-form-state";
 import { GeneralSettingsSection, ProviderSettingsSection } from "./settings-sections";
+
+const SETTINGS_TABS = [
+  { id: "general", label: "General" },
+  { id: "providers", label: "Providers" },
+] as const;
 
 export function SettingsForm() {
   const { data, error, isError, isPending } = useSettings();
@@ -16,10 +22,12 @@ export function SettingsForm() {
 
   if (view.kind === "error") {
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Could not load settings</AlertTitle>
-        <AlertDescription>{error?.message ?? "Unknown error"}</AlertDescription>
-      </Alert>
+      <div className={`${trayPanelSpacing.contentX} py-6`}>
+        <Alert variant="destructive">
+          <AlertTitle>Could not load settings</AlertTitle>
+          <AlertDescription>{error?.message ?? "Unknown error"}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
@@ -43,45 +51,60 @@ interface SettingsEditorProps {
 }
 
 function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEditorProps) {
+  const [activeTab, setActiveTab] = useState<string>("general");
+
   function patchSettings(patch: Partial<MochiSettings>) {
     onSave({ ...settings, ...patch });
   }
 
   return (
-    <Tabs defaultValue="general" className="flex flex-col gap-4">
-      <TabsList>
-        <TabsTrigger value="general">General</TabsTrigger>
-        <TabsTrigger value="providers">Providers</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="general" className="flex flex-col gap-4">
-        {isLoading ? (
-          <output className="text-muted-foreground block text-center text-sm">
-            Loading settings…
-          </output>
-        ) : (
-          <GeneralSettingsSection settings={settings} onChange={patchSettings} />
-        )}
-      </TabsContent>
-
-      <TabsContent value="providers" className="flex flex-col gap-4">
-        {isLoading ? (
-          <output className="text-muted-foreground block text-center text-sm">
-            Loading settings…
-          </output>
-        ) : (
-          <ProviderSettingsSection settings={settings} onChange={patchSettings} />
-        )}
-      </TabsContent>
-
-      <div className="flex items-center justify-between gap-3">
-        <Button variant="outline" asChild>
-          <Link to="/">Back to tray panel</Link>
-        </Button>
-        <p className="text-muted-foreground text-xs">
-          {isSaving ? "Saving settings…" : "Changes save automatically."}
-        </p>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div
+        className={`border-border shrink-0 ${trayPanelSpacing.contentX} border-b pt-3 pb-2`}
+        data-settings-tab-strip
+      >
+        <AppSegmentedControl
+          items={[...SETTINGS_TABS]}
+          value={activeTab}
+          onValueChange={setActiveTab}
+          rowHeight="h-9"
+          stretchItems
+        />
       </div>
-    </Tabs>
+
+      <ScrollFadeRegion
+        orientation="vertical"
+        className="min-h-0 flex-1"
+        scrollClassName="overscroll-y-contain"
+      >
+        <div className={`${trayPanelSpacing.contentX} ${trayPanelSpacing.contentTop}`}>
+          {activeTab === "general" ? (
+            isLoading ? (
+              <SettingsLoadingState />
+            ) : (
+              <GeneralSettingsSection settings={settings} onChange={patchSettings} />
+            )
+          ) : isLoading ? (
+            <SettingsLoadingState />
+          ) : (
+            <ProviderSettingsSection settings={settings} onChange={patchSettings} />
+          )}
+        </div>
+      </ScrollFadeRegion>
+
+      <p
+        className={`text-muted-foreground shrink-0 ${trayPanelSpacing.contentX} ${trayPanelSpacing.footerBottom} py-2 text-center text-[11px]`}
+      >
+        {isSaving ? "Saving…" : "Changes save automatically"}
+      </p>
+    </div>
+  );
+}
+
+function SettingsLoadingState() {
+  return (
+    <output className="text-muted-foreground block py-6 text-center text-xs">
+      Loading settings…
+    </output>
   );
 }

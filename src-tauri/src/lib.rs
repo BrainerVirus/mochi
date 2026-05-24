@@ -3,6 +3,8 @@ pub mod browser;
 pub mod cli;
 pub mod core;
 pub mod lifecycle;
+#[cfg(target_os = "macos")]
+pub mod macos;
 pub mod providers;
 pub mod settings;
 pub mod status;
@@ -72,6 +74,9 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            macos::set_tray_only_activation_policy(app.handle());
+
             app.manage(SettingsState::new(app.handle())?);
             app.manage(UsageStore::new(None));
             app.manage(AppLifecycle::default());

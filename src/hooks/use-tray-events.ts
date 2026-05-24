@@ -8,6 +8,10 @@ import { refreshProviderMutationOptions } from "@/lib/query/refresh-provider";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import type { MochiSettings, UpdateChannel } from "@/lib/schemas/settings";
 import { saveSettings, syncTrayUsage, openAppWindow } from "@/lib/tauri/commands";
+import {
+  shouldHandleAppNavigateEvent,
+  shouldHandleTrayNavigateEvent,
+} from "@/lib/tauri/window-events";
 
 export function useSettings() {
   return useQuery(settingsQueryOptions);
@@ -43,6 +47,10 @@ export function useTrayEvents() {
   useEffect(() => {
     const unlistenPromises = [
       listen<string>("tray-navigate", (event) => {
+        if (!shouldHandleTrayNavigateEvent()) {
+          return;
+        }
+
         void navigate({ to: event.payload });
       }),
       listen("tray-refresh", () => {
@@ -67,6 +75,10 @@ export function useTrayEvents() {
         void openAppWindow("/settings");
       }),
       listen<string>("app-navigate", (event) => {
+        if (!shouldHandleAppNavigateEvent()) {
+          return;
+        }
+
         void navigate({ to: event.payload });
       }),
     ];

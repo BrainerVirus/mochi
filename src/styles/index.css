@@ -62,15 +62,19 @@ body {
   margin: 0;
 }
 
-/* Tray popover webview: transparent shell so native vibrancy/Mica shows through. */
+/* Native glass shells: transparent html/body so vibrancy/Mica shows through. */
 html[data-tray-panel],
-html[data-tray-panel] body {
+html[data-tray-panel] body,
+html[data-app-window],
+html[data-app-window] body {
   height: 100%;
   background-color: transparent;
 }
 
 html[data-tray-panel].dark,
-html[data-tray-panel].dark body {
+html[data-tray-panel].dark body,
+html[data-app-window].dark,
+html[data-app-window].dark body {
   background-color: transparent;
 }
 
@@ -167,37 +171,220 @@ html[data-tray-panel].dark body {
   --radius-tray-panel: 0.75rem;
 }
 
-/* Dedicated windows: system surfaces with subtle Mochi warmth in light mode. */
+/* Dedicated windows: match tray-panel native surfaces and semantic tokens. */
 .app-window {
-  --background: light-dark(#fafafa, #1c1c1e);
+  color-scheme: light dark;
+  font-family: var(--font-platform);
+  --app-segment-stroke: light-dark(
+    color-mix(in oklab, #000000 10%, transparent),
+    color-mix(in oklab, #ffffff 12%, transparent)
+  );
+  --app-segment-track: light-dark(
+    color-mix(in oklab, #000000 6%, transparent),
+    color-mix(in oklab, #ffffff 8%, transparent)
+  );
+  --app-segment-hover: light-dark(
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 12%, transparent)
+  );
+  --app-segment-active: light-dark(
+    color-mix(in oklab, #ffffff 92%, transparent),
+    color-mix(in oklab, #ffffff 20%, transparent)
+  );
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #f5f5f7 78%, transparent),
+    color-mix(in oklab, #2c2c2e 62%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #f5f5f7 92%, transparent),
+    color-mix(in oklab, #2c2c2e 88%, transparent)
+  );
+  background: var(--app-glass-tint);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  --background: light-dark(#f5f5f7, #2c2c2e);
   --foreground: light-dark(#1d1d1f, #f5f5f7);
-  --card: light-dark(#ffffff, #2c2c2e);
+  --card: light-dark(#ffffff, #3a3a3c);
   --card-foreground: light-dark(#1d1d1f, #f5f5f7);
-  --popover: light-dark(#ffffff, #2c2c2e);
+  --popover: light-dark(#ffffff, #3a3a3c);
   --popover-foreground: light-dark(#1d1d1f, #f5f5f7);
-  --secondary: light-dark(#f2f2f7, #3a3a3c);
+  --primary: light-dark(#007aff, #0a84ff);
+  --primary-foreground: light-dark(#ffffff, #ffffff);
+  --secondary: light-dark(#e5e5ea, #48484a);
   --secondary-foreground: light-dark(#1d1d1f, #f5f5f7);
-  --muted: light-dark(#f2f2f7, #3a3a3c);
+  --muted: light-dark(#e5e5ea, #48484a);
   --muted-foreground: light-dark(#6e6e73, #98989d);
+  --accent: light-dark(#c4b5e0, #c4b5e0);
+  --accent-foreground: light-dark(#1d1d1f, #1d1d1f);
+  --destructive: #ff8a8a;
   --border: light-dark(#d1d1d6, #48484a);
   --input: light-dark(#d1d1d6, #48484a);
-  --radius: light-dark(0.75rem, 0.625rem);
+  --ring: light-dark(#007aff, #0a84ff);
+  /* Single-value radius — light-dark() breaks calc(var(--radius) * …) utilities. */
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --switch-thumb: #ffffff;
 }
 
 [data-platform="macos"] .app-window {
-  --radius: light-dark(0.625rem, 0.5rem);
+  --radius: 0.625rem;
+  --app-glass-tint: transparent;
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #f5f5f7 92%, transparent),
+    color-mix(in oklab, #2c2c2e 88%, transparent)
+  );
+  --app-segment-stroke: light-dark(
+    color-mix(in oklab, #000000 8%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
+  --app-segment-track: light-dark(
+    color-mix(in oklab, #000000 5%, transparent),
+    color-mix(in oklab, #ffffff 7%, transparent)
+  );
+  --app-segment-hover: light-dark(
+    color-mix(in oklab, #ffffff 50%, transparent),
+    color-mix(in oklab, #ffffff 11%, transparent)
+  );
+  --app-segment-active: light-dark(#ffffff, color-mix(in oklab, #ffffff 24%, transparent));
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  --background: transparent;
+  --foreground: light-dark(#1d1d1f, #f5f5f7);
+  --card: light-dark(
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 10%, transparent)
+  );
+  --popover: light-dark(
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 10%, transparent)
+  );
+  --secondary: light-dark(
+    color-mix(in oklab, #000000 5%, transparent),
+    color-mix(in oklab, #ffffff 8%, transparent)
+  );
+  --muted: light-dark(
+    color-mix(in oklab, #000000 5%, transparent),
+    color-mix(in oklab, #ffffff 8%, transparent)
+  );
+  --muted-foreground: light-dark(#6e6e73, #98989d);
+  --border: light-dark(
+    color-mix(in oklab, #000000 12%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
+  --input: light-dark(
+    color-mix(in oklab, #000000 12%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
+  --primary: light-dark(#007aff, #0a84ff);
+  --primary-foreground: light-dark(#ffffff, #ffffff);
+  --ring: light-dark(#007aff, #0a84ff);
 }
 
 [data-platform="windows"] .app-window {
-  --radius: light-dark(0.5rem, 0.375rem);
+  --radius: 0.5rem;
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #f3f3f3 72%, transparent),
+    color-mix(in oklab, #202020 68%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #f3f3f3 92%, transparent),
+    color-mix(in oklab, #202020 88%, transparent)
+  );
+  --background: light-dark(#f3f3f3, #202020);
+  --foreground: light-dark(#1a1a1a, #ffffff);
+  --primary: light-dark(#005fb8, #60cdff);
+  --primary-foreground: light-dark(#ffffff, #000000);
+  --ring: light-dark(#005fb8, #60cdff);
+  --border: light-dark(#e5e5e5, #3d3d3d);
+  --muted: light-dark(#f9f9f9, #2d2d2d);
+  --muted-foreground: light-dark(#616161, #c8c8c8);
 }
 
 [data-platform="linux"] .app-window {
-  --radius: light-dark(0.375rem, 0.25rem);
+  --radius: 0.375rem;
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #fafafa 76%, transparent),
+    color-mix(in oklab, #242424 64%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #fafafa 92%, transparent),
+    color-mix(in oklab, #242424 88%, transparent)
+  );
+  --background: light-dark(#fafafa, #242424);
+  --foreground: light-dark(#2e3436, #ffffff);
+  --primary: light-dark(#3584e4, #62a0ea);
+  --ring: light-dark(#3584e4, #62a0ea);
+  --border: light-dark(#deddda, #4d4d4d);
+  --muted: light-dark(#f6f5f4, #303030);
+  --muted-foreground: light-dark(#5e5c64, #bababa);
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-window {
+    --radius: 0.5rem;
+  }
+
+  [data-platform="macos"] .app-window {
+    --radius: 0.5rem;
+  }
+
+  [data-platform="windows"] .app-window {
+    --radius: 0.375rem;
+  }
+
+  [data-platform="linux"] .app-window {
+    --radius: 0.25rem;
+  }
+}
+
+.app-window--about {
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #fafafa 94%, transparent),
+    color-mix(in oklab, #1c1c1e 90%, transparent)
+  );
+}
+
+[data-platform="macos"] .app-window--about {
+  --app-glass-tint: transparent;
+  background: transparent;
+}
+
+[data-platform="windows"] .app-window--about {
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #f9f9f9 88%, transparent),
+    color-mix(in oklab, #1a1a1a 86%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #f9f9f9 94%, transparent),
+    color-mix(in oklab, #1a1a1a 90%, transparent)
+  );
+}
+
+[data-platform="linux"] .app-window--about {
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #fcfcfc 90%, transparent),
+    color-mix(in oklab, #1e1e1e 88%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #fcfcfc 94%, transparent),
+    color-mix(in oklab, #1e1e1e 90%, transparent)
+  );
 }
 
 /* Tray popover: OS-native translucent surfaces; light/dark follows prefers-color-scheme. */
 .tray-panel {
+  --app-segment-stroke: var(--tray-panel-stroke);
+  --app-segment-track: var(--tray-segment-track);
+  --app-segment-hover: var(--tray-segment-hover);
+  --app-segment-active: var(--tray-segment-active);
   color-scheme: light dark;
   font-family: var(--font-platform);
   --tray-panel-stroke: light-dark(
@@ -469,7 +656,10 @@ html[data-tray-panel].dark body {
   );
 }
 
-/* Optional edge tint (gitlab BottomFade pattern) — transparent tail, no backdrop blur. */
+/*
+ * Optional edge tint (gitlab BottomFade pattern) — kept for non-native fallbacks.
+ * Native glass shells use scrollport mask-image only; tint overlays read as solid bars.
+ */
 .scroll-fade-edge-bottom {
   pointer-events: none;
   position: absolute;
@@ -479,9 +669,9 @@ html[data-tray-panel].dark body {
   height: 3.5rem;
   background-image: linear-gradient(
     to top,
-    transparent 0%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 45%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 90%
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 10%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 55%,
+    transparent 100%
   );
 }
 
@@ -494,10 +684,17 @@ html[data-tray-panel].dark body {
   height: 3.5rem;
   background-image: linear-gradient(
     to bottom,
-    transparent 0%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 45%,
-    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 90%
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 95%, transparent) 10%,
+    color-mix(in oklab, var(--scroll-fade-tint, var(--background)) 40%, transparent) 55%,
+    transparent 100%
   );
+}
+
+[data-platform="macos"] .tray-panel .scroll-fade-edge-top,
+[data-platform="macos"] .tray-panel .scroll-fade-edge-bottom,
+[data-platform="macos"] .app-window .scroll-fade-edge-top,
+[data-platform="macos"] .app-window .scroll-fade-edge-bottom {
+  background-image: none;
 }
 
 @layer base {

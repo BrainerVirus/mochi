@@ -6,19 +6,23 @@ import { getHydrationSafeRootState } from "@/components/layout/root-component-st
 import { TrayEventBridge } from "@/components/tray/tray-event-bridge";
 import { detectPlatform, useSystemColorScheme } from "@/lib/platform";
 import { queryClient } from "@/lib/query/client";
+import { readIsAppWindow } from "@/lib/tauri/app-window";
 import { readIsTrayPanelWindow } from "@/lib/tauri/tray-panel-window";
 
 export function RootComponent() {
   const [rootState, setRootState] = useState(getHydrationSafeRootState);
-  const { isTrayPanelWindow, platform } = rootState;
+  const { isTrayPanelWindow, isAppWindow, platform } = rootState;
+  const isNativeGlassShell = isTrayPanelWindow || isAppWindow;
 
-  useSystemColorScheme(!isTrayPanelWindow);
+  useSystemColorScheme(!isNativeGlassShell);
 
   useEffect(() => {
     const isTrayWindow = readIsTrayPanelWindow();
+    const isDedicatedAppWindow = readIsAppWindow();
     void detectPlatform().then((detectedPlatform) => {
       setRootState({
         isTrayPanelWindow: isTrayWindow,
+        isAppWindow: isDedicatedAppWindow,
         platform: detectedPlatform,
       });
     });
@@ -29,20 +33,21 @@ export function RootComponent() {
       lang="en"
       data-platform={platform}
       data-tray-panel={isTrayPanelWindow ? "" : undefined}
-      className={isTrayPanelWindow ? "h-full bg-transparent" : undefined}
+      data-app-window={isAppWindow ? "" : undefined}
+      className={isNativeGlassShell ? "h-full bg-transparent" : undefined}
     >
       <head>
         <HeadContent />
       </head>
       <body
         className={
-          isTrayPanelWindow
+          isNativeGlassShell
             ? "flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-transparent"
             : undefined
         }
       >
         <QueryClientProvider client={queryClient}>
-          {isTrayPanelWindow ? (
+          {isNativeGlassShell ? (
             <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
               <TrayEventBridge />
               <Outlet />

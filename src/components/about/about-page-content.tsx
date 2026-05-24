@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MochiChibi } from "@/components/mascot/mochi-chibi";
 import { queryKeys } from "@/lib/query/keys";
 import { appVersion } from "@/lib/tauri/commands";
+import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
 export function AboutPageContent() {
   const { data: version = "…" } = useQuery({
@@ -12,19 +13,15 @@ export function AboutPageContent() {
   });
 
   return (
-    <section className="mx-auto flex min-h-full w-full max-w-[720px] flex-col gap-6 p-6">
-      <Card className="rounded-mochi shadow-sm">
-        <CardHeader>
-          <CardDescription className="font-medium tracking-[0.2em] uppercase">
-            Mochi
-          </CardDescription>
-          <CardTitle className="text-3xl font-semibold">About</CardTitle>
-          <CardDescription>Soft alerts before hard limits.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm tabular-nums">Version {version}</p>
-        </CardContent>
-      </Card>
-    </section>
+    <div
+      className={`text-foreground flex min-h-svh flex-col items-center justify-center ${trayPanelSpacing.contentX} py-8 text-center`}
+    >
+      <MochiChibi className="mb-4 size-[4.5rem]" />
+      <h1 className="text-base font-semibold tracking-tight">Mochi</h1>
+      <p className="text-muted-foreground mt-1 max-w-[16rem] text-xs leading-relaxed">
+        Soft alerts before hard limits.
+      </p>
+      <p className="text-muted-foreground mt-4 text-[11px] tabular-nums">Version {version}</p>
+    </div>
   );
 }

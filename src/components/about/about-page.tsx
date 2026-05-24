@@ -3,7 +3,7 @@ import { AppWindowShell } from "@/components/layout/app-window-shell";
 
 export function AboutPage() {
   return (
-    <AppWindowShell>
+    <AppWindowShell variant="about">
       <AboutPageContent />
     </AppWindowShell>
   );
