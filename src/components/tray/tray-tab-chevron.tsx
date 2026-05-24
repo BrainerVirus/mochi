@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useRef } from "react";
 
+import { getTrayTabChevronButtonClassName } from "@/components/tray/tray-tab-chevron-class-name";
 import {
   SCROLL_OVERFLOW_FADE_DURATION_S,
   SCROLL_OVERFLOW_FADE_EASE,
@@ -21,15 +22,6 @@ interface TrayTabChevronProps {
   side: TrayTabChevronSide;
   visible: boolean;
   onCycle: () => void;
-}
-
-export function getTrayTabChevronButtonClassName(visible: boolean) {
-  return cn(
-    "pointer-events-auto shrink-0 cursor-pointer rounded-full",
-    "bg-transparent text-foreground shadow-none ring-0",
-    "hover:bg-transparent hover:text-foreground",
-    visible ? "opacity-100" : "pointer-events-none",
-  );
 }
 
 /** Full-height overlay column; icon centered on the tab strip, not the scroll viewport baseline. */

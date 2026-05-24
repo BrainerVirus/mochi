@@ -70,7 +70,6 @@ function ScrollFadeVerticalChevron({
       type="button"
       variant="ghost"
       size="icon-xs"
-      aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
       aria-label={isStart ? "Scroll up for more" : "Scroll down for more"}
       onClick={onCycle}

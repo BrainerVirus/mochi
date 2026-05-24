@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getTrayTabChevronButtonClassName } from "@/components/tray/tray-tab-chevron";
+import { getTrayTabChevronButtonClassName } from "@/components/tray/tray-tab-chevron-class-name";
 
 describe("getTrayTabChevronButtonClassName", () => {
   it("keeps overflow chevrons ghost-style and visually legible", () => {

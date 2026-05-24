@@ -1,6 +1,7 @@
 use tauri::WebviewWindow;
 
 /// Logical px; keep in sync with macOS `--radius-tray-panel` (`0.875rem` @ 16px) in `src/styles/index.css`.
+#[allow(dead_code)]
 pub const TRAY_PANEL_CORNER_RADIUS_MACOS: f64 = 14.0;
 
 /// Logical px; keep in sync with Windows `--radius-tray-panel` (`0.6875rem` @ 16px).
