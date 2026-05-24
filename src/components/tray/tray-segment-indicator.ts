@@ -68,6 +68,24 @@ function isLiveIndicator(indicator: HTMLElement | null): indicator is HTMLElemen
   return indicator !== null && indicator.isConnected;
 }
 
+function liveSegmentTarget(
+  track: HTMLElement | null,
+  indicator: HTMLElement | null,
+  item: HTMLElement | undefined,
+): { track: HTMLElement; indicator: HTMLElement; item: HTMLElement } | null {
+  if (
+    track === null ||
+    !track.isConnected ||
+    !isLiveIndicator(indicator) ||
+    item === undefined ||
+    !item.isConnected
+  ) {
+    return null;
+  }
+
+  return { track, indicator, item };
+}
+
 export function releaseSegmentIndicators(
   activeIndicator: HTMLElement | null,
   hoverIndicator: HTMLElement | null,
@@ -132,12 +150,10 @@ export function applyActiveIndicatorPosition(
   });
 
   if (plan.mode === "snap") {
-    gsap.killTweensOf(indicator);
     gsap.set(indicator, { x: metrics.x, width: metrics.width, autoAlpha: 1, force3D: true });
     return;
   }
 
-  gsap.killTweensOf(indicator, "x,width,autoAlpha");
   gsap.to(indicator, {
     x: metrics.x,
     width: metrics.width,
@@ -219,12 +235,13 @@ export function syncActiveSegmentIndicator(
   item: HTMLButtonElement | undefined,
   options: ActiveIndicatorOptions,
 ) {
-  if (!track || !indicator || !item) {
+  const target = liveSegmentTarget(track, indicator, item);
+  if (!target) {
     return null;
   }
 
-  const metrics = measureSegmentItem(track, item);
-  applyActiveIndicatorPosition(indicator, metrics, options);
+  const metrics = measureSegmentItem(target.track, target.item);
+  applyActiveIndicatorPosition(target.indicator, metrics, options);
   return metrics;
 }
 
@@ -259,13 +276,14 @@ export function executeTraySegmentIndicatorCommand(
 
   if (command.type === "placeHover" || command.type === "moveHover") {
     const item = itemForCommand(context.itemRefs, command.tabId);
-    if (!context.track || !context.hoverIndicator || !item) {
+    const target = liveSegmentTarget(context.track, context.hoverIndicator, item);
+    if (!target) {
       return;
     }
 
     applyHoverIndicatorPosition(
-      context.hoverIndicator,
-      measureSegmentItem(context.track, item),
+      target.indicator,
+      measureSegmentItem(target.track, target.item),
       command.type === "moveHover" ? context.hoverQuickTo : null,
       context.activeValue,
       command.tabId,

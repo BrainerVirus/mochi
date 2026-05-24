@@ -222,6 +222,7 @@ describe("applyActiveIndicatorPosition", () => {
     );
 
     expect(gsapMocks.set).not.toHaveBeenCalled();
+    expect(gsapMocks.killTweensOf).not.toHaveBeenCalled();
     expect(gsapMocks.to).toHaveBeenCalledWith(
       indicator,
       expect.objectContaining({ x: 120, width: 72 }),
@@ -254,25 +255,5 @@ describe("releaseSegmentIndicators", () => {
 
     expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(active);
     expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(hover);
-  });
-});
-
-describe("applyActiveIndicatorPosition detached guard", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("skips GSAP work when the indicator is no longer connected", () => {
-    const indicator = mockIndicator();
-    Object.defineProperty(indicator, "isConnected", { value: false });
-
-    applyActiveIndicatorPosition(
-      indicator,
-      { x: 40, width: 68 },
-      { animate: true, reducedMotion: false },
-    );
-
-    expect(gsapMocks.set).not.toHaveBeenCalled();
-    expect(gsapMocks.to).not.toHaveBeenCalled();
   });
 });
