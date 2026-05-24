@@ -7,7 +7,7 @@ import { cycleTrayPanelTabs } from "@/components/tray/tray-panel-tab-cycle";
 import {
   TRAY_SEGMENT_ROW_HEIGHT,
   TraySegmentedControl,
-} from "@/components/tray/tray-segmented-control";
+} from "@/components/tray/tray-segmented-control-config";
 
 const TAB_FADE_INSET = 40;
 

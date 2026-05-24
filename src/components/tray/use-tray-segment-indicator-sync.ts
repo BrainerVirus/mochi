@@ -30,6 +30,41 @@ function markIndicatorPlaced(
   return false;
 }
 
+type PlacementTryPlace = () => boolean;
+
+function subscribeUntilIndicatorPlaced(
+  track: HTMLElement | null,
+  tryPlace: PlacementTryPlace,
+  indicatorPlacedRef: RefObject<boolean>,
+): () => void {
+  let frameId = 0;
+  let attempts = 0;
+  const maxAttempts = 12;
+
+  const retryFrame = () => {
+    if (tryPlace() || ++attempts >= maxAttempts) {
+      return;
+    }
+    frameId = requestAnimationFrame(retryFrame);
+  };
+
+  frameId = requestAnimationFrame(retryFrame);
+
+  const resizeObserver =
+    track === null
+      ? undefined
+      : observeSegmentTrackResize(track, () => {
+          if (!indicatorPlacedRef.current) {
+            tryPlace();
+          }
+        });
+
+  return () => {
+    cancelAnimationFrame(frameId);
+    resizeObserver?.disconnect();
+  };
+}
+
 /** Snap the active pill once the track/items have measurable layout (settings window open, etc.). */
 function useInitialIndicatorPlacement(
   trackRef: RefObject<HTMLDivElement | null>,
@@ -75,38 +110,12 @@ function useInitialIndicatorPlacement(
       return markIndicatorPlaced(activeIndicatorRef, indicatorPlacedRef, onPlaced);
     };
 
-    let frameId = 0;
-    let attempts = 0;
-    const maxAttempts = 12;
-
-    const retryFrame = () => {
-      if (tryPlace() || ++attempts >= maxAttempts) {
-        return;
-      }
-      frameId = requestAnimationFrame(retryFrame);
-    };
-
-    // Always defer at least one frame after content ready so settings window layout can settle.
-    if (triggerBecameReady || !indicatorPlacedRef.current) {
-      frameId = requestAnimationFrame(retryFrame);
-    } else {
+    if (!(triggerBecameReady || !indicatorPlacedRef.current)) {
       tryPlace();
+      return undefined;
     }
 
-    const track = trackRef.current;
-    const resizeObserver =
-      track === null
-        ? undefined
-        : observeSegmentTrackResize(track, () => {
-            if (!indicatorPlacedRef.current) {
-              tryPlace();
-            }
-          });
-
-    return () => {
-      cancelAnimationFrame(frameId);
-      resizeObserver?.disconnect();
-    };
+    return subscribeUntilIndicatorPlaced(trackRef.current, tryPlace, indicatorPlacedRef);
   }, [
     activeIndicatorRef,
     indicatorPlacedRef,
