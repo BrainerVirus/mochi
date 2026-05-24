@@ -11,7 +11,6 @@ import {
 import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import type { AppSegmentItem } from "@/components/ui/app-segmented-control-utils";
 
-
 interface PageTabSegmentedControlProps {
   items: AppSegmentItem[];
   value: string;

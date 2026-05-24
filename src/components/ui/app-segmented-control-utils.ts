@@ -81,4 +81,3 @@ export function activeIndicatorClassName(variant: AppSegmentedControlVariant): s
 
   return "bg-primary";
 }
-
