@@ -15,30 +15,6 @@ import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP);
 
-function ScrollFadeEdge({ className, visible }: { className: string; visible: boolean }) {
-  const edgeRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(
-    () => {
-      const edge = edgeRef.current;
-      if (!edge) {
-        return undefined;
-      }
-
-      return animateOverflowVisibility(edge, { visible });
-    },
-    { dependencies: [visible], scope: edgeRef, revertOnUpdate: true },
-  );
-
-  return (
-    <div
-      ref={edgeRef}
-      aria-hidden
-      className={cn(className, "pointer-events-none", !visible && "opacity-0")}
-    />
-  );
-}
-
 function ScrollFadeVerticalChevron({
   side,
   visible,
@@ -74,7 +50,9 @@ function ScrollFadeVerticalChevron({
       aria-label={isStart ? "Scroll up for more" : "Scroll down for more"}
       onClick={onCycle}
       className={cn(
-        "pointer-events-auto absolute inset-x-0 z-20 mx-auto shrink-0 cursor-pointer rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+        "pointer-events-auto absolute inset-x-0 z-20 mx-auto shrink-0 cursor-pointer rounded-full",
+        "bg-background/35 text-muted-foreground shadow-none ring-0 backdrop-blur-[2px]",
+        "hover:bg-background/50 hover:text-foreground",
         isStart ? "top-0 mt-0.5" : "bottom-0 mb-0.5",
         !visible && "pointer-events-none opacity-0",
       )}
@@ -108,8 +86,6 @@ export function ScrollFadeEdgeOverlays({
 
   return (
     <>
-      <ScrollFadeEdge className="scroll-fade-edge-top" visible={canScrollStart} />
-      <ScrollFadeEdge className="scroll-fade-edge-bottom" visible={canScrollEnd} />
       <ScrollFadeVerticalChevron side="start" visible={canScrollStart} onCycle={onCycleBackward} />
       <ScrollFadeVerticalChevron side="end" visible={canScrollEnd} onCycle={onCycleForward} />
     </>
