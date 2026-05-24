@@ -68,6 +68,7 @@ describe("executeTraySegmentIndicatorCommand hover commands", () => {
   it("places hover by setting x and width before fading it in", () => {
     const quickX = mockQuickTo();
     const quickWidth = mockQuickTo();
+    const resetHoverQuickTo = vi.fn<() => void>();
 
     executeTraySegmentIndicatorCommand(
       { type: "placeHover", tabId: "codex" },
@@ -79,6 +80,7 @@ describe("executeTraySegmentIndicatorCommand hover commands", () => {
         hoverQuickTo: { x: quickX, width: quickWidth },
         activeValue: "overview",
         reducedMotion: false,
+        resetHoverQuickTo,
       },
     );
 
@@ -92,6 +94,7 @@ describe("executeTraySegmentIndicatorCommand hover commands", () => {
       hoverIndicator,
       expect.objectContaining({ autoAlpha: 1 }),
     );
+    expect(resetHoverQuickTo).toHaveBeenCalledOnce();
   });
 
   it("moves hover through quickTo when crossing between tabs", () => {

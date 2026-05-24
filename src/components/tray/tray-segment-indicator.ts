@@ -203,6 +203,7 @@ export interface TraySegmentIndicatorExecutorContext {
   hoverQuickTo: HoverIndicatorQuickTo | null;
   activeValue: string;
   reducedMotion?: boolean;
+  resetHoverQuickTo?: () => void;
 }
 
 function itemForCommand(
@@ -238,6 +239,9 @@ export function executeTraySegmentIndicatorCommand(
       context.reducedMotion,
       command.type === "placeHover",
     );
+    if (command.type === "placeHover") {
+      context.resetHoverQuickTo?.();
+    }
     return;
   }
 

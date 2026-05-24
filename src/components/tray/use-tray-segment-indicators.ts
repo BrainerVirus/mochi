@@ -27,11 +27,12 @@ function useIndicatorCommandExecutor(
   return useCallback(
     (commands: TraySegmentIndicatorCommand[]) => {
       const indicator = hoverIndicatorRef.current;
-      if (indicator) {
-        hoverQuickToRef.current ??= createHoverIndicatorQuickTo(indicator);
-      }
 
       for (const command of commands) {
+        if (command.type === "moveHover" && indicator) {
+          hoverQuickToRef.current ??= createHoverIndicatorQuickTo(indicator);
+        }
+
         executeTraySegmentIndicatorCommand(command, {
           track: trackRef.current,
           hoverIndicator: indicator,
@@ -39,6 +40,9 @@ function useIndicatorCommandExecutor(
           itemRefs: itemRefs.current,
           hoverQuickTo: hoverQuickToRef.current,
           activeValue: value,
+          resetHoverQuickTo: () => {
+            hoverQuickToRef.current = null;
+          },
         });
       }
     },
