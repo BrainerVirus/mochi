@@ -55,6 +55,7 @@ function resetGsapMocks() {
   gsapMocks.getProperty.mockImplementation((_target, prop) => {
     if (prop === "x") return 24;
     if (prop === "width") return 64;
+    if (prop === "scaleX") return 1;
     if (prop === "autoAlpha") return 1;
     return 0;
   });
@@ -67,7 +68,7 @@ describe("executeTraySegmentIndicatorCommand hover commands", () => {
 
   it("places hover by setting x and width before fading it in", () => {
     const quickX = mockQuickTo();
-    const quickWidth = mockQuickTo();
+    const quickScaleX = mockQuickTo();
     const resetHoverQuickTo = vi.fn<() => void>();
 
     executeTraySegmentIndicatorCommand(
@@ -77,7 +78,7 @@ describe("executeTraySegmentIndicatorCommand hover commands", () => {
         hoverIndicator,
         activeIndicator,
         itemRefs: new Map([["codex", codex]]),
-        hoverQuickTo: { x: quickX, width: quickWidth },
+        hoverQuickTo: { x: quickX, scaleX: quickScaleX },
         activeValue: "overview",
         reducedMotion: false,
         resetHoverQuickTo,
@@ -85,10 +86,10 @@ describe("executeTraySegmentIndicatorCommand hover commands", () => {
     );
 
     expect(quickX).not.toHaveBeenCalled();
-    expect(quickWidth).not.toHaveBeenCalled();
+    expect(quickScaleX).not.toHaveBeenCalled();
     expect(gsapMocks.set).toHaveBeenCalledWith(
       hoverIndicator,
-      expect.objectContaining({ x: 72, width: 64 }),
+      expect.objectContaining({ x: 72, width: 64, scaleX: 1 }),
     );
     expect(gsapMocks.to).toHaveBeenCalledWith(
       hoverIndicator,
@@ -99,7 +100,11 @@ describe("executeTraySegmentIndicatorCommand hover commands", () => {
 
   it("moves hover through quickTo when crossing between tabs", () => {
     const quickX = mockQuickTo();
-    const quickWidth = mockQuickTo();
+    const quickScaleX = mockQuickTo();
+    gsapMocks.getProperty.mockImplementation((_target, prop) => {
+      if (prop === "width") return 64;
+      return 0;
+    });
 
     executeTraySegmentIndicatorCommand(
       { type: "moveHover", tabId: "cursor" },
@@ -108,14 +113,14 @@ describe("executeTraySegmentIndicatorCommand hover commands", () => {
         hoverIndicator,
         activeIndicator,
         itemRefs: new Map([["cursor", cursor]]),
-        hoverQuickTo: { x: quickX, width: quickWidth },
+        hoverQuickTo: { x: quickX, scaleX: quickScaleX },
         activeValue: "overview",
         reducedMotion: false,
       },
     );
 
     expect(quickX).toHaveBeenCalledWith(144);
-    expect(quickWidth).toHaveBeenCalledWith(72);
+    expect(quickScaleX).toHaveBeenCalledWith(72 / 64);
     expect(gsapMocks.set).not.toHaveBeenCalled();
   });
 });
@@ -127,7 +132,7 @@ describe("executeTraySegmentIndicatorCommand hide commands", () => {
 
   it("hides hover without moving x or width", () => {
     const quickX = mockQuickTo();
-    const quickWidth = mockQuickTo();
+    const quickScaleX = mockQuickTo();
 
     executeTraySegmentIndicatorCommand(
       { type: "hideHover", immediate: true },
@@ -136,14 +141,14 @@ describe("executeTraySegmentIndicatorCommand hide commands", () => {
         hoverIndicator,
         activeIndicator,
         itemRefs: new Map(),
-        hoverQuickTo: { x: quickX, width: quickWidth },
+        hoverQuickTo: { x: quickX, scaleX: quickScaleX },
         activeValue: "overview",
         reducedMotion: false,
       },
     );
 
     expect(quickX).not.toHaveBeenCalled();
-    expect(quickWidth).not.toHaveBeenCalled();
+    expect(quickScaleX).not.toHaveBeenCalled();
     expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(hoverIndicator, "autoAlpha");
     expect(gsapMocks.to).toHaveBeenCalledWith(
       hoverIndicator,
@@ -171,10 +176,13 @@ describe("executeTraySegmentIndicatorCommand active commands", () => {
       },
     );
 
-    expect(gsapMocks.set).not.toHaveBeenCalled();
+    expect(gsapMocks.set).toHaveBeenCalledWith(
+      activeIndicator,
+      expect.objectContaining({ width: 64, scaleX: 1, x: 24 }),
+    );
     expect(gsapMocks.to).toHaveBeenCalledWith(
       activeIndicator,
-      expect.objectContaining({ x: 144, width: 72 }),
+      expect.objectContaining({ x: 144, scaleX: 72 / 64 }),
     );
   });
 });

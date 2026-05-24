@@ -7,6 +7,7 @@ import {
   metricsFromClientRects,
   readIndicatorMetrics,
   resolveActiveIndicatorPlan,
+  resolveIndicatorScaleX,
   shouldAnimateActiveIndicator,
   type HoverIndicatorQuickTo,
 } from "@/components/tray/tray-segment-indicator";
@@ -117,29 +118,33 @@ describe("applyHoverIndicatorPosition", () => {
 
   it("follows pointerenter tab positions via quickTo", () => {
     const quickX = mockQuickTo();
-    const quickWidth = mockQuickTo();
+    const quickScaleX = mockQuickTo();
+    gsapMocks.getProperty.mockImplementation((_target, prop) => {
+      if (prop === "width") return 64;
+      return 0;
+    });
 
     applyHoverIndicatorPosition(
       indicator,
       { x: 88, width: 64 },
-      { x: quickX, width: quickWidth },
+      { x: quickX, scaleX: quickScaleX },
       "alpha",
       "beta",
       false,
     );
 
     expect(quickX).toHaveBeenCalledWith(88);
-    expect(quickWidth).toHaveBeenCalledWith(64);
+    expect(quickScaleX).toHaveBeenCalledWith(1);
   });
 
   it("places fresh hover targets without gliding from the hidden previous tab", () => {
     const quickX = mockQuickTo();
-    const quickWidth = mockQuickTo();
+    const quickScaleX = mockQuickTo();
 
     applyHoverIndicatorPosition(
       indicator,
       { x: 144, width: 72 },
-      { x: quickX, width: quickWidth },
+      { x: quickX, scaleX: quickScaleX },
       "alpha",
       "delta",
       false,
@@ -147,10 +152,10 @@ describe("applyHoverIndicatorPosition", () => {
     );
 
     expect(quickX).not.toHaveBeenCalled();
-    expect(quickWidth).not.toHaveBeenCalled();
+    expect(quickScaleX).not.toHaveBeenCalled();
     expect(gsapMocks.set).toHaveBeenCalledWith(
       indicator,
-      expect.objectContaining({ x: 144, width: 72 }),
+      expect.objectContaining({ x: 144, width: 72, scaleX: 1 }),
     );
     expect(gsapMocks.to).toHaveBeenCalledWith(indicator, expect.objectContaining({ autoAlpha: 1 }));
   });
@@ -164,12 +169,13 @@ describe("applyActiveIndicatorPosition", () => {
     gsapMocks.getProperty.mockImplementation((_target, prop) => {
       if (prop === "x") return 40;
       if (prop === "width") return 68;
+      if (prop === "scaleX") return 1;
       if (prop === "autoAlpha") return 1;
       return 0;
     });
   });
 
-  it("tweens from the current pill position when changing tabs", () => {
+  it("tweens via scaleX from the current pill position when changing tabs", () => {
     applyActiveIndicatorPosition(
       indicator,
       { x: 160, width: 72 },
@@ -180,11 +186,15 @@ describe("applyActiveIndicatorPosition", () => {
     );
 
     expect(gsapMocks.fromTo).not.toHaveBeenCalled();
+    expect(gsapMocks.set).toHaveBeenCalledWith(
+      indicator,
+      expect.objectContaining({ width: 68, scaleX: 1, x: 40 }),
+    );
     expect(gsapMocks.to).toHaveBeenCalledWith(
       indicator,
       expect.objectContaining({
         x: 160,
-        width: 72,
+        scaleX: resolveIndicatorScaleX(68, 72),
         overwrite: "auto",
       }),
     );
@@ -209,7 +219,7 @@ describe("applyActiveIndicatorPosition", () => {
     expect(gsapMocks.to).not.toHaveBeenCalled();
     expect(gsapMocks.set).toHaveBeenCalledWith(
       indicator,
-      expect.objectContaining({ x: 40, width: 68, autoAlpha: 1 }),
+      expect.objectContaining({ x: 40, width: 68, scaleX: 1, autoAlpha: 1 }),
     );
   });
 
@@ -220,10 +230,13 @@ describe("applyActiveIndicatorPosition", () => {
       { animate: true, reducedMotion: false },
     );
 
-    expect(gsapMocks.set).not.toHaveBeenCalled();
+    expect(gsapMocks.set).toHaveBeenCalledWith(
+      indicator,
+      expect.objectContaining({ width: 68, scaleX: 1, x: 40 }),
+    );
     expect(gsapMocks.to).toHaveBeenCalledWith(
       indicator,
-      expect.objectContaining({ x: 120, width: 72 }),
+      expect.objectContaining({ x: 120, scaleX: resolveIndicatorScaleX(68, 72) }),
     );
   });
 });
@@ -233,9 +246,21 @@ describe("readIndicatorMetrics", () => {
     gsapMocks.getProperty.mockImplementation((_target, prop) => {
       if (prop === "x") return "48px";
       if (prop === "width") return 72;
+      if (prop === "scaleX") return 1;
       return 0;
     });
 
     expect(readIndicatorMetrics(mockIndicator())).toEqual({ x: 48, width: 72 });
+  });
+
+  it("multiplies layout width by scaleX for visual width", () => {
+    gsapMocks.getProperty.mockImplementation((_target, prop) => {
+      if (prop === "x") return 0;
+      if (prop === "width") return 80;
+      if (prop === "scaleX") return 0.9;
+      return 0;
+    });
+
+    expect(readIndicatorMetrics(mockIndicator())).toEqual({ x: 0, width: 72 });
   });
 });
