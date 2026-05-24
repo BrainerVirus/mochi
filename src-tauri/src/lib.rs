@@ -2,6 +2,7 @@ pub mod auth;
 pub mod browser;
 pub mod cli;
 pub mod core;
+pub mod lifecycle;
 pub mod providers;
 pub mod settings;
 pub mod status;
@@ -11,11 +12,12 @@ pub mod updater;
 pub mod widget;
 
 use clap::Parser;
-use tauri::Manager;
+use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
 
 use cli::{Cli, Command};
 use core::usage_store::UsageStore;
+use lifecycle::{should_prevent_exit_request, AppLifecycle};
 use settings::{
     get_provider_catalog, get_provider_credential_status, get_settings, save_settings,
     SettingsState,
@@ -45,7 +47,8 @@ fn get_platform() -> &'static str {
 }
 
 #[tauri::command]
-fn quit_app(app: tauri::AppHandle) {
+fn quit_app(app: tauri::AppHandle, lifecycle: State<'_, AppLifecycle>) {
+    lifecycle.request_quit();
     app.exit(0);
 }
 
@@ -71,6 +74,7 @@ pub fn run() -> anyhow::Result<()> {
         .setup(|app| {
             app.manage(SettingsState::new(app.handle())?);
             app.manage(UsageStore::new(None));
+            app.manage(AppLifecycle::default());
             setup_main_panel(app.handle())?;
             setup_app_windows(app.handle())?;
             setup_tray(app.handle())?;
@@ -99,8 +103,18 @@ pub fn run() -> anyhow::Result<()> {
             hide_widget,
             toggle_widget
         ])
-        .run(tauri::generate_context!())
-        .map_err(|error| anyhow::anyhow!(error))
+        .build(tauri::generate_context!())?
+        .run(|app, event| {
+            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                let lifecycle = app.try_state::<AppLifecycle>();
+                let lifecycle = lifecycle.as_ref().map(|state| state.inner());
+                if should_prevent_exit_request(lifecycle) {
+                    api.prevent_exit();
+                }
+            }
+        });
+
+    Ok(())
 }
 
 fn run_cli(command: Command) -> anyhow::Result<()> {

@@ -2543,6 +2543,10 @@ dependencies = [
  "base64 0.22.1",
  "cbc",
  "clap",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-core-foundation",
+ "objc2-quartz-core",
  "pbkdf2",
  "regex",
  "reqwest 0.12.28",
@@ -2563,6 +2567,7 @@ dependencies = [
  "tokio",
  "usvg",
  "window-vibrancy",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2701,6 +2706,7 @@ dependencies = [
  "objc2",
  "objc2-core-foundation",
  "objc2-foundation",
+ "objc2-quartz-core",
 ]
 
 [[package]]

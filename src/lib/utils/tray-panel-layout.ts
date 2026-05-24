@@ -63,7 +63,7 @@ export function measureTrayPanelLayoutHeight(layoutEl: HTMLElement | null): numb
 }
 
 export function trayPanelShellClassName(): string {
-  return "tray-panel text-foreground flex h-auto max-h-[calc(100svh-16px)] min-h-0 w-full flex-col overflow-hidden rounded-[var(--radius-tray-panel)] pt-3 shadow-sm ring-1 ring-border/50";
+  return "tray-panel text-foreground flex h-full max-h-[calc(100svh-16px)] min-h-0 w-full flex-1 flex-col overflow-hidden rounded-[var(--radius-tray-panel)] pt-3";
 }
 
 export function trayPanelScrollRegionClassName(): string {

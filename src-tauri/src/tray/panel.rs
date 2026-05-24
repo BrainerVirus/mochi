@@ -15,6 +15,9 @@ pub const TRAY_PANEL_WIDTH: f64 = 360.0;
 /// Matches `TRAY_PANEL_MIN_HEIGHT_PX` in the frontend layout module.
 pub const TRAY_PANEL_MIN_HEIGHT: f64 = 160.0;
 
+/// Gap between panel top/bottom and screen edge (matches frontend `TRAY_PANEL_VIEWPORT_MARGIN_PX`).
+pub const TRAY_PANEL_VIEWPORT_MARGIN: f64 = 16.0;
+
 /// Default upper bound when the frontend cannot read screen height (480 + margin).
 #[allow(dead_code)]
 pub const TRAY_PANEL_DEFAULT_MAX_HEIGHT: f64 = 496.0;
@@ -105,12 +108,16 @@ pub fn prepare_main_panel_window(window: &WebviewWindow) -> Result<(), Box<dyn s
     #[cfg(target_os = "macos")]
     let _ = window.set_visible_on_all_workspaces(true);
 
-    if let Err(error) = super::vibrancy::apply_tray_panel_vibrancy(window) {
+    if let Err(error) = ensure_tray_panel_vibrancy(window) {
         eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
     }
 
     let _ = window.hide();
     Ok(())
+}
+
+fn ensure_tray_panel_vibrancy(window: &WebviewWindow) -> Result<(), String> {
+    super::vibrancy::apply_tray_panel_vibrancy(window)
 }
 
 /// Updates positioner plugin state and caches the latest tray icon bounds.
@@ -193,7 +200,8 @@ pub fn set_tray_panel_height(app: AppHandle, height: f64) -> Result<(), String> 
         return Err(format!("missing tray panel window: {MAIN_PANEL_LABEL}"));
     };
 
-    let height = height.max(TRAY_PANEL_MIN_HEIGHT);
+    let max_height = tray_panel_max_height(&window);
+    let height = height.clamp(TRAY_PANEL_MIN_HEIGHT, max_height);
     window
         .set_size(tauri::Size::Logical(tauri::LogicalSize {
             width: TRAY_PANEL_WIDTH,
@@ -206,6 +214,20 @@ pub fn set_tray_panel_height(app: AppHandle, height: f64) -> Result<(), String> 
     }
 
     Ok(())
+}
+
+fn tray_panel_max_height(window: &WebviewWindow) -> f64 {
+    window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|monitor| {
+            let size = monitor.size();
+            let scale = monitor.scale_factor();
+            let logical_height = size.height as f64 / scale;
+            (logical_height - TRAY_PANEL_VIEWPORT_MARGIN).max(TRAY_PANEL_MIN_HEIGHT)
+        })
+        .unwrap_or(TRAY_PANEL_DEFAULT_MAX_HEIGHT)
 }
 
 /// Opens the tray panel window. Useful for dev validation when the tray icon is hard to reach.
@@ -268,6 +290,10 @@ pub fn open_tray_panel(app: &AppHandle, path: &str) {
 }
 
 fn open_visible_tray_panel(app: &AppHandle, window: &WebviewWindow) {
+    if let Err(error) = ensure_tray_panel_vibrancy(window) {
+        eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
+    }
+
     let _ = position_tray_panel(app, window);
     let _ = window.show();
     let _ = window.set_focus();
@@ -292,6 +318,9 @@ pub fn show_tray_panel_centered(app: &AppHandle, path: &str) {
     };
 
     let _ = app.emit("tray-navigate", path);
+    if let Err(error) = ensure_tray_panel_vibrancy(&window) {
+        eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
+    }
     let _ = window.move_window(Position::Center);
     let _ = window.show();
     let _ = window.set_focus();

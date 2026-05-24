@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 
 /** Sync shadcn `.dark` on `<html>` with the OS light/dark preference. */
-export function useSystemColorScheme(): void {
+export function useSystemColorScheme(enabled = true): void {
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!enabled || typeof window === "undefined") {
       return undefined;
     }
 
@@ -16,5 +16,5 @@ export function useSystemColorScheme(): void {
     apply();
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
-  }, []);
+  }, [enabled]);
 }

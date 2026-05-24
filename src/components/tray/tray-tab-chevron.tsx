@@ -1,15 +1,20 @@
+"use client";
+
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useRef } from "react";
 
+import { getTrayTabChevronButtonClassName } from "@/components/tray/tray-tab-chevron-class-name";
+import {
+  SCROLL_OVERFLOW_FADE_DURATION_S,
+  SCROLL_OVERFLOW_FADE_EASE,
+  SCROLL_OVERFLOW_SLIDE_PX,
+} from "@/components/tray/use-gsap-overflow-visibility";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP);
-
-const CHEVRON_SLIDE_PX = 4;
-const CHEVRON_DURATION_S = 0.2;
 
 export type TrayTabChevronSide = "start" | "end";
 
@@ -23,7 +28,7 @@ interface TrayTabChevronProps {
 export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) {
   const columnRef = useRef<HTMLDivElement>(null);
   const isStart = side === "start";
-  const hiddenX = isStart ? -CHEVRON_SLIDE_PX : CHEVRON_SLIDE_PX;
+  const hiddenX = isStart ? -SCROLL_OVERFLOW_SLIDE_PX : SCROLL_OVERFLOW_SLIDE_PX;
 
   useGSAP(
     () => {
@@ -42,8 +47,8 @@ export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) 
         gsap.to(column, {
           autoAlpha: visible ? 1 : 0,
           x: visible ? 0 : hiddenX,
-          duration: CHEVRON_DURATION_S,
-          ease: "power2.out",
+          duration: SCROLL_OVERFLOW_FADE_DURATION_S,
+          ease: SCROLL_OVERFLOW_FADE_EASE,
           overwrite: "auto",
         });
       });
@@ -59,7 +64,7 @@ export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) 
     <div
       ref={columnRef}
       className={cn(
-        "pointer-events-none absolute top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center",
+        "pointer-events-none absolute inset-y-0 z-30 flex w-8 items-center justify-center",
         isStart ? "left-0" : "right-0",
         !visible && "invisible opacity-0",
       )}
@@ -72,15 +77,12 @@ export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) 
         tabIndex={visible ? 0 : -1}
         aria-label={isStart ? "Show previous tabs" : "Show more tabs"}
         onClick={onCycle}
-        className={cn(
-          "pointer-events-auto shrink-0 cursor-pointer rounded-full text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-          !visible && "pointer-events-none",
-        )}
+        className={getTrayTabChevronButtonClassName(visible)}
       >
         {isStart ? (
-          <ChevronLeftIcon className="size-3.5" aria-hidden />
+          <ChevronLeftIcon className="size-4 stroke-[3]" aria-hidden />
         ) : (
-          <ChevronRightIcon className="size-3.5" aria-hidden />
+          <ChevronRightIcon className="size-4 stroke-[3]" aria-hidden />
         )}
       </Button>
     </div>

@@ -39,4 +39,20 @@ regex = "1.11"
 sha1 = "0.10"
 
 [target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = [
+  "std",
+  "NSView",
+  "NSWindow",
+  "objc2-quartz-core",
+] }
+objc2-core-foundation = { version = "0.3", default-features = false, features = ["std"] }
+objc2-quartz-core = { version = "0.3", default-features = false, features = [
+  "std",
+  "CALayer",
+  "objc2-core-foundation",
+] }
 security-framework = "3"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Graphics_Dwm"] }
