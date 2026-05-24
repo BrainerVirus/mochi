@@ -39,4 +39,15 @@ describe("segment indicator tokens", () => {
       /html\[data-app-window\] \[data-slot="dialog-content"\][\s\S]*--primary: light-dark\(#007aff, #0a84ff\)/,
     );
   });
+
+  it("keeps page-tab segment radii fixed outside .app-window --radius", () => {
+    expect(css).toContain("--app-segment-radius-track: 1.5rem");
+    expect(css).toContain("--app-segment-radius-indicator: 1.2rem");
+    expect(css).toContain("@utility rounded-app-segment-track");
+    expect(css).toContain("@utility rounded-app-segment-indicator");
+
+    const appWindowBlock = css.match(/\.app-window \{[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(appWindowBlock).not.toContain("--app-segment-radius-track");
+    expect(appWindowBlock).not.toContain("--app-segment-radius-indicator");
+  });
 });

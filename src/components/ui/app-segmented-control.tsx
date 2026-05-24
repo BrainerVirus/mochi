@@ -18,8 +18,14 @@ export function usesPageTabIndicators(variant: AppSegmentedControlVariant): bool
   return variant === "page-tabs";
 }
 
-const indicatorLayerClassName =
-  "pointer-events-none absolute inset-y-0.5 left-0 rounded-md will-change-[transform,width]";
+/** Fixed radius tokens — must match tray panel regardless of .app-window --radius. */
+export const APP_SEGMENT_INDICATOR_RADIUS_CLASS = "rounded-app-segment-indicator" as const;
+export const APP_SEGMENT_TRACK_RADIUS_CLASS = "rounded-app-segment-track" as const;
+
+const indicatorLayerClassName = cn(
+  "pointer-events-none absolute inset-y-0.5 left-0 will-change-[transform,width]",
+  APP_SEGMENT_INDICATOR_RADIUS_CLASS,
+);
 
 const pageTabItemClassName = cn(
   "relative z-10 inline-flex h-full min-w-[4.5rem] shrink-0 flex-none cursor-pointer flex-row items-center justify-center gap-1.5 rounded-none border-0 px-3 shadow-none",
@@ -188,7 +194,8 @@ export function AppSegmentedControl({
       data-segment-variant={variant}
       className={cn(
         rowHeight,
-        "relative isolate rounded-lg p-0.5",
+        "relative isolate p-0.5",
+        isPageTabs ? APP_SEGMENT_TRACK_RADIUS_CLASS : "rounded-lg",
         trackClassName,
         stretchItems ? "w-full" : "w-max min-w-full",
         className,

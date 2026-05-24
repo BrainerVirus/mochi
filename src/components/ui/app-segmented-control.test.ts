@@ -4,7 +4,11 @@ import {
   PAGE_TAB_SEGMENT_DEFAULTS,
   TRAY_SEGMENT_ROW_HEIGHT,
 } from "@/components/tray/tray-segmented-control";
-import { usesPageTabIndicators } from "@/components/ui/app-segmented-control";
+import {
+  APP_SEGMENT_INDICATOR_RADIUS_CLASS,
+  APP_SEGMENT_TRACK_RADIUS_CLASS,
+  usesPageTabIndicators,
+} from "@/components/ui/app-segmented-control";
 
 describe("usesPageTabIndicators", () => {
   it("enables GSAP hover/active pills for page tabs", () => {
@@ -23,5 +27,12 @@ describe("PAGE_TAB_SEGMENT_DEFAULTS", () => {
       rowHeight: TRAY_SEGMENT_ROW_HEIGHT,
       stretchItems: false,
     });
+  });
+});
+
+describe("page-tab segment radius", () => {
+  it("uses fixed radius classes independent of .app-window --radius", () => {
+    expect(APP_SEGMENT_INDICATOR_RADIUS_CLASS).toBe("rounded-app-segment-indicator");
+    expect(APP_SEGMENT_TRACK_RADIUS_CLASS).toBe("rounded-app-segment-track");
   });
 });
