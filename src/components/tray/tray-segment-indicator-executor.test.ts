@@ -21,7 +21,7 @@ vi.mock("gsap", () => ({
 
 function mockIndicator(): HTMLElement {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- gsap target test double
-  return { tagName: "DIV" } as HTMLElement;
+  return { tagName: "DIV", isConnected: true } as HTMLElement;
 }
 
 function mockMeasuredButton(left: number, width: number): HTMLButtonElement {

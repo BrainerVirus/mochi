@@ -6,6 +6,7 @@ import {
   computeIndicatorTarget,
   metricsFromClientRects,
   readIndicatorMetrics,
+  releaseSegmentIndicators,
   resolveActiveIndicatorPlan,
   shouldAnimateActiveIndicator,
   type HoverIndicatorQuickTo,
@@ -24,7 +25,7 @@ const gsapMocks = vi.hoisted(() => ({
 
 function mockIndicator(): HTMLElement {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- gsap target test double without DOM
-  return { tagName: "DIV" } as HTMLElement;
+  return { tagName: "DIV", isConnected: true } as HTMLElement;
 }
 
 function mockQuickTo(): HoverIndicatorQuickTo["x"] {
@@ -237,5 +238,41 @@ describe("readIndicatorMetrics", () => {
     });
 
     expect(readIndicatorMetrics(mockIndicator())).toEqual({ x: 48, width: 72 });
+  });
+});
+
+describe("releaseSegmentIndicators", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("kills GSAP tweens on both indicator layers", () => {
+    const active = mockIndicator();
+    const hover = mockIndicator();
+
+    releaseSegmentIndicators(active, hover);
+
+    expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(active);
+    expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(hover);
+  });
+});
+
+describe("applyActiveIndicatorPosition detached guard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("skips GSAP work when the indicator is no longer connected", () => {
+    const indicator = mockIndicator();
+    Object.defineProperty(indicator, "isConnected", { value: false });
+
+    applyActiveIndicatorPosition(
+      indicator,
+      { x: 40, width: 68 },
+      { animate: true, reducedMotion: false },
+    );
+
+    expect(gsapMocks.set).not.toHaveBeenCalled();
+    expect(gsapMocks.to).not.toHaveBeenCalled();
   });
 });

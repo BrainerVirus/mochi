@@ -7,6 +7,7 @@ import {
   executeTraySegmentIndicatorCommand,
   observeSegmentTrackResize,
   readIndicatorMetrics,
+  releaseSegmentIndicators,
   syncActiveSegmentIndicator,
 } from "@/components/tray/tray-segment-indicator";
 import {
@@ -15,15 +16,36 @@ import {
   type TraySegmentIndicatorCommand,
 } from "@/components/tray/tray-segment-indicator-machine";
 
+function useIndicatorCleanup(
+  activeIndicatorRef: RefObject<HTMLDivElement | null>,
+  hoverIndicatorRef: RefObject<HTMLDivElement | null>,
+  hoverQuickToRef: RefObject<ReturnType<typeof createHoverIndicatorQuickTo> | null>,
+) {
+  const indicatorsRef = useRef({
+    active: null as HTMLDivElement | null,
+    hover: null as HTMLDivElement | null,
+  });
+  indicatorsRef.current = {
+    active: activeIndicatorRef.current,
+    hover: hoverIndicatorRef.current,
+  };
+
+  useEffect(() => {
+    return () => {
+      hoverQuickToRef.current = null;
+      releaseSegmentIndicators(indicatorsRef.current.active, indicatorsRef.current.hover);
+    };
+  }, [hoverQuickToRef]);
+}
+
 function useIndicatorCommandExecutor(
   trackRef: RefObject<HTMLDivElement | null>,
   activeIndicatorRef: RefObject<HTMLDivElement | null>,
   hoverIndicatorRef: RefObject<HTMLDivElement | null>,
   itemRefs: RefObject<Map<string, HTMLButtonElement>>,
   value: string,
+  hoverQuickToRef: RefObject<ReturnType<typeof createHoverIndicatorQuickTo> | null>,
 ) {
-  const hoverQuickToRef = useRef<ReturnType<typeof createHoverIndicatorQuickTo> | null>(null);
-
   return useCallback(
     (commands: TraySegmentIndicatorCommand[]) => {
       const indicator = hoverIndicatorRef.current;
@@ -46,7 +68,7 @@ function useIndicatorCommandExecutor(
         });
       }
     },
-    [activeIndicatorRef, hoverIndicatorRef, itemRefs, trackRef, value],
+    [activeIndicatorRef, hoverIndicatorRef, hoverQuickToRef, itemRefs, trackRef, value],
   );
 }
 
@@ -177,12 +199,17 @@ export function useTraySegmentIndicators(
   options: UseTraySegmentIndicatorsOptions = {},
 ) {
   const showHover = options.showHover ?? true;
+  const hoverQuickToRef = useRef<ReturnType<typeof createHoverIndicatorQuickTo> | null>(null);
+
+  useIndicatorCleanup(activeIndicatorRef, hoverIndicatorRef, hoverQuickToRef);
+
   const executeCommands = useIndicatorCommandExecutor(
     trackRef,
     activeIndicatorRef,
     hoverIndicatorRef,
     itemRefs,
     value,
+    hoverQuickToRef,
   );
   const { handleHover, handleRailLeave, handleSelect } =
     useIndicatorMachineHandlers(executeCommands);
