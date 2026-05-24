@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WidgetRouteImport } from './routes/widget'
+import { Route as UpdateRouteImport } from './routes/update'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const WidgetRoute = WidgetRouteImport.update({
   id: '/widget',
   path: '/widget',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UpdateRoute = UpdateRouteImport.update({
+  id: '/update',
+  path: '/update',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/settings': typeof SettingsRoute
+  '/update': typeof UpdateRoute
   '/widget': typeof WidgetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/settings': typeof SettingsRoute
+  '/update': typeof UpdateRoute
   '/widget': typeof WidgetRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/settings': typeof SettingsRoute
+  '/update': typeof UpdateRoute
   '/widget': typeof WidgetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/settings' | '/widget'
+  fullPaths: '/' | '/about' | '/settings' | '/update' | '/widget'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/settings' | '/widget'
-  id: '__root__' | '/' | '/about' | '/settings' | '/widget'
+  to: '/' | '/about' | '/settings' | '/update' | '/widget'
+  id: '__root__' | '/' | '/about' | '/settings' | '/update' | '/widget'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   SettingsRoute: typeof SettingsRoute
+  UpdateRoute: typeof UpdateRoute
   WidgetRoute: typeof WidgetRoute
 }
 
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/widget'
       fullPath: '/widget'
       preLoaderRoute: typeof WidgetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/update': {
+      id: '/update'
+      path: '/update'
+      fullPath: '/update'
+      preLoaderRoute: typeof UpdateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   SettingsRoute: SettingsRoute,
+  UpdateRoute: UpdateRoute,
   WidgetRoute: WidgetRoute,
 }
 export const routeTree = rootRouteImport

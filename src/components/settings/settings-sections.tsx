@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
 import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldContent,
@@ -12,10 +13,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { useUpdateCheck } from "@/hooks/use-update-install";
 import type { ProviderCatalogEntry } from "@/lib/schemas/provider-catalog";
 import { ALL_PROVIDER_IDS, PROVIDER_LABELS, type MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderId } from "@/lib/schemas/usage";
-import { getProviderCatalog, getProviderCredentialStatus } from "@/lib/tauri/commands";
+import {
+  getProviderCatalog,
+  getProviderCredentialStatus,
+  openAppWindow,
+} from "@/lib/tauri/commands";
 
 import { ProviderConfigFields } from "./provider-config-fields";
 
@@ -179,6 +185,10 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
 
       <Separator />
 
+      <UpdateSettingsSection channel={settings.update_channel} />
+
+      <Separator />
+
       <Field orientation="horizontal" className="items-center justify-between gap-3 py-2.5">
         <FieldContent className="min-w-0">
           <FieldLabel htmlFor="show-notifications" className="text-sm font-medium">
@@ -197,6 +207,51 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
         />
       </Field>
     </FieldGroup>
+  );
+}
+
+function UpdateSettingsSection({ channel }: { channel: MochiSettings["update_channel"] }) {
+  const { data: updateInfo, isFetching, refetch } = useUpdateCheck();
+
+  const statusLabel = updateInfo?.available
+    ? `Update available${updateInfo.version ? ` (v${updateInfo.version})` : ""}`
+    : isFetching
+      ? "Checking for updates…"
+      : "You're up to date";
+
+  return (
+    <Field className="flex-col gap-2.5 py-2.5">
+      <FieldContent>
+        <FieldLabel className="text-sm font-medium">Updates</FieldLabel>
+        <FieldDescription className="text-[11px]">{statusLabel}</FieldDescription>
+        <FieldDescription className="text-[11px]">Channel: {channel}</FieldDescription>
+      </FieldContent>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isFetching}
+          onClick={() => {
+            void refetch().then(() => {
+              void openAppWindow("/update");
+            });
+          }}
+        >
+          Check for updates
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            void openAppWindow("/update?view=notes");
+          }}
+        >
+          What&apos;s new
+        </Button>
+      </div>
+    </Field>
   );
 }
 

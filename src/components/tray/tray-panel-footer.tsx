@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
 
 import { TrayMenuList, TrayMenuRow, type TrayMenuItem } from "@/components/tray/tray-menu-row";
+import { useUpdateCheck } from "@/hooks/use-update-install";
 import { queryKeys } from "@/lib/query/keys";
 import { appVersion, openAppWindow } from "@/lib/tauri/commands";
+import { buildTrayUpdateFooterItems } from "@/lib/updates/tray-update-footer-items";
 import { trayPanelShortcut } from "@/lib/utils/tray-panel-shortcut";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
@@ -14,13 +16,26 @@ interface TrayPanelFooterProps {
 }
 
 export function TrayPanelFooter({ isRefreshing, onRefresh, onQuit }: TrayPanelFooterProps) {
+  const { data: updateInfo } = useUpdateCheck();
   useQuery({
     queryKey: queryKeys.appVersion,
     queryFn: appVersion,
     staleTime: Number.POSITIVE_INFINITY,
   });
 
+  const updateItems = buildTrayUpdateFooterItems({
+    updateAvailable: updateInfo?.available ?? false,
+    updateVersion: updateInfo?.version,
+    onOpenUpdate: () => {
+      void openAppWindow("/update");
+    },
+    onCheckUpdates: () => {
+      void openAppWindow("/update");
+    },
+  });
+
   const items: TrayMenuItem[] = [
+    ...updateItems,
     {
       id: "refresh",
       label: "Refresh",

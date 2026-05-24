@@ -379,6 +379,21 @@ html[data-app-window].dark body {
   );
 }
 
+.app-window--update {
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, var(--background) 88%, transparent),
+    color-mix(in oklab, var(--background) 86%, transparent)
+  );
+}
+
+[data-platform="windows"] .app-window--update,
+[data-platform="linux"] .app-window--update {
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, var(--background) 94%, transparent),
+    color-mix(in oklab, var(--background) 90%, transparent)
+  );
+}
+
 /* Tray popover: OS-native translucent surfaces; light/dark follows prefers-color-scheme. */
 .tray-panel {
   --app-segment-stroke: var(--tray-panel-stroke);
