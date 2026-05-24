@@ -28,6 +28,7 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
       items={items}
       value={value}
       onValueChange={onValueChange}
+      variant="page-tabs"
       rowHeight={TRAY_SEGMENT_ROW_HEIGHT}
       stretchItems={false}
     />

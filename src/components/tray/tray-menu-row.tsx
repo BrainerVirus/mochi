@@ -25,7 +25,7 @@ export function TrayMenuRow({
           "flex h-7 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm",
           item.highlight
             ? "bg-primary/12 text-primary hover:bg-primary/18 active:bg-primary/22 font-medium"
-            : "text-foreground hover:bg-muted/60 active:bg-muted/80",
+            : "text-foreground hover:bg-primary/10 active:bg-primary/16",
           "disabled:pointer-events-none disabled:opacity-50",
         )}
         disabled={item.disabled}

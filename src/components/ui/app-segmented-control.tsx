@@ -12,14 +12,26 @@ export interface AppSegmentItem {
   icon?: ReactNode;
 }
 
+export type AppSegmentedControlVariant = "page-tabs" | "inline";
+
+export function usesPageTabIndicators(variant: AppSegmentedControlVariant): boolean {
+  return variant === "page-tabs";
+}
+
 const indicatorLayerClassName =
   "pointer-events-none absolute inset-y-0.5 left-0 rounded-md will-change-[transform,width]";
 
-const segmentItemClassName = cn(
+const pageTabItemClassName = cn(
   "relative z-10 inline-flex h-full min-w-[4.5rem] shrink-0 flex-none cursor-pointer flex-row items-center justify-center gap-1.5 rounded-none border-0 px-3 shadow-none",
   "bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground",
   "data-[state=on]:bg-transparent data-[state=on]:font-semibold data-[state=on]:text-foreground data-[state=on]:shadow-none",
   "first:rounded-none last:rounded-none",
+);
+
+const inlineItemClassName = cn(
+  "inline-flex h-full min-w-0 flex-1 cursor-pointer flex-row items-center justify-center gap-1.5 rounded-md border-0 px-3 shadow-none",
+  "bg-transparent text-muted-foreground hover:bg-[var(--app-segment-inline-hover)] hover:text-foreground",
+  "data-[state=on]:bg-[var(--app-segment-inline-selected)] data-[state=on]:font-medium data-[state=on]:text-primary data-[state=on]:shadow-none",
 );
 
 function SegmentIndicators({
@@ -56,6 +68,7 @@ function useAppSegmentControlState(
   value: string,
   itemCount: number,
   onValueChange: (value: string) => void,
+  enabled: boolean,
 ) {
   const trackRef = useRef<HTMLDivElement>(null);
   const activeIndicatorRef = useRef<HTMLDivElement>(null);
@@ -76,17 +89,21 @@ function useAppSegmentControlState(
       activeIndicatorRef,
       hoverIndicatorRef,
       value,
-      itemCount,
+      enabled ? itemCount : 0,
       itemRefs,
     );
 
   const handleValueChange = useCallback(
     (next: string) => {
       if (next) {
-        handleSegmentValueChange(next, onValueChange);
+        if (enabled) {
+          handleSegmentValueChange(next, onValueChange);
+          return;
+        }
+        onValueChange(next);
       }
     },
-    [handleSegmentValueChange, onValueChange],
+    [enabled, handleSegmentValueChange, onValueChange],
   );
 
   return {
@@ -106,8 +123,50 @@ interface AppSegmentedControlProps {
   onValueChange: (value: string) => void;
   className?: string;
   rowHeight?: string;
-  /** When true, segments share width equally; tray uses false for scrollable tabs. */
   stretchItems?: boolean;
+  variant?: AppSegmentedControlVariant;
+}
+
+function SegmentToggleItems({
+  items,
+  isPageTabs,
+  stretchItems,
+  setItemRef,
+  syncHoverIndicator,
+}: {
+  items: AppSegmentItem[];
+  isPageTabs: boolean;
+  stretchItems: boolean;
+  setItemRef: (id: string, element: HTMLButtonElement | null) => void;
+  syncHoverIndicator: (id: string) => void;
+}) {
+  return items.map((item) => (
+    <ToggleGroupItem
+      key={item.id}
+      ref={
+        isPageTabs
+          ? (element) => {
+              setItemRef(item.id, element);
+            }
+          : undefined
+      }
+      data-tray-tab-id={isPageTabs ? item.id : undefined}
+      value={item.id}
+      aria-label={item.label}
+      className={cn(
+        isPageTabs ? pageTabItemClassName : inlineItemClassName,
+        stretchItems ? "min-w-0 flex-1" : "min-w-[4.75rem] max-w-[7.5rem] shrink-0 flex-none",
+      )}
+      onPointerEnter={isPageTabs ? () => syncHoverIndicator(item.id) : undefined}
+    >
+      {item.icon ? (
+        <span className="flex size-4 shrink-0 items-center justify-center opacity-90">
+          {item.icon}
+        </span>
+      ) : null}
+      <span className="min-w-0 truncate text-xs font-medium">{item.label}</span>
+    </ToggleGroupItem>
+  ));
 }
 
 export function AppSegmentedControl({
@@ -117,65 +176,50 @@ export function AppSegmentedControl({
   className,
   rowHeight = "h-9",
   stretchItems = true,
+  variant = "page-tabs",
 }: AppSegmentedControlProps) {
-  const {
-    trackRef,
-    activeIndicatorRef,
-    hoverIndicatorRef,
-    setItemRef,
-    syncHoverIndicator,
-    handleRailLeave,
-    handleValueChange,
-  } = useAppSegmentControlState(value, items.length, onValueChange);
+  const isPageTabs = usesPageTabIndicators(variant);
+  const state = useAppSegmentControlState(value, items.length, onValueChange, isPageTabs);
+  const trackClassName = isPageTabs
+    ? "bg-[var(--app-segment-track)]"
+    : "bg-[var(--app-segment-inline-track)]";
 
   return (
     <div
-      ref={trackRef}
-      onPointerLeave={handleRailLeave}
+      ref={isPageTabs ? state.trackRef : undefined}
+      onPointerLeave={isPageTabs ? state.handleRailLeave : undefined}
+      data-segment-variant={variant}
       className={cn(
         rowHeight,
-        "relative isolate rounded-lg bg-[var(--app-segment-track)] p-0.5",
+        "relative isolate rounded-lg p-0.5",
+        trackClassName,
         stretchItems ? "w-full" : "w-max min-w-full",
         className,
       )}
     >
-      <SegmentIndicators
-        hoverIndicatorRef={hoverIndicatorRef}
-        activeIndicatorRef={activeIndicatorRef}
-      />
+      {isPageTabs ? (
+        <SegmentIndicators
+          hoverIndicatorRef={state.hoverIndicatorRef}
+          activeIndicatorRef={state.activeIndicatorRef}
+        />
+      ) : null}
 
       <ToggleGroup
         type="single"
         orientation="horizontal"
         value={value}
-        onValueChange={handleValueChange}
+        onValueChange={state.handleValueChange}
         spacing={0}
         variant="default"
         className="relative z-10 flex h-full w-full flex-row flex-nowrap items-stretch justify-stretch gap-0 bg-transparent p-0 shadow-none"
       >
-        {items.map((item) => (
-          <ToggleGroupItem
-            key={item.id}
-            ref={(element) => {
-              setItemRef(item.id, element);
-            }}
-            data-tray-tab-id={item.id}
-            value={item.id}
-            aria-label={item.label}
-            className={cn(
-              segmentItemClassName,
-              stretchItems ? "min-w-0 flex-1" : "min-w-[4.75rem] max-w-[7.5rem] shrink-0 flex-none",
-            )}
-            onPointerEnter={() => syncHoverIndicator(item.id)}
-          >
-            {item.icon ? (
-              <span className="flex size-4 shrink-0 items-center justify-center opacity-90">
-                {item.icon}
-              </span>
-            ) : null}
-            <span className="min-w-0 truncate text-xs font-medium">{item.label}</span>
-          </ToggleGroupItem>
-        ))}
+        <SegmentToggleItems
+          items={items}
+          isPageTabs={isPageTabs}
+          stretchItems={stretchItems}
+          setItemRef={state.setItemRef}
+          syncHoverIndicator={state.syncHoverIndicator}
+        />
       </ToggleGroup>
     </div>
   );

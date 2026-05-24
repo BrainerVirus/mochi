@@ -67,6 +67,7 @@ function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEdito
           items={[...SETTINGS_TABS]}
           value={activeTab}
           onValueChange={setActiveTab}
+          variant="page-tabs"
           rowHeight="h-9"
           stretchItems
         />
