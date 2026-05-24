@@ -50,6 +50,7 @@
         "decorations": true,
         "resizable": true,
         "transparent": true,
+        "skipTaskbar": true,
         "center": true
       }
     ],

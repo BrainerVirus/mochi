@@ -2,9 +2,9 @@ pub mod auth;
 pub mod browser;
 pub mod cli;
 pub mod core;
+pub mod lifecycle;
 #[cfg(target_os = "macos")]
 pub mod macos;
-pub mod lifecycle;
 pub mod providers;
 pub mod settings;
 pub mod status;

@@ -62,15 +62,19 @@ pub fn setup_app_windows(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 }
 
 pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::error::Error>> {
+    // Hidden at startup — keep off taskbar/dock until the user opens settings/about.
+    let _ = window.set_skip_taskbar(true);
+
     let window_for_events = window.clone();
     window.on_window_event(move |event| {
         if let WindowEvent::CloseRequested { api, .. } = event {
             api.prevent_close();
             let app = window_for_events.app_handle();
+            let _ = window_for_events.set_skip_taskbar(true);
             let _ = window_for_events.hide();
-            let _ = emit_tray_navigate(&app, "/");
+            let _ = emit_tray_navigate(app, "/");
             #[cfg(target_os = "macos")]
-            sync_activation_policy_for_visible_windows(&app);
+            sync_activation_policy_for_visible_windows(app);
         }
     });
 
@@ -313,6 +317,8 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     set_regular_activation_policy(&app);
+
+    let _ = window.set_skip_taskbar(false);
 
     if window.is_visible().unwrap_or(false) {
         window.set_focus().map_err(|error| error.to_string())?;

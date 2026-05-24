@@ -290,10 +290,41 @@ html[data-app-window].dark body {
 
 [data-platform="windows"] .app-window {
   --radius: 0.5rem;
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #f3f3f3 72%, transparent),
+    color-mix(in oklab, #202020 68%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #f3f3f3 92%, transparent),
+    color-mix(in oklab, #202020 88%, transparent)
+  );
+  --background: light-dark(#f3f3f3, #202020);
+  --foreground: light-dark(#1a1a1a, #ffffff);
+  --primary: light-dark(#005fb8, #60cdff);
+  --primary-foreground: light-dark(#ffffff, #000000);
+  --ring: light-dark(#005fb8, #60cdff);
+  --border: light-dark(#e5e5e5, #3d3d3d);
+  --muted: light-dark(#f9f9f9, #2d2d2d);
+  --muted-foreground: light-dark(#616161, #c8c8c8);
 }
 
 [data-platform="linux"] .app-window {
   --radius: 0.375rem;
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #fafafa 76%, transparent),
+    color-mix(in oklab, #242424 64%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #fafafa 92%, transparent),
+    color-mix(in oklab, #242424 88%, transparent)
+  );
+  --background: light-dark(#fafafa, #242424);
+  --foreground: light-dark(#2e3436, #ffffff);
+  --primary: light-dark(#3584e4, #62a0ea);
+  --ring: light-dark(#3584e4, #62a0ea);
+  --border: light-dark(#deddda, #4d4d4d);
+  --muted: light-dark(#f6f5f4, #303030);
+  --muted-foreground: light-dark(#5e5c64, #bababa);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -324,6 +355,28 @@ html[data-app-window].dark body {
 [data-platform="macos"] .app-window--about {
   --app-glass-tint: transparent;
   background: transparent;
+}
+
+[data-platform="windows"] .app-window--about {
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #f9f9f9 88%, transparent),
+    color-mix(in oklab, #1a1a1a 86%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #f9f9f9 94%, transparent),
+    color-mix(in oklab, #1a1a1a 90%, transparent)
+  );
+}
+
+[data-platform="linux"] .app-window--about {
+  --app-glass-tint: light-dark(
+    color-mix(in oklab, #fcfcfc 90%, transparent),
+    color-mix(in oklab, #1e1e1e 88%, transparent)
+  );
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #fcfcfc 94%, transparent),
+    color-mix(in oklab, #1e1e1e 90%, transparent)
+  );
 }
 
 /* Tray popover: OS-native translucent surfaces; light/dark follows prefers-color-scheme. */
