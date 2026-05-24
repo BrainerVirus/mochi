@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import type { ProviderCatalogEntry } from "@/lib/schemas/provider-catalog";
 import type { ProviderConfig } from "@/lib/schemas/settings";
 
+import { shouldShowProviderField } from "./provider-field-visibility";
 import { TokenAccountsField, WorkspaceIdField } from "./provider-token-fields";
 
 interface ProviderConfigFieldsProps {
@@ -26,35 +27,13 @@ export function ProviderConfigFields({ entry, config, onChange }: ProviderConfig
   );
 }
 
-/** Manual cookie / session-cost fields only appear when cookie source is manual. */
-export function shouldShowProviderField(
-  field: ProviderCatalogEntry["settingsFields"][number],
-  config: ProviderConfig,
-): boolean {
-  const cookieSource = config.cookie_source ?? "auto";
-
-  if (field.kind === "cookie-source") {
-    return true;
-  }
-
-  if (field.kind === "manual-cookie" || field.kind === "history-window") {
-    return cookieSource === "manual";
-  }
-
-  if (cookieSource === "off") {
-    return false;
-  }
-
-  return true;
-}
-
 function renderProviderField(
   field: ProviderCatalogEntry["settingsFields"][number],
   entry: ProviderCatalogEntry,
   config: ProviderConfig,
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
-  if (!shouldShowProviderField(field, config)) {
+  if (!shouldShowProviderField(field, config, entry)) {
     return null;
   }
 
@@ -136,6 +115,11 @@ function renderCookieSourceField(
         rowHeight="h-8"
         stretchItems
       />
+      {value === "auto" ? (
+        <FieldDescription className="text-[11px]">
+          Uses browser cookies when available; manual fields are hidden until you switch to Manual.
+        </FieldDescription>
+      ) : null}
     </Field>
   );
 }
