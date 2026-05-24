@@ -106,13 +106,13 @@ fn apply_windows_rounded_corners(window: &WebviewWindow) -> Result<(), String> {
         DwmSetWindowAttribute, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
     };
 
-    let hwnd: HWND = window.hwnd().map_err(|error| error.to_string())?;
+    let hwnd: HWND = window.hwnd().map_err(|error| error.to_string())?.0;
     let preference = DWMWCP_ROUND as u32;
 
     let result = unsafe {
         DwmSetWindowAttribute(
             hwnd,
-            DWMWA_WINDOW_CORNER_PREFERENCE,
+            DWMWA_WINDOW_CORNER_PREFERENCE as u32,
             &preference as *const u32 as *const _,
             std::mem::size_of::<u32>() as u32,
         )
