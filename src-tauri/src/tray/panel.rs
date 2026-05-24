@@ -9,6 +9,14 @@ use tauri_plugin_positioner::{Position, WindowExt};
 pub const MAIN_PANEL_LABEL: &str = "main";
 pub const SETTINGS_WINDOW_LABEL: &str = "settings";
 
+/// Default settings window size (logical px).
+pub const SETTINGS_WINDOW_WIDTH: f64 = 520.0;
+pub const SETTINGS_WINDOW_HEIGHT: f64 = 560.0;
+
+/// Compact about window size (logical px).
+pub const ABOUT_WINDOW_WIDTH: f64 = 340.0;
+pub const ABOUT_WINDOW_HEIGHT: f64 = 280.0;
+
 /// Matches `src/lib/utils/tray-panel-layout.ts` and `tauri.conf.json` main window width.
 pub const TRAY_PANEL_WIDTH: f64 = 360.0;
 
@@ -42,6 +50,9 @@ pub fn dev_show_main_enabled() -> bool {
 pub fn setup_app_windows(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
         prepare_app_window(&window)?;
+        if let Err(error) = ensure_app_window_vibrancy(&window) {
+            eprintln!("[mochi] app window vibrancy unavailable: {error}");
+        }
     }
 
     Ok(())
@@ -70,12 +81,16 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         WebviewUrl::App("/settings".into()),
     )
     .title("Mochi")
-    .inner_size(720.0, 640.0)
-    .min_inner_size(480.0, 480.0)
+    .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
+    .min_inner_size(480.0, 420.0)
     .center()
+    .transparent(true)
     .build()
     .inspect(|window| {
         let _ = prepare_app_window(window);
+        if let Err(error) = ensure_app_window_vibrancy(window) {
+            eprintln!("[mochi] app window vibrancy unavailable: {error}");
+        }
     })
     .map_err(|error| error.to_string())
 }
@@ -118,6 +133,18 @@ pub fn prepare_main_panel_window(window: &WebviewWindow) -> Result<(), Box<dyn s
 
 fn ensure_tray_panel_vibrancy(window: &WebviewWindow) -> Result<(), String> {
     super::vibrancy::apply_tray_panel_vibrancy(window)
+}
+
+fn ensure_app_window_vibrancy(window: &WebviewWindow) -> Result<(), String> {
+    super::vibrancy::apply_app_window_vibrancy(window)
+}
+
+fn app_window_size_for_path(path: &str) -> (f64, f64) {
+    if path.starts_with("/about") {
+        (ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT)
+    } else {
+        (SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
+    }
 }
 
 /// Updates positioner plugin state and caches the latest tray icon bounds.
@@ -244,6 +271,25 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     }
 
     let window = ensure_settings_window(&app)?;
+
+    let (width, height) = app_window_size_for_path(path.as_str());
+    let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+    let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
+        width: if path.starts_with("/about") {
+            ABOUT_WINDOW_WIDTH
+        } else {
+            480.0
+        },
+        height: if path.starts_with("/about") {
+            ABOUT_WINDOW_HEIGHT
+        } else {
+            420.0
+        },
+    })));
+
+    if let Err(error) = ensure_app_window_vibrancy(&window) {
+        eprintln!("[mochi] app window vibrancy unavailable: {error}");
+    }
 
     app.emit("app-navigate", path.as_str())
         .map_err(|error| error.to_string())?;
@@ -418,5 +464,17 @@ mod tests {
         assert_eq!(TRAY_PANEL_WIDTH, 360.0);
         assert_eq!(TRAY_PANEL_MIN_HEIGHT, 160.0);
         assert_eq!(TRAY_PANEL_DEFAULT_MAX_HEIGHT, 496.0);
+    }
+
+    #[test]
+    fn app_window_size_for_path() {
+        assert_eq!(
+            super::app_window_size_for_path("/settings"),
+            (SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
+        );
+        assert_eq!(
+            super::app_window_size_for_path("/about"),
+            (ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT)
+        );
     }
 }

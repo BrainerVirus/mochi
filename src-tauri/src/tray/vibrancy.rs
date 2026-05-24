@@ -58,6 +58,44 @@ pub fn apply_tray_panel_vibrancy(window: &WebviewWindow) -> Result<(), String> {
     }
 }
 
+/// Applies platform-native translucent backdrop to settings/about app windows.
+pub fn apply_app_window_vibrancy(window: &WebviewWindow) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use tauri::window::{Effect, EffectState, EffectsBuilder};
+
+        window
+            .set_effects(
+                EffectsBuilder::new()
+                    .effect(Effect::Sidebar)
+                    .state(EffectState::Active)
+                    .build(),
+            )
+            .map_err(|error| error.to_string())?;
+
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use window_vibrancy::{apply_acrylic, apply_mica};
+
+        apply_windows_rounded_corners(window)?;
+
+        if apply_mica(window, None).is_ok() {
+            return Ok(());
+        }
+
+        apply_acrylic(window, Some((243, 243, 243, 200))).map_err(|error| error.to_string())
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let _ = window;
+        Ok(())
+    }
+}
+
 #[cfg(target_os = "windows")]
 fn apply_windows_rounded_corners(window: &WebviewWindow) -> Result<(), String> {
     use windows_sys::Win32::Foundation::HWND;

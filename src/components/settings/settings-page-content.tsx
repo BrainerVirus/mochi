@@ -1,23 +1,15 @@
 import { SettingsForm } from "@/components/settings/settings-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function SettingsPageContent() {
   return (
-    <section className="mx-auto flex min-h-full w-full max-w-[720px] flex-col gap-6 p-6">
-      <Card className="rounded-mochi shadow-sm">
-        <CardHeader>
-          <CardDescription className="font-medium tracking-[0.2em] uppercase">
-            Mochi
-          </CardDescription>
-          <CardTitle className="text-3xl font-semibold">Settings</CardTitle>
-          <CardDescription>
-            Configure refresh behavior, update channel, notifications, and enabled providers.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SettingsForm />
-        </CardContent>
-      </Card>
-    </section>
+    <div className="flex min-h-svh flex-col px-4 py-5">
+      <header className="mb-4 flex flex-col gap-0.5">
+        <h1 className="text-base font-semibold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground text-xs">
+          Refresh behavior, updates, notifications, and providers.
+        </p>
+      </header>
+      <SettingsForm />
+    </div>
   );
 }

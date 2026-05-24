@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { ProviderCatalogEntry } from "@/lib/schemas/provider-catalog";
 import type { ProviderConfig } from "@/lib/schemas/settings";
 
@@ -18,12 +18,38 @@ export function ProviderConfigFields({ entry, config, onChange }: ProviderConfig
   );
 }
 
+/** Manual cookie / session-cost fields only appear when cookie source is manual. */
+export function shouldShowProviderField(
+  field: ProviderCatalogEntry["settingsFields"][number],
+  config: ProviderConfig,
+): boolean {
+  const cookieSource = config.cookie_source ?? "auto";
+
+  if (field.kind === "cookie-source") {
+    return true;
+  }
+
+  if (field.kind === "manual-cookie" || field.kind === "history-window") {
+    return cookieSource === "manual";
+  }
+
+  if (cookieSource === "off") {
+    return false;
+  }
+
+  return true;
+}
+
 function renderProviderField(
   field: ProviderCatalogEntry["settingsFields"][number],
   entry: ProviderCatalogEntry,
   config: ProviderConfig,
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
+  if (!shouldShowProviderField(field, config)) {
+    return null;
+  }
+
   if (field.kind === "cookie-source") {
     return renderCookieSourceField(field, config, onChange);
   }
@@ -83,29 +109,28 @@ function renderCookieSourceField(
   const value = config.cookie_source ?? "auto";
 
   return (
-    <div key={field.key} className="flex flex-col gap-2">
-      <Label>{field.label}</Label>
-      <div className="flex flex-wrap gap-2">
-        {(
-          [
-            ["auto", "Auto"],
-            ["manual", "Manual"],
-            ["off", "Off"],
-          ] as const
-        ).map(([source, label]) => (
-          <Button
-            key={source}
-            type="button"
-            size="sm"
-            variant={value === source ? "default" : "outline"}
-            onClick={() => {
-              onChange({ cookie_source: source });
-            }}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
+    <div key={field.key} className="flex flex-col gap-1.5">
+      <Label className="text-xs">{field.label}</Label>
+      <ToggleGroup
+        type="single"
+        value={value}
+        onValueChange={(source) => {
+          if (source === "auto" || source === "manual" || source === "off") {
+            onChange({ cookie_source: source });
+          }
+        }}
+        className="justify-start"
+      >
+        <ToggleGroupItem value="auto" size="sm">
+          Auto
+        </ToggleGroupItem>
+        <ToggleGroupItem value="manual" size="sm">
+          Manual
+        </ToggleGroupItem>
+        <ToggleGroupItem value="off" size="sm">
+          Off
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
   );
 }
@@ -116,25 +141,24 @@ function renderManualCookieField(
   config: ProviderConfig,
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
-  if (config.cookie_source === "off") {
-    return null;
-  }
-
   return (
-    <div key={field.key} className="flex flex-col gap-2">
-      <Label htmlFor={`${entry.id}-${field.key}`}>{field.label}</Label>
+    <div key={field.key} className="flex flex-col gap-1.5">
+      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
+        {field.label}
+      </Label>
       <Input
         id={`${entry.id}-${field.key}`}
+        className="h-8 font-mono text-xs"
         placeholder="oc_locale=en; auth=Fe26.2…"
         value={config.manual_cookie ?? ""}
         onChange={(event) => {
           onChange({ manual_cookie: event.target.value });
         }}
       />
-      <p className="text-muted-foreground text-xs">
-        Paste the full cookie string from browser DevTools, or set{" "}
-        <code className="text-xs">MOCHI_{entry.id.toUpperCase().replace("-", "_")}_COOKIE</code> in
-        your environment.
+      <p className="text-muted-foreground text-[11px]">
+        Paste the cookie string from browser DevTools, or set{" "}
+        <code className="text-[10px]">MOCHI_{entry.id.toUpperCase().replace("-", "_")}_COOKIE</code>{" "}
+        in your environment.
       </p>
     </div>
   );
@@ -150,12 +174,15 @@ function renderApiKeyField(
     field.key === "admin_api_key" ? (config.admin_api_key ?? "") : (config.api_key ?? "");
 
   return (
-    <div key={field.key} className="flex flex-col gap-2">
-      <Label htmlFor={`${entry.id}-${field.key}`}>{field.label}</Label>
+    <div key={field.key} className="flex flex-col gap-1.5">
+      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
+        {field.label}
+      </Label>
       <Input
         id={`${entry.id}-${field.key}`}
         type="password"
         autoComplete="off"
+        className="h-8"
         value={value}
         onChange={(event) => {
           if (field.key === "admin_api_key") {
@@ -176,12 +203,15 @@ function renderTokenAccountField(
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
   return (
-    <div key={field.key} className="flex flex-col gap-2">
-      <Label htmlFor={`${entry.id}-${field.key}`}>{field.label}</Label>
+    <div key={field.key} className="flex flex-col gap-1.5">
+      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
+        {field.label}
+      </Label>
       <Input
         id={`${entry.id}-${field.key}`}
         type="password"
         autoComplete="off"
+        className="h-8"
         placeholder="GitHub OAuth token"
         value={config.token_account ?? ""}
         onChange={(event) => {
@@ -199,13 +229,16 @@ function renderHistoryWindowField(
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
   return (
-    <div key={field.key} className="flex flex-col gap-2">
-      <Label htmlFor={`${entry.id}-${field.key}`}>{field.label} (days)</Label>
+    <div key={field.key} className="flex flex-col gap-1.5">
+      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
+        {field.label} (days)
+      </Label>
       <Input
         id={`${entry.id}-${field.key}`}
         type="number"
         min={1}
         max={365}
+        className="h-8 w-24 tabular-nums"
         value={config.history_window_days ?? 30}
         onChange={(event) => {
           const value = Number(event.target.value);
@@ -225,10 +258,13 @@ function renderRegionHostField(
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
   return (
-    <div key={field.key} className="flex flex-col gap-2">
-      <Label htmlFor={`${entry.id}-${field.key}`}>{field.label}</Label>
+    <div key={field.key} className="flex flex-col gap-1.5">
+      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
+        {field.label}
+      </Label>
       <Input
         id={`${entry.id}-${field.key}`}
+        className="h-8"
         placeholder="api.example.com"
         value={config.region_host ?? ""}
         onChange={(event) => {

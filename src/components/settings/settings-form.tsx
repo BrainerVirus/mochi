@@ -1,13 +1,17 @@
-import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import { useSaveSettings, useSettings } from "@/hooks/use-tray-events";
 import type { MochiSettings } from "@/lib/schemas/settings";
 
 import { resolveSettingsFormState } from "./settings-form-state";
 import { GeneralSettingsSection, ProviderSettingsSection } from "./settings-sections";
+
+const SETTINGS_TABS = [
+  { id: "general", label: "General" },
+  { id: "providers", label: "Providers" },
+] as const;
 
 export function SettingsForm() {
   const { data, error, isError, isPending } = useSettings();
@@ -43,45 +47,39 @@ interface SettingsEditorProps {
 }
 
 function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEditorProps) {
+  const [activeTab, setActiveTab] = useState<string>("general");
+
   function patchSettings(patch: Partial<MochiSettings>) {
     onSave({ ...settings, ...patch });
   }
 
   return (
-    <Tabs defaultValue="general" className="flex flex-col gap-4">
-      <TabsList>
-        <TabsTrigger value="general">General</TabsTrigger>
-        <TabsTrigger value="providers">Providers</TabsTrigger>
-      </TabsList>
+    <div className="flex flex-col gap-4">
+      <AppSegmentedControl
+        items={[...SETTINGS_TABS]}
+        value={activeTab}
+        onValueChange={setActiveTab}
+      />
 
-      <TabsContent value="general" className="flex flex-col gap-4">
-        {isLoading ? (
-          <output className="text-muted-foreground block text-center text-sm">
+      {activeTab === "general" ? (
+        isLoading ? (
+          <output className="text-muted-foreground block py-6 text-center text-sm">
             Loading settings…
           </output>
         ) : (
           <GeneralSettingsSection settings={settings} onChange={patchSettings} />
-        )}
-      </TabsContent>
+        )
+      ) : isLoading ? (
+        <output className="text-muted-foreground block py-6 text-center text-sm">
+          Loading settings…
+        </output>
+      ) : (
+        <ProviderSettingsSection settings={settings} onChange={patchSettings} />
+      )}
 
-      <TabsContent value="providers" className="flex flex-col gap-4">
-        {isLoading ? (
-          <output className="text-muted-foreground block text-center text-sm">
-            Loading settings…
-          </output>
-        ) : (
-          <ProviderSettingsSection settings={settings} onChange={patchSettings} />
-        )}
-      </TabsContent>
-
-      <div className="flex items-center justify-between gap-3">
-        <Button variant="outline" asChild>
-          <Link to="/">Back to tray panel</Link>
-        </Button>
-        <p className="text-muted-foreground text-xs">
-          {isSaving ? "Saving settings…" : "Changes save automatically."}
-        </p>
-      </div>
-    </Tabs>
+      <p className="text-muted-foreground text-center text-[11px]">
+        {isSaving ? "Saving…" : "Changes save automatically"}
+      </p>
+    </div>
   );
 }
