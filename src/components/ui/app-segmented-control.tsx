@@ -60,7 +60,7 @@ export function resolvePageTabRadiusClasses(layout: AppSegmentedControlLayout): 
 
 function indicatorLayerClassName(indicatorRadiusClass: string): string {
   return cn(
-    "pointer-events-none absolute inset-y-0.5 left-0 will-change-transform",
+    "pointer-events-none absolute inset-y-0.5 left-0 will-change-[transform,width]",
     indicatorRadiusClass,
   );
 }

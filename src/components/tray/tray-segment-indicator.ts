@@ -1,16 +1,6 @@
 import gsap from "gsap";
 
 import type { TraySegmentIndicatorCommand } from "@/components/tray/tray-segment-indicator-machine";
-import {
-  INDICATOR_COMPOSITOR_PROPS,
-  normalizeIndicatorLayout,
-  readIndicatorScaleX,
-  resolveIndicatorScaleX,
-} from "@/components/tray/tray-segment-indicator-transform";
-
-export { observeSegmentTrackResize } from "@/components/tray/segment-track-resize-observer";
-export type { SegmentTrackResizeObserver } from "@/components/tray/segment-track-resize-observer";
-export { resolveIndicatorScaleX } from "@/components/tray/tray-segment-indicator-transform";
 
 export const TRAY_INDICATOR_DURATION_S = 0.35;
 export const TRAY_INDICATOR_EASE = "power3.inOut";
@@ -57,10 +47,9 @@ function toNumericGsapProperty(value: string | number): number {
 }
 
 export function readIndicatorMetrics(indicator: HTMLElement): IndicatorMetrics {
-  const layoutWidth = toNumericGsapProperty(gsap.getProperty(indicator, "width"));
   return {
     x: toNumericGsapProperty(gsap.getProperty(indicator, "x")),
-    width: layoutWidth * readIndicatorScaleX(indicator),
+    width: toNumericGsapProperty(gsap.getProperty(indicator, "width")),
   };
 }
 
@@ -120,42 +109,23 @@ export function applyActiveIndicatorPosition(
   });
 
   if (plan.mode === "snap") {
-    gsap.set(indicator, {
-      x: metrics.x,
-      width: metrics.width,
-      scaleX: 1,
-      autoAlpha: 1,
-      ...INDICATOR_COMPOSITOR_PROPS,
-    });
+    gsap.set(indicator, { x: metrics.x, width: metrics.width, autoAlpha: 1, force3D: true });
     return;
   }
 
-  const current = readIndicatorMetrics(indicator);
-  const startWidth = Math.max(current.width, 1);
-
-  gsap.set(indicator, {
-    width: startWidth,
-    scaleX: 1,
-    x: current.x,
-    ...INDICATOR_COMPOSITOR_PROPS,
-  });
-
   gsap.to(indicator, {
     x: metrics.x,
-    scaleX: resolveIndicatorScaleX(startWidth, metrics.width),
+    width: metrics.width,
     autoAlpha: 1,
     duration: TRAY_INDICATOR_DURATION_S,
     ease: TRAY_INDICATOR_EASE,
     overwrite: "auto",
-    onComplete: () => {
-      normalizeIndicatorLayout(indicator, metrics);
-    },
   });
 }
 
 export interface HoverIndicatorQuickTo {
   x: gsap.QuickToFunc;
-  scaleX: gsap.QuickToFunc;
+  width: gsap.QuickToFunc;
 }
 
 export function createHoverIndicatorQuickTo(indicator: HTMLElement): HoverIndicatorQuickTo {
@@ -164,7 +134,7 @@ export function createHoverIndicatorQuickTo(indicator: HTMLElement): HoverIndica
       duration: TRAY_INDICATOR_DURATION_S,
       ease: TRAY_INDICATOR_EASE,
     }),
-    scaleX: gsap.quickTo(indicator, "scaleX", {
+    width: gsap.quickTo(indicator, "width", {
       duration: TRAY_INDICATOR_DURATION_S,
       ease: TRAY_INDICATOR_EASE,
     }),
@@ -181,34 +151,17 @@ export function applyHoverIndicatorPosition(
   fresh = false,
 ) {
   if (reducedMotion) {
-    gsap.set(indicator, {
-      x: metrics.x,
-      width: metrics.width,
-      scaleX: 1,
-      opacity: hoveredId === activeValue ? 0 : 1,
-      ...INDICATOR_COMPOSITOR_PROPS,
-    });
+    gsap.set(indicator, { ...metrics, opacity: hoveredId === activeValue ? 0 : 1, force3D: true });
     return;
   }
 
   if (fresh) {
-    gsap.set(indicator, {
-      x: metrics.x,
-      width: metrics.width,
-      scaleX: 1,
-      ...INDICATOR_COMPOSITOR_PROPS,
-    });
+    gsap.set(indicator, { ...metrics, force3D: true });
   } else if (quickTo) {
-    const layoutWidth = toNumericGsapProperty(gsap.getProperty(indicator, "width"));
     quickTo.x(metrics.x);
-    quickTo.scaleX(resolveIndicatorScaleX(layoutWidth, metrics.width));
+    quickTo.width(metrics.width);
   } else {
-    gsap.set(indicator, {
-      x: metrics.x,
-      width: metrics.width,
-      scaleX: 1,
-      ...INDICATOR_COMPOSITOR_PROPS,
-    });
+    gsap.set(indicator, { ...metrics, force3D: true });
   }
 
   gsap.to(indicator, {
@@ -297,4 +250,13 @@ export function executeTraySegmentIndicatorCommand(
     animate: command.type === "moveActive",
     reducedMotion: context.reducedMotion,
   });
+}
+
+export function observeSegmentTrackResize(
+  track: HTMLElement,
+  onResize: () => void,
+): ResizeObserver {
+  const resizeObserver = new ResizeObserver(onResize);
+  resizeObserver.observe(track);
+  return resizeObserver;
 }
