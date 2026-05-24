@@ -8,10 +8,13 @@ import {
 import {
   APP_SEGMENT_INDICATOR_RADIUS_CLASS,
   APP_SEGMENT_TRACK_RADIUS_CLASS,
+  INLINE_SEGMENT_INDICATOR_RADIUS_CLASS,
   resolvePageTabRadiusClasses,
   SETTINGS_SEGMENT_INDICATOR_RADIUS_CLASS,
   SETTINGS_SEGMENT_TRACK_RADIUS_CLASS,
   usesPageTabIndicators,
+  usesSegmentActiveIndicator,
+  usesSegmentHoverIndicator,
 } from "@/components/ui/app-segmented-control";
 
 describe("usesPageTabIndicators", () => {
@@ -19,8 +22,22 @@ describe("usesPageTabIndicators", () => {
     expect(usesPageTabIndicators("page-tabs")).toBe(true);
   });
 
-  it("disables GSAP hover/active pills for inline controls", () => {
+  it("returns false for inline controls", () => {
     expect(usesPageTabIndicators("inline")).toBe(false);
+  });
+});
+
+describe("usesSegmentActiveIndicator", () => {
+  it("enables GSAP active pill for page tabs and inline controls", () => {
+    expect(usesSegmentActiveIndicator("page-tabs")).toBe(true);
+    expect(usesSegmentActiveIndicator("inline")).toBe(true);
+  });
+});
+
+describe("usesSegmentHoverIndicator", () => {
+  it("enables hover pill only for page tabs", () => {
+    expect(usesSegmentHoverIndicator("page-tabs")).toBe(true);
+    expect(usesSegmentHoverIndicator("inline")).toBe(false);
   });
 });
 
@@ -63,5 +80,11 @@ describe("resolvePageTabRadiusClasses", () => {
     });
     expect(SETTINGS_SEGMENT_TRACK_RADIUS_CLASS).toBe("rounded-lg");
     expect(SETTINGS_SEGMENT_INDICATOR_RADIUS_CLASS).toBe("rounded-md");
+  });
+});
+
+describe("INLINE_SEGMENT_INDICATOR_RADIUS_CLASS", () => {
+  it("matches inline segment item rounding", () => {
+    expect(INLINE_SEGMENT_INDICATOR_RADIUS_CLASS).toBe("rounded-md");
   });
 });

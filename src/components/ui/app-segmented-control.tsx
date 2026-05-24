@@ -2,7 +2,10 @@
 
 import { useCallback, useRef, type ReactNode, type RefObject } from "react";
 
-import { useTraySegmentIndicators } from "@/components/tray/use-tray-segment-indicators";
+import {
+  useTraySegmentIndicators,
+  type UseTraySegmentIndicatorsOptions,
+} from "@/components/tray/use-tray-segment-indicators";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +23,14 @@ export function usesPageTabIndicators(variant: AppSegmentedControlVariant): bool
   return variant === "page-tabs";
 }
 
+export function usesSegmentActiveIndicator(variant: AppSegmentedControlVariant): boolean {
+  return variant === "page-tabs" || variant === "inline";
+}
+
+export function usesSegmentHoverIndicator(variant: AppSegmentedControlVariant): boolean {
+  return variant === "page-tabs";
+}
+
 /** Fixed radius tokens — tray page tabs only; not used in settings (.app-window --radius). */
 export const APP_SEGMENT_INDICATOR_RADIUS_CLASS = "rounded-app-segment-indicator" as const;
 export const APP_SEGMENT_TRACK_RADIUS_CLASS = "rounded-app-segment-track" as const;
@@ -27,6 +38,8 @@ export const APP_SEGMENT_TRACK_RADIUS_CLASS = "rounded-app-segment-track" as con
 /** Settings page tabs follow .app-window --radius via Tailwind rounded-* utilities. */
 export const SETTINGS_SEGMENT_INDICATOR_RADIUS_CLASS = "rounded-md" as const;
 export const SETTINGS_SEGMENT_TRACK_RADIUS_CLASS = "rounded-lg" as const;
+
+export const INLINE_SEGMENT_INDICATOR_RADIUS_CLASS = "rounded-md" as const;
 
 export function resolvePageTabRadiusClasses(layout: AppSegmentedControlLayout): {
   track: string;
@@ -60,36 +73,50 @@ const pageTabItemClassName = cn(
 );
 
 const inlineItemClassName = cn(
-  "inline-flex h-full min-w-0 flex-1 cursor-pointer flex-row items-center justify-center gap-1.5 rounded-md border-0 px-3 shadow-none",
+  "relative z-10 inline-flex h-full min-w-0 flex-1 cursor-pointer flex-row items-center justify-center gap-1.5 rounded-md border-0 px-3 shadow-none",
   "bg-transparent text-muted-foreground hover:text-foreground",
-  "data-[state=on]:bg-primary data-[state=on]:font-medium data-[state=on]:text-primary-foreground data-[state=on]:shadow-none",
+  "data-[state=on]:bg-transparent data-[state=on]:font-medium data-[state=on]:text-primary-foreground data-[state=on]:shadow-none",
 );
+
+function activeIndicatorClassName(variant: AppSegmentedControlVariant): string {
+  if (variant === "page-tabs") {
+    return "bg-[var(--app-segment-active)] shadow-sm ring-1 ring-[var(--app-segment-stroke)]";
+  }
+
+  return "bg-primary";
+}
 
 function SegmentIndicators({
   hoverIndicatorRef,
   activeIndicatorRef,
   indicatorRadiusClass,
+  variant,
+  showHover,
 }: {
   hoverIndicatorRef: RefObject<HTMLDivElement | null>;
   activeIndicatorRef: RefObject<HTMLDivElement | null>;
   indicatorRadiusClass: string;
+  variant: AppSegmentedControlVariant;
+  showHover: boolean;
 }) {
   const layerClassName = indicatorLayerClassName(indicatorRadiusClass);
 
   return (
     <>
-      <div
-        ref={hoverIndicatorRef}
-        data-segment-hover-indicator
-        aria-hidden
-        className={cn(layerClassName, "z-[1] invisible bg-[var(--app-segment-hover)]")}
-        style={{ width: 0 }}
-      />
+      {showHover ? (
+        <div
+          ref={hoverIndicatorRef}
+          data-segment-hover-indicator
+          aria-hidden
+          className={cn(layerClassName, "z-[1] invisible bg-[var(--app-segment-hover)]")}
+          style={{ width: 0 }}
+        />
+      ) : null}
       <div
         ref={activeIndicatorRef}
         data-segment-indicator
         aria-hidden
-        className={cn(layerClassName, "z-[2] invisible bg-[var(--app-segment-active)]")}
+        className={cn(layerClassName, "z-[2] invisible", activeIndicatorClassName(variant))}
         style={{ width: 0 }}
       />
     </>
@@ -100,7 +127,7 @@ function useAppSegmentControlState(
   value: string,
   itemCount: number,
   onValueChange: (value: string) => void,
-  enabled: boolean,
+  indicatorOptions: UseTraySegmentIndicatorsOptions & { enabled: boolean },
 ) {
   const trackRef = useRef<HTMLDivElement>(null);
   const activeIndicatorRef = useRef<HTMLDivElement>(null);
@@ -121,21 +148,22 @@ function useAppSegmentControlState(
       activeIndicatorRef,
       hoverIndicatorRef,
       value,
-      enabled ? itemCount : 0,
+      indicatorOptions.enabled ? itemCount : 0,
       itemRefs,
+      { showHover: indicatorOptions.showHover },
     );
 
   const handleValueChange = useCallback(
     (next: string) => {
       if (next) {
-        if (enabled) {
+        if (indicatorOptions.enabled) {
           handleSegmentValueChange(next, onValueChange);
           return;
         }
         onValueChange(next);
       }
     },
-    [enabled, handleSegmentValueChange, onValueChange],
+    [handleSegmentValueChange, indicatorOptions.enabled, onValueChange],
   );
 
   return {
@@ -163,22 +191,26 @@ interface AppSegmentedControlProps {
 
 function SegmentToggleItems({
   items,
-  isPageTabs,
+  variant,
   stretchItems,
   setItemRef,
   syncHoverIndicator,
 }: {
   items: AppSegmentItem[];
-  isPageTabs: boolean;
+  variant: AppSegmentedControlVariant;
   stretchItems: boolean;
   setItemRef: (id: string, element: HTMLButtonElement | null) => void;
   syncHoverIndicator: (id: string) => void;
 }) {
+  const isPageTabs = variant === "page-tabs";
+  const showHover = usesSegmentHoverIndicator(variant);
+  const usesIndicators = usesSegmentActiveIndicator(variant);
+
   return items.map((item) => (
     <ToggleGroupItem
       key={item.id}
       ref={
-        isPageTabs
+        usesIndicators
           ? (element) => {
               setItemRef(item.id, element);
             }
@@ -191,7 +223,7 @@ function SegmentToggleItems({
         isPageTabs ? pageTabItemClassName : inlineItemClassName,
         stretchItems ? "min-w-0 flex-1" : "min-w-[4.75rem] max-w-[7.5rem] shrink-0 flex-none",
       )}
-      onPointerEnter={isPageTabs ? () => syncHoverIndicator(item.id) : undefined}
+      onPointerEnter={showHover ? () => syncHoverIndicator(item.id) : undefined}
     >
       {item.icon ? (
         <span className="flex size-4 shrink-0 items-center justify-center opacity-90">
@@ -214,16 +246,24 @@ export function AppSegmentedControl({
   layout = "tray",
 }: AppSegmentedControlProps) {
   const isPageTabs = usesPageTabIndicators(variant);
+  const showHover = usesSegmentHoverIndicator(variant);
+  const usesIndicators = usesSegmentActiveIndicator(variant);
   const pageTabRadius = resolvePageTabRadiusClasses(layout);
-  const state = useAppSegmentControlState(value, items.length, onValueChange, isPageTabs);
+  const indicatorRadiusClass = isPageTabs
+    ? pageTabRadius.indicator
+    : INLINE_SEGMENT_INDICATOR_RADIUS_CLASS;
+  const state = useAppSegmentControlState(value, items.length, onValueChange, {
+    enabled: usesIndicators,
+    showHover,
+  });
   const trackClassName = isPageTabs
     ? "bg-[var(--app-segment-track)]"
     : "bg-[var(--app-segment-inline-track)]";
 
   return (
     <div
-      ref={isPageTabs ? state.trackRef : undefined}
-      onPointerLeave={isPageTabs ? state.handleRailLeave : undefined}
+      ref={usesIndicators ? state.trackRef : undefined}
+      onPointerLeave={showHover ? state.handleRailLeave : undefined}
       data-segment-variant={variant}
       data-segment-layout={isPageTabs ? layout : undefined}
       className={cn(
@@ -235,11 +275,13 @@ export function AppSegmentedControl({
         className,
       )}
     >
-      {isPageTabs ? (
+      {usesIndicators ? (
         <SegmentIndicators
           hoverIndicatorRef={state.hoverIndicatorRef}
           activeIndicatorRef={state.activeIndicatorRef}
-          indicatorRadiusClass={pageTabRadius.indicator}
+          indicatorRadiusClass={indicatorRadiusClass}
+          variant={variant}
+          showHover={showHover}
         />
       ) : null}
 
@@ -254,7 +296,7 @@ export function AppSegmentedControl({
       >
         <SegmentToggleItems
           items={items}
-          isPageTabs={isPageTabs}
+          variant={variant}
           stretchItems={stretchItems}
           setItemRef={state.setItemRef}
           syncHoverIndicator={state.syncHoverIndicator}

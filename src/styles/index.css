@@ -187,20 +187,20 @@ html[data-app-window].dark body {
   color-scheme: light dark;
   font-family: var(--font-platform);
   --app-segment-stroke: light-dark(
-    color-mix(in oklab, var(--primary) 16%, transparent),
-    color-mix(in oklab, var(--primary) 22%, transparent)
+    color-mix(in oklab, #000000 10%, transparent),
+    color-mix(in oklab, #ffffff 12%, transparent)
   );
   --app-segment-track: light-dark(
     color-mix(in oklab, #000000 6%, transparent),
     color-mix(in oklab, #ffffff 8%, transparent)
   );
   --app-segment-hover: light-dark(
-    color-mix(in srgb, var(--primary) 15%, transparent),
-    color-mix(in srgb, var(--primary) 15%, transparent)
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 12%, transparent)
   );
   --app-segment-active: light-dark(
-    color-mix(in srgb, var(--primary) 25%, transparent),
-    color-mix(in srgb, var(--primary) 25%, transparent)
+    color-mix(in oklab, #ffffff 92%, transparent),
+    color-mix(in oklab, #ffffff 20%, transparent)
   );
   --app-segment-inline-track: light-dark(
     color-mix(in oklab, #000000 5%, transparent),
@@ -263,21 +263,18 @@ html[data-app-window].dark body {
     color-mix(in oklab, #2c2c2e 88%, transparent)
   );
   --app-segment-stroke: light-dark(
-    color-mix(in oklab, var(--primary) 14%, transparent),
-    color-mix(in oklab, var(--primary) 20%, transparent)
+    color-mix(in oklab, #000000 8%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
   );
   --app-segment-track: light-dark(
     color-mix(in oklab, #000000 5%, transparent),
     color-mix(in oklab, #ffffff 7%, transparent)
   );
   --app-segment-hover: light-dark(
-    color-mix(in srgb, var(--primary) 15%, transparent),
-    color-mix(in srgb, var(--primary) 15%, transparent)
+    color-mix(in oklab, #ffffff 50%, transparent),
+    color-mix(in oklab, #ffffff 11%, transparent)
   );
-  --app-segment-active: light-dark(
-    color-mix(in srgb, var(--primary) 25%, transparent),
-    color-mix(in srgb, var(--primary) 25%, transparent)
-  );
+  --app-segment-active: light-dark(#ffffff, color-mix(in oklab, #ffffff 24%, transparent));
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -437,12 +434,12 @@ html[data-app-window].dark body {
     color-mix(in oklab, #ffffff 8%, transparent)
   );
   --tray-segment-hover: light-dark(
-    color-mix(in srgb, var(--primary) 15%, transparent),
-    color-mix(in srgb, var(--primary) 15%, transparent)
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 12%, transparent)
   );
   --tray-segment-active: light-dark(
-    color-mix(in srgb, var(--primary) 25%, transparent),
-    color-mix(in srgb, var(--primary) 25%, transparent)
+    color-mix(in oklab, #ffffff 92%, transparent),
+    color-mix(in oklab, #ffffff 20%, transparent)
   );
   --app-segment-inline-track: light-dark(
     color-mix(in oklab, #000000 5%, transparent),
@@ -506,13 +503,10 @@ html[data-app-window].dark body {
     color-mix(in oklab, #ffffff 7%, transparent)
   );
   --tray-segment-hover: light-dark(
-    color-mix(in srgb, var(--primary) 15%, transparent),
-    color-mix(in srgb, var(--primary) 15%, transparent)
+    color-mix(in oklab, #ffffff 50%, transparent),
+    color-mix(in oklab, #ffffff 11%, transparent)
   );
-  --tray-segment-active: light-dark(
-    color-mix(in srgb, var(--primary) 25%, transparent),
-    color-mix(in srgb, var(--primary) 25%, transparent)
-  );
+  --tray-segment-active: light-dark(#ffffff, color-mix(in oklab, #ffffff 24%, transparent));
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;

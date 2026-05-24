@@ -162,6 +162,11 @@ function useActiveIndicatorSync(
   useSegmentTrackResize(trackRef, syncIndicators);
 }
 
+export interface UseTraySegmentIndicatorsOptions {
+  /** When false, only the active pill animates — no cursor-following hover pill. */
+  showHover?: boolean;
+}
+
 export function useTraySegmentIndicators(
   trackRef: RefObject<HTMLDivElement | null>,
   activeIndicatorRef: RefObject<HTMLDivElement | null>,
@@ -169,7 +174,9 @@ export function useTraySegmentIndicators(
   value: string,
   tabCount: number,
   itemRefs: RefObject<Map<string, HTMLButtonElement>>,
+  options: UseTraySegmentIndicatorsOptions = {},
 ) {
+  const showHover = options.showHover ?? true;
   const executeCommands = useIndicatorCommandExecutor(
     trackRef,
     activeIndicatorRef,
@@ -191,8 +198,8 @@ export function useTraySegmentIndicators(
   );
 
   return {
-    syncHoverIndicator: handleHover,
-    handleRailLeave,
+    syncHoverIndicator: showHover ? handleHover : () => {},
+    handleRailLeave: showHover ? handleRailLeave : () => {},
     handleSegmentValueChange,
   };
 }

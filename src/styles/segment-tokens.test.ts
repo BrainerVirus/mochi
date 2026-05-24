@@ -8,18 +8,24 @@ const cssPath = join(dirname(fileURLToPath(import.meta.url)), "index.css");
 const css = readFileSync(cssPath, "utf8");
 
 describe("segment indicator tokens", () => {
-  it("uses srgb primary tints for hover and active pills", () => {
+  it("uses grayish white mixes for page-tab hover and active pills", () => {
     expect(css).toMatch(
-      /--app-segment-hover:[\s\S]*color-mix\(in srgb, var\(--primary\) 15%, transparent\)/,
+      /--app-segment-hover:[\s\S]*color-mix\(in oklab, #ffffff 55%, transparent\)/,
     );
     expect(css).toMatch(
-      /--app-segment-active:[\s\S]*color-mix\(in srgb, var\(--primary\) 25%, transparent\)/,
+      /--app-segment-active:[\s\S]*color-mix\(in oklab, #ffffff 92%, transparent\)/,
     );
     expect(css).toMatch(
-      /--tray-segment-hover:[\s\S]*color-mix\(in srgb, var\(--primary\) 15%, transparent\)/,
+      /--tray-segment-hover:[\s\S]*color-mix\(in oklab, #ffffff 55%, transparent\)/,
     );
     expect(css).toMatch(
-      /--tray-segment-active:[\s\S]*color-mix\(in srgb, var\(--primary\) 25%, transparent\)/,
+      /--tray-segment-active:[\s\S]*color-mix\(in oklab, #ffffff 92%, transparent\)/,
+    );
+  });
+
+  it("keeps primary tints for inline segmented controls", () => {
+    expect(css).toMatch(
+      /--app-segment-inline-selected:[\s\S]*color-mix\(in oklab, var\(--primary\) 14%, transparent\)/,
     );
   });
 
