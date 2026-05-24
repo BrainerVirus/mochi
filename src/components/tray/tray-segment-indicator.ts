@@ -30,13 +30,6 @@ export function metricsFromClientRects(
   };
 }
 
-export function computeIndicatorTarget(
-  trackRect: Pick<DOMRect, "left">,
-  itemRect: Pick<DOMRect, "left" | "width">,
-): IndicatorMetrics {
-  return metricsFromClientRects(trackRect, itemRect);
-}
-
 export function measureSegmentItem(track: HTMLElement, item: HTMLElement): IndicatorMetrics {
   return metricsFromClientRects(track.getBoundingClientRect(), item.getBoundingClientRect());
 }

@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyActiveIndicatorPosition,
   applyHoverIndicatorPosition,
-  computeIndicatorTarget,
   metricsFromClientRects,
   readIndicatorMetrics,
   releaseSegmentIndicators,
@@ -45,11 +44,9 @@ describe("metricsFromClientRects", () => {
       width: 60,
     });
   });
-});
 
-describe("computeIndicatorTarget", () => {
-  it("matches metricsFromClientRects for tab layout boxes", () => {
-    expect(computeIndicatorTarget({ left: 0 }, { left: 120, width: 72 })).toEqual({
+  it("matches tab layout boxes", () => {
+    expect(metricsFromClientRects({ left: 0 }, { left: 120, width: 72 })).toEqual({
       x: 120,
       width: 72,
     });

@@ -189,6 +189,17 @@ export interface UseTraySegmentIndicatorsOptions {
   showHover?: boolean;
 }
 
+/**
+ * Page tabs animate via machine SELECT (moveActive) for hover handoff; inline
+ * defers to the value layout effect so metrics are read after DOM commit
+ * (font-weight / equal-width flex) and never double-tween on click.
+ */
+export function shouldRunMachineSelectOnValueChange(
+  options: Pick<UseTraySegmentIndicatorsOptions, "showHover">,
+): boolean {
+  return options.showHover ?? true;
+}
+
 export function useTraySegmentIndicators(
   trackRef: RefObject<HTMLDivElement | null>,
   activeIndicatorRef: RefObject<HTMLDivElement | null>,
@@ -218,10 +229,12 @@ export function useTraySegmentIndicators(
 
   const handleSegmentValueChange = useCallback(
     (next: string, onValueChange: (value: string) => void) => {
-      handleSelect(next);
+      if (shouldRunMachineSelectOnValueChange({ showHover })) {
+        handleSelect(next);
+      }
       onValueChange(next);
     },
-    [handleSelect],
+    [handleSelect, showHover],
   );
 
   return {
