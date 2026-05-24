@@ -12,7 +12,7 @@ export function AppWindowShell({ children, variant = "settings" }: AppWindowShel
   return (
     <div
       className={cn(
-        "app-window text-foreground min-h-svh w-full",
+        "app-window text-foreground flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden",
         "font-[family-name:var(--font-platform)] antialiased",
         variant === "about" && "app-window--about",
       )}
