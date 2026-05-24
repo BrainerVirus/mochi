@@ -167,7 +167,7 @@ html[data-tray-panel].dark body {
   --radius-tray-panel: 0.75rem;
 }
 
-/* Dedicated windows: system surfaces with subtle Mochi warmth in light mode. */
+/* Dedicated windows: match tray-panel native surfaces and semantic tokens. */
 .app-window {
   color-scheme: light dark;
   font-family: var(--font-platform);
@@ -188,30 +188,44 @@ html[data-tray-panel].dark body {
     color-mix(in oklab, #ffffff 20%, transparent)
   );
   --app-glass-tint: light-dark(
-    color-mix(in oklab, #fafafa 88%, transparent),
-    color-mix(in oklab, #1c1c1e 82%, transparent)
+    color-mix(in oklab, #f5f5f7 78%, transparent),
+    color-mix(in oklab, #2c2c2e 62%, transparent)
   );
   background: var(--app-glass-tint);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  --background: light-dark(#fafafa, #1c1c1e);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  --background: light-dark(#f5f5f7, #2c2c2e);
   --foreground: light-dark(#1d1d1f, #f5f5f7);
-  --card: light-dark(#ffffff, #2c2c2e);
+  --card: light-dark(#ffffff, #3a3a3c);
   --card-foreground: light-dark(#1d1d1f, #f5f5f7);
-  --popover: light-dark(#ffffff, #2c2c2e);
+  --popover: light-dark(#ffffff, #3a3a3c);
   --popover-foreground: light-dark(#1d1d1f, #f5f5f7);
-  --secondary: light-dark(#f2f2f7, #3a3a3c);
+  --primary: light-dark(#007aff, #0a84ff);
+  --primary-foreground: light-dark(#ffffff, #ffffff);
+  --secondary: light-dark(#e5e5ea, #48484a);
   --secondary-foreground: light-dark(#1d1d1f, #f5f5f7);
-  --muted: light-dark(#f2f2f7, #3a3a3c);
+  --muted: light-dark(#e5e5ea, #48484a);
   --muted-foreground: light-dark(#6e6e73, #98989d);
+  --accent: light-dark(#c4b5e0, #c4b5e0);
+  --accent-foreground: light-dark(#1d1d1f, #1d1d1f);
+  --destructive: #ff8a8a;
   --border: light-dark(#d1d1d6, #48484a);
   --input: light-dark(#d1d1d6, #48484a);
+  --ring: light-dark(#007aff, #0a84ff);
   --radius: light-dark(0.75rem, 0.625rem);
 }
 
 [data-platform="macos"] .app-window {
   --radius: light-dark(0.625rem, 0.5rem);
   --app-glass-tint: transparent;
+  --scroll-fade-tint: light-dark(
+    color-mix(in oklab, #f5f5f7 92%, transparent),
+    color-mix(in oklab, #2c2c2e 88%, transparent)
+  );
+  --app-segment-stroke: light-dark(
+    color-mix(in oklab, #000000 8%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
   --app-segment-track: light-dark(
     color-mix(in oklab, #000000 5%, transparent),
     color-mix(in oklab, #ffffff 7%, transparent)
@@ -224,6 +238,30 @@ html[data-tray-panel].dark body {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  --background: transparent;
+  --foreground: light-dark(#1d1d1f, #f5f5f7);
+  --card: light-dark(
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 10%, transparent)
+  );
+  --popover: light-dark(
+    color-mix(in oklab, #ffffff 55%, transparent),
+    color-mix(in oklab, #ffffff 10%, transparent)
+  );
+  --secondary: light-dark(
+    color-mix(in oklab, #000000 5%, transparent),
+    color-mix(in oklab, #ffffff 8%, transparent)
+  );
+  --muted: light-dark(
+    color-mix(in oklab, #000000 5%, transparent),
+    color-mix(in oklab, #ffffff 8%, transparent)
+  );
+  --border: light-dark(
+    color-mix(in oklab, #000000 12%, transparent),
+    color-mix(in oklab, #ffffff 14%, transparent)
+  );
+  --primary: light-dark(#007aff, #0a84ff);
+  --ring: light-dark(#007aff, #0a84ff);
 }
 
 [data-platform="windows"] .app-window {

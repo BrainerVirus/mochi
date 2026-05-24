@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import { useSaveSettings, useSettings } from "@/hooks/use-tray-events";
 import type { MochiSettings } from "@/lib/schemas/settings";
+import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
 import { resolveSettingsFormState } from "./settings-form-state";
 import { GeneralSettingsSection, ProviderSettingsSection } from "./settings-sections";
@@ -20,10 +21,12 @@ export function SettingsForm() {
 
   if (view.kind === "error") {
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Could not load settings</AlertTitle>
-        <AlertDescription>{error?.message ?? "Unknown error"}</AlertDescription>
-      </Alert>
+      <div className={`${trayPanelSpacing.contentX} py-6`}>
+        <Alert variant="destructive">
+          <AlertTitle>Could not load settings</AlertTitle>
+          <AlertDescription>{error?.message ?? "Unknown error"}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
@@ -54,32 +57,49 @@ function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEdito
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <AppSegmentedControl
-        items={[...SETTINGS_TABS]}
-        value={activeTab}
-        onValueChange={setActiveTab}
-      />
+    <div className="flex min-h-svh flex-col">
+      <div
+        className={`border-border ${trayPanelSpacing.contentX} border-b pt-3 pb-2`}
+        data-settings-tab-strip
+      >
+        <AppSegmentedControl
+          items={[...SETTINGS_TABS]}
+          value={activeTab}
+          onValueChange={setActiveTab}
+          rowHeight="h-9"
+          stretchItems
+        />
+      </div>
 
-      {activeTab === "general" ? (
-        isLoading ? (
-          <output className="text-muted-foreground block py-6 text-center text-sm">
-            Loading settings…
-          </output>
+      <div
+        className={`flex flex-1 flex-col ${trayPanelSpacing.contentX} ${trayPanelSpacing.contentTop}`}
+      >
+        {activeTab === "general" ? (
+          isLoading ? (
+            <SettingsLoadingState />
+          ) : (
+            <GeneralSettingsSection settings={settings} onChange={patchSettings} />
+          )
+        ) : isLoading ? (
+          <SettingsLoadingState />
         ) : (
-          <GeneralSettingsSection settings={settings} onChange={patchSettings} />
-        )
-      ) : isLoading ? (
-        <output className="text-muted-foreground block py-6 text-center text-sm">
-          Loading settings…
-        </output>
-      ) : (
-        <ProviderSettingsSection settings={settings} onChange={patchSettings} />
-      )}
+          <ProviderSettingsSection settings={settings} onChange={patchSettings} />
+        )}
+      </div>
 
-      <p className="text-muted-foreground text-center text-[11px]">
+      <p
+        className={`text-muted-foreground ${trayPanelSpacing.contentX} ${trayPanelSpacing.footerBottom} py-2 text-center text-[11px]`}
+      >
         {isSaving ? "Saving…" : "Changes save automatically"}
       </p>
     </div>
+  );
+}
+
+function SettingsLoadingState() {
+  return (
+    <output className="text-muted-foreground block py-6 text-center text-xs">
+      Loading settings…
+    </output>
   );
 }

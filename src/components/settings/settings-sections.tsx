@@ -1,17 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
 
+import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import { Badge } from "@/components/ui/badge";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { ProviderCatalogEntry } from "@/lib/schemas/provider-catalog";
 import { ALL_PROVIDER_IDS, PROVIDER_LABELS, type MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { getProviderCatalog, getProviderCredentialStatus } from "@/lib/tauri/commands";
-import { cn } from "@/lib/utils";
 
 import { ProviderConfigFields } from "./provider-config-fields";
 
@@ -36,7 +40,7 @@ export function ProviderSettingsSection({ settings, onChange }: ProviderSettings
   const catalogById = new Map(catalog.map((entry) => [entry.id, entry]));
 
   return (
-    <div className="flex flex-col">
+    <FieldGroup className="gap-0">
       {ALL_PROVIDER_IDS.map((provider, index) => (
         <ProviderSettingsRow
           key={provider}
@@ -66,7 +70,7 @@ export function ProviderSettingsSection({ settings, onChange }: ProviderSettings
           }}
         />
       ))}
-    </div>
+    </FieldGroup>
   );
 }
 
@@ -91,41 +95,37 @@ function ProviderSettingsRow({
 }) {
   return (
     <div>
-      {showSeparator ? <Separator className="my-0" /> : null}
-      <div className="flex flex-col gap-3 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-medium">{PROVIDER_LABELS[provider]}</span>
-              {entry ? (
-                <Badge variant="outline" className="text-[10px]">
-                  {entry.implementationStatus}
-                </Badge>
-              ) : null}
-            </div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-              {credentialStatus?.configured ? (
-                <Badge variant="secondary" className="text-[10px]">
-                  {credentialStatus.source ?? "Configured"}
-                </Badge>
-              ) : (
-                <span className="text-muted-foreground text-[11px]">Not configured</span>
-              )}
-            </div>
+      {showSeparator ? <Separator /> : null}
+      <Field orientation="horizontal" className="items-start justify-between gap-3 py-2.5">
+        <FieldContent className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <FieldLabel className="text-sm font-medium">{PROVIDER_LABELS[provider]}</FieldLabel>
+            {entry ? (
+              <Badge variant="outline" className="text-[10px]">
+                {entry.implementationStatus}
+              </Badge>
+            ) : null}
           </div>
-          <Switch
-            checked={enabled}
-            aria-label={`Toggle ${PROVIDER_LABELS[provider]}`}
-            onCheckedChange={onToggle}
-          />
-        </div>
+          {credentialStatus?.configured ? (
+            <Badge variant="secondary" className="mt-1 text-[10px]">
+              {credentialStatus.source ?? "Configured"}
+            </Badge>
+          ) : (
+            <FieldDescription className="text-[11px]">Not configured</FieldDescription>
+          )}
+        </FieldContent>
+        <Switch
+          checked={enabled}
+          aria-label={`Toggle ${PROVIDER_LABELS[provider]}`}
+          onCheckedChange={onToggle}
+        />
+      </Field>
 
-        {enabled && entry && entry.settingsFields.length > 0 ? (
-          <div className="flex flex-col gap-3 pl-0.5">
-            <ProviderConfigFields entry={entry} config={config} onChange={onConfigChange} />
-          </div>
-        ) : null}
-      </div>
+      {enabled && entry && entry.settingsFields.length > 0 ? (
+        <div className="flex flex-col gap-3 pb-2.5">
+          <ProviderConfigFields entry={entry} config={config} onChange={onConfigChange} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -137,18 +137,22 @@ interface GeneralSettingsSectionProps {
 
 export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSectionProps) {
   return (
-    <div className="flex flex-col gap-4">
-      <SettingsField
-        label="Refresh interval"
-        description="How often Mochi checks usage (seconds)."
-        htmlFor="refresh-interval"
-      >
+    <FieldGroup className="gap-0">
+      <Field orientation="horizontal" className="items-center justify-between gap-3 py-2.5">
+        <FieldContent className="min-w-0">
+          <FieldLabel htmlFor="refresh-interval" className="text-sm font-medium">
+            Refresh interval
+          </FieldLabel>
+          <FieldDescription className="text-[11px]">
+            How often Mochi checks usage (seconds).
+          </FieldDescription>
+        </FieldContent>
         <Input
           id="refresh-interval"
           type="number"
           min={30}
           max={86_400}
-          className="h-8 w-28 tabular-nums"
+          className="h-7 w-20 shrink-0 tabular-nums"
           value={settings.refresh_interval_seconds}
           onChange={(event) => {
             const value = Number(event.target.value);
@@ -157,42 +161,49 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
             }
           }}
         />
-      </SettingsField>
+      </Field>
 
-      <SettingsField label="Update channel" description="Which release channel to follow.">
-        <ToggleGroup
-          type="single"
+      <Separator />
+
+      <Field className="flex-col gap-2 py-2.5">
+        <FieldContent>
+          <FieldLabel className="text-sm font-medium">Update channel</FieldLabel>
+          <FieldDescription className="text-[11px]">
+            Which release channel to follow.
+          </FieldDescription>
+        </FieldContent>
+        <AppSegmentedControl
+          items={[
+            { id: "stable", label: "Stable" },
+            { id: "unstable", label: "Unstable" },
+          ]}
           value={settings.update_channel}
           onValueChange={(channel) => {
             if (channel === "stable" || channel === "unstable") {
               onChange({ update_channel: channel });
             }
           }}
-          className="justify-start"
-        >
-          <ToggleGroupItem value="stable" size="sm">
-            Stable
-          </ToggleGroupItem>
-          <ToggleGroupItem value="unstable" size="sm">
-            Unstable
-          </ToggleGroupItem>
-        </ToggleGroup>
+          rowHeight="h-8"
+          stretchItems
+        />
         {settings.update_channel === "unstable" ? (
-          <p className="text-muted-foreground text-[11px]">
+          <FieldDescription className="text-[11px]">
             Unstable builds may change frequently.
-          </p>
+          </FieldDescription>
         ) : null}
-      </SettingsField>
+      </Field>
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <Label htmlFor="show-notifications" className="text-sm">
+      <Separator />
+
+      <Field orientation="horizontal" className="items-center justify-between gap-3 py-2.5">
+        <FieldContent className="min-w-0">
+          <FieldLabel htmlFor="show-notifications" className="text-sm font-medium">
             Usage notifications
-          </Label>
-          <p className="text-muted-foreground text-[11px]">
+          </FieldLabel>
+          <FieldDescription className="text-[11px]">
             Soft alerts before providers hit hard limits.
-          </p>
-        </div>
+          </FieldDescription>
+        </FieldContent>
         <Switch
           id="show-notifications"
           checked={settings.show_notifications}
@@ -200,33 +211,7 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
             onChange({ show_notifications: checked });
           }}
         />
-      </div>
-    </div>
-  );
-}
-
-function SettingsField({
-  label,
-  description,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  description?: string;
-  htmlFor?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor} className="text-sm">
-        {label}
-      </Label>
-      {description ? (
-        <p className={cn("text-muted-foreground text-[11px]", htmlFor ? "-mt-0.5" : undefined)}>
-          {description}
-        </p>
-      ) : null}
-      {children}
-    </div>
+      </Field>
+    </FieldGroup>
   );
 }

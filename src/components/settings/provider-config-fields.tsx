@@ -1,6 +1,12 @@
+import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { ProviderCatalogEntry } from "@/lib/schemas/provider-catalog";
 import type { ProviderConfig } from "@/lib/schemas/settings";
 
@@ -14,7 +20,9 @@ interface ProviderConfigFieldsProps {
 
 export function ProviderConfigFields({ entry, config, onChange }: ProviderConfigFieldsProps) {
   return (
-    <>{entry.settingsFields.map((field) => renderProviderField(field, entry, config, onChange))}</>
+    <FieldGroup className="gap-3">
+      {entry.settingsFields.map((field) => renderProviderField(field, entry, config, onChange))}
+    </FieldGroup>
   );
 }
 
@@ -109,29 +117,26 @@ function renderCookieSourceField(
   const value = config.cookie_source ?? "auto";
 
   return (
-    <div key={field.key} className="flex flex-col gap-1.5">
-      <Label className="text-xs">{field.label}</Label>
-      <ToggleGroup
-        type="single"
+    <Field key={field.key} className="flex-col gap-2">
+      <FieldContent>
+        <FieldLabel className="text-xs font-medium">{field.label}</FieldLabel>
+      </FieldContent>
+      <AppSegmentedControl
+        items={[
+          { id: "auto", label: "Auto" },
+          { id: "manual", label: "Manual" },
+          { id: "off", label: "Off" },
+        ]}
         value={value}
         onValueChange={(source) => {
           if (source === "auto" || source === "manual" || source === "off") {
             onChange({ cookie_source: source });
           }
         }}
-        className="justify-start"
-      >
-        <ToggleGroupItem value="auto" size="sm">
-          Auto
-        </ToggleGroupItem>
-        <ToggleGroupItem value="manual" size="sm">
-          Manual
-        </ToggleGroupItem>
-        <ToggleGroupItem value="off" size="sm">
-          Off
-        </ToggleGroupItem>
-      </ToggleGroup>
-    </div>
+        rowHeight="h-8"
+        stretchItems
+      />
+    </Field>
   );
 }
 
@@ -142,25 +147,29 @@ function renderManualCookieField(
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
   return (
-    <div key={field.key} className="flex flex-col gap-1.5">
-      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
-        {field.label}
-      </Label>
-      <Input
-        id={`${entry.id}-${field.key}`}
-        className="h-8 font-mono text-xs"
-        placeholder="oc_locale=en; auth=Fe26.2…"
-        value={config.manual_cookie ?? ""}
-        onChange={(event) => {
-          onChange({ manual_cookie: event.target.value });
-        }}
-      />
-      <p className="text-muted-foreground text-[11px]">
-        Paste the cookie string from browser DevTools, or set{" "}
-        <code className="text-[10px]">MOCHI_{entry.id.toUpperCase().replace("-", "_")}_COOKIE</code>{" "}
-        in your environment.
-      </p>
-    </div>
+    <Field key={field.key}>
+      <FieldContent>
+        <FieldLabel htmlFor={`${entry.id}-${field.key}`} className="text-xs font-medium">
+          {field.label}
+        </FieldLabel>
+        <Input
+          id={`${entry.id}-${field.key}`}
+          className="h-8 font-mono text-xs"
+          placeholder="oc_locale=en; auth=Fe26.2…"
+          value={config.manual_cookie ?? ""}
+          onChange={(event) => {
+            onChange({ manual_cookie: event.target.value });
+          }}
+        />
+        <FieldDescription className="text-[11px]">
+          Paste the cookie string from browser DevTools, or set{" "}
+          <code className="text-[10px]">
+            MOCHI_{entry.id.toUpperCase().replace("-", "_")}_COOKIE
+          </code>{" "}
+          in your environment.
+        </FieldDescription>
+      </FieldContent>
+    </Field>
   );
 }
 
@@ -174,25 +183,27 @@ function renderApiKeyField(
     field.key === "admin_api_key" ? (config.admin_api_key ?? "") : (config.api_key ?? "");
 
   return (
-    <div key={field.key} className="flex flex-col gap-1.5">
-      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
-        {field.label}
-      </Label>
-      <Input
-        id={`${entry.id}-${field.key}`}
-        type="password"
-        autoComplete="off"
-        className="h-8"
-        value={value}
-        onChange={(event) => {
-          if (field.key === "admin_api_key") {
-            onChange({ admin_api_key: event.target.value });
-          } else {
-            onChange({ api_key: event.target.value });
-          }
-        }}
-      />
-    </div>
+    <Field key={field.key}>
+      <FieldContent>
+        <FieldLabel htmlFor={`${entry.id}-${field.key}`} className="text-xs font-medium">
+          {field.label}
+        </FieldLabel>
+        <Input
+          id={`${entry.id}-${field.key}`}
+          type="password"
+          autoComplete="off"
+          className="h-8"
+          value={value}
+          onChange={(event) => {
+            if (field.key === "admin_api_key") {
+              onChange({ admin_api_key: event.target.value });
+            } else {
+              onChange({ api_key: event.target.value });
+            }
+          }}
+        />
+      </FieldContent>
+    </Field>
   );
 }
 
@@ -203,22 +214,24 @@ function renderTokenAccountField(
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
   return (
-    <div key={field.key} className="flex flex-col gap-1.5">
-      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
-        {field.label}
-      </Label>
-      <Input
-        id={`${entry.id}-${field.key}`}
-        type="password"
-        autoComplete="off"
-        className="h-8"
-        placeholder="GitHub OAuth token"
-        value={config.token_account ?? ""}
-        onChange={(event) => {
-          onChange({ token_account: event.target.value });
-        }}
-      />
-    </div>
+    <Field key={field.key}>
+      <FieldContent>
+        <FieldLabel htmlFor={`${entry.id}-${field.key}`} className="text-xs font-medium">
+          {field.label}
+        </FieldLabel>
+        <Input
+          id={`${entry.id}-${field.key}`}
+          type="password"
+          autoComplete="off"
+          className="h-8"
+          placeholder="GitHub OAuth token"
+          value={config.token_account ?? ""}
+          onChange={(event) => {
+            onChange({ token_account: event.target.value });
+          }}
+        />
+      </FieldContent>
+    </Field>
   );
 }
 
@@ -229,16 +242,19 @@ function renderHistoryWindowField(
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
   return (
-    <div key={field.key} className="flex flex-col gap-1.5">
-      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
-        {field.label} (days)
-      </Label>
+    <Field key={field.key} orientation="horizontal" className="items-center justify-between gap-3">
+      <FieldContent className="min-w-0">
+        <FieldLabel htmlFor={`${entry.id}-${field.key}`} className="text-xs font-medium">
+          {field.label}
+        </FieldLabel>
+        <FieldDescription className="text-[11px]">Days of session cost history.</FieldDescription>
+      </FieldContent>
       <Input
         id={`${entry.id}-${field.key}`}
         type="number"
         min={1}
         max={365}
-        className="h-8 w-24 tabular-nums"
+        className="h-7 w-20 shrink-0 tabular-nums"
         value={config.history_window_days ?? 30}
         onChange={(event) => {
           const value = Number(event.target.value);
@@ -247,7 +263,7 @@ function renderHistoryWindowField(
           }
         }}
       />
-    </div>
+    </Field>
   );
 }
 
@@ -258,19 +274,21 @@ function renderRegionHostField(
   onChange: (patch: Partial<ProviderConfig>) => void,
 ) {
   return (
-    <div key={field.key} className="flex flex-col gap-1.5">
-      <Label htmlFor={`${entry.id}-${field.key}`} className="text-xs">
-        {field.label}
-      </Label>
-      <Input
-        id={`${entry.id}-${field.key}`}
-        className="h-8"
-        placeholder="api.example.com"
-        value={config.region_host ?? ""}
-        onChange={(event) => {
-          onChange({ region_host: event.target.value });
-        }}
-      />
-    </div>
+    <Field key={field.key}>
+      <FieldContent>
+        <FieldLabel htmlFor={`${entry.id}-${field.key}`} className="text-xs font-medium">
+          {field.label}
+        </FieldLabel>
+        <Input
+          id={`${entry.id}-${field.key}`}
+          className="h-8"
+          placeholder="api.example.com"
+          value={config.region_host ?? ""}
+          onChange={(event) => {
+            onChange({ region_host: event.target.value });
+          }}
+        />
+      </FieldContent>
+    </Field>
   );
 }
