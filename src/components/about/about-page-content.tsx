@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { MochiMark } from "@/components/mascot/mochi-mark";
+import { MochiChibi } from "@/components/mascot/mochi-chibi";
 import { queryKeys } from "@/lib/query/keys";
 import { appVersion } from "@/lib/tauri/commands";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
@@ -16,7 +16,7 @@ export function AboutPageContent() {
     <div
       className={`text-foreground flex min-h-svh flex-col items-center justify-center ${trayPanelSpacing.contentX} py-8 text-center`}
     >
-      <MochiMark state="all-good" className="mb-4 size-16" />
+      <MochiChibi className="mb-4 size-16" />
       <h1 className="text-base font-semibold tracking-tight">Mochi</h1>
       <p className="text-muted-foreground mt-1 max-w-[16rem] text-xs leading-relaxed">
         Soft alerts before hard limits.

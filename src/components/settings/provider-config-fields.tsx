@@ -115,11 +115,6 @@ function renderCookieSourceField(
         rowHeight="h-8"
         stretchItems
       />
-      {value === "auto" ? (
-        <FieldDescription className="text-[11px]">
-          Uses browser cookies when available; manual fields are hidden until you switch to Manual.
-        </FieldDescription>
-      ) : null}
     </Field>
   );
 }
