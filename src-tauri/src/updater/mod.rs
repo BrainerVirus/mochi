@@ -1,4 +1,7 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use serde::Serialize;
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_updater::UpdaterExt;
 
 #[derive(Debug, Clone, Serialize)]
@@ -7,6 +10,12 @@ pub struct UpdateInfo {
     pub version: Option<String>,
     pub channel: String,
     pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UpdateDownloadProgress {
+    pub downloaded: u64,
+    pub total: Option<u64>,
 }
 
 #[tauri::command]
@@ -47,7 +56,7 @@ pub async fn check_for_update(
 }
 
 #[tauri::command]
-pub async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
+pub async fn install_update(app: AppHandle) -> Result<(), String> {
     if std::env::var("FLATPAK_ID").is_ok() {
         return install_flatpak_update().await;
     }
@@ -59,8 +68,26 @@ pub async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
         .await
         .map_err(|error| error.to_string())?
     {
+        let downloaded = AtomicU64::new(0);
+        let app_for_progress = app.clone();
+
         update
-            .download_and_install(|_chunk_length, _content_length| {}, || {})
+            .download_and_install(
+                move |chunk_length, content_length| {
+                    let chunk = chunk_length as u64;
+                    let next = downloaded.fetch_add(chunk, Ordering::Relaxed) + chunk;
+                    let _ = app_for_progress.emit(
+                        "update-download-progress",
+                        UpdateDownloadProgress {
+                            downloaded: next,
+                            total: content_length,
+                        },
+                    );
+                },
+                || {
+                    let _ = app.emit("update-install-started", ());
+                },
+            )
             .await
             .map_err(|error| error.to_string())?;
         app.restart();
@@ -97,5 +124,16 @@ mod tests {
         };
         let json = serde_json::to_string(&info).expect("serialize");
         assert!(json.contains("stable"));
+    }
+
+    #[test]
+    fn update_download_progress_serializes() {
+        let progress = UpdateDownloadProgress {
+            downloaded: 1024,
+            total: Some(4096),
+        };
+        let json = serde_json::to_string(&progress).expect("serialize");
+        assert!(json.contains("1024"));
+        assert!(json.contains("4096"));
     }
 }

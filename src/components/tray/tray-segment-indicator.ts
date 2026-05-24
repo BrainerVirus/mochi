@@ -2,6 +2,9 @@ import gsap from "gsap";
 
 import type { TraySegmentIndicatorCommand } from "@/components/tray/tray-segment-indicator-machine";
 
+export { observeSegmentTrackResize } from "@/components/tray/segment-track-resize-observer";
+export type { SegmentTrackResizeObserver } from "@/components/tray/segment-track-resize-observer";
+
 export const TRAY_INDICATOR_DURATION_S = 0.35;
 export const TRAY_INDICATOR_EASE = "power3.inOut";
 
@@ -25,13 +28,6 @@ export function metricsFromClientRects(
     x: itemRect.left - trackRect.left,
     width: itemRect.width,
   };
-}
-
-export function computeIndicatorTarget(
-  trackRect: Pick<DOMRect, "left">,
-  itemRect: Pick<DOMRect, "left" | "width">,
-): IndicatorMetrics {
-  return metricsFromClientRects(trackRect, itemRect);
 }
 
 export function measureSegmentItem(track: HTMLElement, item: HTMLElement): IndicatorMetrics {
@@ -59,6 +55,40 @@ export function isIndicatorPlaced(metrics: IndicatorMetrics): boolean {
 
 export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function isLiveIndicator(indicator: HTMLElement | null): indicator is HTMLElement {
+  return indicator !== null && indicator.isConnected;
+}
+
+function liveSegmentTarget(
+  track: HTMLElement | null,
+  indicator: HTMLElement | null,
+  item: HTMLElement | undefined,
+): { track: HTMLElement; indicator: HTMLElement; item: HTMLElement } | null {
+  if (
+    track === null ||
+    !track.isConnected ||
+    !isLiveIndicator(indicator) ||
+    item === undefined ||
+    !item.isConnected
+  ) {
+    return null;
+  }
+
+  return { track, indicator, item };
+}
+
+export function releaseSegmentIndicators(
+  activeIndicator: HTMLElement | null,
+  hoverIndicator: HTMLElement | null,
+): void {
+  if (activeIndicator) {
+    gsap.killTweensOf(activeIndicator);
+  }
+  if (hoverIndicator) {
+    gsap.killTweensOf(hoverIndicator);
+  }
 }
 
 export function shouldAnimateActiveIndicator(
@@ -100,6 +130,10 @@ export function applyActiveIndicatorPosition(
   metrics: IndicatorMetrics,
   options: ActiveIndicatorOptions,
 ) {
+  if (!isLiveIndicator(indicator)) {
+    return;
+  }
+
   const reducedMotion = options.reducedMotion ?? prefersReducedMotion();
   const plan = resolveActiveIndicatorPlan({
     target: metrics,
@@ -150,6 +184,10 @@ export function applyHoverIndicatorPosition(
   reducedMotion = prefersReducedMotion(),
   fresh = false,
 ) {
+  if (!isLiveIndicator(indicator)) {
+    return;
+  }
+
   if (reducedMotion) {
     gsap.set(indicator, { ...metrics, opacity: hoveredId === activeValue ? 0 : 1, force3D: true });
     return;
@@ -172,6 +210,10 @@ export function applyHoverIndicatorPosition(
 }
 
 export function hideHoverIndicator(indicator: HTMLElement, animate: boolean) {
+  if (!isLiveIndicator(indicator)) {
+    return;
+  }
+
   gsap.killTweensOf(indicator, "autoAlpha");
   gsap.to(indicator, {
     autoAlpha: 0,
@@ -186,12 +228,13 @@ export function syncActiveSegmentIndicator(
   item: HTMLButtonElement | undefined,
   options: ActiveIndicatorOptions,
 ) {
-  if (!track || !indicator || !item) {
+  const target = liveSegmentTarget(track, indicator, item);
+  if (!target) {
     return null;
   }
 
-  const metrics = measureSegmentItem(track, item);
-  applyActiveIndicatorPosition(indicator, metrics, options);
+  const metrics = measureSegmentItem(target.track, target.item);
+  applyActiveIndicatorPosition(target.indicator, metrics, options);
   return metrics;
 }
 
@@ -226,13 +269,14 @@ export function executeTraySegmentIndicatorCommand(
 
   if (command.type === "placeHover" || command.type === "moveHover") {
     const item = itemForCommand(context.itemRefs, command.tabId);
-    if (!context.track || !context.hoverIndicator || !item) {
+    const target = liveSegmentTarget(context.track, context.hoverIndicator, item);
+    if (!target) {
       return;
     }
 
     applyHoverIndicatorPosition(
-      context.hoverIndicator,
-      measureSegmentItem(context.track, item),
+      target.indicator,
+      measureSegmentItem(target.track, target.item),
       command.type === "moveHover" ? context.hoverQuickTo : null,
       context.activeValue,
       command.tabId,
@@ -250,13 +294,4 @@ export function executeTraySegmentIndicatorCommand(
     animate: command.type === "moveActive",
     reducedMotion: context.reducedMotion,
   });
-}
-
-export function observeSegmentTrackResize(
-  track: HTMLElement,
-  onResize: () => void,
-): ResizeObserver {
-  const resizeObserver = new ResizeObserver(onResize);
-  resizeObserver.observe(track);
-  return resizeObserver;
 }

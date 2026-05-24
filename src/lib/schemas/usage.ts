@@ -165,3 +165,10 @@ export const UpdateInfoSchema = z.object({
 });
 
 export type UpdateInfo = z.infer<typeof UpdateInfoSchema>;
+
+export const UpdateDownloadProgressSchema = z.object({
+  downloaded: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative().nullable(),
+});
+
+export type UpdateDownloadProgress = z.infer<typeof UpdateDownloadProgressSchema>;

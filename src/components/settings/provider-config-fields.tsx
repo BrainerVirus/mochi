@@ -112,6 +112,7 @@ function renderCookieSourceField(
             onChange({ cookie_source: source });
           }
         }}
+        variant="inline"
         rowHeight="h-8"
         stretchItems
       />

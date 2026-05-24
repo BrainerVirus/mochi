@@ -18,6 +18,7 @@ import type { ProviderId } from "@/lib/schemas/usage";
 import { getProviderCatalog, getProviderCredentialStatus } from "@/lib/tauri/commands";
 
 import { ProviderConfigFields } from "./provider-config-fields";
+import { SettingsUpdateSection } from "./settings-update-section";
 
 function formatCredentialStatusLabel(configured: boolean, source?: string): string {
   if (!configured) {
@@ -167,6 +168,7 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
               onChange({ update_channel: channel });
             }
           }}
+          variant="inline"
           rowHeight="h-8"
           stretchItems
         />
@@ -176,6 +178,10 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
           </FieldDescription>
         ) : null}
       </Field>
+
+      <Separator />
+
+      <SettingsUpdateSection channel={settings.update_channel} />
 
       <Separator />
 

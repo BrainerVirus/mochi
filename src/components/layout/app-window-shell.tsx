@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface AppWindowShellProps {
   children: ReactNode;
-  variant?: "settings" | "about";
+  variant?: "settings" | "about" | "update";
 }
 
 /** Native-adjacent shell for dedicated Tauri windows (settings, about). */
@@ -15,6 +15,7 @@ export function AppWindowShell({ children, variant = "settings" }: AppWindowShel
         "app-window text-foreground flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden",
         "font-[family-name:var(--font-platform)] antialiased",
         variant === "about" && "app-window--about",
+        variant === "update" && "app-window--update",
       )}
     >
       {children}

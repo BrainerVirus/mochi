@@ -4,10 +4,8 @@ import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
 import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import { cycleTrayPanelTabs } from "@/components/tray/tray-panel-tab-cycle";
-import {
-  TRAY_SEGMENT_ROW_HEIGHT,
-  TraySegmentedControl,
-} from "@/components/tray/tray-segmented-control";
+import { TraySegmentedControl } from "@/components/tray/tray-segmented-control";
+import { TRAY_SEGMENT_ROW_HEIGHT } from "@/components/tray/tray-segmented-control-config";
 
 const TAB_FADE_INSET = 40;
 

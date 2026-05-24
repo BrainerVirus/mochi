@@ -72,7 +72,7 @@ export function useTrayEvents() {
         });
       }),
       listen("tray-check-update", () => {
-        void openAppWindow("/settings");
+        void openAppWindow("/update");
       }),
       listen<string>("app-navigate", (event) => {
         if (!shouldHandleAppNavigateEvent()) {

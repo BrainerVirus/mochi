@@ -20,6 +20,10 @@ pub const SETTINGS_WINDOW_HEIGHT: f64 = 560.0;
 pub const ABOUT_WINDOW_WIDTH: f64 = 340.0;
 pub const ABOUT_WINDOW_HEIGHT: f64 = 280.0;
 
+/// Compact update window size (logical px).
+pub const UPDATE_WINDOW_WIDTH: f64 = 340.0;
+pub const UPDATE_WINDOW_HEIGHT: f64 = 280.0;
+
 /// Matches `src/lib/utils/tray-panel-layout.ts` and `tauri.conf.json` main window width.
 pub const TRAY_PANEL_WIDTH: f64 = 360.0;
 
@@ -163,6 +167,8 @@ fn ensure_app_window_vibrancy(window: &WebviewWindow) -> Result<(), String> {
 fn app_window_size_for_path(path: &str) -> (f64, f64) {
     if path.starts_with("/about") {
         (ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT)
+    } else if path.starts_with("/update") {
+        (UPDATE_WINDOW_WIDTH, UPDATE_WINDOW_HEIGHT)
     } else {
         (SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
     }
@@ -299,11 +305,15 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
         width: if path.starts_with("/about") {
             ABOUT_WINDOW_WIDTH
+        } else if path.starts_with("/update") {
+            UPDATE_WINDOW_WIDTH
         } else {
             480.0
         },
         height: if path.starts_with("/about") {
             ABOUT_WINDOW_HEIGHT
+        } else if path.starts_with("/update") {
+            UPDATE_WINDOW_HEIGHT
         } else {
             420.0
         },
@@ -501,6 +511,10 @@ mod tests {
         assert_eq!(
             super::app_window_size_for_path("/about"),
             (ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT)
+        );
+        assert_eq!(
+            super::app_window_size_for_path("/update"),
+            (UPDATE_WINDOW_WIDTH, UPDATE_WINDOW_HEIGHT)
         );
     }
 

@@ -1,14 +1,13 @@
-import { useState } from "react";
-
 import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
+import { SettingsTabSegmentedControl } from "@/components/tray/tray-segmented-control";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import { useSaveSettings, useSettings } from "@/hooks/use-tray-events";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
 import { resolveSettingsFormState } from "./settings-form-state";
 import { GeneralSettingsSection, ProviderSettingsSection } from "./settings-sections";
+import { useSettingsTabState } from "./settings-tab-state";
 
 const SETTINGS_TABS = [
   { id: "general", label: "General" },
@@ -51,7 +50,7 @@ interface SettingsEditorProps {
 }
 
 function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEditorProps) {
-  const [activeTab, setActiveTab] = useState<string>("general");
+  const [activeTab, setActiveTab] = useSettingsTabState();
 
   function patchSettings(patch: Partial<MochiSettings>) {
     onSave({ ...settings, ...patch });
@@ -63,12 +62,11 @@ function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEdito
         className={`border-border shrink-0 ${trayPanelSpacing.contentX} border-b pt-3 pb-2`}
         data-settings-tab-strip
       >
-        <AppSegmentedControl
+        <SettingsTabSegmentedControl
           items={[...SETTINGS_TABS]}
           value={activeTab}
           onValueChange={setActiveTab}
-          rowHeight="h-9"
-          stretchItems
+          contentReady={!isLoading}
         />
       </div>
 

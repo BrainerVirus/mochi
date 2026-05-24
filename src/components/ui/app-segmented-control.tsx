@@ -1,104 +1,23 @@
 "use client";
 
-import { useCallback, useRef, type ReactNode, type RefObject } from "react";
-
-import { useTraySegmentIndicators } from "@/components/tray/use-tray-segment-indicators";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 
-export interface AppSegmentItem {
-  id: string;
-  label: string;
-  icon?: ReactNode;
-}
-
-const indicatorLayerClassName =
-  "pointer-events-none absolute inset-y-0.5 left-0 rounded-md will-change-[transform,width]";
-
-const segmentItemClassName = cn(
-  "relative z-10 inline-flex h-full min-w-[4.5rem] shrink-0 flex-none cursor-pointer flex-row items-center justify-center gap-1.5 rounded-none border-0 px-3 shadow-none",
-  "bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground",
-  "data-[state=on]:bg-transparent data-[state=on]:font-semibold data-[state=on]:text-foreground data-[state=on]:shadow-none",
-  "first:rounded-none last:rounded-none",
-);
-
-function SegmentIndicators({
-  hoverIndicatorRef,
-  activeIndicatorRef,
-}: {
-  hoverIndicatorRef: RefObject<HTMLDivElement | null>;
-  activeIndicatorRef: RefObject<HTMLDivElement | null>;
-}) {
-  return (
-    <>
-      <div
-        ref={hoverIndicatorRef}
-        data-segment-hover-indicator
-        aria-hidden
-        className={cn(indicatorLayerClassName, "z-[1] invisible bg-[var(--app-segment-hover)]")}
-        style={{ width: 0 }}
-      />
-      <div
-        ref={activeIndicatorRef}
-        data-segment-indicator
-        aria-hidden
-        className={cn(
-          indicatorLayerClassName,
-          "z-[2] invisible bg-[var(--app-segment-active)] shadow-sm ring-1 ring-[var(--app-segment-stroke)]",
-        )}
-        style={{ width: 0 }}
-      />
-    </>
-  );
-}
-
-function useAppSegmentControlState(
-  value: string,
-  itemCount: number,
-  onValueChange: (value: string) => void,
-) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const activeIndicatorRef = useRef<HTMLDivElement>(null);
-  const hoverIndicatorRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-
-  const setItemRef = useCallback((id: string, element: HTMLButtonElement | null) => {
-    if (element) {
-      itemRefs.current.set(id, element);
-      return;
-    }
-    itemRefs.current.delete(id);
-  }, []);
-
-  const { syncHoverIndicator, handleRailLeave, handleSegmentValueChange } =
-    useTraySegmentIndicators(
-      trackRef,
-      activeIndicatorRef,
-      hoverIndicatorRef,
-      value,
-      itemCount,
-      itemRefs,
-    );
-
-  const handleValueChange = useCallback(
-    (next: string) => {
-      if (next) {
-        handleSegmentValueChange(next, onValueChange);
-      }
-    },
-    [handleSegmentValueChange, onValueChange],
-  );
-
-  return {
-    trackRef,
-    activeIndicatorRef,
-    hoverIndicatorRef,
-    setItemRef,
-    syncHoverIndicator,
-    handleRailLeave,
-    handleValueChange,
-  };
-}
+import {
+  SegmentIndicators,
+  SegmentToggleItems,
+} from "@/components/ui/app-segmented-control-segments";
+import {
+  INLINE_SEGMENT_INDICATOR_RADIUS_CLASS,
+  resolvePageTabRadiusClasses,
+  usesPageTabIndicators,
+  usesSegmentActiveIndicator,
+  usesSegmentHoverIndicator,
+  type AppSegmentItem,
+  type AppSegmentedControlLayout,
+  type AppSegmentedControlVariant,
+} from "@/components/ui/app-segmented-control-utils";
+import { useAppSegmentControlState } from "@/components/ui/use-app-segment-control-state";
 
 interface AppSegmentedControlProps {
   items: AppSegmentItem[];
@@ -106,8 +25,12 @@ interface AppSegmentedControlProps {
   onValueChange: (value: string) => void;
   className?: string;
   rowHeight?: string;
-  /** When true, segments share width equally; tray uses false for scrollable tabs. */
   stretchItems?: boolean;
+  variant?: AppSegmentedControlVariant;
+  /** Page-tabs only: tray keeps pill radii + scroll; settings uses full width + --radius rounding. */
+  layout?: AppSegmentedControlLayout;
+  /** When false, tab pill snaps until content is ready (e.g. settings query loading). */
+  contentReady?: boolean;
 }
 
 export function AppSegmentedControl({
@@ -117,65 +40,70 @@ export function AppSegmentedControl({
   className,
   rowHeight = "h-9",
   stretchItems = true,
+  variant = "page-tabs",
+  layout = "tray",
+  contentReady = true,
 }: AppSegmentedControlProps) {
-  const {
-    trackRef,
-    activeIndicatorRef,
-    hoverIndicatorRef,
-    setItemRef,
-    syncHoverIndicator,
-    handleRailLeave,
-    handleValueChange,
-  } = useAppSegmentControlState(value, items.length, onValueChange);
+  const isPageTabs = usesPageTabIndicators(variant);
+  const showHover = usesSegmentHoverIndicator(variant);
+  const usesIndicators = usesSegmentActiveIndicator(variant);
+  const pageTabRadius = resolvePageTabRadiusClasses(layout);
+  const indicatorRadiusClass = isPageTabs
+    ? pageTabRadius.indicator
+    : INLINE_SEGMENT_INDICATOR_RADIUS_CLASS;
+  const state = useAppSegmentControlState(value, items.length, onValueChange, {
+    enabled: usesIndicators,
+    showHover,
+    contentReady,
+  });
+  const trackClassName = isPageTabs
+    ? "bg-[var(--app-segment-track)]"
+    : "bg-[var(--app-segment-inline-track)]";
+  const blockInteractionUntilPlaced = usesIndicators && layout === "settings" && !state.pillReady;
 
   return (
     <div
-      ref={trackRef}
-      onPointerLeave={handleRailLeave}
+      ref={usesIndicators ? state.trackRef : undefined}
+      onPointerLeave={showHover ? state.handleRailLeave : undefined}
+      data-segment-variant={variant}
+      data-segment-layout={isPageTabs ? layout : undefined}
       className={cn(
         rowHeight,
-        "relative isolate rounded-lg bg-[var(--app-segment-track)] p-0.5",
+        "relative isolate p-0.5",
+        isPageTabs ? pageTabRadius.track : "rounded-lg",
+        trackClassName,
         stretchItems ? "w-full" : "w-max min-w-full",
+        blockInteractionUntilPlaced && "pointer-events-none",
         className,
       )}
     >
-      <SegmentIndicators
-        hoverIndicatorRef={hoverIndicatorRef}
-        activeIndicatorRef={activeIndicatorRef}
-      />
+      {usesIndicators ? (
+        <SegmentIndicators
+          hoverIndicatorRef={state.hoverIndicatorRef}
+          activeIndicatorRef={state.activeIndicatorRef}
+          indicatorRadiusClass={indicatorRadiusClass}
+          variant={variant}
+          showHover={showHover}
+        />
+      ) : null}
 
       <ToggleGroup
         type="single"
         orientation="horizontal"
         value={value}
-        onValueChange={handleValueChange}
+        onValueChange={state.handleValueChange}
         spacing={0}
         variant="default"
         className="relative z-10 flex h-full w-full flex-row flex-nowrap items-stretch justify-stretch gap-0 bg-transparent p-0 shadow-none"
       >
-        {items.map((item) => (
-          <ToggleGroupItem
-            key={item.id}
-            ref={(element) => {
-              setItemRef(item.id, element);
-            }}
-            data-tray-tab-id={item.id}
-            value={item.id}
-            aria-label={item.label}
-            className={cn(
-              segmentItemClassName,
-              stretchItems ? "min-w-0 flex-1" : "min-w-[4.75rem] max-w-[7.5rem] shrink-0 flex-none",
-            )}
-            onPointerEnter={() => syncHoverIndicator(item.id)}
-          >
-            {item.icon ? (
-              <span className="flex size-4 shrink-0 items-center justify-center opacity-90">
-                {item.icon}
-              </span>
-            ) : null}
-            <span className="min-w-0 truncate text-xs font-medium">{item.label}</span>
-          </ToggleGroupItem>
-        ))}
+        <SegmentToggleItems
+          items={items}
+          variant={variant}
+          stretchItems={stretchItems}
+          setItemRef={state.setItemRef}
+          syncHoverIndicator={state.syncHoverIndicator}
+          showHover={showHover}
+        />
       </ToggleGroup>
     </div>
   );

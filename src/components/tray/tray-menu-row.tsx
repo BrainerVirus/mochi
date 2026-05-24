@@ -8,6 +8,7 @@ export interface TrayMenuItem {
   icon: ReactNode;
   shortcut?: string;
   disabled?: boolean;
+  highlight?: boolean;
   onClick?: () => void;
 }
 
@@ -22,7 +23,9 @@ export function TrayMenuRow({
         type="button"
         className={cn(
           "flex h-7 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm",
-          "text-foreground hover:bg-muted/60 active:bg-muted/80",
+          item.highlight
+            ? "bg-primary/12 text-primary hover:bg-primary/18 active:bg-primary/22 font-medium"
+            : "text-foreground hover:bg-primary/12 active:bg-primary/20",
           "disabled:pointer-events-none disabled:opacity-50",
         )}
         disabled={item.disabled}

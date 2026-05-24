@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyActiveIndicatorPosition,
   applyHoverIndicatorPosition,
-  computeIndicatorTarget,
   metricsFromClientRects,
   readIndicatorMetrics,
+  releaseSegmentIndicators,
   resolveActiveIndicatorPlan,
   shouldAnimateActiveIndicator,
   type HoverIndicatorQuickTo,
@@ -24,7 +24,7 @@ const gsapMocks = vi.hoisted(() => ({
 
 function mockIndicator(): HTMLElement {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- gsap target test double without DOM
-  return { tagName: "DIV" } as HTMLElement;
+  return { tagName: "DIV", isConnected: true } as HTMLElement;
 }
 
 function mockQuickTo(): HoverIndicatorQuickTo["x"] {
@@ -44,11 +44,9 @@ describe("metricsFromClientRects", () => {
       width: 60,
     });
   });
-});
 
-describe("computeIndicatorTarget", () => {
-  it("matches metricsFromClientRects for tab layout boxes", () => {
-    expect(computeIndicatorTarget({ left: 0 }, { left: 120, width: 72 })).toEqual({
+  it("matches tab layout boxes", () => {
+    expect(metricsFromClientRects({ left: 0 }, { left: 120, width: 72 })).toEqual({
       x: 120,
       width: 72,
     });
@@ -221,6 +219,7 @@ describe("applyActiveIndicatorPosition", () => {
     );
 
     expect(gsapMocks.set).not.toHaveBeenCalled();
+    expect(gsapMocks.killTweensOf).not.toHaveBeenCalled();
     expect(gsapMocks.to).toHaveBeenCalledWith(
       indicator,
       expect.objectContaining({ x: 120, width: 72 }),
@@ -237,5 +236,21 @@ describe("readIndicatorMetrics", () => {
     });
 
     expect(readIndicatorMetrics(mockIndicator())).toEqual({ x: 48, width: 72 });
+  });
+});
+
+describe("releaseSegmentIndicators", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("kills GSAP tweens on both indicator layers", () => {
+    const active = mockIndicator();
+    const hover = mockIndicator();
+
+    releaseSegmentIndicators(active, hover);
+
+    expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(active);
+    expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(hover);
   });
 });
