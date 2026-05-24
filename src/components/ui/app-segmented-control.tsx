@@ -14,18 +14,43 @@ export interface AppSegmentItem {
 
 export type AppSegmentedControlVariant = "page-tabs" | "inline";
 
+export type AppSegmentedControlLayout = "tray" | "settings";
+
 export function usesPageTabIndicators(variant: AppSegmentedControlVariant): boolean {
   return variant === "page-tabs";
 }
 
-/** Fixed radius tokens — must match tray panel regardless of .app-window --radius. */
+/** Fixed radius tokens — tray page tabs only; not used in settings (.app-window --radius). */
 export const APP_SEGMENT_INDICATOR_RADIUS_CLASS = "rounded-app-segment-indicator" as const;
 export const APP_SEGMENT_TRACK_RADIUS_CLASS = "rounded-app-segment-track" as const;
 
-const indicatorLayerClassName = cn(
-  "pointer-events-none absolute inset-y-0.5 left-0 will-change-[transform,width]",
-  APP_SEGMENT_INDICATOR_RADIUS_CLASS,
-);
+/** Settings page tabs follow .app-window --radius via Tailwind rounded-* utilities. */
+export const SETTINGS_SEGMENT_INDICATOR_RADIUS_CLASS = "rounded-md" as const;
+export const SETTINGS_SEGMENT_TRACK_RADIUS_CLASS = "rounded-lg" as const;
+
+export function resolvePageTabRadiusClasses(layout: AppSegmentedControlLayout): {
+  track: string;
+  indicator: string;
+} {
+  if (layout === "settings") {
+    return {
+      track: SETTINGS_SEGMENT_TRACK_RADIUS_CLASS,
+      indicator: SETTINGS_SEGMENT_INDICATOR_RADIUS_CLASS,
+    };
+  }
+
+  return {
+    track: APP_SEGMENT_TRACK_RADIUS_CLASS,
+    indicator: APP_SEGMENT_INDICATOR_RADIUS_CLASS,
+  };
+}
+
+function indicatorLayerClassName(indicatorRadiusClass: string): string {
+  return cn(
+    "pointer-events-none absolute inset-y-0.5 left-0 will-change-[transform,width]",
+    indicatorRadiusClass,
+  );
+}
 
 const pageTabItemClassName = cn(
   "relative z-10 inline-flex h-full min-w-[4.5rem] shrink-0 flex-none cursor-pointer flex-row items-center justify-center gap-1.5 rounded-none border-0 px-3 shadow-none",
@@ -43,24 +68,28 @@ const inlineItemClassName = cn(
 function SegmentIndicators({
   hoverIndicatorRef,
   activeIndicatorRef,
+  indicatorRadiusClass,
 }: {
   hoverIndicatorRef: RefObject<HTMLDivElement | null>;
   activeIndicatorRef: RefObject<HTMLDivElement | null>;
+  indicatorRadiusClass: string;
 }) {
+  const layerClassName = indicatorLayerClassName(indicatorRadiusClass);
+
   return (
     <>
       <div
         ref={hoverIndicatorRef}
         data-segment-hover-indicator
         aria-hidden
-        className={cn(indicatorLayerClassName, "z-[1] invisible bg-[var(--app-segment-hover)]")}
+        className={cn(layerClassName, "z-[1] invisible bg-[var(--app-segment-hover)]")}
         style={{ width: 0 }}
       />
       <div
         ref={activeIndicatorRef}
         data-segment-indicator
         aria-hidden
-        className={cn(indicatorLayerClassName, "z-[2] invisible bg-[var(--app-segment-active)]")}
+        className={cn(layerClassName, "z-[2] invisible bg-[var(--app-segment-active)]")}
         style={{ width: 0 }}
       />
     </>
@@ -128,6 +157,8 @@ interface AppSegmentedControlProps {
   rowHeight?: string;
   stretchItems?: boolean;
   variant?: AppSegmentedControlVariant;
+  /** Page-tabs only: tray keeps pill radii + scroll; settings uses full width + --radius rounding. */
+  layout?: AppSegmentedControlLayout;
 }
 
 function SegmentToggleItems({
@@ -180,8 +211,10 @@ export function AppSegmentedControl({
   rowHeight = "h-9",
   stretchItems = true,
   variant = "page-tabs",
+  layout = "tray",
 }: AppSegmentedControlProps) {
   const isPageTabs = usesPageTabIndicators(variant);
+  const pageTabRadius = resolvePageTabRadiusClasses(layout);
   const state = useAppSegmentControlState(value, items.length, onValueChange, isPageTabs);
   const trackClassName = isPageTabs
     ? "bg-[var(--app-segment-track)]"
@@ -192,10 +225,11 @@ export function AppSegmentedControl({
       ref={isPageTabs ? state.trackRef : undefined}
       onPointerLeave={isPageTabs ? state.handleRailLeave : undefined}
       data-segment-variant={variant}
+      data-segment-layout={isPageTabs ? layout : undefined}
       className={cn(
         rowHeight,
         "relative isolate p-0.5",
-        isPageTabs ? APP_SEGMENT_TRACK_RADIUS_CLASS : "rounded-lg",
+        isPageTabs ? pageTabRadius.track : "rounded-lg",
         trackClassName,
         stretchItems ? "w-full" : "w-max min-w-full",
         className,
@@ -205,6 +239,7 @@ export function AppSegmentedControl({
         <SegmentIndicators
           hoverIndicatorRef={state.hoverIndicatorRef}
           activeIndicatorRef={state.activeIndicatorRef}
+          indicatorRadiusClass={pageTabRadius.indicator}
         />
       ) : null}
 

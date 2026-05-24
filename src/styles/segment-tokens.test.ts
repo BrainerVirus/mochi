@@ -40,7 +40,7 @@ describe("segment indicator tokens", () => {
     );
   });
 
-  it("keeps page-tab segment radii fixed outside .app-window --radius", () => {
+  it("keeps tray page-tab segment radii fixed outside .app-window --radius", () => {
     expect(css).toContain("--app-segment-radius-track: 1.5rem");
     expect(css).toContain("--app-segment-radius-indicator: 1.2rem");
     expect(css).toContain("@utility rounded-app-segment-track");

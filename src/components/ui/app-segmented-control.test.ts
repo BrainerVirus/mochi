@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  PAGE_TAB_SEGMENT_DEFAULTS,
+  SETTINGS_PAGE_TAB_DEFAULTS,
+  TRAY_PAGE_TAB_DEFAULTS,
   TRAY_SEGMENT_ROW_HEIGHT,
 } from "@/components/tray/tray-segmented-control";
 import {
   APP_SEGMENT_INDICATOR_RADIUS_CLASS,
   APP_SEGMENT_TRACK_RADIUS_CLASS,
+  resolvePageTabRadiusClasses,
+  SETTINGS_SEGMENT_INDICATOR_RADIUS_CLASS,
+  SETTINGS_SEGMENT_TRACK_RADIUS_CLASS,
   usesPageTabIndicators,
 } from "@/components/ui/app-segmented-control";
 
@@ -20,19 +24,44 @@ describe("usesPageTabIndicators", () => {
   });
 });
 
-describe("PAGE_TAB_SEGMENT_DEFAULTS", () => {
+describe("TRAY_PAGE_TAB_DEFAULTS", () => {
   it("matches tray tab strip layout", () => {
-    expect(PAGE_TAB_SEGMENT_DEFAULTS).toEqual({
+    expect(TRAY_PAGE_TAB_DEFAULTS).toEqual({
       variant: "page-tabs",
       rowHeight: TRAY_SEGMENT_ROW_HEIGHT,
       stretchItems: false,
+      layout: "tray",
     });
   });
 });
 
-describe("page-tab segment radius", () => {
-  it("uses fixed radius classes independent of .app-window --radius", () => {
+describe("SETTINGS_PAGE_TAB_DEFAULTS", () => {
+  it("uses full-width equal segments with settings layout", () => {
+    expect(SETTINGS_PAGE_TAB_DEFAULTS).toEqual({
+      variant: "page-tabs",
+      rowHeight: "h-9",
+      stretchItems: true,
+      layout: "settings",
+    });
+  });
+});
+
+describe("resolvePageTabRadiusClasses", () => {
+  it("uses fixed pill radii for tray page tabs", () => {
+    expect(resolvePageTabRadiusClasses("tray")).toEqual({
+      track: APP_SEGMENT_TRACK_RADIUS_CLASS,
+      indicator: APP_SEGMENT_INDICATOR_RADIUS_CLASS,
+    });
     expect(APP_SEGMENT_INDICATOR_RADIUS_CLASS).toBe("rounded-app-segment-indicator");
     expect(APP_SEGMENT_TRACK_RADIUS_CLASS).toBe("rounded-app-segment-track");
+  });
+
+  it("uses .app-window --radius utilities for settings page tabs", () => {
+    expect(resolvePageTabRadiusClasses("settings")).toEqual({
+      track: SETTINGS_SEGMENT_TRACK_RADIUS_CLASS,
+      indicator: SETTINGS_SEGMENT_INDICATOR_RADIUS_CLASS,
+    });
+    expect(SETTINGS_SEGMENT_TRACK_RADIUS_CLASS).toBe("rounded-lg");
+    expect(SETTINGS_SEGMENT_INDICATOR_RADIUS_CLASS).toBe("rounded-md");
   });
 });

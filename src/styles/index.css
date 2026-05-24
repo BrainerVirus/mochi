@@ -56,7 +56,7 @@
   --chart-4: #ffb5c2;
   --chart-5: #c4b5e0;
   --radius: 1.5rem;
-  /* Page-tab segments (tray + settings): fixed radii — not tied to .app-window --radius. */
+  /* Tray page-tab segments: fixed pill radii — not tied to .app-window --radius. */
   --app-segment-radius-track: 1.5rem;
   --app-segment-radius-indicator: 1.2rem;
   --sidebar: #fffcf8;

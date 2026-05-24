@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
-import { PageTabSegmentedControl } from "@/components/tray/tray-segmented-control";
+import { SettingsTabSegmentedControl } from "@/components/tray/tray-segmented-control";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSaveSettings, useSettings } from "@/hooks/use-tray-events";
 import type { MochiSettings } from "@/lib/schemas/settings";
@@ -63,7 +63,7 @@ function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEdito
         className={`border-border shrink-0 ${trayPanelSpacing.contentX} border-b pt-3 pb-2`}
         data-settings-tab-strip
       >
-        <PageTabSegmentedControl
+        <SettingsTabSegmentedControl
           items={[...SETTINGS_TABS]}
           value={activeTab}
           onValueChange={setActiveTab}
