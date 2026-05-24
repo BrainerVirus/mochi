@@ -109,11 +109,10 @@ describe("measureScrollOverflowWithHysteresis", () => {
     });
 
     expect(
-      measureScrollOverflowWithHysteresis(
-        { ...metrics, scrollLeft: 115 },
-        "horizontal",
-        { canScrollStart: true, canScrollEnd: true },
-      ),
+      measureScrollOverflowWithHysteresis({ ...metrics, scrollLeft: 115 }, "horizontal", {
+        canScrollStart: true,
+        canScrollEnd: true,
+      }),
     ).toEqual({
       canScrollStart: true,
       canScrollEnd: true,

@@ -23,6 +23,15 @@ interface TrayTabChevronProps {
   onCycle: () => void;
 }
 
+export function getTrayTabChevronButtonClassName(visible: boolean) {
+  return cn(
+    "pointer-events-auto shrink-0 cursor-pointer rounded-full",
+    "bg-transparent text-foreground shadow-none ring-0",
+    "hover:bg-transparent hover:text-foreground",
+    visible ? "opacity-100" : "pointer-events-none",
+  );
+}
+
 /** Full-height overlay column; icon centered on the tab strip, not the scroll viewport baseline. */
 export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) {
   const columnRef = useRef<HTMLDivElement>(null);
@@ -76,17 +85,12 @@ export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) 
         tabIndex={visible ? 0 : -1}
         aria-label={isStart ? "Show previous tabs" : "Show more tabs"}
         onClick={onCycle}
-        className={cn(
-          "pointer-events-auto shrink-0 cursor-pointer rounded-full",
-          "bg-background/85 text-foreground shadow-sm ring-1 ring-border/50 backdrop-blur-sm",
-          "hover:bg-background hover:text-foreground",
-          !visible && "pointer-events-none",
-        )}
+        className={getTrayTabChevronButtonClassName(visible)}
       >
         {isStart ? (
-          <ChevronLeftIcon className="size-3.5 stroke-[2.5]" aria-hidden />
+          <ChevronLeftIcon className="size-4 stroke-[3]" aria-hidden />
         ) : (
-          <ChevronRightIcon className="size-3.5 stroke-[2.5]" aria-hidden />
+          <ChevronRightIcon className="size-4 stroke-[3]" aria-hidden />
         )}
       </Button>
     </div>

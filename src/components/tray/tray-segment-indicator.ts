@@ -83,11 +83,15 @@ export function resolveHoverHandoffStart({
   hoverVisible: boolean;
   hoverMetrics: IndicatorMetrics;
 }): IndicatorMetrics | null {
-  if (!hoverVisible || hoveredId !== targetTabId) {
+  if (hoveredId !== targetTabId) {
     return null;
   }
 
-  return hoverMetrics;
+  if (!hoverVisible && !isIndicatorPlaced(hoverMetrics)) {
+    return null;
+  }
+
+  return isIndicatorPlaced(hoverMetrics) ? hoverMetrics : null;
 }
 
 export function resolveActiveIndicatorPlan({
@@ -230,7 +234,6 @@ export function mergeHoverIntoActiveStart(
     return null;
   }
 
-  gsap.killTweensOf(hoverIndicator);
   hideHoverIndicator(hoverIndicator, false);
   return handoff;
 }

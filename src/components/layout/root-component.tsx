@@ -2,25 +2,26 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { getHydrationSafeRootState } from "@/components/layout/root-component-state";
 import { TrayEventBridge } from "@/components/tray/tray-event-bridge";
-import {
-  detectPlatform,
-  detectPlatformFromNavigator,
-  useSystemColorScheme,
-  type PlatformId,
-} from "@/lib/platform";
+import { detectPlatform, useSystemColorScheme } from "@/lib/platform";
 import { queryClient } from "@/lib/query/client";
 import { readIsTrayPanelWindow } from "@/lib/tauri/tray-panel-window";
 
 export function RootComponent() {
-  const [isTrayPanelWindow, setIsTrayPanelWindow] = useState(readIsTrayPanelWindow);
-  const [platform, setPlatform] = useState<PlatformId>(detectPlatformFromNavigator);
+  const [rootState, setRootState] = useState(getHydrationSafeRootState);
+  const { isTrayPanelWindow, platform } = rootState;
 
   useSystemColorScheme(!isTrayPanelWindow);
 
   useEffect(() => {
-    setIsTrayPanelWindow(readIsTrayPanelWindow());
-    void detectPlatform().then(setPlatform);
+    const isTrayWindow = readIsTrayPanelWindow();
+    void detectPlatform().then((detectedPlatform) => {
+      setRootState({
+        isTrayPanelWindow: isTrayWindow,
+        platform: detectedPlatform,
+      });
+    });
   }, []);
 
   return (

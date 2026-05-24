@@ -116,7 +116,7 @@ export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegment
             key={tab.id}
             tab={tab}
             setItemRef={setItemRef}
-            onHover={(id) => syncHoverIndicator(id, true)}
+            onHover={syncHoverIndicator}
             onHoverEnd={handleHoverEnd}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}

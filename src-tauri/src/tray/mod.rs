@@ -10,7 +10,7 @@ mod vibrancy;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, State,
+    AppHandle, Emitter, Manager, State,
 };
 
 use crate::core::models::UsageSnapshot;
@@ -124,6 +124,9 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 let _ = app.emit("tray-check-update", ());
             }
             "quit" => {
+                if let Some(lifecycle) = app.try_state::<crate::lifecycle::AppLifecycle>() {
+                    lifecycle.request_quit();
+                }
                 app.exit(0);
             }
             _ => {}

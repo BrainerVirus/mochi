@@ -8,7 +8,6 @@ import {
   metricsFromClientRects,
   readIndicatorMetrics,
   resolveActiveIndicatorPlan,
-  resolveHoverHandoffStart,
   shouldAnimateActiveIndicator,
   shouldHideHoverOnLeave,
   type HoverIndicatorQuickTo,
@@ -20,8 +19,8 @@ const gsapMocks = vi.hoisted(() => ({
   to: vi.fn<(target: unknown, vars: object) => unknown>(),
   fromTo: vi.fn<(target: unknown, from: object, to: object) => unknown>(),
   killTweensOf: vi.fn<(target: unknown, prop?: string) => void>(),
-  quickTo: vi.fn<(target: unknown, prop: string, vars: object) => (value: number) => void>(
-    () => vi.fn<(value: number) => void>(),
+  quickTo: vi.fn<(target: unknown, prop: string, vars: object) => (value: number) => void>(() =>
+    vi.fn<(value: number) => void>(),
   ),
 }));
 
@@ -114,30 +113,6 @@ describe("resolveActiveIndicatorPlan", () => {
   });
 });
 
-describe("resolveHoverHandoffStart", () => {
-  it("returns null when the hovered tab does not match the selection", () => {
-    expect(
-      resolveHoverHandoffStart({
-        hoveredId: "alpha",
-        targetTabId: "beta",
-        hoverVisible: true,
-        hoverMetrics: { x: 12, width: 64 },
-      }),
-    ).toBeNull();
-  });
-
-  it("returns hover metrics when clicking the hovered tab mid-tween", () => {
-    expect(
-      resolveHoverHandoffStart({
-        hoveredId: "alpha",
-        targetTabId: "alpha",
-        hoverVisible: true,
-        hoverMetrics: { x: 55, width: 66 },
-      }),
-    ).toEqual({ x: 55, width: 66 });
-  });
-});
-
 describe("shouldHideHoverOnLeave", () => {
   it("keeps the active pill untouched while pointer-down suppresses hover end", () => {
     expect(shouldHideHoverOnLeave(true)).toBe(false);
@@ -184,10 +159,14 @@ describe("applyActiveIndicatorPosition", () => {
   });
 
   it("tweens from the current pill position when changing tabs", () => {
-    applyActiveIndicatorPosition(indicator, { x: 160, width: 72 }, {
-      animate: true,
-      reducedMotion: false,
-    });
+    applyActiveIndicatorPosition(
+      indicator,
+      { x: 160, width: 72 },
+      {
+        animate: true,
+        reducedMotion: false,
+      },
+    );
 
     expect(gsapMocks.fromTo).not.toHaveBeenCalled();
     expect(gsapMocks.to).toHaveBeenCalledWith(
@@ -207,10 +186,14 @@ describe("applyActiveIndicatorPosition", () => {
       return 0;
     });
 
-    applyActiveIndicatorPosition(indicator, { x: 40, width: 68 }, {
-      animate: true,
-      reducedMotion: false,
-    });
+    applyActiveIndicatorPosition(
+      indicator,
+      { x: 40, width: 68 },
+      {
+        animate: true,
+        reducedMotion: false,
+      },
+    );
 
     expect(gsapMocks.to).not.toHaveBeenCalled();
     expect(gsapMocks.set).toHaveBeenCalledWith(
@@ -257,6 +240,15 @@ describe("mergeHoverIntoActiveStart", () => {
       x: 55,
       width: 66,
     });
+  });
+
+  it("does not kill the hover x/width quickTo tween during active handoff", () => {
+    const indicator = mockIndicator();
+
+    mergeHoverIntoActiveStart(indicator, "alpha", "alpha");
+
+    expect(gsapMocks.killTweensOf).not.toHaveBeenCalledWith(indicator);
+    expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(indicator, "autoAlpha");
   });
 });
 

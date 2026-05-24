@@ -24,7 +24,7 @@ export function TraySegmentItem({
   tab: TrayPanelTab;
   setItemRef: (id: string, element: HTMLButtonElement | null) => void;
   onHover: (id: string) => void;
-  onHoverEnd: () => void;
+  onHoverEnd: (id: string) => void;
   onPointerDown: (id: string) => void;
   onPointerUp: () => void;
 }) {
@@ -38,9 +38,7 @@ export function TraySegmentItem({
       aria-label={tab.label}
       className={traySegmentItemClassName}
       onMouseEnter={() => onHover(tab.id)}
-      onMouseLeave={onHoverEnd}
-      onFocus={() => onHover(tab.id)}
-      onBlur={onHoverEnd}
+      onMouseLeave={() => onHoverEnd(tab.id)}
       onPointerDown={() => onPointerDown(tab.id)}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
