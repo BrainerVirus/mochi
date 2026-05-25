@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Plugin } from "vite";
@@ -15,9 +15,20 @@ function findAsset(prefix: string, extension: string): string | undefined {
   return readdirSync(assetsDir).find((file) => file.startsWith(prefix) && file.endsWith(extension));
 }
 
+function isLegacyScriptOnlyShell(html: string): boolean {
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const bodyInner = bodyMatch?.[1]?.trim() ?? "";
+  return (
+    bodyInner.length > 0 &&
+    !/<div[\s>]/i.test(bodyInner) &&
+    /<script\b/i.test(bodyInner)
+  );
+}
+
 /**
- * Writes `index.html` for Tauri `frontendDist` after the client build.
- * TanStack Start SPA prerender is not used here — the desktop bundle only needs a static shell.
+ * Writes `index.html` for Tauri after the client build when TanStack SPA prerender
+ * cannot run (e.g. Nitro preview self-fetch failures). Includes a mount root and the
+ * client entry script so the WebView can hydrate the router.
  */
 export function writeTauriSpaShell(): Plugin {
   return {
@@ -28,7 +39,10 @@ export function writeTauriSpaShell(): Plugin {
       sequential: true,
       handler() {
         if (existsSync(SHELL_PATH)) {
-          return;
+          const existing = readFileSync(SHELL_PATH, "utf8");
+          if (!isLegacyScriptOnlyShell(existing)) {
+            return;
+          }
         }
 
         const entryJs = findAsset("index-", ".js");
@@ -51,7 +65,8 @@ export function writeTauriSpaShell(): Plugin {
     <title>Mochi</title>
 ${cssLink}  </head>
   <body>
-    <script type="module" src="/assets/${entryJs}"></script>
+    <div id="root"></div>
+    <script type="module" crossorigin src="/assets/${entryJs}"></script>
   </body>
 </html>
 `;

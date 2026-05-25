@@ -153,3 +153,5 @@ jobs:
           workspaces: src-tauri -> target
       - name: Run Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
+      - name: Verify diagnostics CLI
+        run: cargo run --quiet --manifest-path src-tauri/Cargo.toml -- diagnostics

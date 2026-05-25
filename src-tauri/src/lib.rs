@@ -2,6 +2,7 @@ pub mod app_branding;
 pub mod auth;
 pub mod browser;
 pub mod cli;
+pub mod diagnostics;
 pub mod core;
 pub mod frontend;
 pub mod lifecycle;
@@ -86,7 +87,9 @@ pub fn run() -> anyhow::Result<()> {
             setup_app_windows(app.handle())?;
             setup_tray(app.handle())?;
             setup_widget(app.handle())?;
+            diagnostics::setup(app.handle())?;
             maybe_show_main_for_dev(app.handle());
+            diagnostics::log_visible_windows(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -108,7 +111,10 @@ pub fn run() -> anyhow::Result<()> {
             updater::install_update,
             show_widget,
             hide_widget,
-            toggle_widget
+            toggle_widget,
+            diagnostics::report_frontend_boot,
+            diagnostics::report_frontend_error,
+            diagnostics::get_diagnostics_summary
         ])
         .build(tauri::generate_context!())?
         .run(|app, event| {
@@ -129,6 +135,9 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
         Command::StatusBar { format } => {
             let output = status_bar::format_output(&format, 42, "Claude");
             println!("{output}");
+        }
+        Command::Diagnostics { bundle } => {
+            diagnostics::run_cli_diagnostics(bundle).map_err(|error| anyhow::anyhow!(error))?;
         }
         _ => {
             eprintln!("CLI subcommand not yet implemented: {command:?}");

@@ -18,6 +18,8 @@ export default defineConfig({
   },
   preview: {
     host: "127.0.0.1",
+    port: 4173,
+    strictPort: true,
   },
   envPrefix: ["VITE_", "TAURI_"],
   resolve: {
@@ -29,7 +31,11 @@ export default defineConfig({
       srcDirectory: "app",
     }),
     viteReact(),
-    nitro(),
+    nitro({
+      server: {
+        host: "127.0.0.1",
+      },
+    }),
     fixNitroRolldownBuild(),
     writeTauriSpaShell(),
   ],
