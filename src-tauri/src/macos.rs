@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use tauri::{ActivationPolicy, AppHandle, Manager};
 
 /// Hide the app from the Dock and Cmd+Tab while only the menu bar tray is active.
@@ -11,54 +13,52 @@ pub fn set_regular_activation_policy(app: &AppHandle) {
     ensure_dock_icon();
 }
 
-/// Applies the MochiChibi dock icon when the app enters the Dock.
+/// Restores the Dock icon through Icon Services when the app enters the Dock.
 ///
-/// Tauri sets a dev icon on launch, but accessory apps are not in the Dock yet.
-/// Re-applying after switching to regular activation avoids the generic `exec` glyph.
-/// Prefers the bundled `icon.icns` from the `.app` Resources folder; falls back to
-/// the crate icons directory during `tauri dev`.
+/// Accessory apps are hidden from the Dock at launch. Switching to regular activation
+/// must not load a flat bitmap from `icon.icns` — that bypasses macOS icon compositing
+/// and shows a sharp-cornered square in the Dock. Instead, resolve the icon from the
+/// `.app` bundle path so the OS applies the squircle mask from `CFBundleIconFile`.
 pub fn ensure_dock_icon() {
-    use objc2::{AllocAnyThread, MainThreadMarker};
-    use objc2_app_kit::{NSApplication, NSImage};
+    use objc2::MainThreadMarker;
+    use objc2_app_kit::{NSApplication, NSWorkspace};
     use objc2_foundation::NSString;
-
-    let Some(icon_path) = dock_icon_path() else {
-        eprintln!("[mochi] dock icon path could not be resolved");
-        return;
-    };
-    let path = NSString::from_str(&icon_path);
 
     let mtm = unsafe { MainThreadMarker::new_unchecked() };
     let app = NSApplication::sharedApplication(mtm);
 
     unsafe {
-        let Some(icon) = NSImage::initWithContentsOfFile(NSImage::alloc(), &path) else {
-            eprintln!("[mochi] dock icon unavailable at {icon_path}");
+        if let Some(bundle_path) = app_bundle_path() {
+            let workspace = NSWorkspace::sharedWorkspace();
+            let path = NSString::from_str(&bundle_path);
+            let icon = workspace.iconForFile(&path);
+            app.setApplicationIconImage(Some(&icon));
             return;
-        };
-        app.setApplicationIconImage(Some(&icon));
+        }
+
+        // `tauri dev` runs the bare binary (no `.app` wrapper): clear any runtime override
+        // and accept the generic dev glyph until a bundled build is installed.
+        app.setApplicationIconImage(None);
     }
 }
 
-fn dock_icon_path() -> Option<String> {
-    if let Ok(exe) = std::env::current_exe() {
-        // …/Mochi.app/Contents/MacOS/mochi → …/Mochi.app/Contents/Resources/icon.icns
-        if let Some(macos_dir) = exe.parent() {
-            if let Some(contents_dir) = macos_dir.parent() {
-                let resources = contents_dir.join("Resources").join("icon.icns");
-                if resources.is_file() {
-                    return Some(resources.to_string_lossy().into_owned());
-                }
-            }
-        }
-    }
+/// Returns the `.app` bundle path when running inside a macOS app bundle.
+fn app_bundle_path() -> Option<String> {
+    app_bundle_path_from_exe(&std::env::current_exe().ok()?)
+}
 
-    let dev_icon = format!("{}/icons/icon.icns", env!("CARGO_MANIFEST_DIR"));
-    if std::path::Path::new(&dev_icon).is_file() {
-        return Some(dev_icon);
+fn app_bundle_path_from_exe(exe: &Path) -> Option<String> {
+    // …/Mochi.app/Contents/MacOS/mochi
+    let macos_dir = exe.parent()?;
+    let contents_dir = macos_dir.parent()?;
+    if contents_dir.file_name()?.to_str()? != "Contents" {
+        return None;
     }
-
-    None
+    let app_bundle = contents_dir.parent()?;
+    if app_bundle.extension()?.to_str()? != "app" {
+        return None;
+    }
+    Some(app_bundle.to_string_lossy().into_owned())
 }
 
 const APP_WINDOW_LABEL: &str = "settings";
@@ -73,5 +73,25 @@ pub fn sync_activation_policy_for_visible_windows(app: &AppHandle) {
         set_regular_activation_policy(app);
     } else {
         set_tray_only_activation_policy(app);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::app_bundle_path_from_exe;
+    use std::path::Path;
+
+    #[test]
+    fn app_bundle_path_is_none_outside_app_bundle() {
+        assert!(app_bundle_path_from_exe(Path::new("/tmp/mochi")).is_none());
+    }
+
+    #[test]
+    fn app_bundle_path_resolves_from_macos_executable() {
+        let exe = Path::new("/Applications/Mochi.app/Contents/MacOS/mochi");
+        assert_eq!(
+            app_bundle_path_from_exe(exe).as_deref(),
+            Some("/Applications/Mochi.app")
+        );
     }
 }

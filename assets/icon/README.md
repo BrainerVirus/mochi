@@ -37,4 +37,4 @@ Requires pnpm and the Tauri CLI (`@tauri-apps/cli` devDependency).
 ## Verification notes
 
 - **`icon.icns`** includes the standard macOS iconset layers (`icon_16x16` … `icon_512x512@2x`). Confirm with `iconutil -c iconset -o /tmp/check.iconset src-tauri/icons/icon.icns`.
-- **Dev vs bundled:** `pnpm tauri dev` may show a generic dev glyph until `ensure_dock_icon()` runs (settings/about window opens). The bundled `.app` uses `Info.plist` + `icon.icns` from this folder.
+- **Dev vs bundled:** `pnpm tauri dev` runs the bare binary (no `.app` wrapper), so the Dock may show a generic dev glyph until you install a bundled build. Packaged `.app` / `.dmg` installs use `Info.plist` + `icon.icns` and macOS applies the squircle mask automatically.

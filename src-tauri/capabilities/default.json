@@ -3,5 +3,10 @@
   "identifier": "default",
   "description": "Default Mochi capabilities",
   "windows": ["main", "widget", "settings"],
-  "permissions": ["core:default", "opener:default", "updater:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "opener:default",
+    "updater:default"
+  ]
 }

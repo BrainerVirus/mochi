@@ -123,7 +123,8 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     {
         builder = builder
             .title_bar_style(tauri::TitleBarStyle::Overlay)
-            .hidden_title(true);
+            .hidden_title(true)
+            .accept_first_mouse(true);
     }
 
     builder

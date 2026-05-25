@@ -18,7 +18,8 @@ export function AppWindowShell({ children, variant = "settings" }: AppWindowShel
         variant === "update" && "app-window--update",
       )}
     >
-      <div className="app-window-titlebar" data-tauri-drag-region>
+      <div className="app-window-titlebar">
+        <div className="app-window-titlebar__drag" data-tauri-drag-region aria-hidden="true" />
         <span className="app-window-titlebar__title">Mochi</span>
       </div>
       <div className="app-window-body flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
