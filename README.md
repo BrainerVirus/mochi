@@ -42,7 +42,7 @@ Unstable:
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash -s -- -i
 ```
 
-_Advanced:_ the direct script accepts `MOCHI_INSTALL_DIR` (default `/Applications`) if you need a non-system location._
+_Advanced:_ the direct script accepts `MOCHI_INSTALL_DIR` (default `/Applications`) if you need a non-system location.\_
 
 ### Linux
 
@@ -58,8 +58,8 @@ curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/ins
 
 Package selection:
 
-| Env | Values | Default |
-| --- | --- | --- |
+| Env             | Values                           | Default                                                          |
+| --------------- | -------------------------------- | ---------------------------------------------------------------- |
 | `MOCHI_PACKAGE` | `appimage`, `deb`, `rpm`, `auto` | `auto` (deb on Debian/Ubuntu, rpm on Fedora/RHEL, else AppImage) |
 
 AppImage installs to `~/.local/bin/mochi`.
@@ -143,6 +143,11 @@ The stack (TanStack Start 1.x, Vite 8, React 19, Tauri v2) targets Node 20.12+, 
 pnpm install
 pnpm dev          # frontend dev server (port 1420)
 pnpm tauri dev    # desktop app with Tauri
+```
+
+On macOS, `pnpm tauri dev` runs an unbundled debug binary. The Dock icon is applied when a settings/about/update window opens (tray-only mode hides the Dock entry). Packaged `.app` / `.dmg` builds use `src-tauri/icons/icon.icns` from `tauri.conf.json`.
+
+```bash
 pnpm lint
 pnpm format:check
 pnpm build

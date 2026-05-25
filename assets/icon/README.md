@@ -4,9 +4,9 @@ The desktop app icon uses **MochiChibi** (the rice-cake blob mascot from `src/co
 
 ## Files
 
-| Path | Purpose |
-| --- | --- |
-| `mochi-app-icon.svg` | Source artwork (1024×1024 viewBox) |
+| Path                  | Purpose                                   |
+| --------------------- | ----------------------------------------- |
+| `mochi-app-icon.svg`  | Source artwork (1024×1024 viewBox)        |
 | `../src-tauri/icons/` | Generated Tauri bundle (do not hand-edit) |
 
 ## Regenerate
