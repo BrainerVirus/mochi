@@ -30,6 +30,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build && tsc --noEmit",
+    "check:tauri-shell": "node scripts/check-tauri-frontend-dist.mjs",
     "dev": "vite dev --port 1420",
     "format": "oxfmt",
     "format:check": "oxfmt --check",

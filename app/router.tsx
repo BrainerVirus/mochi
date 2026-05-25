@@ -1,10 +1,7 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
 import { routeTree } from "./routeTree.gen";
-
-function SpaShellPending() {
-  return <div className="min-h-0" data-mochi-spa-shell-pending />;
-}
+import { SpaShellPending } from "./spa-shell-pending";
 
 export function getRouter() {
   const router = createTanStackRouter({

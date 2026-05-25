@@ -85,6 +85,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build frontend
         run: pnpm build
+      - name: Verify Tauri SPA shell in frontend dist
+        run: pnpm check:tauri-shell
 
   react-doctor:
     name: React Doctor
