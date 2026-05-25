@@ -107,7 +107,7 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         return Ok(window);
     }
 
-    let mut builder = WebviewWindowBuilder::new(
+    let builder = WebviewWindowBuilder::new(
         app,
         SETTINGS_WINDOW_LABEL,
         WebviewUrl::App("/settings".into()),
@@ -123,12 +123,10 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     .skip_taskbar(true);
 
     #[cfg(target_os = "macos")]
-    {
-        builder = builder
-            .title_bar_style(tauri::TitleBarStyle::Overlay)
-            .hidden_title(true)
-            .accept_first_mouse(true);
-    }
+    let builder = builder
+        .title_bar_style(tauri::TitleBarStyle::Overlay)
+        .hidden_title(true)
+        .accept_first_mouse(true);
 
     builder
         .build()
