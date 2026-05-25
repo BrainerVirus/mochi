@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Mochi app icon">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="78%">
+      <stop offset="0%" stop-color="#C8EDCA" />
+      <stop offset="45%" stop-color="#A3D9A5" />
+      <stop offset="100%" stop-color="#7BBF7E" />
+    </radialGradient>
+    <radialGradient id="petGrad" cx="42%" cy="30%" r="68%">
+      <stop offset="0%" stop-color="#FFFCF8" />
+      <stop offset="55%" stop-color="#FFF8F0" />
+      <stop offset="100%" stop-color="#F0E4D8" />
+    </radialGradient>
+  </defs>
+
+  <!-- Full-bleed brand background -->
+  <rect width="1024" height="1024" fill="url(#bg)" />
+
+  <!-- Soft highlight wash -->
+  <ellipse cx="512" cy="280" rx="420" ry="320" fill="#FFFCF8" opacity="0.18" />
+
+  <!-- MochiChibi pet, scaled to fill most of the icon -->
+  <g transform="translate(112 148) scale(10)">
+    <ellipse cx="40" cy="58" rx="26" ry="4" fill="#334155" opacity="0.12" />
+
+    <path
+      d="M12 42c0-12.5 10.5-22 28-22s28 9.5 28 22c0 10.5-8 19-28 19s-28-8.5-28-19z"
+      fill="url(#petGrad)"
+      stroke="#E8DED4"
+      stroke-width="1.25"
+    />
+
+    <ellipse cx="40" cy="28" rx="15" ry="6.5" fill="#FFFCF8" opacity="0.55" />
+
+    <circle cx="26" cy="43" r="4.5" fill="#FFB5C2" opacity="0.42" />
+    <circle cx="54" cy="43" r="4.5" fill="#FFB5C2" opacity="0.42" />
+
+    <circle cx="31" cy="39" r="3" fill="#334155" />
+    <circle cx="49" cy="39" r="3" fill="#334155" />
+    <circle cx="32" cy="38" r="0.9" fill="#FFFCF8" opacity="0.9" />
+    <circle cx="50" cy="38" r="0.9" fill="#FFFCF8" opacity="0.9" />
+
+    <path
+      d="M33.5 47c2.2 2 10.8 2 13 0"
+      fill="none"
+      stroke="#334155"
+      stroke-width="1.5"
+      stroke-linecap="round"
+    />
+  </g>
+</svg>
