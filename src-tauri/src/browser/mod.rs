@@ -9,7 +9,6 @@ mod gecko;
 mod import;
 mod profiles;
 
-#[cfg(target_os = "macos")]
 mod keychain;
 #[cfg(target_os = "macos")]
 mod safari;

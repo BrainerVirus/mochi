@@ -50,6 +50,7 @@ fn gecko_profiles_root_for(home: &Path, browser: BrowserKind, folder: &str) -> P
 
     #[cfg(windows)]
     {
+        let _folder = folder;
         let roaming = windows_roaming_app_data(home);
         match browser {
             BrowserKind::Zen => windows_local_app_data(home).join("zen").join("Profiles"),
@@ -59,6 +60,7 @@ fn gecko_profiles_root_for(home: &Path, browser: BrowserKind, folder: &str) -> P
 
     #[cfg(all(unix, not(target_os = "macos")))]
     {
+        let _folder = folder;
         let base = match browser {
             BrowserKind::Firefox => home.join(".mozilla").join("firefox"),
             BrowserKind::Zen => home.join(".zen"),
