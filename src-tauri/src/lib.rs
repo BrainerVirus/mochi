@@ -3,6 +3,7 @@ pub mod auth;
 pub mod browser;
 pub mod cli;
 pub mod core;
+pub mod frontend;
 pub mod lifecycle;
 #[cfg(target_os = "macos")]
 pub mod macos;

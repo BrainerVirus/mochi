@@ -1,6 +1,6 @@
 {
   "name": "mochi",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Cross-platform desktop companion for tracking AI coding tool usage — tray, widget, settings, and CLI.",
   "keywords": [
@@ -30,6 +30,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build && tsc --noEmit",
+    "check:tauri-shell": "node scripts/check-tauri-frontend-dist.mjs",
     "dev": "vite dev --port 1420",
     "format": "oxfmt",
     "format:check": "oxfmt --check",

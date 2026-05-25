@@ -3,9 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { WidgetWindow } from "@/components/widget/widget-window";
 
 export const Route = createFileRoute("/widget")({
-  component: WidgetPage,
+  ssr: false,
+  component: WidgetWindow,
 });
-
-function WidgetPage() {
-  return <WidgetWindow />;
-}
