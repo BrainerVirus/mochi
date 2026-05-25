@@ -4,9 +4,5 @@ import { WidgetWindow } from "@/components/widget/widget-window";
 
 export const Route = createFileRoute("/widget")({
   ssr: false,
-  component: WidgetPage,
+  component: WidgetWindow,
 });
-
-function WidgetPage() {
-  return <WidgetWindow />;
-}
