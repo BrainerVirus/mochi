@@ -50,7 +50,6 @@
         "decorations": true,
         "resizable": true,
         "transparent": true,
-        "titleBarStyle": "Transparent",
         "skipTaskbar": true,
         "center": true
       }

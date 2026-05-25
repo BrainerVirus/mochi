@@ -1,7 +1,5 @@
 mod icon;
 #[cfg(target_os = "macos")]
-mod macos_app_window;
-#[cfg(target_os = "macos")]
 mod macos_window_shape;
 mod menu_bar_metric;
 mod panel;
