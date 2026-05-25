@@ -18,9 +18,7 @@ if (shell.length === 0 || !/<html[\s>]/i.test(shell)) {
 const bodyMatch = shell.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
 const bodyInner = bodyMatch?.[1]?.trim() ?? "";
 const scriptOnlyBody =
-  bodyInner.length > 0 &&
-  !/<div[\s>]/i.test(bodyInner) &&
-  /<script\b/i.test(bodyInner);
+  bodyInner.length > 0 && !/<div[\s>]/i.test(bodyInner) && /<script\b/i.test(bodyInner);
 
 if (scriptOnlyBody) {
   console.error(
@@ -30,7 +28,7 @@ if (scriptOnlyBody) {
 }
 
 if (!/<div[^>]+id=["']root["']/i.test(shell)) {
-  console.error("index.html must include <div id=\"root\"> for client hydration.");
+  console.error('index.html must include <div id="root"> for client hydration.');
   process.exit(1);
 }
 

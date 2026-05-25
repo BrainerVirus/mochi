@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use super::log::log_line;
-use tauri::Manager;
 use super::{FrontendBootPayload, FrontendErrorPayload};
 use crate::frontend::APP_SHELL_ASSET;
+use tauri::Manager;
 
 const MAX_EVENTS: usize = 300;
 
@@ -22,6 +22,12 @@ pub struct DiagnosticsInner {
 
 pub struct DiagnosticsState {
     inner: Mutex<DiagnosticsInner>,
+}
+
+impl Default for DiagnosticsState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DiagnosticsState {
@@ -66,7 +72,10 @@ impl DiagnosticsState {
 
     pub fn record_frontend_error(&self, payload: FrontendErrorPayload) {
         if let Ok(mut inner) = self.inner() {
-            let label = payload.window_label.clone().unwrap_or_else(|| "unknown".into());
+            let label = payload
+                .window_label
+                .clone()
+                .unwrap_or_else(|| "unknown".into());
             log_line(
                 "frontend.error",
                 &format!("label={label} message={}", payload.message),
@@ -125,6 +134,9 @@ pub fn log_visible_windows(app: &tauri::AppHandle) {
             .is_visible()
             .map(|value| value.to_string())
             .unwrap_or_else(|error| format!("visible-error:{error}"));
-        log_line("window.snapshot", &format!("{label} url={url} visible={visible}"));
+        log_line(
+            "window.snapshot",
+            &format!("{label} url={url} visible={visible}"),
+        );
     }
 }

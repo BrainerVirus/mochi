@@ -58,8 +58,5 @@ pub fn report_frontend_error(
 
 #[tauri::command]
 pub fn get_diagnostics_summary(app: tauri::AppHandle) -> Result<String, String> {
-    build_summary(
-        &app,
-        app.try_state::<DiagnosticsState>().as_deref(),
-    )
+    build_summary(&app, app.try_state::<DiagnosticsState>().as_deref())
 }

@@ -36,16 +36,16 @@ fn default_log_dir() -> Result<PathBuf, String> {
     #[cfg(target_os = "macos")]
     {
         let home = std::env::var("HOME").map_err(|error| error.to_string())?;
-        return Ok(PathBuf::from(home)
+        Ok(PathBuf::from(home)
             .join("Library")
             .join("Logs")
-            .join(IDENTIFIER));
+            .join(IDENTIFIER))
     }
 
     #[cfg(target_os = "windows")]
     {
         let local = std::env::var("LOCALAPPDATA").map_err(|error| error.to_string())?;
-        return Ok(PathBuf::from(local).join(IDENTIFIER).join("logs"));
+        Ok(PathBuf::from(local).join(IDENTIFIER).join("logs"))
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]
@@ -57,7 +57,7 @@ fn default_log_dir() -> Result<PathBuf, String> {
                     .map(|home| PathBuf::from(home).join(".local/share"))
                     .map_err(|error| error.to_string())
             })?;
-        return Ok(base.join(IDENTIFIER).join("logs"));
+        Ok(base.join(IDENTIFIER).join("logs"))
     }
 
     #[cfg(not(any(target_os = "macos", target_os = "windows", unix)))]

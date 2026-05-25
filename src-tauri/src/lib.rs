@@ -2,8 +2,8 @@ pub mod app_branding;
 pub mod auth;
 pub mod browser;
 pub mod cli;
-pub mod diagnostics;
 pub mod core;
+pub mod diagnostics;
 pub mod frontend;
 pub mod lifecycle;
 #[cfg(target_os = "macos")]

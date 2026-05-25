@@ -18,11 +18,7 @@ function findAsset(prefix: string, extension: string): string | undefined {
 function isLegacyScriptOnlyShell(html: string): boolean {
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   const bodyInner = bodyMatch?.[1]?.trim() ?? "";
-  return (
-    bodyInner.length > 0 &&
-    !/<div[\s>]/i.test(bodyInner) &&
-    /<script\b/i.test(bodyInner)
-  );
+  return bodyInner.length > 0 && !/<div[\s>]/i.test(bodyInner) && /<script\b/i.test(bodyInner);
 }
 
 /**

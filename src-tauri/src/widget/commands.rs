@@ -41,7 +41,10 @@ fn prepare_widget_window_events(window: &WebviewWindow) -> Result<(), Box<dyn st
             if let Some(state) = app.try_state::<DiagnosticsState>() {
                 state.record_window_event(WIDGET_LABEL, "close_requested -> hide");
             }
-            log_line("window", &format!("{WIDGET_LABEL}: close_requested -> hide"));
+            log_line(
+                "window",
+                &format!("{WIDGET_LABEL}: close_requested -> hide"),
+            );
             let _ = window_for_events.hide();
         }
     });

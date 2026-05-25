@@ -32,13 +32,22 @@ pub fn build_summary(
     lines.push(format!("app_shell_asset: {APP_SHELL_ASSET}"));
 
     if let Ok(config_dir) = app.path().app_config_dir() {
-        lines.push(format!("app_config_dir: {}", redact_line(&config_dir.display().to_string())));
+        lines.push(format!(
+            "app_config_dir: {}",
+            redact_line(&config_dir.display().to_string())
+        ));
     }
     if let Ok(log_dir) = app.path().app_log_dir() {
-        lines.push(format!("app_log_dir: {}", redact_line(&log_dir.display().to_string())));
+        lines.push(format!(
+            "app_log_dir: {}",
+            redact_line(&log_dir.display().to_string())
+        ));
     }
     if let Some(path) = log_path() {
-        lines.push(format!("diagnostics_log: {}", redact_line(&path.display().to_string())));
+        lines.push(format!(
+            "diagnostics_log: {}",
+            redact_line(&path.display().to_string())
+        ));
         if let Ok(tail) = read_log_tail(&path, 80) {
             lines.push(String::new());
             lines.push("--- diagnostics.log (tail) ---".into());
@@ -51,7 +60,7 @@ pub fn build_summary(
     for (label, window) in app.webview_windows() {
         let url = window
             .url()
-            .map(|parsed| redact_line(&parsed.to_string()))
+            .map(|parsed| redact_line(parsed.as_ref()))
             .unwrap_or_else(|error| format!("url-error:{error}"));
         let visible = window
             .is_visible()
@@ -88,11 +97,11 @@ pub fn build_summary(
 }
 
 pub fn build_bundle_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let summary = build_summary(
-        app,
-        app.try_state::<super::DiagnosticsState>().as_deref(),
-    )?;
-    let log_dir = app.path().app_log_dir().map_err(|error| error.to_string())?;
+    let summary = build_summary(app, app.try_state::<super::DiagnosticsState>().as_deref())?;
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|error| error.to_string())?;
     fs::create_dir_all(&log_dir).map_err(|error| error.to_string())?;
     let timestamp = time::OffsetDateTime::now_utc()
         .format(&time::format_description::well_known::Rfc3339)
@@ -100,24 +109,36 @@ pub fn build_bundle_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         .replace(':', "-");
     let bundle_path = log_dir.join(format!("mochi-diagnostics-{timestamp}.txt"));
     fs::write(&bundle_path, summary).map_err(|error| error.to_string())?;
-    log_line("diagnostics", &format!("wrote bundle {}", bundle_path.display()));
+    log_line(
+        "diagnostics",
+        &format!("wrote bundle {}", bundle_path.display()),
+    );
     Ok(bundle_path)
 }
 
 pub fn run_cli_diagnostics(bundle: bool) -> Result<(), String> {
     super::log::init_cli_log_path()?;
     let mut lines = Vec::new();
-    lines.push(format!("mochi {} (CLI diagnostics)", env!("CARGO_PKG_VERSION")));
+    lines.push(format!(
+        "mochi {} (CLI diagnostics)",
+        env!("CARGO_PKG_VERSION")
+    ));
     lines.push(format!("platform: {}", platform_name()));
     lines.push(format!("app_shell_asset: {APP_SHELL_ASSET}"));
 
     if let Ok(home) = std::env::var("HOME") {
         let config_hint = format!("{home}/.config/mochi");
-        lines.push(format!("expected_config_hint: {}", redact_line(&config_hint)));
+        lines.push(format!(
+            "expected_config_hint: {}",
+            redact_line(&config_hint)
+        ));
     }
 
     if let Some(path) = log_path() {
-        lines.push(format!("diagnostics_log: {}", redact_line(&path.display().to_string())));
+        lines.push(format!(
+            "diagnostics_log: {}",
+            redact_line(&path.display().to_string())
+        ));
         if let Ok(tail) = read_log_tail(&path, 120) {
             lines.push(String::new());
             lines.push("--- diagnostics.log (tail) ---".into());
