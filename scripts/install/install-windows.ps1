@@ -68,7 +68,10 @@ function Select-Asset {
     [string[]]$Patterns
   )
   foreach ($pattern in $Patterns) {
-    $asset = $Release.assets | Where-Object { $_.name -match $pattern } | Select-Object -First 1
+    $asset = $Release.assets |
+      Where-Object { $_.name -match $pattern } |
+      Sort-Object { [datetime]$_.updated_at } -Descending |
+      Select-Object -First 1
     if ($asset) { return $asset }
   }
   return $null
