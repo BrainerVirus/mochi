@@ -50,13 +50,10 @@ function Resolve-ReleaseTag {
   $releases = Get-GitHubJson "$ApiBase/releases?per_page=30"
 
   if ($Unstable) {
-    $pre = $releases | Where-Object { $_.prerelease -and -not $_.draft } | Select-Object -First 1
-    if ($pre) { return $pre.tag_name }
-
     $unstableTag = $releases | Where-Object { $_.tag_name -eq 'unstable' -and -not $_.draft } | Select-Object -First 1
     if ($unstableTag) { return $unstableTag.tag_name }
 
-    throw "No unstable GitHub release found for $Repo. Set MOCHI_VERSION or pass -ReleaseTag."
+    throw "No unstable GitHub release found for $Repo. Set MOCHI_VERSION=unstable or pass -ReleaseTag."
   }
 
   $stable = $releases | Where-Object { -not $_.prerelease -and -not $_.draft } | Select-Object -First 1

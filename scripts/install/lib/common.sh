@@ -34,7 +34,7 @@ Usage: ${MOCHI_INSTALL_SCRIPT_NAME:-mochi-install} [-i|--unstable] [release-tag]
 Install Mochi from GitHub Releases.
 
 Options:
-  -i, --unstable   Install the unstable channel (latest prerelease)
+  -i, --unstable   Install the unstable channel (release tag \`unstable\`)
   -h, --help       Show this help
 
 Environment:
@@ -98,11 +98,9 @@ mochi_resolve_release_tag() {
   local tag=""
 
   if [[ "${unstable}" == "1" ]]; then
-    tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.prerelease == true and .draft == false)][0].tag_name // empty')"
-    if [[ -z "${tag}" ]]; then
-      tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.tag_name == "unstable" and .draft == false)][0].tag_name // empty')"
-    fi
-    [[ -n "${tag}" ]] || mochi_die "no unstable GitHub release found for ${MOCHI_GITHUB_REPO}; try MOCHI_VERSION=<tag> or wait for a prerelease"
+    # Always use the rolling \`unstable\` release — not arbitrary prereleases (e.g. deprecated v0.1.0).
+    tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.tag_name == "unstable" and .draft == false)][0].tag_name // empty')"
+    [[ -n "${tag}" ]] || mochi_die "no unstable GitHub release found for ${MOCHI_GITHUB_REPO}; try MOCHI_VERSION=unstable"
   else
     tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.prerelease == false and .draft == false)][0].tag_name // empty')"
     [[ -n "${tag}" ]] || mochi_die "no stable GitHub release found for ${MOCHI_GITHUB_REPO}; try -i for unstable or MOCHI_VERSION=<tag>"
