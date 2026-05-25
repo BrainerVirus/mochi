@@ -128,6 +128,8 @@ fn read_gecko_cookies_from_db(path: &Path, domains: &[&str]) -> rusqlite::Result
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "macos")]
     use rusqlite::Connection;
 
     #[cfg(target_os = "macos")]
