@@ -255,6 +255,48 @@ html[data-app-window].dark body {
   --switch-thumb: #ffffff;
 }
 
+/* Overlay title bar (macOS only — hidden on Win/Linux native chrome). */
+.app-window-titlebar {
+  display: none;
+  flex-shrink: 0;
+}
+
+.app-window-body {
+  min-height: 0;
+}
+
+[data-platform="macos"] .app-window-titlebar {
+  display: flex;
+  position: relative;
+  z-index: 1;
+  align-items: center;
+  justify-content: center;
+  height: var(--app-window-titlebar-height, 2.75rem);
+  padding-inline: 4.875rem;
+  -webkit-app-region: drag;
+  app-region: drag;
+  user-select: none;
+}
+
+[data-platform="macos"] .app-window-titlebar__title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 9.75rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 590;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: light-dark(
+    color-mix(in oklab, #000000 85%, transparent),
+    color-mix(in oklab, #ffffff 92%, transparent)
+  );
+  pointer-events: none;
+}
+
 [data-platform="macos"] .app-window {
   --radius: 0.625rem;
   --app-glass-tint: transparent;

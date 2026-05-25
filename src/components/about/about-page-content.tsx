@@ -14,7 +14,7 @@ export function AboutPageContent() {
 
   return (
     <div
-      className={`text-foreground flex min-h-svh flex-col items-center justify-center ${trayPanelSpacing.contentX} py-8 text-center`}
+      className={`text-foreground flex min-h-0 flex-1 flex-col items-center justify-center ${trayPanelSpacing.contentX} py-8 text-center`}
     >
       <MochiChibi className="mb-4 size-[4.5rem]" />
       <h1 className="text-base font-semibold tracking-tight">Mochi</h1>

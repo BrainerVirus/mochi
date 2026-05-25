@@ -65,9 +65,17 @@ pub fn setup_app_windows(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
+#[cfg(target_os = "macos")]
+fn configure_macos_overlay_titlebar(window: &WebviewWindow) {
+    let _ = window.set_title_bar_style(tauri::TitleBarStyle::Overlay);
+}
+
 pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::error::Error>> {
     // Hidden at startup — keep off taskbar/dock until the user opens settings/about.
     let _ = window.set_skip_taskbar(true);
+
+    #[cfg(target_os = "macos")]
+    configure_macos_overlay_titlebar(window);
 
     let window_for_events = window.clone();
     window.on_window_event(move |event| {
@@ -100,7 +108,7 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         return Ok(window);
     }
 
-    WebviewWindowBuilder::new(
+    let mut builder = WebviewWindowBuilder::new(
         app,
         SETTINGS_WINDOW_LABEL,
         WebviewUrl::App("/settings".into()),
@@ -109,8 +117,17 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
     .min_inner_size(480.0, 420.0)
     .center()
-    .transparent(true)
-    .build()
+    .transparent(true);
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true);
+    }
+
+    builder
+        .build()
     .inspect(|window| {
         let _ = prepare_app_window(window);
         if let Err(error) = ensure_app_window_vibrancy(window) {
