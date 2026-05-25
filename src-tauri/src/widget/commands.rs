@@ -45,7 +45,12 @@ fn prepare_widget_window_events(window: &WebviewWindow) -> Result<(), Box<dyn st
                 "window",
                 &format!("{WIDGET_LABEL}: close_requested -> hide"),
             );
-            let _ = window_for_events.hide();
+            let hide_result = window_for_events.hide();
+            crate::diagnostics::log_window_action_result(
+                WIDGET_LABEL,
+                "hide",
+                hide_result.as_ref().map(|_| ()),
+            );
         }
     });
     Ok(())
@@ -63,7 +68,12 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
             width: WIDGET_MAX_WIDTH,
             height: 720.0,
         })));
-        let _ = window.hide();
+        let hide_result = window.hide();
+        crate::diagnostics::log_window_action_result(
+            WIDGET_LABEL,
+            "hide_prepare",
+            hide_result.as_ref().map(|_| ()),
+        );
     }
 
     Ok(())
@@ -71,19 +81,43 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 
 #[tauri::command]
 pub fn show_widget(app: AppHandle) -> Result<(), String> {
-    widget_window(&app)?
-        .show()
-        .map_err(|error| error.to_string())?;
-    widget_window(&app)?
-        .set_focus()
-        .map_err(|error| error.to_string())
+    let window = widget_window(&app)?;
+
+    let show_result = window.show();
+    crate::diagnostics::log_window_action_result(
+        WIDGET_LABEL,
+        "show",
+        show_result.as_ref().map(|_| ()),
+    );
+    show_result.map_err(|error| error.to_string())?;
+
+    let unminimize_result = window.unminimize();
+    crate::diagnostics::log_window_action_result(
+        WIDGET_LABEL,
+        "unminimize",
+        unminimize_result.as_ref().map(|_| ()),
+    );
+    unminimize_result.map_err(|error| error.to_string())?;
+
+    let focus_result = window.set_focus();
+    crate::diagnostics::log_window_action_result(
+        WIDGET_LABEL,
+        "set_focus",
+        focus_result.as_ref().map(|_| ()),
+    );
+    focus_result.map_err(|error| error.to_string())
 }
 
 #[tauri::command]
 pub fn hide_widget(app: AppHandle) -> Result<(), String> {
-    widget_window(&app)?
-        .hide()
-        .map_err(|error| error.to_string())
+    let window = widget_window(&app)?;
+    let hide_result = window.hide();
+    crate::diagnostics::log_window_action_result(
+        WIDGET_LABEL,
+        "hide",
+        hide_result.as_ref().map(|_| ()),
+    );
+    hide_result.map_err(|error| error.to_string())
 }
 
 #[tauri::command]

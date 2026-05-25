@@ -34,6 +34,8 @@ Tray availability depends on the desktop environment. If the tray is unavailable
 
 **Settings / tray panel look wrong (mostly transparent):** older builds used transparent GTK windows without native blur. Current builds use opaque windows on Linux with CSS “glass” styling. Reinstall from a recent release if you still see a hollow window with only the title bar visible.
 
+**Blank white windows on Ubuntu 24.04 / GNOME:** Mochi disables two WebKitGTK acceleration paths by default on Linux (`WEBKIT_DISABLE_DMABUF_RENDERER=1` and `WEBKIT_DISABLE_COMPOSITING_MODE=1`) before creating Tauri webviews. This avoids common compositor blank-window failures. To test native accelerated WebKit rendering anyway, launch with `MOCHI_ALLOW_WEBKIT_ACCELERATION=1 mochi`.
+
 **Workaround while the tray is missing:** open **Settings** from the app menu if available, use the desktop **widget** from the tray menu when the tray works, or run `mochi` from a terminal and use [status-bar mode](#status-bar) below. Settings shows a Linux note when the tray may be unavailable.
 
 ## Browser cookie import

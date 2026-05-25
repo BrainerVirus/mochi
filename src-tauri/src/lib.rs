@@ -6,6 +6,7 @@ pub mod core;
 pub mod diagnostics;
 pub mod frontend;
 pub mod lifecycle;
+pub mod linux_webkit;
 #[cfg(target_os = "macos")]
 pub mod macos;
 pub mod providers;
@@ -72,6 +73,9 @@ pub fn run() -> anyhow::Result<()> {
         return run_cli(command);
     }
 
+    #[cfg(target_os = "linux")]
+    linux_webkit::apply_linux_webkit_workarounds();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_positioner::init())
@@ -80,6 +84,7 @@ pub fn run() -> anyhow::Result<()> {
             #[cfg(target_os = "macos")]
             macos::set_tray_only_activation_policy(app.handle());
 
+            diagnostics::setup(app.handle())?;
             app.manage(SettingsState::new(app.handle())?);
             app.manage(UsageStore::new(None));
             app.manage(AppLifecycle::default());
@@ -87,7 +92,6 @@ pub fn run() -> anyhow::Result<()> {
             setup_app_windows(app.handle())?;
             setup_tray(app.handle())?;
             setup_widget(app.handle())?;
-            diagnostics::setup(app.handle())?;
             maybe_show_main_for_dev(app.handle());
             diagnostics::log_visible_windows(app.handle());
             Ok(())
