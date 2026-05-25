@@ -114,25 +114,24 @@ mochi_release_json() {
   mochi_curl_json "${MOCHI_GITHUB_API}/releases/tags/${tag}"
 }
 
-# Pick the newest asset (by updated_at) whose name matches any extended-regex pattern.
+# Pick the newest asset (by updated_at) matching the first pattern that has hits.
 # Rolling releases like `unstable` keep multiple versioned artifacts; never take [0].
 mochi_pick_asset_url() {
   local release_json="$1"
   shift
   mochi_need_cmd jq
-  local patterns_json asset
-  patterns_json="$(printf '%s\n' "$@" | jq -R . | jq -s .)"
-  asset="$(printf '%s' "${release_json}" | jq -r --argjson patterns "${patterns_json}" '
-    [.assets[]
-      | select(.name as $n | any($patterns[]; $n | test(.;"i")))
-    ]
-    | sort_by(.updated_at)
-    | if length > 0 then .[-1].browser_download_url else empty end
-  ')"
-  if [[ -n "${asset}" ]]; then
-    echo "${asset}"
-    return 0
-  fi
+  local pattern asset
+  for pattern in "$@"; do
+    asset="$(printf '%s' "${release_json}" | jq -r --arg re "${pattern}" '
+      [.assets[] | select(.name | test($re;"i"))]
+      | sort_by(.updated_at)
+      | if length > 0 then .[-1].browser_download_url else empty end
+    ')"
+    if [[ -n "${asset}" ]]; then
+      echo "${asset}"
+      return 0
+    fi
+  done
   return 1
 }
 

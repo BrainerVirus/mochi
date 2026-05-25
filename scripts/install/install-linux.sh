@@ -98,6 +98,10 @@ trap cleanup EXIT
 mochi_download "${ASSET_URL}" "${FILE}"
 
 install_appimage() {
+  case "${ASSET_NAME}" in
+    *.AppImage | *.appimage) ;;
+    *) mochi_die "expected an AppImage asset, got ${ASSET_NAME}" ;;
+  esac
   local dest_dir="${MOCHI_INSTALL_DIR:-${HOME}/.local/bin}"
   mkdir -p "${dest_dir}"
   local dest="${dest_dir}/mochi"
@@ -110,12 +114,20 @@ install_appimage() {
 
 install_deb() {
   mochi_need_cmd sudo
+  case "${ASSET_NAME}" in
+    *.deb) ;;
+    *) mochi_die "expected a .deb asset, got ${ASSET_NAME}" ;;
+  esac
   sudo dpkg -i "${FILE}" || sudo apt-get install -f -y
   echo "Installed .deb package for Mochi ${TAG}"
 }
 
 install_rpm() {
   mochi_need_cmd sudo
+  case "${ASSET_NAME}" in
+    *.rpm) ;;
+    *) mochi_die "expected a .rpm asset, got ${ASSET_NAME}" ;;
+  esac
   if command -v dnf >/dev/null 2>&1; then
     sudo dnf install -y "${FILE}"
   elif command -v zypper >/dev/null 2>&1; then
