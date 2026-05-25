@@ -63,7 +63,7 @@ fn import_from_chromium(
     browser: BrowserKind,
     query: &CookieImportQuery<'_>,
 ) -> Option<ImportedCookies> {
-    let key = chromium_decryption_key(browser).ok()?;
+    let key = chromium_decryption_key(query.home, browser).ok()?;
     for store in discover_chromium_stores(query.home, browser) {
         let cookies = read_chromium_cookies(&store, query.domains, &key).ok()?;
         if let Some(imported) = finalize_import(&store.label, &cookies, query) {
@@ -156,7 +156,11 @@ mod tests {
                 .expect("clock")
                 .as_nanos()
         ));
-        let profile = temp.join("Library/Application Support/zen/Profiles/abc.default-release");
+        let profile = crate::browser::profiles::gecko_test_profile_dir(
+            &temp,
+            BrowserKind::Zen,
+            "abc.default-release",
+        );
         fs::create_dir_all(&profile).expect("profile dir");
         write_gecko_fixture(
             &profile.join("cookies.sqlite"),

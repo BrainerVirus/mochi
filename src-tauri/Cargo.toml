@@ -58,5 +58,13 @@ objc2-quartz-core = { version = "0.3", default-features = false, features = [
 ] }
 security-framework = "3"
 
+[target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
+keyring = { version = "3", default-features = false, features = ["linux-native"] }
+
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Graphics_Dwm"] }
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Dwm",
+  "Win32_Security_Cryptography",
+] }
+keyring = { version = "3", default-features = false, features = ["windows-native"] }

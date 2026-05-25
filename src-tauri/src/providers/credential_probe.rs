@@ -201,7 +201,11 @@ mod tests {
                 .expect("clock")
                 .as_nanos()
         ));
-        let profile = temp.join("Library/Application Support/zen/Profiles/abc.default-release");
+        let profile = crate::browser::profiles::gecko_test_profile_dir(
+            &temp,
+            crate::browser::BrowserKind::Zen,
+            "abc.default-release",
+        );
         fs::create_dir_all(&profile).expect("profile dir");
         let db_path = profile.join("cookies.sqlite");
         let connection = Connection::open(&db_path).expect("open fixture db");

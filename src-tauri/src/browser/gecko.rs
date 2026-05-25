@@ -9,6 +9,7 @@ use rusqlite::{Connection, OpenFlags};
 
 use super::catalog::BrowserKind;
 use super::domains::{domain_matches, CookiePair};
+use super::profiles;
 
 #[derive(Debug, Clone)]
 pub struct GeckoCookieStore {
@@ -18,14 +19,9 @@ pub struct GeckoCookieStore {
 }
 
 pub fn discover_gecko_stores(home: &Path, browser: BrowserKind) -> Vec<GeckoCookieStore> {
-    let Some(folder) = browser.gecko_profiles_folder() else {
+    let Some(profiles_root) = profiles::gecko_profiles_root(home, browser) else {
         return Vec::new();
     };
-
-    let profiles_root = home
-        .join("Library/Application Support")
-        .join(folder)
-        .join("Profiles");
 
     let Ok(entries) = fs::read_dir(&profiles_root) else {
         return Vec::new();
@@ -132,8 +128,11 @@ fn read_gecko_cookies_from_db(path: &Path, domains: &[&str]) -> rusqlite::Result
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "macos")]
     use rusqlite::Connection;
 
+    #[cfg(target_os = "macos")]
     fn write_gecko_fixture(path: &Path, host: &str, name: &str, value: &str) {
         let connection = Connection::open(path).expect("open fixture db");
         connection
@@ -159,6 +158,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn discover_zen_profile_from_application_support() {
         let temp = std::env::temp_dir().join(format!(
             "mochi-zen-discover-{}",
@@ -167,7 +167,11 @@ mod tests {
                 .expect("clock")
                 .as_nanos()
         ));
-        let profile = temp.join("Library/Application Support/zen/Profiles/abc.Default (release)");
+        let profile = super::profiles::gecko_test_profile_dir(
+            &temp,
+            BrowserKind::Zen,
+            "abc.Default (release)",
+        );
         fs::create_dir_all(&profile).expect("profile dir");
         write_gecko_fixture(
             &profile.join("cookies.sqlite"),

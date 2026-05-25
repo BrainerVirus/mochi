@@ -1,6 +1,4 @@
-//! Chromium cookie DB reader with macOS Keychain decryption.
-//!
-//! Derived from SweetCookieKit `ChromeCookieImporter.swift` (MIT).
+//! Chromium cookie DB discovery and reading.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,6 +8,7 @@ use rusqlite::{Connection, OpenFlags};
 use super::decrypt::{decrypt_chromium_value, derive_chromium_key};
 use crate::browser::catalog::BrowserKind;
 use crate::browser::domains::{domain_matches, CookiePair};
+use crate::browser::profiles;
 
 #[derive(Debug, Clone)]
 pub struct ChromiumCookieStore {
@@ -19,16 +18,15 @@ pub struct ChromiumCookieStore {
 }
 
 pub fn discover_chromium_stores(home: &Path, browser: BrowserKind) -> Vec<ChromiumCookieStore> {
-    let Some(support_path) = browser.chromium_support_path() else {
+    let Some(root) = profiles::chromium_user_data_root(home, browser) else {
         return Vec::new();
     };
 
-    let root = home.join("Library/Application Support").join(support_path);
     let Ok(entries) = fs::read_dir(&root) else {
         return Vec::new();
     };
 
-    let mut profiles: Vec<(String, PathBuf)> = entries
+    let mut profiles_found: Vec<(String, PathBuf)> = entries
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().is_dir())
         .filter_map(|entry| {
@@ -41,9 +39,9 @@ pub fn discover_chromium_stores(home: &Path, browser: BrowserKind) -> Vec<Chromi
         })
         .collect();
 
-    profiles.sort_by(|left, right| left.0.cmp(&right.0));
+    profiles_found.sort_by(|left, right| left.0.cmp(&right.0));
 
-    profiles
+    profiles_found
         .into_iter()
         .flat_map(|(profile_name, profile_dir)| {
             let label_base = format!("{} {profile_name}", browser.display_name());
@@ -145,8 +143,8 @@ fn read_chromium_cookies_from_db(
     Ok(cookies)
 }
 
-pub fn chromium_decryption_key(browser: BrowserKind) -> Result<[u8; 16], String> {
-    let password = crate::browser::keychain::read_safe_storage_password(browser)?;
+pub fn chromium_decryption_key(home: &Path, browser: BrowserKind) -> Result<[u8; 16], String> {
+    let password = crate::browser::keychain::read_safe_storage_password(home, browser)?;
     Ok(derive_chromium_key(&password))
 }
 
@@ -181,6 +179,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn discover_chrome_network_cookies_db() {
         let temp = std::env::temp_dir().join(format!(
             "mochi-chrome-discover-{}",
@@ -205,6 +204,31 @@ mod tests {
         let key = derive_chromium_key("unused-for-plaintext");
         let cookies = read_chromium_cookies(&stores[0], &["cursor.com"], &key).expect("cookies");
         assert_eq!(cookies[0].value, "chrome-token");
+
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    #[cfg(all(unix, not(target_os = "macos")))]
+    fn discover_linux_chrome_config_layout() {
+        let temp = std::env::temp_dir().join(format!(
+            "mochi-chrome-linux-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let profile = temp.join(".config/google-chrome/Default");
+        fs::create_dir_all(&profile).expect("profile dir");
+        write_chromium_fixture(
+            &profile.join("Cookies"),
+            ".cursor.com",
+            "token",
+            "linux-chrome",
+        );
+
+        let stores = discover_chromium_stores(&temp, BrowserKind::Chrome);
+        assert_eq!(stores.len(), 1);
 
         let _ = fs::remove_dir_all(temp);
     }

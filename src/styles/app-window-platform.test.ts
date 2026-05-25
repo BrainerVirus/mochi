@@ -65,6 +65,14 @@ describe("app-window platform CSS parity", () => {
     expect(css).toContain('[data-platform="linux"] .app-window--about');
   });
 
+  it("uses opaque document backgrounds for Linux tray and app windows", () => {
+    expect(css).toContain('[data-platform="linux"] html[data-tray-panel]');
+    expect(css).toContain('[data-platform="linux"] html[data-app-window]');
+    expect(css).toMatch(
+      /\[data-platform="linux"\] html\[data-tray-panel\][\s\S]*background-color:\s*light-dark\(#fafafa, #242424\)/,
+    );
+  });
+
   it("shows centered overlay titlebar only on macOS app windows", () => {
     expect(css).toMatch(/\.app-window-titlebar \{[\s\S]*display:\s*none/);
     expect(css).toContain('[data-platform="macos"] .app-window-titlebar');
