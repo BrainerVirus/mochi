@@ -10,6 +10,18 @@ The one-line installer sets up runtime dependencies (tray indicator, libsecret, 
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
 ```
 
+**Stable (recommended):** installs **v0.1.1+** (not the broken v0.1.0 Win/Linux build).
+
+```bash
+MOCHI_VERSION=v0.1.1 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
+```
+
+**Unstable** (`-i` uses the `unstable` release tag, not deprecated v0.1.0):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i
+```
+
 Set `MOCHI_SKIP_DEPS=1` to skip the dependency phase. See [README](../README.md) for package formats and pinning releases.
 
 ## Tray Support
