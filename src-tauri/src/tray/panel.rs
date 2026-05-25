@@ -69,6 +69,11 @@ pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::err
     // Hidden at startup — keep off taskbar/dock until the user opens settings/about.
     let _ = window.set_skip_taskbar(true);
 
+    #[cfg(target_os = "macos")]
+    {
+        let _ = window.set_title_bar_style(tauri::TitleBarStyle::Transparent);
+    }
+
     let window_for_events = window.clone();
     window.on_window_event(move |event| {
         if let WindowEvent::CloseRequested { api, .. } = event {
@@ -100,7 +105,7 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         return Ok(window);
     }
 
-    WebviewWindowBuilder::new(
+    let mut builder = WebviewWindowBuilder::new(
         app,
         SETTINGS_WINDOW_LABEL,
         WebviewUrl::App("/settings".into()),
@@ -109,15 +114,22 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
     .min_inner_size(480.0, 420.0)
     .center()
-    .transparent(true)
-    .build()
-    .inspect(|window| {
-        let _ = prepare_app_window(window);
-        if let Err(error) = ensure_app_window_vibrancy(window) {
-            eprintln!("[mochi] app window vibrancy unavailable: {error}");
-        }
-    })
-    .map_err(|error| error.to_string())
+    .transparent(true);
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.title_bar_style(tauri::TitleBarStyle::Transparent);
+    }
+
+    builder
+        .build()
+        .inspect(|window| {
+            let _ = prepare_app_window(window);
+            if let Err(error) = ensure_app_window_vibrancy(window) {
+                eprintln!("[mochi] app window vibrancy unavailable: {error}");
+            }
+        })
+        .map_err(|error| error.to_string())
 }
 
 pub fn setup_main_panel(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {

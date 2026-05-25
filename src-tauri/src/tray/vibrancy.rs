@@ -76,6 +76,12 @@ pub fn apply_app_window_vibrancy(window: &WebviewWindow) -> Result<(), String> {
 
         let _ = window.set_shadow(true);
 
+        window
+            .with_webview(|webview| {
+                super::macos_app_window::configure_centered_titlebar(webview.ns_window());
+            })
+            .map_err(|error| error.to_string())?;
+
         Ok(())
     }
 
