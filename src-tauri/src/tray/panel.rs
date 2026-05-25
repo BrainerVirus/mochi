@@ -1,9 +1,11 @@
 use std::sync::Mutex;
 
 use tauri::{
-    tray::TrayIconEvent, AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindow,
-    WebviewWindowBuilder, WindowEvent,
+    tray::TrayIconEvent, AppHandle, Emitter, Manager, Runtime, WebviewWindow, WebviewWindowBuilder,
+    WindowEvent,
 };
+
+use crate::frontend::app_shell_url;
 
 #[cfg(target_os = "macos")]
 use crate::macos::{set_regular_activation_policy, sync_activation_policy_for_visible_windows};
@@ -109,20 +111,16 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         return Ok(window);
     }
 
-    let builder = WebviewWindowBuilder::new(
-        app,
-        SETTINGS_WINDOW_LABEL,
-        WebviewUrl::App("/settings".into()),
-    )
-    .title("Mochi")
-    .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
-    .min_inner_size(480.0, 420.0)
-    .center()
-    .transparent(window_uses_native_transparency())
-    .decorations(true)
-    .resizable(true)
-    .visible(false)
-    .skip_taskbar(true);
+    let builder = WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, app_shell_url())
+        .title("Mochi")
+        .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
+        .min_inner_size(480.0, 420.0)
+        .center()
+        .transparent(window_uses_native_transparency())
+        .decorations(true)
+        .resizable(true)
+        .visible(false)
+        .skip_taskbar(true);
 
     #[cfg(target_os = "macos")]
     let builder = builder
@@ -146,7 +144,7 @@ fn ensure_main_panel_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         return Ok(window);
     }
 
-    let builder = WebviewWindowBuilder::new(app, MAIN_PANEL_LABEL, WebviewUrl::App("/".into()))
+    let builder = WebviewWindowBuilder::new(app, MAIN_PANEL_LABEL, app_shell_url())
         .title("Mochi")
         .inner_size(TRAY_PANEL_WIDTH, TRAY_PANEL_MIN_HEIGHT)
         .decorations(false)

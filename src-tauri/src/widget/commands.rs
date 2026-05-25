@@ -1,4 +1,6 @@
-use tauri::{AppHandle, Manager, WebviewUrl};
+use tauri::{AppHandle, Manager};
+
+use crate::frontend::app_shell_url;
 
 use super::{WIDGET_LABEL, WIDGET_MAX_WIDTH, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH};
 
@@ -8,8 +10,7 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let url = WebviewUrl::App("/widget".into());
-    let window = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, url)
+    let window = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
         .title("Mochi Widget")
         .inner_size(320.0, 420.0)
         .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
