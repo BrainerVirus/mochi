@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# Install Mochi unstable from GitHub Releases (macOS).
-# Usage: install-macos.sh [release-tag]
-# Env: MOCHI_VERSION, MOCHI_INSTALL_DIR (default /Applications), GITHUB_TOKEN
+# Install Mochi from GitHub Releases (macOS).
+# Usage: install-macos.sh [-i|--unstable] [release-tag]
+# Env: MOCHI_VERSION, MOCHI_UNSTABLE=1, MOCHI_INSTALL_DIR (default /Applications), GITHUB_TOKEN
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
 
-TAG="$(mochi_resolve_release_tag "${1:-}")"
+MOCHI_INSTALL_SCRIPT_NAME="install-macos.sh"
+mochi_parse_install_args "$@"
+
+CHANNEL="$(mochi_install_channel_label)"
+TAG="$(mochi_resolve_release_tag)"
+echo "Installing Mochi (${CHANNEL} channel, release ${TAG})"
+
 RELEASE_JSON="$(mochi_release_json "${TAG}")"
 
 ARCH="$(uname -m)"
@@ -53,4 +59,4 @@ mkdir -p "${INSTALL_DIR}"
 echo "Installing ${APP_NAME} to ${INSTALL_DIR}"
 ditto "${APP_SRC}" "${DEST}"
 
-echo "Installed Mochi ${TAG} (${ARCH}) to ${DEST}"
+echo "Installed Mochi ${TAG} (${CHANNEL}, ${ARCH}) to ${DEST}"

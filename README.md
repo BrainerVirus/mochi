@@ -12,6 +12,107 @@ Mochi is a cross-platform desktop companion for AI coding tools. It tracks sessi
 
 Mochi exists because of [steipete/codexbar](https://github.com/steipete/codexbar). CodexBar proved how useful a focused menu-bar usage tracker for Codex could be; Mochi takes that spark seriously and expands the idea into a cross-platform companion for macOS, Windows, and Linux, with tray, widget, CLI, and status-bar surfaces that feel native on each platform.
 
+## Install
+
+Install from [GitHub Releases](https://github.com/BrainerVirus/mochi/releases). Scripts default to the latest **stable** release. Pass **`-i`** (or **`--unstable`**) for the unstable channel (latest prerelease from `main`).
+
+### macOS (DMG → `/Applications`)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash
+```
+
+Unstable:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i
+```
+
+Install to `~/Applications` instead:
+
+```bash
+MOCHI_INSTALL_DIR="$HOME/Applications" curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash
+```
+
+### macOS (Homebrew cask)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash
+```
+
+Unstable:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash -s -- -i
+```
+
+Requires [Homebrew](https://brew.sh/). The script generates a temporary cask from the selected release (correct URL + sha256).
+
+### Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
+```
+
+Unstable:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i
+```
+
+Package selection:
+
+| Env | Values | Default |
+| --- | --- | --- |
+| `MOCHI_PACKAGE` | `appimage`, `deb`, `rpm`, `auto` | `auto` (deb on Debian/Ubuntu, rpm on Fedora/RHEL, else AppImage) |
+
+AppImage installs to `~/.local/bin/mochi`.
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex
+```
+
+Unstable:
+
+```powershell
+$env:MOCHI_UNSTABLE = "1"; irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex
+```
+
+Or download and run:
+
+```powershell
+.\scripts\install\install-windows.ps1
+.\scripts\install\install-windows.ps1 -Unstable
+```
+
+Prefer MSI (default); set `$env:MOCHI_PACKAGE = "exe"` for the NSIS installer.
+
+### Pin a release
+
+```bash
+MOCHI_VERSION=v1.0.0 ./scripts/install/install-macos.sh
+MOCHI_VERSION=unstable ./scripts/install/install-macos.sh -i
+```
+
+```powershell
+$env:MOCHI_VERSION = "v1.0.0"
+.\scripts\install\install-windows.ps1
+```
+
+Set `MOCHI_UNSTABLE=1` instead of `-i` / `-Unstable` if you prefer environment variables.
+
+### Requirements
+
+- **macOS / Linux scripts:** `curl`, `jq`
+- **macOS:** `hdiutil`, `ditto`
+- **Linux `.deb` / `.rpm`:** `sudo` and the matching package manager
+- **Windows:** PowerShell 5.1+
+- **Optional:** `GITHUB_TOKEN` for higher GitHub API rate limits
+
+See [docs/releasing.md](docs/releasing.md) for stable vs unstable release channels.
+
 ## Features
 
 - **Tray app** — Dynamic icon with usage bars; click for a compact panel, secondary action for refresh, settings, updates, and quit.
@@ -39,18 +140,6 @@ See [docs/tech-stack.md](docs/tech-stack.md) for versions, folder layout, and co
 - **Rust** stable toolchain and [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS
 
 The stack (TanStack Start 1.x, Vite 8, React 19, Tauri v2) targets Node 20.12+, but this repo enforces **Node ≥ 24** so CI and contributors stay on current LTS or newer.
-
-## Install (unstable)
-
-Test builds from `main` via [docs/install.md](docs/install.md):
-
-```bash
-# macOS
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash
-
-# Linux
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
-```
 
 ## Development
 

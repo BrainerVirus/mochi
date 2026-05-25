@@ -71,10 +71,11 @@ jobs:
           releaseBody: |
             Automated unstable build from `main`.
 
-            Install locally:
-            - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`
-            - Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash`
-            - Windows: see [docs/install.md](https://github.com/BrainerVirus/mochi/blob/main/docs/install.md)
+            Install unstable locally (pass `-i` / `-Unstable`; scripts default to stable):
+            - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
+            - Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i`
+            - Windows: `$env:MOCHI_UNSTABLE = "1"; irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex`
+            - All platforms: [README#install](https://github.com/BrainerVirus/mochi#install)
           prerelease: true
           releaseDraft: false
           args: ${{ matrix.args }}

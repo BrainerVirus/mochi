@@ -6,11 +6,13 @@ Mochi uses GitHub Flow.
 
 Every successful merge to `main` publishes unstable artifacts, a GitHub **prerelease** tagged `unstable`, and updates the unstable feed.
 
-Install the latest unstable build: [docs/install.md](install.md).
+Install the latest unstable build with the `-i` flag — see [Install](../README.md#install) in the README.
 
 ## Stable
 
 Stable releases are created by tagging a commit on `main` with a semver tag such as `v1.0.0`.
+
+Install scripts default to the latest stable release — see [Install](../README.md#install) in the README.
 
 ## Update Channels
 

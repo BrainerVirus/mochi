@@ -1,22 +1,27 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Install Mochi unstable from GitHub Releases (Windows).
+  Install Mochi from GitHub Releases (Windows).
 
 .DESCRIPTION
-  Downloads the latest unstable prerelease (or a specific tag) and installs
-  the MSI or NSIS installer silently when possible.
+  Downloads the latest stable release by default, or the unstable prerelease
+  when -Unstable is set. Pass an explicit tag or set MOCHI_VERSION to pin.
 
 .PARAMETER ReleaseTag
-  Optional GitHub release tag. Defaults to latest prerelease.
+  Optional GitHub release tag. Overrides automatic channel resolution.
+
+.PARAMETER Unstable
+  Install the unstable channel (latest prerelease) instead of stable.
 
 .PARAMETER Package
   msi, exe, or auto (default: auto prefers MSI).
 
 .ENV
-  MOCHI_VERSION, MOCHI_PACKAGE, GITHUB_TOKEN
+  MOCHI_VERSION, MOCHI_UNSTABLE=1, MOCHI_PACKAGE, GITHUB_TOKEN
 #>
 param(
+  [Alias('i')]
+  [switch]$Unstable,
   [string]$ReleaseTag = $env:MOCHI_VERSION,
   [ValidateSet('auto', 'msi', 'exe')]
   [string]$Package = $(if ($env:MOCHI_PACKAGE) { $env:MOCHI_PACKAGE } else { 'auto' })
@@ -25,6 +30,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $Repo = if ($env:MOCHI_GITHUB_REPO) { $env:MOCHI_GITHUB_REPO } else { 'BrainerVirus/mochi' }
 $ApiBase = "https://api.github.com/repos/$Repo"
+
+if (-not $Unstable -and $env:MOCHI_UNSTABLE -eq '1') {
+  $Unstable = $true
+}
 
 function Get-GitHubJson {
   param([string]$Url)
@@ -39,13 +48,21 @@ function Resolve-ReleaseTag {
   if ($ReleaseTag) { return $ReleaseTag }
 
   $releases = Get-GitHubJson "$ApiBase/releases?per_page=30"
-  $pre = $releases | Where-Object { $_.prerelease -and -not $_.draft } | Select-Object -First 1
-  if ($pre) { return $pre.tag_name }
 
-  $latest = $releases | Where-Object { -not $_.draft } | Select-Object -First 1
-  if ($latest) { return $latest.tag_name }
+  if ($Unstable) {
+    $pre = $releases | Where-Object { $_.prerelease -and -not $_.draft } | Select-Object -First 1
+    if ($pre) { return $pre.tag_name }
 
-  throw "No GitHub release found for $Repo. Set MOCHI_VERSION or pass -ReleaseTag."
+    $unstableTag = $releases | Where-Object { $_.tag_name -eq 'unstable' -and -not $_.draft } | Select-Object -First 1
+    if ($unstableTag) { return $unstableTag.tag_name }
+
+    throw "No unstable GitHub release found for $Repo. Set MOCHI_VERSION or pass -ReleaseTag."
+  }
+
+  $stable = $releases | Where-Object { -not $_.prerelease -and -not $_.draft } | Select-Object -First 1
+  if ($stable) { return $stable.tag_name }
+
+  throw "No stable GitHub release found for $Repo. Use -Unstable for prereleases or set MOCHI_VERSION."
 }
 
 function Select-Asset {
@@ -60,8 +77,9 @@ function Select-Asset {
   return $null
 }
 
+$channel = if ($Unstable) { 'unstable' } else { 'stable' }
 $tag = Resolve-ReleaseTag
-Write-Host "Using release tag: $tag"
+Write-Host "Installing Mochi ($channel channel, release $tag)"
 $release = Get-GitHubJson "$ApiBase/releases/tags/$tag"
 
 $pkg = $Package
@@ -107,7 +125,7 @@ try {
       throw "Installer exited with code $($proc.ExitCode)"
     }
   }
-  Write-Host "Installed Mochi unstable $tag"
+  Write-Host "Installed Mochi $tag ($channel)"
 }
 finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue

@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# Install Mochi unstable from GitHub Releases (Linux).
-# Usage: install-linux.sh [release-tag]
-# Env: MOCHI_VERSION, MOCHI_PACKAGE (appimage|deb|rpm; default auto), GITHUB_TOKEN
+# Install Mochi from GitHub Releases (Linux).
+# Usage: install-linux.sh [-i|--unstable] [release-tag]
+# Env: MOCHI_VERSION, MOCHI_UNSTABLE=1, MOCHI_PACKAGE (appimage|deb|rpm; default auto), GITHUB_TOKEN
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
 
-TAG="$(mochi_resolve_release_tag "${1:-}")"
+MOCHI_INSTALL_SCRIPT_NAME="install-linux.sh"
+mochi_parse_install_args "$@"
+
+CHANNEL="$(mochi_install_channel_label)"
+TAG="$(mochi_resolve_release_tag)"
+echo "Installing Mochi (${CHANNEL} channel, release ${TAG})"
+
 RELEASE_JSON="$(mochi_release_json "${TAG}")"
 
 detect_package_kind() {
@@ -84,4 +90,4 @@ case "${PKG_KIND}" in
   rpm) install_rpm ;;
 esac
 
-echo "Mochi unstable ${TAG} (${PKG_KIND}) install complete"
+echo "Mochi ${TAG} (${CHANNEL}, ${PKG_KIND}) install complete"
