@@ -106,8 +106,19 @@ Set `MOCHI_UNSTABLE=1` instead of `-i` / `-Unstable` if you prefer environment v
 - **Linux `.deb` / `.rpm`:** `sudo` and the matching package manager
 - **Windows:** PowerShell 5.1+
 - **Optional:** `GITHUB_TOKEN` for higher GitHub API rate limits
+- **`MOCHI_SKIP_DEPS=1`:** skip automatic runtime dependency setup (see below)
 
 See [docs/releasing.md](docs/releasing.md) for stable vs unstable release channels.
+
+### Platform requirements (what install scripts set up)
+
+| OS          | Packages / runtime                                                                                                  | Notes                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Linux**   | Ayatana or legacy AppIndicator, `libsecret-1-0`, `librsvg2`; optional GNOME AppIndicator extension on Ubuntu/Debian | Formats: **AppImage**, **`.deb`**, **`.rpm` only** (not Flatpak). Cookie import uses `~/.config` profiles + GNOME Keyring/KWallet. [docs/linux.md](docs/linux.md) |
+| **Windows** | Microsoft Edge **WebView2** Runtime (winget or bootstrapper)                                                        | Cookie import uses DPAPI + Chromium `Local State`                                                                                                                 |
+| **macOS**   | None via script                                                                                                     | First cookie import may prompt Keychain; Safari import supported                                                                                                  |
+
+Linux install runs `scripts/install/lib/linux-deps.sh` before downloading the release artifact. Windows install runs `Ensure-MochiRuntimeDependencies` before MSI/NSIS.
 
 ## Features
 

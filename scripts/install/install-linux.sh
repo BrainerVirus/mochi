@@ -34,6 +34,23 @@ fi
 unset _mochi_common_loaded _tmp
 
 MOCHI_INSTALL_SCRIPT_NAME="install-linux.sh"
+
+if [[ "${MOCHI_SKIP_DEPS:-0}" != "1" ]]; then
+  for _i in "${!BASH_SOURCE[@]}"; do
+    _src="${BASH_SOURCE[_i]}"
+    if [[ "${_src}" == *.sh ]] && [[ -f "${_src}" ]]; then
+      _install_dir="$(cd "$(dirname "${_src}")" && pwd)"
+      if [[ -f "${_install_dir}/lib/linux-deps.sh" ]]; then
+        # shellcheck source=lib/linux-deps.sh
+        source "${_install_dir}/lib/linux-deps.sh"
+        mochi_ensure_linux_runtime_deps
+        break
+      fi
+    fi
+  done
+  unset _i _src _install_dir
+fi
+
 mochi_parse_install_args "$@"
 
 CHANNEL="$(mochi_install_channel_label)"

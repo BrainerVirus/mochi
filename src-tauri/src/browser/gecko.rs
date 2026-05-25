@@ -9,6 +9,7 @@ use rusqlite::{Connection, OpenFlags};
 
 use super::catalog::BrowserKind;
 use super::domains::{domain_matches, CookiePair};
+use super::profiles;
 
 #[derive(Debug, Clone)]
 pub struct GeckoCookieStore {
@@ -18,14 +19,9 @@ pub struct GeckoCookieStore {
 }
 
 pub fn discover_gecko_stores(home: &Path, browser: BrowserKind) -> Vec<GeckoCookieStore> {
-    let Some(folder) = browser.gecko_profiles_folder() else {
+    let Some(profiles_root) = profiles::gecko_profiles_root(home, browser) else {
         return Vec::new();
     };
-
-    let profiles_root = home
-        .join("Library/Application Support")
-        .join(folder)
-        .join("Profiles");
 
     let Ok(entries) = fs::read_dir(&profiles_root) else {
         return Vec::new();
@@ -159,6 +155,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn discover_zen_profile_from_application_support() {
         let temp = std::env::temp_dir().join(format!(
             "mochi-zen-discover-{}",

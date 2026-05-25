@@ -23,15 +23,6 @@ pub async fn check_for_update(
     app: tauri::AppHandle,
     channel: String,
 ) -> Result<UpdateInfo, String> {
-    if std::env::var("FLATPAK_ID").is_ok() {
-        return Ok(UpdateInfo {
-            available: false,
-            version: None,
-            channel,
-            notes: Some("Flatpak builds use Flatpak-managed updates.".to_string()),
-        });
-    }
-
     let update = app
         .updater()
         .map_err(|error| error.to_string())?
@@ -57,10 +48,6 @@ pub async fn check_for_update(
 
 #[tauri::command]
 pub async fn install_update(app: AppHandle) -> Result<(), String> {
-    if std::env::var("FLATPAK_ID").is_ok() {
-        return install_flatpak_update().await;
-    }
-
     if let Some(update) = app
         .updater()
         .map_err(|error| error.to_string())?
@@ -94,20 +81,6 @@ pub async fn install_update(app: AppHandle) -> Result<(), String> {
     }
 
     Ok(())
-}
-
-async fn install_flatpak_update() -> Result<(), String> {
-    let status = tokio::process::Command::new("flatpak-spawn")
-        .args(["--host", "flatpak", "update", "-y", "app.mochi.Mochi"])
-        .status()
-        .await
-        .map_err(|error| format!("failed to start Flatpak update: {error}"))?;
-
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("Flatpak update exited with status {status}"))
-    }
 }
 
 #[cfg(test)]

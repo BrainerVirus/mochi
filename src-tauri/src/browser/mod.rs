@@ -1,12 +1,13 @@
 //! Browser cookie auto-import for provider sessions.
 //!
-//! Ported from CodexBar / SweetCookieKit (MIT). macOS reads Safari, Chromium,
-//! and Gecko (Firefox, Zen) profiles; other platforms return `None` until ported.
+//! Ported from CodexBar / SweetCookieKit (MIT). Reads Safari (macOS), Chromium,
+//! and Gecko (Firefox, Zen) profiles on macOS, Windows, and Linux.
 
 mod catalog;
 mod domains;
 mod gecko;
 mod import;
+mod profiles;
 
 #[cfg(target_os = "macos")]
 mod keychain;
