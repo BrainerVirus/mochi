@@ -55,7 +55,7 @@ esac
 ASSET_URL="$(mochi_pick_asset_url "${RELEASE_JSON}" "${ASSET_PATTERNS[@]}")" \
   || mochi_die "no macOS .dmg asset for ${ARCH} in release ${TAG}"
 
-ASSET_NAME="$(echo "${RELEASE_JSON}" | jq -r --arg url "${ASSET_URL}" '
+ASSET_NAME="$(printf '%s' "${RELEASE_JSON}" | jq -r --arg url "${ASSET_URL}" '
   [.assets[] | select(.browser_download_url == $url)][0].name
 ')"
 [[ -n "${ASSET_NAME}" ]] || mochi_die "could not resolve asset name"

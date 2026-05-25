@@ -98,13 +98,13 @@ mochi_resolve_release_tag() {
   local tag=""
 
   if [[ "${unstable}" == "1" ]]; then
-    tag="$(echo "${releases}" | jq -r '[.[] | select(.prerelease == true and .draft == false)][0].tag_name // empty')"
+    tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.prerelease == true and .draft == false)][0].tag_name // empty')"
     if [[ -z "${tag}" ]]; then
-      tag="$(echo "${releases}" | jq -r '[.[] | select(.tag_name == "unstable" and .draft == false)][0].tag_name // empty')"
+      tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.tag_name == "unstable" and .draft == false)][0].tag_name // empty')"
     fi
     [[ -n "${tag}" ]] || mochi_die "no unstable GitHub release found for ${MOCHI_GITHUB_REPO}; try MOCHI_VERSION=<tag> or wait for a prerelease"
   else
-    tag="$(echo "${releases}" | jq -r '[.[] | select(.prerelease == false and .draft == false)][0].tag_name // empty')"
+    tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.prerelease == false and .draft == false)][0].tag_name // empty')"
     [[ -n "${tag}" ]] || mochi_die "no stable GitHub release found for ${MOCHI_GITHUB_REPO}; try -i for unstable or MOCHI_VERSION=<tag>"
   fi
 
@@ -122,7 +122,7 @@ mochi_pick_asset_url() {
   shift
   local pattern asset
   for pattern in "$@"; do
-    asset="$(echo "${release_json}" | jq -r --arg re "${pattern}" '
+    asset="$(printf '%s' "${release_json}" | jq -r --arg re "${pattern}" '
       [.assets[] | select(.name | test($re;"i"))][0].browser_download_url // empty
     ')"
     if [[ -n "${asset}" ]]; then
