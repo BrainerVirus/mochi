@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: unstable-release-${{ github.ref }}
@@ -66,6 +66,17 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          tagName: unstable
+          releaseName: Mochi Unstable
+          releaseBody: |
+            Automated unstable build from `main`.
+
+            Install locally:
+            - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`
+            - Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash`
+            - Windows: see [docs/install.md](https://github.com/BrainerVirus/mochi/blob/main/docs/install.md)
+          prerelease: true
+          releaseDraft: false
           args: ${{ matrix.args }}
       - name: Upload unstable artifacts
         uses: actions/upload-artifact@v7

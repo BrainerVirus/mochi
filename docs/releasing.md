@@ -4,7 +4,9 @@ Mochi uses GitHub Flow.
 
 ## Unstable
 
-Every successful merge to `main` publishes unstable artifacts and updates the unstable feed.
+Every successful merge to `main` publishes unstable artifacts, a GitHub **prerelease** tagged `unstable`, and updates the unstable feed.
+
+Install the latest unstable build: [docs/install.md](install.md).
 
 ## Stable
 

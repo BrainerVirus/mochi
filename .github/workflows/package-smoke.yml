@@ -16,6 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Verify release documentation exists
-        run: test -f docs/releasing.md && test -f docs/linux.md
+        run: test -f docs/releasing.md && test -f docs/linux.md && test -f docs/install.md
       - name: Verify repository templates exist
         run: test -f .github/PULL_REQUEST_TEMPLATE.md && test -f .github/ISSUE_TEMPLATE/bug_report.yml && test -f .github/ISSUE_TEMPLATE/feature_request.yml

@@ -40,6 +40,18 @@ See [docs/tech-stack.md](docs/tech-stack.md) for versions, folder layout, and co
 
 The stack (TanStack Start 1.x, Vite 8, React 19, Tauri v2) targets Node 20.12+, but this repo enforces **Node ≥ 24** so CI and contributors stay on current LTS or newer.
 
+## Install (unstable)
+
+Test builds from `main` via [docs/install.md](docs/install.md):
+
+```bash
+# macOS
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash
+
+# Linux
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
+```
+
 ## Development
 
 ```bash
