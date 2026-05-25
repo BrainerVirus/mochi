@@ -6,6 +6,7 @@ mod panel;
 mod presentation;
 mod usage;
 mod vibrancy;
+mod window_transparency;
 
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},

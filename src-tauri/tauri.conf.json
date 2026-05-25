@@ -13,19 +13,6 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "label": "main",
-        "title": "Mochi",
-        "width": 360,
-        "height": 160,
-        "visible": false,
-        "decorations": false,
-        "resizable": false,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "transparent": true,
-        "shadow": false
-      },
-      {
         "label": "widget",
         "title": "Mochi Widget",
         "url": "/widget",
