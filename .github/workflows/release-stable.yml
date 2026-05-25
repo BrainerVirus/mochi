@@ -75,7 +75,25 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Mochi ${{ github.ref_name }}
-          releaseBody: Stable Mochi release.
+          releaseBody: |
+            ## Mochi ${{ github.ref_name }}
+
+            First public stable release of Mochi — a cross-platform desktop companion for AI coding tool usage.
+
+            ### Highlights
+            - **Menu bar tray** — session and weekly usage, reset windows, and provider status at a glance
+            - **12+ providers** — Codex, Claude, Cursor, Gemini, Copilot, Factory, OpenCode, and more
+            - **Native Settings** — refresh interval, update channel, provider tokens, and usage notifications
+            - **Auto-updater** — check for updates in-app; switch between stable and unstable channels
+            - **Install scripts** — macOS (direct + Homebrew), Linux (AppImage/deb/rpm), Windows (MSI/exe)
+            - **Cross-platform** — macOS (Apple Silicon + Intel), Windows x64, Linux x64
+
+            ### Install stable
+            - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`
+            - Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash`
+            - Windows: `irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex`
+
+            Unstable builds: add `-i` (shell) or `-Unstable` (PowerShell). See [README#install](https://github.com/BrainerVirus/mochi#install).
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

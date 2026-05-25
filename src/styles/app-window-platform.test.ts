@@ -64,4 +64,12 @@ describe("app-window platform CSS parity", () => {
     expect(css).toContain('[data-platform="windows"] .app-window--about');
     expect(css).toContain('[data-platform="linux"] .app-window--about');
   });
+
+  it("shows centered overlay titlebar only on macOS app windows", () => {
+    expect(css).toMatch(/\.app-window-titlebar \{[\s\S]*display:\s*none/);
+    expect(css).toContain('[data-platform="macos"] .app-window-titlebar');
+    expect(css).toContain(".app-window-titlebar__drag");
+    expect(css).toContain(".app-window-titlebar__title");
+    expect(css).toMatch(/\.app-window-titlebar__title[\s\S]*pointer-events:\s*none/);
+  });
 });

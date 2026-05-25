@@ -12,6 +12,103 @@ Mochi is a cross-platform desktop companion for AI coding tools. It tracks sessi
 
 Mochi exists because of [steipete/codexbar](https://github.com/steipete/codexbar). CodexBar proved how useful a focused menu-bar usage tracker for Codex could be; Mochi takes that spark seriously and expands the idea into a cross-platform companion for macOS, Windows, and Linux, with tray, widget, CLI, and status-bar surfaces that feel native on each platform.
 
+## Install
+
+Install from [GitHub Releases](https://github.com/BrainerVirus/mochi/releases). Scripts default to the latest **stable** release. Pass **`-i`** (or **`--unstable`**) for the unstable channel (latest prerelease from `main`).
+
+### macOS
+
+**Direct** (downloads the release DMG and installs to `/Applications`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash
+```
+
+Unstable:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i
+```
+
+**Homebrew** (temporary cask from the selected release; requires [Homebrew](https://brew.sh/)):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash
+```
+
+Unstable:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash -s -- -i
+```
+
+_Advanced:_ the direct script accepts `MOCHI_INSTALL_DIR` (default `/Applications`) if you need a non-system location.\_
+
+### Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
+```
+
+Unstable:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i
+```
+
+Package selection:
+
+| Env             | Values                           | Default                                                          |
+| --------------- | -------------------------------- | ---------------------------------------------------------------- |
+| `MOCHI_PACKAGE` | `appimage`, `deb`, `rpm`, `auto` | `auto` (deb on Debian/Ubuntu, rpm on Fedora/RHEL, else AppImage) |
+
+AppImage installs to `~/.local/bin/mochi`.
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex
+```
+
+Unstable:
+
+```powershell
+$env:MOCHI_UNSTABLE = "1"; irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex
+```
+
+Or download and run:
+
+```powershell
+.\scripts\install\install-windows.ps1
+.\scripts\install\install-windows.ps1 -Unstable
+```
+
+Prefer MSI (default); set `$env:MOCHI_PACKAGE = "exe"` for the NSIS installer.
+
+### Pin a release
+
+```bash
+MOCHI_VERSION=v1.0.0 ./scripts/install/install-macos.sh
+MOCHI_VERSION=unstable ./scripts/install/install-macos.sh -i
+```
+
+```powershell
+$env:MOCHI_VERSION = "v1.0.0"
+.\scripts\install\install-windows.ps1
+```
+
+Set `MOCHI_UNSTABLE=1` instead of `-i` / `-Unstable` if you prefer environment variables.
+
+### Requirements
+
+- **macOS / Linux scripts:** `curl`, `jq`
+- **macOS:** `hdiutil`, `ditto`
+- **Linux `.deb` / `.rpm`:** `sudo` and the matching package manager
+- **Windows:** PowerShell 5.1+
+- **Optional:** `GITHUB_TOKEN` for higher GitHub API rate limits
+
+See [docs/releasing.md](docs/releasing.md) for stable vs unstable release channels.
+
 ## Features
 
 - **Tray app** — Dynamic icon with usage bars; click for a compact panel, secondary action for refresh, settings, updates, and quit.
@@ -46,6 +143,11 @@ The stack (TanStack Start 1.x, Vite 8, React 19, Tauri v2) targets Node 20.12+, 
 pnpm install
 pnpm dev          # frontend dev server (port 1420)
 pnpm tauri dev    # desktop app with Tauri
+```
+
+On macOS, `pnpm tauri dev` runs an unbundled debug binary. The Dock icon is restored from bundled PNG assets when settings/about/update opens. **Installed builds** (`.app`, `.msi`, `.deb`, etc.) use the OS icon pipeline — macOS squircle masking from `icon.icns`, Windows/Linux taskbar icons from `icon.ico` / PNG. Regenerate icons with `./scripts/generate-icons.sh`.
+
+```bash
 pnpm lint
 pnpm format:check
 pnpm build

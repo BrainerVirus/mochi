@@ -1,3 +1,4 @@
+pub mod app_branding;
 pub mod auth;
 pub mod browser;
 pub mod cli;
