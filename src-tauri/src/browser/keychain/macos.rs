@@ -2,9 +2,11 @@
 //!
 //! Derived from SweetCookieKit `ChromeCookieImporter.swift` (MIT).
 
+use std::path::Path;
+
 use crate::browser::catalog::BrowserKind;
 
-pub fn read_safe_storage_password(browser: BrowserKind) -> Result<String, String> {
+pub fn read_safe_storage_password(_home: &Path, browser: BrowserKind) -> Result<String, String> {
     use security_framework::passwords::get_generic_password;
 
     for (service, account) in browser.safe_storage_labels() {
