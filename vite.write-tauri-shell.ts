@@ -21,6 +21,10 @@ function isLegacyScriptOnlyShell(html: string): boolean {
   return bodyInner.length > 0 && !/<div[\s>]/i.test(bodyInner) && /<script\b/i.test(bodyInner);
 }
 
+function hasRootAbsoluteBundledAssets(html: string): boolean {
+  return /\b(?:src|href)=["']\/assets\//i.test(html);
+}
+
 /**
  * Writes `index.html` for Tauri after the client build when TanStack SPA prerender
  * cannot run (e.g. Nitro preview self-fetch failures). Includes a mount root and the
@@ -36,7 +40,7 @@ export function writeTauriSpaShell(): Plugin {
       handler() {
         if (existsSync(SHELL_PATH)) {
           const existing = readFileSync(SHELL_PATH, "utf8");
-          if (!isLegacyScriptOnlyShell(existing)) {
+          if (!isLegacyScriptOnlyShell(existing) && !hasRootAbsoluteBundledAssets(existing)) {
             return;
           }
         }
@@ -50,7 +54,7 @@ export function writeTauriSpaShell(): Plugin {
 
         const entryCss = findAsset("index-", ".css");
         const cssLink = entryCss
-          ? `    <link rel="stylesheet" href="/assets/${entryCss}" />\n`
+          ? `    <link rel="stylesheet" href="./assets/${entryCss}" />\n`
           : "";
 
         const html = `<!DOCTYPE html>
@@ -62,7 +66,7 @@ export function writeTauriSpaShell(): Plugin {
 ${cssLink}  </head>
   <body>
     <div id="root"></div>
-    <script type="module" crossorigin src="/assets/${entryJs}"></script>
+    <script type="module" crossorigin src="./assets/${entryJs}"></script>
   </body>
 </html>
 `;

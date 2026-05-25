@@ -34,8 +34,48 @@ pub struct FrontendErrorPayload {
 pub fn setup(app: &AppHandle) -> Result<(), String> {
     init(app)?;
     log_line("diagnostics", "initialized");
+    report::log_runtime_environment();
     app.manage(DiagnosticsState::new());
     Ok(())
+}
+
+pub fn log_window_action_result<E: std::fmt::Display>(
+    label: &str,
+    action: &str,
+    result: Result<(), E>,
+) {
+    log_line(
+        "window.action",
+        &window_action_detail(label, action, result),
+    );
+}
+
+pub fn window_action_detail<E: std::fmt::Display>(
+    label: &str,
+    action: &str,
+    result: Result<(), E>,
+) -> String {
+    match result {
+        Ok(()) => format!("{label}: {action} -> ok"),
+        Err(error) => format!("{label}: {action} -> error: {error}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::window_action_detail;
+
+    #[test]
+    fn window_action_detail_formats_success_and_error() {
+        assert_eq!(
+            window_action_detail("settings", "hide", Ok::<(), &str>(())),
+            "settings: hide -> ok"
+        );
+        assert_eq!(
+            window_action_detail("widget", "set_focus", Err("not ready")),
+            "widget: set_focus -> error: not ready"
+        );
+    }
 }
 
 #[tauri::command]

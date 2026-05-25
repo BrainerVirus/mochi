@@ -89,7 +89,12 @@ pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::err
                 state.record_window_event(SETTINGS_WINDOW_LABEL, "close_requested -> hide");
             }
             let _ = window_for_events.set_skip_taskbar(true);
-            let _ = window_for_events.hide();
+            let hide_result = window_for_events.hide();
+            crate::diagnostics::log_window_action_result(
+                SETTINGS_WINDOW_LABEL,
+                "hide",
+                hide_result.as_ref().map(|_| ()),
+            );
             let _ = emit_tray_navigate(app, "/");
             #[cfg(target_os = "macos")]
             sync_activation_policy_for_visible_windows(app);
@@ -182,7 +187,12 @@ pub fn setup_main_panel(app: &AppHandle) -> Result<(), Box<dyn std::error::Error
     let window_for_events = window.clone();
     window.on_window_event(move |event| {
         if let WindowEvent::Focused(false) = event {
-            let _ = window_for_events.hide();
+            let hide_result = window_for_events.hide();
+            crate::diagnostics::log_window_action_result(
+                MAIN_PANEL_LABEL,
+                "hide_on_blur",
+                hide_result.as_ref().map(|_| ()),
+            );
         }
     });
 
@@ -345,7 +355,12 @@ pub fn show_main_panel(app: AppHandle) {
 pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     if let Some(tray_panel) = app.get_webview_window(MAIN_PANEL_LABEL) {
         let _ = emit_tray_navigate(&app, "/");
-        let _ = tray_panel.hide();
+        let hide_result = tray_panel.hide();
+        crate::diagnostics::log_window_action_result(
+            MAIN_PANEL_LABEL,
+            "hide_before_open_app_window",
+            hide_result.as_ref().map(|_| ()),
+        );
     }
 
     let window = ensure_settings_window(&app)?;
@@ -382,10 +397,37 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     crate::app_branding::sync_app_window_branding(&app, &window);
 
     if window.is_visible().unwrap_or(false) {
-        window.set_focus().map_err(|error| error.to_string())?;
+        let focus_result = window.set_focus();
+        crate::diagnostics::log_window_action_result(
+            SETTINGS_WINDOW_LABEL,
+            "set_focus",
+            focus_result.as_ref().map(|_| ()),
+        );
+        focus_result.map_err(|error| error.to_string())?;
     } else {
-        window.show().map_err(|error| error.to_string())?;
-        window.set_focus().map_err(|error| error.to_string())?;
+        let show_result = window.show();
+        crate::diagnostics::log_window_action_result(
+            SETTINGS_WINDOW_LABEL,
+            "show",
+            show_result.as_ref().map(|_| ()),
+        );
+        show_result.map_err(|error| error.to_string())?;
+
+        let unminimize_result = window.unminimize();
+        crate::diagnostics::log_window_action_result(
+            SETTINGS_WINDOW_LABEL,
+            "unminimize",
+            unminimize_result.as_ref().map(|_| ()),
+        );
+        unminimize_result.map_err(|error| error.to_string())?;
+
+        let focus_result = window.set_focus();
+        crate::diagnostics::log_window_action_result(
+            SETTINGS_WINDOW_LABEL,
+            "set_focus",
+            focus_result.as_ref().map(|_| ()),
+        );
+        focus_result.map_err(|error| error.to_string())?;
     }
 
     Ok(())
@@ -399,7 +441,12 @@ pub fn show_tray_panel(app: &AppHandle, path: &str) {
     let _ = emit_tray_navigate(app, path);
 
     if window.is_visible().unwrap_or(false) {
-        let _ = window.hide();
+        let hide_result = window.hide();
+        crate::diagnostics::log_window_action_result(
+            MAIN_PANEL_LABEL,
+            "hide_toggle",
+            hide_result.as_ref().map(|_| ()),
+        );
         return;
     }
 
@@ -427,9 +474,40 @@ fn open_visible_tray_panel(app: &AppHandle, window: &WebviewWindow) {
         eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
     }
 
-    let _ = position_tray_panel(app, window);
-    let _ = window.show();
-    let _ = window.set_focus();
+    if let Err(error) = position_tray_panel(app, window) {
+        crate::diagnostics::log_window_action_result(
+            MAIN_PANEL_LABEL,
+            "position",
+            Err(error.as_str()),
+        );
+    } else {
+        crate::diagnostics::log_window_action_result(
+            MAIN_PANEL_LABEL,
+            "position",
+            Ok::<(), &str>(()),
+        );
+    }
+
+    let show_result = window.show();
+    crate::diagnostics::log_window_action_result(
+        MAIN_PANEL_LABEL,
+        "show",
+        show_result.as_ref().map(|_| ()),
+    );
+
+    let unminimize_result = window.unminimize();
+    crate::diagnostics::log_window_action_result(
+        MAIN_PANEL_LABEL,
+        "unminimize",
+        unminimize_result.as_ref().map(|_| ()),
+    );
+
+    let focus_result = window.set_focus();
+    crate::diagnostics::log_window_action_result(
+        MAIN_PANEL_LABEL,
+        "set_focus",
+        focus_result.as_ref().map(|_| ()),
+    );
 }
 
 fn position_tray_panel(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {
@@ -454,9 +532,30 @@ pub fn show_tray_panel_centered(app: &AppHandle, path: &str) {
     if let Err(error) = ensure_tray_panel_vibrancy(&window) {
         eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
     }
-    let _ = window.move_window(Position::Center);
-    let _ = window.show();
-    let _ = window.set_focus();
+    let position_result = window.move_window(Position::Center);
+    crate::diagnostics::log_window_action_result(
+        MAIN_PANEL_LABEL,
+        "move_center",
+        position_result.as_ref().map(|_| ()),
+    );
+    let show_result = window.show();
+    crate::diagnostics::log_window_action_result(
+        MAIN_PANEL_LABEL,
+        "show",
+        show_result.as_ref().map(|_| ()),
+    );
+    let unminimize_result = window.unminimize();
+    crate::diagnostics::log_window_action_result(
+        MAIN_PANEL_LABEL,
+        "unminimize",
+        unminimize_result.as_ref().map(|_| ()),
+    );
+    let focus_result = window.set_focus();
+    crate::diagnostics::log_window_action_result(
+        MAIN_PANEL_LABEL,
+        "set_focus",
+        focus_result.as_ref().map(|_| ()),
+    );
 }
 
 pub fn maybe_show_main_for_dev(app: &AppHandle) {
