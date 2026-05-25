@@ -7,7 +7,7 @@ mod catalog;
 mod domains;
 mod gecko;
 mod import;
-mod profiles;
+pub(crate) mod profiles;
 
 mod keychain;
 #[cfg(target_os = "macos")]

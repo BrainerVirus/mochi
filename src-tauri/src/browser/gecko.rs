@@ -130,6 +130,7 @@ mod tests {
     use super::*;
     use rusqlite::Connection;
 
+    #[cfg(target_os = "macos")]
     fn write_gecko_fixture(path: &Path, host: &str, name: &str, value: &str) {
         let connection = Connection::open(path).expect("open fixture db");
         connection
@@ -164,7 +165,11 @@ mod tests {
                 .expect("clock")
                 .as_nanos()
         ));
-        let profile = temp.join("Library/Application Support/zen/Profiles/abc.Default (release)");
+        let profile = super::profiles::gecko_test_profile_dir(
+            &temp,
+            BrowserKind::Zen,
+            "abc.Default (release)",
+        );
         fs::create_dir_all(&profile).expect("profile dir");
         write_gecko_fixture(
             &profile.join("cookies.sqlite"),

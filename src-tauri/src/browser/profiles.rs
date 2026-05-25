@@ -158,10 +158,22 @@ fn linux_chromium_config_dir(browser: BrowserKind) -> &'static str {
 }
 
 #[cfg(test)]
+pub(crate) fn gecko_test_profile_dir(
+    home: &Path,
+    browser: BrowserKind,
+    profile_folder: &str,
+) -> PathBuf {
+    gecko_profiles_root(home, browser)
+        .unwrap_or_else(|| panic!("gecko root missing for {browser:?}"))
+        .join(profile_folder)
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn macos_chrome_root_uses_library_application_support() {
         let home = Path::new("/Users/test");
         let root = chromium_user_data_root_for(home, BrowserKind::Chrome);
@@ -191,6 +203,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn macos_gecko_firefox_profiles_root() {
         let home = Path::new("/Users/test");
         let root = gecko_profiles_root_for(home, BrowserKind::Firefox, "Firefox");
