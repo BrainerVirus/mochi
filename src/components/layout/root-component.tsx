@@ -12,7 +12,8 @@ import { readIsTrayPanelWindow } from "@/lib/tauri/tray-panel-window";
 export function RootComponent() {
   const [rootState, setRootState] = useState(getHydrationSafeRootState);
   const { isTrayPanelWindow, isAppWindow, platform } = rootState;
-  const isNativeGlassShell = isTrayPanelWindow || isAppWindow;
+  const supportsNativeWindowGlass = platform === "macos" || platform === "windows";
+  const isNativeGlassShell = supportsNativeWindowGlass && (isTrayPanelWindow || isAppWindow);
 
   useSystemColorScheme(!isNativeGlassShell);
 

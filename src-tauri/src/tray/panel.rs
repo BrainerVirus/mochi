@@ -9,6 +9,8 @@ use tauri::{
 use crate::macos::{set_regular_activation_policy, sync_activation_policy_for_visible_windows};
 use tauri_plugin_positioner::{Position, WindowExt};
 
+use super::window_transparency::window_uses_native_transparency;
+
 pub const MAIN_PANEL_LABEL: &str = "main";
 pub const SETTINGS_WINDOW_LABEL: &str = "settings";
 
@@ -116,7 +118,7 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
     .min_inner_size(480.0, 420.0)
     .center()
-    .transparent(true)
+    .transparent(window_uses_native_transparency())
     .decorations(true)
     .resizable(true)
     .visible(false)
@@ -139,13 +141,29 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         .map_err(|error| error.to_string())
 }
 
+fn ensure_main_panel_window(app: &AppHandle) -> Result<WebviewWindow, String> {
+    if let Some(window) = app.get_webview_window(MAIN_PANEL_LABEL) {
+        return Ok(window);
+    }
+
+    let builder = WebviewWindowBuilder::new(app, MAIN_PANEL_LABEL, WebviewUrl::App("/".into()))
+        .title("Mochi")
+        .inner_size(TRAY_PANEL_WIDTH, TRAY_PANEL_MIN_HEIGHT)
+        .decorations(false)
+        .resizable(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .transparent(window_uses_native_transparency())
+        .shadow(false)
+        .visible(false);
+
+    builder.build().map_err(|error| error.to_string())
+}
+
 pub fn setup_main_panel(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     app.manage(TrayIconRectState::default());
 
-    let Some(window) = app.get_webview_window(MAIN_PANEL_LABEL) else {
-        return Ok(());
-    };
-
+    let window = ensure_main_panel_window(app)?;
     prepare_main_panel_window(&window)?;
 
     let window_for_events = window.clone();

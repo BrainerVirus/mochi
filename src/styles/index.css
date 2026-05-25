@@ -89,6 +89,14 @@ html[data-app-window].dark body {
   background-color: transparent;
 }
 
+/* Linux: no native vibrancy/Mica — keep shells opaque (transparent GTK windows show the desktop). */
+[data-platform="linux"] html[data-tray-panel],
+[data-platform="linux"] html[data-tray-panel] body,
+[data-platform="linux"] html[data-app-window],
+[data-platform="linux"] html[data-app-window] body {
+  background-color: light-dark(#fafafa, #242424);
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", var(--font-platform);
