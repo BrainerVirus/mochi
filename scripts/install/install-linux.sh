@@ -7,6 +7,19 @@ set -euo pipefail
 : "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"
 : "${MOCHI_INSTALL_REF:=main}"
 
+# raw.githubusercontent.com can serve a stale branch HEAD; pin to the current commit SHA.
+if [[ "${MOCHI_INSTALL_REF}" == "main" || "${MOCHI_INSTALL_REF}" == "master" ]]; then
+  _sha="$(
+    curl -fsSL -H "Accept: application/vnd.github+json" \
+      "https://api.github.com/repos/${MOCHI_GITHUB_REPO}/commits/${MOCHI_INSTALL_REF}" \
+      | grep -oE '"sha": "[a-f0-9]{40}"' | head -1 | grep -oE '[a-f0-9]{40}' || true
+  )"
+  if [[ -n "${_sha}" ]]; then
+    MOCHI_INSTALL_REF="${_sha}"
+  fi
+fi
+unset _sha
+
 _mochi_common_loaded=0
 for _i in "${!BASH_SOURCE[@]}"; do
   _src="${BASH_SOURCE[_i]}"
@@ -118,7 +131,12 @@ install_deb() {
     *.deb) ;;
     *) mochi_die "expected a .deb asset, got ${ASSET_NAME}" ;;
   esac
-  sudo dpkg -i "${FILE}" || sudo apt-get install -f -y
+  if ! sudo dpkg -i "${FILE}"; then
+    sudo apt-get install -f -y
+  fi
+  if ! dpkg-query -W -f='${Status}' mochi 2>/dev/null | grep -q 'install ok installed'; then
+    mochi_die "dpkg did not install mochi (wrong asset or broken package: ${ASSET_NAME})"
+  fi
   echo "Installed .deb package for Mochi ${TAG}"
 }
 

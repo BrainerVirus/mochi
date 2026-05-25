@@ -10,6 +10,8 @@ The one-line installer sets up runtime dependencies (tray indicator, libsecret, 
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
 ```
 
+The installer resolves `main` to the latest commit SHA so GitHub’s raw CDN does not serve a stale `common.sh`. You should see `Mochi_0.1.3_amd64.deb` in the download line, not `Mochi_x64.app.tar.gz`. If an old script is cached, pin the install ref: `MOCHI_INSTALL_REF=097112d curl -fsSL ... | bash`.
+
 **Stable (recommended):** installs the latest non-prerelease tag (use **v0.1.3+** for the Linux blank-window fix; avoid **v0.1.2** on Linux).
 
 ```bash
