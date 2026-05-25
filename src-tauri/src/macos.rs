@@ -15,12 +15,17 @@ pub fn set_regular_activation_policy(app: &AppHandle) {
 ///
 /// Tauri sets a dev icon on launch, but accessory apps are not in the Dock yet.
 /// Re-applying after switching to regular activation avoids the generic `exec` glyph.
+/// Prefers the bundled `icon.icns` from the `.app` Resources folder; falls back to
+/// the crate icons directory during `tauri dev`.
 pub fn ensure_dock_icon() {
     use objc2::{AllocAnyThread, MainThreadMarker};
     use objc2_app_kit::{NSApplication, NSImage};
     use objc2_foundation::NSString;
 
-    let icon_path = format!("{}/icons/icon.icns", env!("CARGO_MANIFEST_DIR"));
+    let Some(icon_path) = dock_icon_path() else {
+        eprintln!("[mochi] dock icon path could not be resolved");
+        return;
+    };
     let path = NSString::from_str(&icon_path);
 
     let mtm = unsafe { MainThreadMarker::new_unchecked() };
@@ -33,6 +38,27 @@ pub fn ensure_dock_icon() {
         };
         app.setApplicationIconImage(Some(&icon));
     }
+}
+
+fn dock_icon_path() -> Option<String> {
+    if let Ok(exe) = std::env::current_exe() {
+        // …/Mochi.app/Contents/MacOS/mochi → …/Mochi.app/Contents/Resources/icon.icns
+        if let Some(macos_dir) = exe.parent() {
+            if let Some(contents_dir) = macos_dir.parent() {
+                let resources = contents_dir.join("Resources").join("icon.icns");
+                if resources.is_file() {
+                    return Some(resources.to_string_lossy().into_owned());
+                }
+            }
+        }
+    }
+
+    let dev_icon = format!("{}/icons/icon.icns", env!("CARGO_MANIFEST_DIR"));
+    if std::path::Path::new(&dev_icon).is_file() {
+        return Some(dev_icon);
+    }
+
+    None
 }
 
 const APP_WINDOW_LABEL: &str = "settings";

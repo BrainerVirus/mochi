@@ -1,6 +1,18 @@
 # Mochi app icon source
 
-The desktop app icon uses **MochiChibi** (the rice-cake blob mascot from `src/components/mascot/mochi-chibi.tsx`) on a **full-bleed** Matcha Calm background (`#A3D9A5` from `DESIGN.md`).
+The desktop app icon uses **MochiChibi** (the rice-cake blob mascot from `src/components/mascot/mochi-chibi.tsx`) on a **neutral white canvas** — not a full-bleed brand color.
+
+## Design rationale
+
+macOS (and Windows/Linux) apply their own icon masks at display time. A square source with full-bleed Matcha green reads as a harsh green block in the Dock squircle. The icon instead follows standard app-icon conventions:
+
+| Element | Choice | Why |
+| ------- | ------ | --- |
+| Background | White → `#FAFAF9` → `#F5F5F4` radial | Matches OS-adjacent neutrals in `DESIGN.md`; reads clean under the macOS squircle mask |
+| Pet | MochiChibi at ~82% safe zone | Centered with padding so eyes and blush survive mask clipping at 16–32 px |
+| Brand color | Pet cream/blush only | Matcha Calm (`#A3D9A5`) stays on usage meters and mark ring — not the dock tile |
+
+Source artwork is a **square PNG/SVG canvas**. Do not pre-render a squircle or rounded-rect mask; `icon.icns` layers are square and the OS applies the mask.
 
 ## Files
 
@@ -22,8 +34,7 @@ This runs `pnpm tauri icon assets/icon/mochi-app-icon.svg --output src-tauri/ico
 
 Requires pnpm and the Tauri CLI (`@tauri-apps/cli` devDependency).
 
-## Design notes
+## Verification notes
 
-- Background fills the entire square — no transparent margins.
-- Pet is scaled to ~80% of the canvas so it reads clearly at menu-bar and dock sizes.
-- Colors: Matcha Calm gradient background; pet uses the same cream/blush palette as the React SVG.
+- **`icon.icns`** includes the standard macOS iconset layers (`icon_16x16` … `icon_512x512@2x`). Confirm with `iconutil -c iconset -o /tmp/check.iconset src-tauri/icons/icon.icns`.
+- **Dev vs bundled:** `pnpm tauri dev` may show a generic dev glyph until `ensure_dock_icon()` runs (settings/about window opens). The bundled `.app` uses `Info.plist` + `icon.icns` from this folder.

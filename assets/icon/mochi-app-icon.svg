@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Mochi app icon">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="38%" r="78%">
-      <stop offset="0%" stop-color="#C8EDCA" />
-      <stop offset="45%" stop-color="#A3D9A5" />
-      <stop offset="100%" stop-color="#7BBF7E" />
+    <radialGradient id="bg" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="72%" stop-color="#FAFAF9" />
+      <stop offset="100%" stop-color="#F5F5F4" />
     </radialGradient>
     <radialGradient id="petGrad" cx="42%" cy="30%" r="68%">
       <stop offset="0%" stop-color="#FFFCF8" />
@@ -12,15 +12,12 @@
     </radialGradient>
   </defs>
 
-  <!-- Full-bleed brand background -->
+  <!-- Neutral square canvas; macOS applies the squircle mask at display time -->
   <rect width="1024" height="1024" fill="url(#bg)" />
 
-  <!-- Soft highlight wash -->
-  <ellipse cx="512" cy="280" rx="420" ry="320" fill="#FFFCF8" opacity="0.18" />
-
-  <!-- MochiChibi pet, scaled to fill most of the icon -->
-  <g transform="translate(112 148) scale(10)">
-    <ellipse cx="40" cy="58" rx="26" ry="4" fill="#334155" opacity="0.12" />
+  <!-- MochiChibi pet centered in ~82% safe zone (matches mochi-chibi.tsx) -->
+  <g transform="translate(92 92) scale(10.5)">
+    <ellipse cx="40" cy="58" rx="26" ry="4" fill="#334155" opacity="0.1" />
 
     <path
       d="M12 42c0-12.5 10.5-22 28-22s28 9.5 28 22c0 10.5-8 19-28 19s-28-8.5-28-19z"
