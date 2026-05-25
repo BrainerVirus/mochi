@@ -16,7 +16,9 @@ Mochi exists because of [steipete/codexbar](https://github.com/steipete/codexbar
 
 Install from [GitHub Releases](https://github.com/BrainerVirus/mochi/releases). Scripts default to the latest **stable** release. Pass **`-i`** (or **`--unstable`**) for the unstable channel (latest prerelease from `main`).
 
-### macOS (DMG → `/Applications`)
+### macOS
+
+**Direct** (downloads the release DMG and installs to `/Applications`):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash
@@ -28,13 +30,7 @@ Unstable:
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i
 ```
 
-Install to `~/Applications` instead:
-
-```bash
-MOCHI_INSTALL_DIR="$HOME/Applications" curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash
-```
-
-### macOS (Homebrew cask)
+**Homebrew** (temporary cask from the selected release; requires [Homebrew](https://brew.sh/)):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash
@@ -46,7 +42,7 @@ Unstable:
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash -s -- -i
 ```
 
-Requires [Homebrew](https://brew.sh/). The script generates a temporary cask from the selected release (correct URL + sha256).
+_Advanced:_ the direct script accepts `MOCHI_INSTALL_DIR` (default `/Applications`) if you need a non-system location._
 
 ### Linux
 
