@@ -145,7 +145,7 @@ pnpm dev          # frontend dev server (port 1420)
 pnpm tauri dev    # desktop app with Tauri
 ```
 
-On macOS, `pnpm tauri dev` runs an unbundled debug binary. The Dock icon is applied when a settings/about/update window opens (tray-only mode hides the Dock entry). Packaged `.app` / `.dmg` builds use `src-tauri/icons/icon.icns` from `tauri.conf.json`.
+On macOS, `pnpm tauri dev` runs an unbundled debug binary. The Dock icon is restored from bundled PNG assets when settings/about/update opens. **Installed builds** (`.app`, `.msi`, `.deb`, etc.) use the OS icon pipeline — macOS squircle masking from `icon.icns`, Windows/Linux taskbar icons from `icon.ico` / PNG. Regenerate icons with `./scripts/generate-icons.sh`.
 
 ```bash
 pnpm lint

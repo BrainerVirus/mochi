@@ -69,13 +69,23 @@ jobs:
           tagName: unstable
           releaseName: Mochi Unstable
           releaseBody: |
-            Automated unstable build from `main`.
+            ## Mochi Unstable
 
-            Install unstable locally (pass `-i` / `-Unstable`; scripts default to stable):
+            Latest build from `main` for early adopters. Same app as stable, with the newest fixes and features before they ship in a tagged release.
+
+            ### Highlights
+            - **Menu bar tray** — usage meters, provider tabs, and quick links for Codex, Claude, Cursor, Gemini, Copilot, and more
+            - **Native windows** — Settings, About, and Check for updates with glass UI (macOS overlay title bar; native chrome on Windows/Linux)
+            - **Auto-updater** — pick **Stable** or **Unstable** in Settings; in-app update check and release notes
+            - **Install scripts** — one-liners for macOS, Linux, and Windows (this channel: pass `-i` / `-Unstable`)
+            - **MochiChibi icon** — OS-native icon treatment in packaged builds
+
+            ### Install unstable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
             - Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i`
             - Windows: `$env:MOCHI_UNSTABLE = "1"; irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex`
-            - All platforms: [README#install](https://github.com/BrainerVirus/mochi#install)
+
+            See [README#install](https://github.com/BrainerVirus/mochi#install) for Homebrew, package options, and pinning a version.
           prerelease: true
           releaseDraft: false
           args: ${{ matrix.args }}

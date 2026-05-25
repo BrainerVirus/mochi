@@ -37,24 +37,6 @@
         "visible": false,
         "alwaysOnTop": true,
         "resizable": true
-      },
-      {
-        "label": "settings",
-        "title": "Mochi",
-        "url": "/settings",
-        "width": 520,
-        "height": 560,
-        "minWidth": 480,
-        "minHeight": 420,
-        "visible": false,
-        "decorations": true,
-        "resizable": true,
-        "transparent": true,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true,
-        "acceptFirstMouse": true,
-        "skipTaskbar": true,
-        "center": true
       }
     ],
     "security": {

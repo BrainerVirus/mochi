@@ -55,11 +55,10 @@ pub fn dev_show_main_enabled() -> bool {
 }
 
 pub fn setup_app_windows(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
-        prepare_app_window(&window)?;
-        if let Err(error) = ensure_app_window_vibrancy(&window) {
-            eprintln!("[mochi] app window vibrancy unavailable: {error}");
-        }
+    let window = ensure_settings_window(app)?;
+    prepare_app_window(&window)?;
+    if let Err(error) = ensure_app_window_vibrancy(&window) {
+        eprintln!("[mochi] app window vibrancy unavailable: {error}");
     }
 
     Ok(())
@@ -117,7 +116,11 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
     .min_inner_size(480.0, 420.0)
     .center()
-    .transparent(true);
+    .transparent(true)
+    .decorations(true)
+    .resizable(true)
+    .visible(false)
+    .skip_taskbar(true);
 
     #[cfg(target_os = "macos")]
     {
@@ -129,13 +132,13 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
 
     builder
         .build()
-    .inspect(|window| {
-        let _ = prepare_app_window(window);
-        if let Err(error) = ensure_app_window_vibrancy(window) {
-            eprintln!("[mochi] app window vibrancy unavailable: {error}");
-        }
-    })
-    .map_err(|error| error.to_string())
+        .inspect(|window| {
+            let _ = prepare_app_window(window);
+            if let Err(error) = ensure_app_window_vibrancy(window) {
+                eprintln!("[mochi] app window vibrancy unavailable: {error}");
+            }
+        })
+        .map_err(|error| error.to_string())
 }
 
 pub fn setup_main_panel(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -347,6 +350,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     set_regular_activation_policy(&app);
 
     let _ = window.set_skip_taskbar(false);
+    crate::app_branding::sync_app_window_branding(&app, &window);
 
     if window.is_visible().unwrap_or(false) {
         window.set_focus().map_err(|error| error.to_string())?;
