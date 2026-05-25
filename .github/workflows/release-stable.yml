@@ -94,7 +94,7 @@ jobs:
             - Windows: `irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex`
 
             Unstable: add `-i` / `-Unstable`. See [README#install](https://github.com/BrainerVirus/mochi#install) and [docs/linux.md](https://github.com/BrainerVirus/mochi/blob/main/docs/linux.md).
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
       - name: Upload stable artifacts
