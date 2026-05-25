@@ -10,10 +10,10 @@ The one-line installer sets up runtime dependencies (tray indicator, libsecret, 
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
 ```
 
-**Stable (recommended):** installs **v0.1.1+** (not the broken v0.1.0 Win/Linux build).
+**Stable (recommended):** installs the latest non-prerelease tag (use **v0.1.3+** for the Linux blank-window fix; avoid **v0.1.2** on Linux).
 
 ```bash
-MOCHI_VERSION=v0.1.1 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
+MOCHI_VERSION=v0.1.3 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
 ```
 
 **Unstable** (`-i` uses the `unstable` release tag, not deprecated v0.1.0):
@@ -51,6 +51,39 @@ Waybar example:
   }
 }
 ```
+
+## Diagnostics
+
+If settings or the widget open as a blank window, or the close button does nothing, collect a redacted report and attach it to a GitHub issue.
+
+**After reproducing the problem** (open settings and/or widget, try close/minimize), run:
+
+```bash
+# Installed .deb / AppImage (binary on PATH)
+mochi diagnostics
+mochi diagnostics --bundle
+
+# If `mochi` is not on PATH, use the full path, e.g.:
+# /usr/bin/mochi diagnostics --bundle
+# ~/.local/bin/mochi diagnostics --bundle
+```
+
+Copy the terminal output (or the bundle path printed by `--bundle`) into your issue. The bundle is a text file under `~/.local/share/app.mochi.Mochi/logs/` (filename like `mochi-diagnostics-*.txt`).
+
+Optional: include the log tail directly:
+
+```bash
+tail -n 120 ~/.local/share/app.mochi.Mochi/logs/diagnostics.log
+```
+
+Launching from a terminal also prints diagnostic lines to stderr:
+
+```bash
+mochi
+# or: /usr/bin/mochi
+```
+
+The desktop app writes `diagnostics.log` while it runs. Reports include version, platform, webview URLs, frontend boot routes, and recent events (paths and secrets are redacted).
 
 ## Updates
 

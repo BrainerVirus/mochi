@@ -1,5 +1,6 @@
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, WebviewWindow, WindowEvent};
 
+use crate::diagnostics::{log_line, DiagnosticsState};
 use crate::frontend::app_shell_url;
 
 use super::{WIDGET_LABEL, WIDGET_MAX_WIDTH, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH};
@@ -20,12 +21,39 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .always_on_top(true)
         .build()?;
 
-    let _ = window;
+    prepare_widget_window_events(&window)?;
+    if let Some(state) = app.try_state::<DiagnosticsState>() {
+        let url = window
+            .url()
+            .map(|parsed| parsed.to_string())
+            .unwrap_or_else(|_| "unknown".into());
+        state.record_window_created(WIDGET_LABEL, &url, true, false);
+    }
+    Ok(())
+}
+
+fn prepare_widget_window_events(window: &WebviewWindow) -> Result<(), Box<dyn std::error::Error>> {
+    let window_for_events = window.clone();
+    window.on_window_event(move |event| {
+        if let WindowEvent::CloseRequested { api, .. } = event {
+            api.prevent_close();
+            let app = window_for_events.app_handle();
+            if let Some(state) = app.try_state::<DiagnosticsState>() {
+                state.record_window_event(WIDGET_LABEL, "close_requested -> hide");
+            }
+            log_line(
+                "window",
+                &format!("{WIDGET_LABEL}: close_requested -> hide"),
+            );
+            let _ = window_for_events.hide();
+        }
+    });
     Ok(())
 }
 
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(window) = app.get_webview_window(WIDGET_LABEL) {
+        prepare_widget_window_events(&window)?;
         let _ = window.set_always_on_top(true);
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
             width: WIDGET_MIN_WIDTH,

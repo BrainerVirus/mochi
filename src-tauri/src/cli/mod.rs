@@ -36,4 +36,10 @@ pub enum Command {
         #[arg(long, default_value = "waybar")]
         format: String,
     },
+    /// Print diagnostic info for support (logs, version, platform). Use when windows are blank or controls fail.
+    Diagnostics {
+        /// Write a redacted diagnostics bundle under the app log directory.
+        #[arg(long)]
+        bundle: bool,
+    },
 }

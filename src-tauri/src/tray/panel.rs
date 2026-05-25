@@ -85,6 +85,9 @@ pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::err
         if let WindowEvent::CloseRequested { api, .. } = event {
             api.prevent_close();
             let app = window_for_events.app_handle();
+            if let Some(state) = app.try_state::<crate::diagnostics::DiagnosticsState>() {
+                state.record_window_event(SETTINGS_WINDOW_LABEL, "close_requested -> hide");
+            }
             let _ = window_for_events.set_skip_taskbar(true);
             let _ = window_for_events.hide();
             let _ = emit_tray_navigate(app, "/");
@@ -134,6 +137,18 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
             let _ = prepare_app_window(window);
             if let Err(error) = ensure_app_window_vibrancy(window) {
                 eprintln!("[mochi] app window vibrancy unavailable: {error}");
+            }
+            if let Some(state) = app.try_state::<crate::diagnostics::DiagnosticsState>() {
+                let url = window
+                    .url()
+                    .map(|parsed| parsed.to_string())
+                    .unwrap_or_else(|_| "unknown".into());
+                state.record_window_created(
+                    SETTINGS_WINDOW_LABEL,
+                    &url,
+                    true,
+                    window_uses_native_transparency(),
+                );
             }
         })
         .map_err(|error| error.to_string())
