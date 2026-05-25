@@ -4,9 +4,34 @@
 # Env: MOCHI_VERSION, MOCHI_UNSTABLE=1, MOCHI_INSTALL_DIR (default /Applications), GITHUB_TOKEN
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/common.sh
-source "${SCRIPT_DIR}/lib/common.sh"
+: "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"
+: "${MOCHI_INSTALL_REF:=main}"
+
+_mochi_common_loaded=0
+for _i in "${!BASH_SOURCE[@]}"; do
+  _src="${BASH_SOURCE[_i]}"
+  if [[ "${_src}" == *.sh ]] && [[ -f "${_src}" ]]; then
+    _dir="$(cd "$(dirname "${_src}")" && pwd)"
+    if [[ -f "${_dir}/lib/common.sh" ]]; then
+      # shellcheck source=lib/common.sh
+      source "${_dir}/lib/common.sh"
+      _mochi_common_loaded=1
+      break
+    fi
+  fi
+done
+unset _i _src _dir
+
+if [[ "${_mochi_common_loaded}" -eq 0 ]]; then
+  _tmp="$(mktemp)"
+  curl -fsSL \
+    "https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/lib/common.sh" \
+    -o "${_tmp}"
+  # shellcheck source=/dev/null
+  source "${_tmp}"
+  rm -f "${_tmp}"
+fi
+unset _mochi_common_loaded _tmp
 
 MOCHI_INSTALL_SCRIPT_NAME="install-macos.sh"
 mochi_parse_install_args "$@"
