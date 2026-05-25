@@ -14,6 +14,8 @@ Stable releases are created by tagging a commit on `main` with a semver tag such
 
 Install scripts default to the latest stable release — see [Install](../README.md#install) in the README.
 
+**v0.1.0** was published before Windows/Linux parity landed; use **v0.1.1** or newer on those platforms.
+
 ## Update Channels
 
 Stable users receive only stable updates. Unstable users receive builds from `main`. Users can switch channels in Settings.

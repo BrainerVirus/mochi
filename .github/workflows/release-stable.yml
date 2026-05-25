@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -73,22 +74,26 @@ jobs:
           releaseBody: |
             ## Mochi ${{ github.ref_name }}
 
-            First public stable release of Mochi — a cross-platform desktop companion for AI coding tool usage.
+            Stable release with **full macOS, Windows, and Linux parity** (replaces v0.1.0, which was effectively macOS-only on Win/Linux).
+
+            ### What changed since v0.1.0
+            - **Linux** — opaque tray/settings windows; browser cookie import; install script installs tray + libsecret deps
+            - **Windows** — Chromium cookie import (DPAPI); WebView2 check in install script
+            - **All platforms** — shared Chromium/Firefox profile discovery; Flatpak dropped (AppImage / deb / rpm only)
 
             ### Highlights
-            - **Menu bar tray** — session and weekly usage, reset windows, and provider status at a glance
+            - **Menu bar tray** — usage meters, provider tabs, refresh, settings, and updates
             - **12+ providers** — Codex, Claude, Cursor, Gemini, Copilot, Factory, OpenCode, and more
-            - **Native Settings** — refresh interval, update channel, provider tokens, and usage notifications
-            - **Auto-updater** — check for updates in-app; switch between stable and unstable channels
-            - **Install scripts** — macOS (direct + Homebrew), Linux (AppImage/deb/rpm), Windows (MSI/exe)
-            - **Cross-platform** — macOS (Apple Silicon + Intel), Windows x64, Linux x64
+            - **Browser cookie import** — opt-in auto-import from Chrome, Edge, Firefox, Zen (platform-dependent)
+            - **Install scripts** — one-liners with runtime deps on Linux and Windows
+            - **Auto-updater** — stable channel; switch to unstable in Settings if you want `main` builds
 
             ### Install stable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`
             - Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash`
             - Windows: `irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex`
 
-            Unstable builds: add `-i` (shell) or `-Unstable` (PowerShell). See [README#install](https://github.com/BrainerVirus/mochi#install).
+            Unstable: add `-i` / `-Unstable`. See [README#install](https://github.com/BrainerVirus/mochi#install) and [docs/linux.md](https://github.com/BrainerVirus/mochi/blob/main/docs/linux.md).
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
