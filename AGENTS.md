@@ -4,7 +4,7 @@ This repo is pre-scaffold. Do not infer the implementation stack from missing ma
 
 - Product spec: [docs/superpowers/specs/2026-05-19-mochi-design.md](docs/superpowers/specs/2026-05-19-mochi-design.md).
 - Current implementation stack source of truth: [docs/tech-stack.md](docs/tech-stack.md).
-- The old generated plan at [docs/superpowers/plans/2026-05-19-mochi.md](docs/superpowers/plans/2026-05-19-mochi.md) predates the TanStack Start/Oxc direction; use it only for product/module intent, not package versions or scaffold commands.
+- The old generated plan at [docs/superpowers/plans/2026-05-19-mochi.md](docs/superpowers/plans/2026-05-19-mochi.md) predates the Vite/Oxc direction; use it only for product/module intent, not package versions or scaffold commands.
 
 ## Cross-Platform Requirement
 
@@ -12,17 +12,17 @@ This repo is pre-scaffold. Do not infer the implementation stack from missing ma
 
 ## Stack To Preserve
 
-- Frontend: React 19 + TanStack Start 1.x, not a plain Vite SPA.
-- Router/data layer: TanStack Router from the TanStack Start setup; use Zod validators for server functions and untrusted JSON.
+- Frontend: React 19 + Vite 8 static SPA for Tauri; do not add TanStack Start, Nitro, or Vinxi.
+- Router/data layer: TanStack Router file routes plus TanStack Query 5; use Zod validators for Tauri IPC responses and untrusted JSON.
 - Server/cache state: TanStack Query 5 for provider/status/update data, refetching, stale states, and retries.
 - Local UI state: Zustand 5 for small client-only stores; do not put server snapshots in Zustand.
 - Desktop shell: Tauri v2; keep Rust in `src-tauri/` and frontend app code in `app/`.
-- Build tool: Vite 8 through TanStack Start/Vinxi; prefer ESM config.
+- Build tool: Vite 8 with the React Compiler wired through `@vitejs/plugin-react` and `@rolldown/plugin-babel`; prefer ESM config.
 - Styling: Tailwind CSS 4 + shadcn/ui. Generate/maintain `DESIGN.md` with `.agents/skills/design-md` before building the shadcn design system.
 - Tailwind tooling: use official `@tailwindcss/vite`, `oxlint-tailwindcss` for Tailwind linting, and oxfmt `sortTailwindcss` for class ordering.
 - Oxc quality gate: oxlint must cover TypeScript, imports, React, accessibility, JavaScript correctness, and Tailwind; oxfmt must format JS/TS/HTML/CSS and sort imports/classes.
 - Animation: GSAP + `@gsap/react` for non-trivial React animation; use scoped `useGSAP()` and reduced-motion-aware patterns.
-- Validation: Zod 4 at untrusted boundaries and for TanStack Start server function inputs.
+- Validation: Zod 4 at untrusted boundaries.
 - JS/TS lint/format: oxlint + oxfmt, not ESLint/Prettier/Biome.
 - Rust: stable Rust, Tauri v2 command patterns, and explicit capabilities.
 
@@ -64,7 +64,7 @@ This repository uses GitHub Flow. Agents and contributors must keep `main` deplo
 
 ## Structure And Maintainability
 
-- Frontend app code follows TanStack Start structure under `app/`; shared UI/domain code goes under `src/` as defined in [docs/tech-stack.md](docs/tech-stack.md).
+- Frontend app entry and routes live under `app/`; shared UI/domain code goes under `src/` as defined in [docs/tech-stack.md](docs/tech-stack.md).
 - Keep TanStack Query keys/options under `src/lib/query/` and Zustand stores under `src/lib/stores/`.
 - Tauri/Rust code follows the `src-tauri/src/{core,providers,auth,fetch,settings,tray,widget,status_bar,...}` structure from [docs/tech-stack.md](docs/tech-stack.md).
 - Keep TS/TSX files under 250 lines when practical; split before 350 lines unless generated or shadcn-owned.

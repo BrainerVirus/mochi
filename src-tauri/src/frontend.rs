@@ -1,6 +1,6 @@
 use tauri::WebviewUrl;
 
-/// Static SPA shell shipped in `.output/public` (TanStack Start `spa.prerender.outputPath`).
+/// Static React app shell shipped in `dist`.
 pub const APP_SHELL_ASSET: &str = "index.html";
 
 pub fn app_shell_url() -> WebviewUrl {

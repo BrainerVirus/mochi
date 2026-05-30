@@ -1,6 +1,6 @@
 {
   "name": "mochi",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Cross-platform desktop companion for tracking AI coding tool usage — tray, widget, settings, and CLI.",
   "keywords": [
@@ -12,7 +12,7 @@
     "desktop-app",
     "mochi",
     "react",
-    "tanstack-start",
+    "tanstack-router",
     "tauri",
     "tray-app",
     "usage-tracker"
@@ -31,13 +31,13 @@
   "scripts": {
     "build": "vite build && tsc --noEmit",
     "check:diagnostics-cli": "cargo run --quiet --manifest-path src-tauri/Cargo.toml -- diagnostics",
-    "check:tauri-shell": "node scripts/check-tauri-frontend-dist.mjs",
+    "check:tauri-frontend": "node scripts/check-tauri-frontend-dist.mjs",
     "dev": "vite dev --port 1420",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint --type-aware --react-plugin --jsx-a11y-plugin --import-plugin --deny-warnings app src",
     "preview": "vite preview",
-    "start": "node .output/server/index.mjs",
+    "start": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "MOCHI_DEV_SHOW_MAIN=1 pnpm tauri dev",
     "test": "vitest run --config vitest.config.ts"
@@ -48,14 +48,12 @@
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.100.11",
     "@tanstack/react-router": "^1.170.6",
-    "@tanstack/react-start": "^1.168.9",
     "@tanstack/router-plugin": "^1.168.9",
     "@tauri-apps/api": "^2.11.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "gsap": "^3.15.0",
     "lucide-react": "^0.511.0",
-    "nitro": "npm:nitro-nightly@latest",
     "radix-ui": "^1.4.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -67,11 +65,15 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@rolldown/plugin-babel": "0.2.3",
     "@tauri-apps/cli": "^2.11.2",
+    "@types/babel__core": "7.20.5",
     "@types/node": "^22.15.21",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
     "@vitejs/plugin-react": "^6.0.1",
+    "babel-plugin-react-compiler": "1.0.0",
     "oxfmt": "^0.51.0",
     "oxlint": "^1.66.0",
     "oxlint-tailwindcss": "^0.8.0",

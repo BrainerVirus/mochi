@@ -73,6 +73,10 @@ body {
   margin: 0;
 }
 
+#root {
+  min-height: 100vh;
+}
+
 /* Native glass shells: transparent html/body so vibrancy/Mica shows through. */
 html[data-tray-panel],
 html[data-tray-panel] body,
@@ -80,6 +84,12 @@ html[data-app-window],
 html[data-app-window] body {
   height: 100%;
   background-color: transparent;
+}
+
+html[data-tray-panel] #root,
+html[data-app-window] #root {
+  height: 100%;
+  min-height: 0;
 }
 
 html[data-tray-panel].dark,

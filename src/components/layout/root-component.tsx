@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { getHydrationSafeRootState } from "@/components/layout/root-component-state";
@@ -29,39 +29,30 @@ export function RootComponent() {
     });
   }, []);
 
+  useEffect(() => {
+    document.documentElement.dataset.platform = platform;
+    document.documentElement.toggleAttribute("data-tray-panel", isTrayPanelWindow);
+    document.documentElement.toggleAttribute("data-app-window", isAppWindow);
+    document.documentElement.classList.toggle("h-full", isNativeGlassShell);
+    document.documentElement.classList.toggle("bg-transparent", isNativeGlassShell);
+    document.body.className = isNativeGlassShell
+      ? "flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-transparent"
+      : "";
+  }, [isAppWindow, isNativeGlassShell, isTrayPanelWindow, platform]);
+
   return (
-    <html
-      lang="en"
-      data-platform={platform}
-      data-tray-panel={isTrayPanelWindow ? "" : undefined}
-      data-app-window={isAppWindow ? "" : undefined}
-      className={isNativeGlassShell ? "h-full bg-transparent" : undefined}
-    >
-      <head>
-        <HeadContent />
-      </head>
-      <body
+    <QueryClientProvider client={queryClient}>
+      <div
+        data-platform={platform}
+        data-tray-panel={isTrayPanelWindow ? "" : undefined}
+        data-app-window={isAppWindow ? "" : undefined}
         className={
-          isNativeGlassShell
-            ? "flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-transparent"
-            : undefined
+          isNativeGlassShell ? "flex h-full min-h-0 flex-1 flex-col overflow-hidden" : undefined
         }
       >
-        <QueryClientProvider client={queryClient}>
-          {isNativeGlassShell ? (
-            <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-              <TrayEventBridge />
-              <Outlet />
-            </div>
-          ) : (
-            <>
-              <TrayEventBridge />
-              <Outlet />
-            </>
-          )}
-        </QueryClientProvider>
-        <Scripts />
-      </body>
-    </html>
+        <TrayEventBridge />
+        <Outlet />
+      </div>
+    </QueryClientProvider>
   );
 }

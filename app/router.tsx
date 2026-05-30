@@ -1,7 +1,7 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
+import { RoutePending } from "./route-pending";
 import { routeTree } from "./routeTree.gen";
-import { SpaShellPending } from "./spa-shell-pending";
 
 export function getRouter() {
   const router = createTanStackRouter({
@@ -9,7 +9,7 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
-    defaultPendingComponent: SpaShellPending,
+    defaultPendingComponent: RoutePending,
   });
 
   return router;
