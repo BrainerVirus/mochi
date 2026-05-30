@@ -133,7 +133,7 @@ Linux install runs `scripts/install/lib/linux-deps.sh` before downloading the re
 
 | Layer     | Choices                                                                               |
 | --------- | ------------------------------------------------------------------------------------- |
-| UI        | React 19, TanStack Start & Router, TanStack Query, Zustand, shadcn/ui, Tailwind CSS 4 |
+| UI        | React 19, Vite 8, TanStack Router, TanStack Query, Zustand, shadcn/ui, Tailwind CSS 4 |
 | Desktop   | Tauri v2 (Rust) — tray, widget, providers, secure storage, updater                    |
 | Quality   | oxlint, oxfmt, Zod 4, Vitest                                                          |
 | Animation | GSAP + `@gsap/react`                                                                  |
@@ -146,7 +146,7 @@ See [docs/tech-stack.md](docs/tech-stack.md) for versions, folder layout, and co
 - **pnpm** 9.15.x — enable via [Corepack](https://nodejs.org/api/corepack.html) (`corepack enable`); version pinned in `package.json` `packageManager`
 - **Rust** stable toolchain and [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS
 
-The stack (TanStack Start 1.x, Vite 8, React 19, Tauri v2) targets Node 20.12+, but this repo enforces **Node ≥ 24** so CI and contributors stay on current LTS or newer.
+The stack (Vite 8, React 19, Tauri v2) targets modern Node releases, and this repo enforces **Node ≥ 24** so CI and contributors stay on current LTS or newer.
 
 ## Development
 

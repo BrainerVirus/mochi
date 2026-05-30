@@ -1,7 +1,10 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
 import { routeTree } from "./routeTree.gen";
-import { SpaShellPending } from "./spa-shell-pending";
+
+function RoutePending() {
+  return <div className="min-h-0" data-mochi-route-pending />;
+}
 
 export function getRouter() {
   const router = createTanStackRouter({
@@ -9,7 +12,7 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
-    defaultPendingComponent: SpaShellPending,
+    defaultPendingComponent: RoutePending,
   });
 
   return router;

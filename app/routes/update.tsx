@@ -9,6 +9,5 @@ const updateSearchSchema = z.object({
 
 export const Route = createFileRoute("/update")({
   validateSearch: updateSearchSchema,
-  ssr: false,
   component: UpdatePage,
 });

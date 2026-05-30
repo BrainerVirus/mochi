@@ -1,15 +1,16 @@
 # Mochi Tech Stack
 
-This is the source of truth for the initial implementation stack. It reflects the installed repo skills and current npm metadata checked on 2026-05-20.
+This is the source of truth for the implementation stack. It reflects the installed repo skills and current npm metadata checked on 2026-05-30.
 
 ## Package Versions
 
 Re-check exact patch versions with `npm view <package> version` immediately before installing. The verified current versions were:
 
-- `@tanstack/react-start`: `1.168.9`
 - `@tanstack/react-router`: `1.170.6`
 - `@tanstack/router-plugin`: `1.168.9`
 - `@tanstack/react-query`: `5.100.11`
+- `@vitejs/plugin-react`: `6.0.1`
+- `babel-plugin-react-compiler`: `1.0.0`
 - `vite`: `8.0.13`
 - `react`: `19.2.6`
 - `tailwindcss`: `4.3.0`
@@ -23,10 +24,11 @@ Re-check exact patch versions with `npm view <package> version` immediately befo
 
 Use compatible major ranges anchored on these:
 
-- `@tanstack/react-start@^1`
 - `@tanstack/react-router@^1`
 - `@tanstack/router-plugin@^1`
 - `@tanstack/react-query@^5`
+- `@vitejs/plugin-react@^6`
+- `babel-plugin-react-compiler@^1`
 - `vite@^8`
 - `react@^19`
 - `react-dom@^19`
@@ -42,32 +44,31 @@ Use compatible major ranges anchored on these:
 
 ## Frontend
 
-Use TanStack Start, not a plain Vite SPA. The frontend should follow the Start layout:
+Use a plain Vite React app for the desktop frontend. TanStack Router and TanStack Query are libraries in the app, not a full-stack framework layer. The frontend should follow this layout:
 
 ```text
 app/
   routes/
-  client.tsx
+  main.tsx
   router.tsx
-  ssr.tsx
   routeTree.gen.ts
-app.config.ts
+index.html
+vite.config.ts
 ```
 
-TanStack Start is powered by Vite and Nitro/Vinxi. Configure Vite through `app.config.ts`; do not add a separate Vite-only app entry unless the scaffold requires it. Tailwind CSS v4 must be wired with the official `@tailwindcss/vite` plugin.
+Vite owns the browser build and emits `dist/index.html` plus bundled assets for Tauri. Do not add TanStack Start, Nitro, Vinxi, SSR prerendering, or a custom generated shell unless the desktop packaging model is deliberately changed. Tailwind CSS v4 must be wired with the official `@tailwindcss/vite` plugin.
 
-Use React 19, TypeScript strict mode, TanStack Router file routes, TanStack Query for async server/cache state, Zustand for local client UI state, and Zod for server function/API route validation.
+Use React 19 with the React Compiler, TypeScript strict mode, TanStack Router file routes, TanStack Query for async cache state, Zustand for local client UI state, and Zod for untrusted JSON or Tauri IPC boundaries.
 
 ## Frontend Folder Structure
 
-Keep the TanStack Start app under `app/` and shared UI/domain code under `src/`:
+Keep the Vite React app entry and routes under `app/` and shared UI/domain code under `src/`:
 
 ```text
 app/
   routes/                # file routes only; keep route files thin
-  client.tsx
+  main.tsx               # React root mounted from index.html
   router.tsx
-  ssr.tsx
   routeTree.gen.ts       # generated, do not hand edit
 src/
   components/
@@ -113,7 +114,7 @@ Use Tauri v2 for the cross-platform app:
 
 - Rust backend in `src-tauri/`.
 - Tauri config at `src-tauri/tauri.conf.json`.
-- Frontend dist/dev URL wired from the TanStack Start build/dev command.
+- Frontend dist/dev URL wired from the Vite build/dev command.
 - `src-tauri/src/main.rs` stays thin; app setup and command registration live in `src-tauri/src/lib.rs`.
 - Add `src-tauri/capabilities/default.json` early. Tauri v2 denies plugin/API access unless permissions are explicit.
 
@@ -193,7 +194,7 @@ For shadcn work:
 These are project-approved implementation libraries because the repo has installed skills for them:
 
 - GSAP + `@gsap/react` for meaningful UI animation, timelines, responsive animation, and reduced-motion-aware motion.
-- Zod 4 for validation at every untrusted boundary: server functions, Tauri IPC results, local config, provider payloads, JSON files, and form/query data.
+- Zod 4 for validation at every untrusted boundary: Tauri IPC results, local config, provider payloads, JSON files, and form/query data.
 - TanStack Query 5 is the default server/cache state layer for Tauri command results and provider/status/update refresh flows that need caching, refetching, stale state, retries, or background refresh.
 - Zustand 5 is the default local client-state layer for UI-only state. Do not store server snapshots or provider fetch results in Zustand; keep those in TanStack Query.
 - TanStack Devtools may be added for local development diagnostics, but do not ship it in production UI.
@@ -217,9 +218,9 @@ Expected scripts after scaffold:
 ```json
 {
   "scripts": {
-    "dev": "vinxi dev",
-    "build": "vinxi build",
-    "start": "vinxi start",
+    "dev": "vite dev --port 1420",
+    "build": "vite build && tsc --noEmit",
+    "start": "vite preview",
     "lint": "oxlint --type-aware --react-plugin --jsx-a11y-plugin --import-plugin --deny-warnings",
     "format": "oxfmt",
     "format:check": "oxfmt --check",

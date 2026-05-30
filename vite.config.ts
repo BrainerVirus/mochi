@@ -1,15 +1,13 @@
 /// <reference types="vitest/config" />
 
+import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import viteReact from "@vitejs/plugin-react";
-import { nitro } from "nitro/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-import { fixNitroRolldownBuild } from "./vite.fix-nitro-rolldown";
-import { writeTauriSpaShell } from "./vite.write-tauri-shell";
-
 export default defineConfig({
+  base: "./",
   clearScreen: false,
   server: {
     host: "127.0.0.1",
@@ -27,16 +25,12 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
-    tanstackStart({
-      srcDirectory: "app",
+    tanstackRouter({
+      target: "react",
+      routesDirectory: "app/routes",
+      generatedRouteTree: "app/routeTree.gen.ts",
     }),
     viteReact(),
-    nitro({
-      server: {
-        host: "127.0.0.1",
-      },
-    }),
-    fixNitroRolldownBuild(),
-    writeTauriSpaShell(),
+    babel({ presets: [reactCompilerPreset()] }),
   ],
 });
