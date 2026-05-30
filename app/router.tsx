@@ -1,10 +1,7 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
+import { RoutePending } from "./route-pending";
 import { routeTree } from "./routeTree.gen";
-
-function RoutePending() {
-  return <div className="min-h-0" data-mochi-route-pending />;
-}
 
 export function getRouter() {
   const router = createTanStackRouter({
