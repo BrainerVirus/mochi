@@ -108,7 +108,42 @@ pub fn resolve_workspace_id(config: Option<&ProviderConfig>) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::test_env;
     use crate::settings::{TokenAccount, TokenAccountData};
+    use rusqlite::Connection;
+    use std::fs;
+    use std::path::Path;
+
+    fn write_zen_fixture(home: &Path) {
+        let profile = crate::browser::profiles::gecko_test_profile_dir(
+            home,
+            crate::browser::BrowserKind::Zen,
+            "abc.default-release",
+        );
+        fs::create_dir_all(&profile).expect("profile dir");
+        let db_path = profile.join("cookies.sqlite");
+        let connection = Connection::open(&db_path).expect("open fixture db");
+        connection
+            .execute_batch(
+                "CREATE TABLE moz_cookies (
+                    host TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    path TEXT NOT NULL,
+                    value TEXT,
+                    expiry INTEGER,
+                    isSecure INTEGER,
+                    isHttpOnly INTEGER
+                );",
+            )
+            .expect("schema");
+        connection
+            .execute(
+                "INSERT INTO moz_cookies (host, name, path, value, expiry, isSecure, isHttpOnly)
+                 VALUES ('.opencode.ai', 'auth', '/', 'zen-opencode-go', 0, 1, 1)",
+                [],
+            )
+            .expect("insert");
+    }
 
     #[test]
     fn resolves_active_token_account_cookie() {
@@ -144,5 +179,38 @@ mod tests {
             .expect("resolve")
             .expect("session");
         assert_eq!(session.cookie_header, "auth=manual-token");
+    }
+
+    #[test]
+    #[allow(clippy::await_holding_lock)]
+    fn resolve_session_imports_from_zen_browser_fixture() {
+        let _guard = test_env::LOCK.lock().expect("env lock");
+        for key in [
+            ENV_COOKIE,
+            ENV_COOKIE_LEGACY,
+            ENV_WORKSPACE_ID,
+            ENV_WORKSPACE_ID_LEGACY,
+        ] {
+            std::env::remove_var(key);
+        }
+        std::env::remove_var("HOME");
+
+        let temp = std::env::temp_dir().join(format!(
+            "mochi-opencode-go-zen-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        write_zen_fixture(&temp);
+        std::env::set_var("HOME", &temp);
+
+        let session = resolve_session(None).expect("resolve").expect("session");
+
+        std::env::remove_var("HOME");
+        let _ = fs::remove_dir_all(temp);
+
+        assert_eq!(session.cookie_header, "auth=zen-opencode-go");
+        assert!(session.source_label.contains("Zen"));
     }
 }

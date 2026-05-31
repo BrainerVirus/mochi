@@ -72,20 +72,19 @@ jobs:
           releaseBody: |
             ## Mochi Unstable
 
-            Latest build from `main` for early adopters. Includes cross-platform browser cookie import, Linux opaque shell UI, and install-script runtime deps (see stable **v0.1.1+** release notes).
+            Latest build from `main` for early adopters.
 
-            ### Highlights
-            - **macOS / Windows / Linux** — tray, settings, widget, and CLI; Win/Linux cookie import parity with macOS (Safari remains macOS-only)
-            - **Linux** — AppImage, deb, or rpm (not Flatpak); install script sets up AppIndicator + libsecret
-            - **Windows** — MSI/exe; install script ensures WebView2
-            - **Auto-updater** — pick **Stable** or **Unstable** in Settings
+            ### What's changed
+            - **Linux widget parity** — widget uses the shared tray-panel tabs, usage layout, empty states, and footer actions.
+            - **Provider setup** — first-run settings enable detected providers only, and configured providers refresh once on cold start when usage is missing.
+            - **Browser detection** — cookie import scans the full supported modern browser catalog, including Chromium-family and Gecko-family browsers.
+            - **Linux windows** — decorated settings and widget windows prepare native controls before showing.
+            - **Release notes** — this unstable body describes the current main build only.
 
             ### Install unstable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
             - Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i`
             - Windows: `$env:MOCHI_UNSTABLE = "1"; irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex`
-
-            **Do not use v0.1.0 stable on Windows/Linux** — upgrade to v0.1.1+ or this unstable build. See [README#install](https://github.com/BrainerVirus/mochi#install).
           prerelease: true
           releaseDraft: false
           args: ${{ matrix.args }}

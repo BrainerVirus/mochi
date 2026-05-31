@@ -1,123 +1,76 @@
-import { RefreshCwIcon } from "lucide-react";
+import { useRef } from "react";
 
-import { MochiMark } from "@/components/mascot/mochi-mark";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UsageCard } from "@/components/usage/usage-card";
-import { useRefreshProvider, useSettings } from "@/hooks/use-tray-events";
-import { useUsageData } from "@/hooks/use-usage-data";
-import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
-import { widgetDensityClasses } from "@/lib/utils/widget-density";
+import { UsageSnapshotsPanel } from "@/components/tray/tray-panel-content";
+import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
+import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
+import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
+import { useTrayPanelFocusReset } from "@/hooks/use-tray-panel-focus-reset";
+import { useTrayPanelShortcuts } from "@/hooks/use-tray-panel-shortcuts";
+import { useTrayPanelState } from "@/hooks/use-tray-panel-state";
+import { quitApp } from "@/lib/tauri/commands";
 
 export function WidgetWindow() {
-  const density = widgetDensityClasses("compact");
-  const { data: settings } = useSettings();
-  const { data, error, isError, isPending, isSuccess, refetch, isFetching } = useUsageData();
-  const refreshProvider = useRefreshProvider();
-  const isRefreshing = isFetching || refreshProvider.isPending;
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const {
+    settings,
+    error,
+    isError,
+    isPending,
+    isSuccess,
+    isFetching,
+    refreshAll,
+    isRefreshingAll,
+    refreshProviderMutation,
+    selectedTab,
+    refreshingProvider,
+    snapshots,
+    tabs,
+    handleTabChange,
+    handleRefreshProvider,
+  } = useTrayPanelState();
+
+  useTrayPanelFocusReset(layoutRef);
+  useTrayPanelShortcuts({
+    onRefresh: () => {
+      void refreshAll();
+    },
+    onQuit: () => {
+      void quitApp();
+    },
+  });
 
   return (
-    <main className="bg-background text-foreground min-h-screen">
-      <section
-        className={`mx-auto flex min-h-screen w-full max-w-[480px] min-w-[280px] flex-col ${density.root}`}
-      >
-        <header className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <MochiMark state={isError ? "warning" : "normal"} className="size-8" />
-            <div>
-              <p className="text-muted-foreground text-[10px] font-medium tracking-[0.2em] uppercase">
-                Mochi
-              </p>
-              <h1 className={density.title}>Widget</h1>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isRefreshing}
-            onClick={() => {
-              void refetch();
+    <div className="bg-background flex h-screen min-h-0 flex-col overflow-hidden">
+      <TrayPanelShell layoutRef={layoutRef}>
+        <section
+          data-tray-panel-content
+          className="mx-auto flex w-full max-w-[360px] min-w-0 flex-col"
+        >
+          <UsageSnapshotsPanel
+            error={error}
+            isError={isError}
+            isPending={isPending}
+            isSuccess={isSuccess}
+            enabledProviderCount={settings?.enabled_providers.length ?? 0}
+            activeTab={selectedTab}
+            onTabChange={handleTabChange}
+            tabs={tabs}
+            snapshots={snapshots}
+            onRefreshProvider={handleRefreshProvider}
+            refreshingProvider={refreshingProvider}
+          />
+          <TrayPanelDivider inset data-tray-panel-separator />
+          <TrayPanelFooter
+            isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
+            onRefresh={() => {
+              void refreshAll();
             }}
-          >
-            <RefreshCwIcon data-icon="inline-start" />
-            Refresh
-          </Button>
-        </header>
-
-        <Card className={`rounded-mochi shadow-sm ${density.card}`}>
-          <CardHeader className="p-0">
-            <CardTitle className={density.title}>Providers</CardTitle>
-          </CardHeader>
-          <CardContent className={`flex flex-col ${density.card}`}>
-            <WidgetUsagePanel
-              data={data}
-              error={error}
-              isError={isError}
-              isPending={isPending}
-              isSuccess={isSuccess}
-              enabledProviderCount={settings?.enabled_providers.length ?? 0}
-            />
-          </CardContent>
-        </Card>
-      </section>
-    </main>
+            onQuit={() => {
+              void quitApp();
+            }}
+          />
+        </section>
+      </TrayPanelShell>
+    </div>
   );
-}
-
-interface WidgetUsagePanelProps {
-  data: ReturnType<typeof useUsageData>["data"];
-  error: ReturnType<typeof useUsageData>["error"];
-  isError: boolean;
-  isPending: boolean;
-  isSuccess: boolean;
-  enabledProviderCount: number;
-}
-
-function WidgetUsagePanel({
-  data,
-  error,
-  isError,
-  isPending,
-  isSuccess,
-  enabledProviderCount,
-}: WidgetUsagePanelProps) {
-  if (isPending) {
-    return (
-      <output className="text-muted-foreground block text-center text-xs">
-        Loading provider usage…
-      </output>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Could not load usage</AlertTitle>
-        <AlertDescription>{error?.message ?? "Unknown error"}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (isSuccess && data !== undefined && data.length === 0) {
-    return (
-      <p className="text-muted-foreground text-center text-xs">
-        {usageSnapshotsEmptyMessage(enabledProviderCount)}
-      </p>
-    );
-  }
-
-  if (isSuccess && data !== undefined) {
-    return (
-      <ul className="flex w-full flex-col gap-2">
-        {data.map((snapshot) => (
-          <li key={snapshot.provider}>
-            <UsageCard snapshot={snapshot} />
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  return null;
 }

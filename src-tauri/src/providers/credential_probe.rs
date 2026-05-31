@@ -31,6 +31,16 @@ pub fn provider_has_credentials(provider: ProviderId, ctx: &FetchContext) -> boo
     provider_credential_detail(provider, ctx).configured
 }
 
+pub fn detected_provider_ids(settings: &MochiSettings) -> Vec<String> {
+    let ctx = FetchContext::from_settings(settings);
+    ProviderId::all()
+        .iter()
+        .copied()
+        .filter(|provider| provider_has_credentials(*provider, &ctx))
+        .map(|provider| provider.as_str().to_string())
+        .collect()
+}
+
 fn provider_credential_detail(
     provider: ProviderId,
     ctx: &FetchContext,

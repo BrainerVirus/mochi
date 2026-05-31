@@ -7,7 +7,7 @@ describe("MochiSettingsSchema", () => {
     expect(DEFAULT_MOCHI_SETTINGS.update_channel).toBe("stable");
     expect(DEFAULT_MOCHI_SETTINGS.refresh_interval_seconds).toBe(300);
     expect(DEFAULT_MOCHI_SETTINGS.show_notifications).toBe(true);
-    expect(DEFAULT_MOCHI_SETTINGS.enabled_providers.length).toBeGreaterThan(0);
+    expect(DEFAULT_MOCHI_SETTINGS.enabled_providers).toEqual([]);
   });
 
   it("accepts stable defaults from the backend", () => {

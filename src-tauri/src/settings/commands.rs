@@ -8,7 +8,7 @@ use crate::core::provider_metadata::{
     provider_registry, AuthRequirement, ImplementationStatus, SettingsFieldDefinition,
     SettingsFieldKind, StrategyDefinition,
 };
-use crate::providers::credential_probe::credential_status_map;
+use crate::providers::credential_probe::{credential_status_map, detected_provider_ids};
 
 use super::storage::{load_settings, save_settings as persist_settings, settings_file_path};
 use super::MochiSettings;
@@ -25,7 +25,7 @@ impl SettingsState {
             .app_config_dir()
             .map_err(|error| error.to_string())?;
         let path = settings_file_path(&base_dir);
-        let settings = load_settings(&path);
+        let settings = load_or_initialize_settings(&path)?;
 
         Ok(Self {
             path,
@@ -46,6 +46,25 @@ impl SettingsState {
         *settings = next.clone();
         Ok(next)
     }
+}
+
+fn load_or_initialize_settings(path: &std::path::Path) -> Result<MochiSettings, String> {
+    if path.exists() {
+        return Ok(load_settings(path));
+    }
+
+    initialize_missing_settings(path, detected_provider_ids)
+}
+
+fn initialize_missing_settings(
+    path: &std::path::Path,
+    detect_enabled: impl FnOnce(&MochiSettings) -> Vec<String>,
+) -> Result<MochiSettings, String> {
+    let mut settings = MochiSettings::default();
+    settings.enabled_providers = detect_enabled(&settings);
+    settings.normalize_provider_ids();
+    persist_settings(path, &settings)?;
+    Ok(settings)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -178,5 +197,35 @@ fn settings_field_kind_label(kind: SettingsFieldKind) -> &'static str {
         SettingsFieldKind::TokenAccount => "token-account",
         SettingsFieldKind::HistoryWindow => "history-window",
         SettingsFieldKind::RegionHost => "region-host",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn initializes_missing_settings_with_detected_providers_only() {
+        let dir = std::env::temp_dir().join(format!(
+            "mochi-settings-init-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let path = super::settings_file_path(&dir);
+
+        let settings = initialize_missing_settings(&path, |_| {
+            vec!["codex".to_string(), "opencodego".to_string()]
+        })
+        .expect("settings should initialize");
+
+        assert_eq!(
+            settings.enabled_providers,
+            vec!["codex".to_string(), "opencode-go".to_string()]
+        );
+        assert!(path.is_file());
+
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

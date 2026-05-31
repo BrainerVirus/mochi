@@ -14,7 +14,7 @@ Stable releases are created by tagging a commit on `main` with a semver tag such
 
 Install scripts default to the latest stable release — see [Install](../README.md#install) in the README.
 
-**v0.1.0** was published before Windows/Linux parity landed; use **v0.1.1** or newer on those platforms.
+Release notes should describe only the tag being published. Put upgrade warnings in docs or issues, not in the body for unrelated future releases.
 
 ## Update Channels
 

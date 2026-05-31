@@ -51,7 +51,9 @@ fn import_from_gecko(
     query: &CookieImportQuery<'_>,
 ) -> Option<ImportedCookies> {
     for store in discover_gecko_stores(query.home, browser) {
-        let cookies = read_gecko_cookies(&store, query.domains).ok()?;
+        let Ok(cookies) = read_gecko_cookies(&store, query.domains) else {
+            continue;
+        };
         if let Some(imported) = finalize_import(&store.label, &cookies, query) {
             return Some(imported);
         }
@@ -65,7 +67,9 @@ fn import_from_chromium(
 ) -> Option<ImportedCookies> {
     let key = chromium_decryption_key(query.home, browser).ok()?;
     for store in discover_chromium_stores(query.home, browser) {
-        let cookies = read_chromium_cookies(&store, query.domains, &key).ok()?;
+        let Ok(cookies) = read_chromium_cookies(&store, query.domains, &key) else {
+            continue;
+        };
         if let Some(imported) = finalize_import(&store.label, &cookies, query) {
             return Some(imported);
         }

@@ -73,7 +73,7 @@ export const ALL_PROVIDER_IDS = ProviderIdSchema.options;
 export const DEFAULT_MOCHI_SETTINGS = MochiSettingsSchema.parse({
   update_channel: "stable",
   refresh_interval_seconds: 300,
-  enabled_providers: ALL_PROVIDER_IDS,
+  enabled_providers: [],
   show_notifications: true,
   provider_configs: {},
 });
