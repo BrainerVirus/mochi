@@ -74,19 +74,14 @@ jobs:
           releaseBody: |
             ## Mochi ${{ github.ref_name }}
 
-            Stable release with **full macOS, Windows, and Linux parity** (replaces v0.1.0, which was effectively macOS-only on Win/Linux).
+            Stable patch release focused on Linux parity and first-run provider behavior.
 
-            ### What changed since v0.1.0
-            - **Linux** — opaque tray/settings windows; browser cookie import; install script installs tray + libsecret deps
-            - **Windows** — Chromium cookie import (DPAPI); WebView2 check in install script
-            - **All platforms** — shared Chromium/Firefox profile discovery; Flatpak dropped (AppImage / deb / rpm only)
-
-            ### Highlights
-            - **Menu bar tray** — usage meters, provider tabs, refresh, settings, and updates
-            - **12+ providers** — Codex, Claude, Cursor, Gemini, Copilot, Factory, OpenCode, and more
-            - **Browser cookie import** — opt-in auto-import from Chrome, Edge, Firefox, Zen (platform-dependent)
-            - **Install scripts** — one-liners with runtime deps on Linux and Windows
-            - **Auto-updater** — stable channel; switch to unstable in Settings if you want `main` builds
+            ### What's changed
+            - **Linux widget parity** — widget uses the same provider tabs, usage layout, empty states, and footer actions as the tray panel.
+            - **Provider setup** — new installs enable only providers with detected credentials; configured providers refresh automatically on first launch when no usage is cached yet.
+            - **Browser detection** — cookie import scans the full supported modern browser catalog instead of stopping at Chrome or Gecko-only paths.
+            - **Linux windows** — decorated settings and widget windows reapply native controls before showing so close, minimize, and maximize work immediately.
+            - **Release notes** — stable and unstable release bodies are scoped to the current release instead of referencing old release histories.
 
             ### Install stable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`

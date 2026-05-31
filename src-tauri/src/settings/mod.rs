@@ -140,20 +140,7 @@ impl Default for MochiSettings {
         Self {
             update_channel: UpdateChannel::Stable,
             refresh_interval_seconds: 300,
-            enabled_providers: vec![
-                "codex".into(),
-                "claude".into(),
-                "cursor".into(),
-                "gemini".into(),
-                "copilot".into(),
-                "opencode".into(),
-                "opencode-go".into(),
-                "antigravity".into(),
-                "factory".into(),
-                "zai".into(),
-                "kiro".into(),
-                "augment".into(),
-            ],
+            enabled_providers: Vec::new(),
             show_notifications: true,
             provider_configs: HashMap::new(),
         }
@@ -202,6 +189,7 @@ mod tests {
     fn defaults_to_stable_channel() {
         let settings = MochiSettings::default();
         assert_eq!(settings.update_channel, UpdateChannel::Stable);
+        assert!(settings.enabled_providers.is_empty());
     }
 
     #[test]

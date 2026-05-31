@@ -176,6 +176,41 @@ pub(crate) fn user_home_dir() -> Option<std::path::PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::test_env;
+    use rusqlite::Connection;
+    use std::fs;
+    use std::path::Path;
+
+    fn write_zen_fixture(home: &Path) {
+        let profile = crate::browser::profiles::gecko_test_profile_dir(
+            home,
+            crate::browser::BrowserKind::Zen,
+            "abc.default-release",
+        );
+        fs::create_dir_all(&profile).expect("profile dir");
+        let db_path = profile.join("cookies.sqlite");
+        let connection = Connection::open(&db_path).expect("open fixture db");
+        connection
+            .execute_batch(
+                "CREATE TABLE moz_cookies (
+                    host TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    path TEXT NOT NULL,
+                    value TEXT,
+                    expiry INTEGER,
+                    isSecure INTEGER,
+                    isHttpOnly INTEGER
+                );",
+            )
+            .expect("schema");
+        connection
+            .execute(
+                "INSERT INTO moz_cookies (host, name, path, value, expiry, isSecure, isHttpOnly)
+                 VALUES ('.opencode.ai', 'auth', '/', 'zen-opencode', 0, 1, 1)",
+                [],
+            )
+            .expect("insert");
+    }
 
     #[test]
     fn normalizes_workspace_id_from_url() {
@@ -199,5 +234,32 @@ mod tests {
             request_cookie_header("auth=only-token"),
             Some("auth=only-token".into())
         );
+    }
+
+    #[test]
+    #[allow(clippy::await_holding_lock)]
+    fn resolve_session_imports_from_zen_browser_fixture() {
+        let _guard = test_env::LOCK.lock().expect("env lock");
+        std::env::remove_var(ENV_COOKIE);
+        std::env::remove_var(ENV_WORKSPACE_ID);
+        std::env::remove_var("HOME");
+
+        let temp = std::env::temp_dir().join(format!(
+            "mochi-opencode-zen-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        write_zen_fixture(&temp);
+        std::env::set_var("HOME", &temp);
+
+        let session = resolve_session(None).expect("resolve").expect("session");
+
+        std::env::remove_var("HOME");
+        let _ = fs::remove_dir_all(temp);
+
+        assert_eq!(session.cookie_header, "auth=zen-opencode");
+        assert!(session.source_label.contains("Zen"));
     }
 }

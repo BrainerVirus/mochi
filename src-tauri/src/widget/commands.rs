@@ -22,6 +22,7 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
 
     prepare_widget_window_events(&window)?;
+    crate::linux_window_controls::prepare_decorated_window(&window, WIDGET_LABEL);
     if let Some(state) = app.try_state::<DiagnosticsState>() {
         let url = window
             .url()
@@ -59,6 +60,7 @@ fn prepare_widget_window_events(window: &WebviewWindow) -> Result<(), Box<dyn st
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(window) = app.get_webview_window(WIDGET_LABEL) {
         prepare_widget_window_events(&window)?;
+        crate::linux_window_controls::prepare_decorated_window(&window, WIDGET_LABEL);
         let _ = window.set_always_on_top(true);
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
             width: WIDGET_MIN_WIDTH,
@@ -82,6 +84,7 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 #[tauri::command]
 pub fn show_widget(app: AppHandle) -> Result<(), String> {
     let window = widget_window(&app)?;
+    crate::linux_window_controls::prepare_decorated_window(&window, WIDGET_LABEL);
 
     let show_result = window.show();
     crate::diagnostics::log_window_action_result(
@@ -98,6 +101,7 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
         unminimize_result.as_ref().map(|_| ()),
     );
     unminimize_result.map_err(|error| error.to_string())?;
+    crate::linux_window_controls::prepare_decorated_window(&window, WIDGET_LABEL);
 
     let focus_result = window.set_focus();
     crate::diagnostics::log_window_action_result(

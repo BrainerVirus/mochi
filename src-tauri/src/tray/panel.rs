@@ -76,6 +76,7 @@ fn configure_macos_overlay_titlebar(window: &WebviewWindow) {
 pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::error::Error>> {
     // Hidden at startup — keep off taskbar/dock until the user opens settings/about.
     let _ = window.set_skip_taskbar(true);
+    crate::linux_window_controls::prepare_decorated_window(window, SETTINGS_WINDOW_LABEL);
 
     #[cfg(target_os = "macos")]
     configure_macos_overlay_titlebar(window);
@@ -387,6 +388,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     if let Err(error) = ensure_app_window_vibrancy(&window) {
         eprintln!("[mochi] app window vibrancy unavailable: {error}");
     }
+    crate::linux_window_controls::prepare_decorated_window(&window, SETTINGS_WINDOW_LABEL);
 
     emit_app_navigate(&app, path.as_str())?;
 
@@ -412,6 +414,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
             show_result.as_ref().map(|_| ()),
         );
         show_result.map_err(|error| error.to_string())?;
+        crate::linux_window_controls::prepare_decorated_window(&window, SETTINGS_WINDOW_LABEL);
 
         let unminimize_result = window.unminimize();
         crate::diagnostics::log_window_action_result(
@@ -420,6 +423,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
             unminimize_result.as_ref().map(|_| ()),
         );
         unminimize_result.map_err(|error| error.to_string())?;
+        crate::linux_window_controls::prepare_decorated_window(&window, SETTINGS_WINDOW_LABEL);
 
         let focus_result = window.set_focus();
         crate::diagnostics::log_window_action_result(

@@ -57,6 +57,11 @@ export async function refreshProvider(provider: ProviderId): Promise<UsageSnapsh
   return UsageSnapshotSchema.parse(result);
 }
 
+export async function refreshEnabledProviders(): Promise<UsageSnapshots> {
+  const result = await invoke<unknown>("refresh_enabled_providers");
+  return UsageSnapshotsSchema.parse(result);
+}
+
 export async function getSettings(): Promise<MochiSettings> {
   if (!isTauriRuntime()) {
     return DEFAULT_MOCHI_SETTINGS;

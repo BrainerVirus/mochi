@@ -7,6 +7,7 @@ pub mod diagnostics;
 pub mod frontend;
 pub mod lifecycle;
 pub mod linux_webkit;
+pub mod linux_window_controls;
 #[cfg(target_os = "macos")]
 pub mod macos;
 pub mod providers;
@@ -106,6 +107,7 @@ pub fn run() -> anyhow::Result<()> {
             get_provider_credential_status,
             status::get_usage_snapshots,
             status::refresh_provider,
+            status::refresh_enabled_providers,
             show_main_panel,
             open_app_window,
             open_external_url,

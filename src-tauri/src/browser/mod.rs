@@ -25,9 +25,35 @@ pub mod opencode {
 
     pub const AUTH_COOKIE_NAMES: &[&str] = &["auth", "__Host-auth"];
 
-    /// OpenCode defaults to Chrome-first import in CodexBar to avoid extra browser prompts.
+    /// Prefer likely OpenCode browsers first, but keep scanning the full catalog.
     pub fn import_order() -> Vec<super::BrowserKind> {
-        vec![super::BrowserKind::Chrome]
+        #[cfg(all(unix, not(target_os = "macos")))]
+        let preferred = [
+            super::BrowserKind::Zen,
+            super::BrowserKind::Firefox,
+            super::BrowserKind::Chrome,
+            super::BrowserKind::Edge,
+            super::BrowserKind::Brave,
+            super::BrowserKind::Chromium,
+        ];
+
+        #[cfg(not(all(unix, not(target_os = "macos"))))]
+        let preferred = [
+            super::BrowserKind::Chrome,
+            super::BrowserKind::Edge,
+            super::BrowserKind::Brave,
+            super::BrowserKind::Chromium,
+            super::BrowserKind::Zen,
+            super::BrowserKind::Firefox,
+        ];
+
+        let mut order = preferred.to_vec();
+        let remaining: Vec<_> = super::default_import_order()
+            .into_iter()
+            .filter(|browser| !order.contains(browser))
+            .collect();
+        order.extend(remaining);
+        order
     }
 
     pub fn import_from_browsers(home: &std::path::Path) -> Option<ImportedCookies> {
@@ -90,5 +116,18 @@ mod tests {
     fn cursor_domains_include_cursor_com_and_sh() {
         assert!(cursor::DOMAINS.contains(&"cursor.com"));
         assert!(cursor::DOMAINS.contains(&"cursor.sh"));
+    }
+
+    #[test]
+    fn opencode_import_order_scans_full_modern_browser_catalog() {
+        let order = super::opencode::import_order();
+
+        assert!(order.contains(&super::BrowserKind::Chrome));
+        assert!(order.contains(&super::BrowserKind::Edge));
+        assert!(order.contains(&super::BrowserKind::Brave));
+        assert!(order.contains(&super::BrowserKind::Chromium));
+        assert!(order.contains(&super::BrowserKind::Vivaldi));
+        assert!(order.contains(&super::BrowserKind::Firefox));
+        assert!(order.contains(&super::BrowserKind::Zen));
     }
 }

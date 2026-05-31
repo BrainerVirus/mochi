@@ -1,4 +1,5 @@
 import { UpdateCheckPrefetch } from "@/components/updates/update-check-prefetch";
+import { useColdStartProviderRefresh } from "@/hooks/use-cold-start-provider-refresh";
 import { useDiagnosticsBoot } from "@/hooks/use-diagnostics-boot";
 import { useInitialWindowRoute } from "@/hooks/use-initial-window-route";
 import { usePostUpdateRefresh } from "@/hooks/use-post-update-refresh";
@@ -11,6 +12,7 @@ export function TrayEventBridge() {
   useTrayEvents();
   useTrayUsageSync();
   usePostUpdateRefresh();
+  useColdStartProviderRefresh();
 
   return <UpdateCheckPrefetch />;
 }

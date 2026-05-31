@@ -192,6 +192,33 @@ mod tests {
     }
 
     #[test]
+    #[cfg(all(unix, not(target_os = "macos")))]
+    fn linux_chromium_family_roots_cover_modern_browsers() {
+        let home = Path::new("/home/test");
+
+        assert_eq!(
+            chromium_user_data_root_for(home, BrowserKind::Edge),
+            PathBuf::from("/home/test/.config/microsoft-edge")
+        );
+        assert_eq!(
+            chromium_user_data_root_for(home, BrowserKind::Brave),
+            PathBuf::from("/home/test/.config/BraveSoftware/Brave-Browser")
+        );
+        assert_eq!(
+            chromium_user_data_root_for(home, BrowserKind::Chromium),
+            PathBuf::from("/home/test/.config/chromium")
+        );
+        assert_eq!(
+            chromium_user_data_root_for(home, BrowserKind::Vivaldi),
+            PathBuf::from("/home/test/.config/vivaldi")
+        );
+        assert_eq!(
+            chromium_user_data_root_for(home, BrowserKind::ChromeCanary),
+            PathBuf::from("/home/test/.config/google-chrome-unstable")
+        );
+    }
+
+    #[test]
     #[cfg(windows)]
     fn windows_chrome_root_uses_local_app_data() {
         let home = Path::new(r"C:\Users\test");

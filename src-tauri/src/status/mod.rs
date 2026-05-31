@@ -49,6 +49,17 @@ pub async fn refresh_provider(
     }
 }
 
+#[tauri::command]
+pub async fn refresh_enabled_providers(
+    store: State<'_, UsageStore>,
+    settings_state: State<'_, SettingsState>,
+) -> Result<Vec<UsageSnapshot>, String> {
+    let settings = settings_state.current()?;
+    refresh_enabled_snapshots(&store, &settings)
+        .await
+        .map_err(|error| error.to_string())
+}
+
 /// Matches frontend `isProviderConfigured` — real fetch, credential pending, or stale/error cache.
 pub fn is_snapshot_configured(snapshot: &UsageSnapshot) -> bool {
     const STATIC_SNAPSHOT_EPOCH: &str = "1970-01-01T00:00:00Z";
@@ -321,6 +332,29 @@ mod tests {
 
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
+    async fn refresh_enabled_snapshots_caches_credential_detected_providers() {
+        let _guard = test_env::LOCK.lock().expect("env lock");
+        std::env::set_var(
+            "MOCHI_CLAUDE_SESSION_KEY",
+            "sk-ant-test-session-key-for-bulk-refresh-cache",
+        );
+
+        let store = UsageStore::new(None);
+        let settings = settings_with_enabled(&["claude"]);
+        let _ = refresh_enabled_snapshots(&store, &settings)
+            .await
+            .expect("refresh should complete");
+        let cached = read_cached_snapshots(&store, &settings);
+
+        std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
+
+        assert!(cached
+            .iter()
+            .any(|snapshot| snapshot.provider == ProviderId::Claude));
+    }
+
+    #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
     async fn refresh_enabled_snapshots_populates_cache_for_get() {
         let _guard = test_env::LOCK.lock().expect("env lock");
         std::env::set_var(
@@ -354,24 +388,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn refresh_enabled_snapshots_returns_all_default_enabled_providers() {
+    async fn refresh_enabled_snapshots_returns_empty_for_default_settings() {
         let store = UsageStore::new(None);
-        let enabled = MochiSettings::default().enabled_providers;
         let snapshots = refresh_enabled_snapshots(&store, &MochiSettings::default())
             .await
             .expect("providers should fetch or skip when unconfigured");
 
-        let non_codex_enabled = enabled
-            .iter()
-            .filter(|provider| *provider != "codex")
-            .count();
-        let non_codex_snapshots = snapshots
-            .iter()
-            .filter(|snapshot| snapshot.provider != ProviderId::Codex)
-            .count();
-
-        assert!(non_codex_snapshots <= non_codex_enabled);
-        assert!(snapshots.len() <= enabled.len());
+        assert!(snapshots.is_empty());
     }
 
     #[tokio::test]

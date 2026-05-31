@@ -45,6 +45,7 @@ mod tests {
         let settings = load_settings(&path);
         assert_eq!(settings.update_channel, UpdateChannel::Stable);
         assert_eq!(settings.refresh_interval_seconds, 300);
+        assert!(settings.enabled_providers.is_empty());
     }
 
     #[test]
