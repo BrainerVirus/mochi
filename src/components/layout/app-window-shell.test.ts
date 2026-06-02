@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { shouldRenderOverlayTitlebar } from "./app-window-shell";
+import { shouldRenderOverlayTitlebar } from "./app-window-titlebar-policy";
 
 describe("AppWindowShell platform chrome", () => {
   it("renders the custom draggable overlay only on macOS", () => {

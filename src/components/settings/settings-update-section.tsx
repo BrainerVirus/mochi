@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -9,7 +9,10 @@ import { ReleaseNotesDialog } from "@/components/updates/release-notes-dialog";
 import { useUpdateCheck, useUpdateInstall } from "@/hooks/use-update-install";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import { fetchCurrentReleaseNotes } from "@/lib/updates/current-release-notes";
-import { readCachedReleaseNotesForChannel } from "@/lib/updates/release-notes-cache";
+import {
+  readCachedReleaseNotesForChannel,
+  type ReleaseNotesCache,
+} from "@/lib/updates/release-notes-cache";
 import {
   resolveSettingsUpdateStatusLabel,
   shouldShowSettingsInstallButton,
@@ -97,17 +100,14 @@ export function SettingsUpdateSection({ channel }: SettingsUpdateSectionProps) {
 }
 
 function useSettingsReleaseNotes(channel: MochiSettings["update_channel"]) {
-  const [fallbackNotes, setFallbackNotes] = useState(readCachedReleaseNotesForChannel(channel));
-  const cachedNotes = fallbackNotes ?? readCachedReleaseNotesForChannel(channel);
-
-  useEffect(() => {
-    setFallbackNotes(readCachedReleaseNotesForChannel(channel));
-  }, [channel]);
+  const [fetchedNotes, setFetchedNotes] = useState<ReleaseNotesCache | null>(null);
+  const cachedNotes =
+    fetchedNotes?.channel === channel ? fetchedNotes : readCachedReleaseNotesForChannel(channel);
 
   function refreshNotes() {
     void fetchCurrentReleaseNotes(channel).then((entry) => {
       if (entry) {
-        setFallbackNotes(entry);
+        setFetchedNotes(entry);
       }
     });
   }

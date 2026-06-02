@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 
+import { shouldRenderOverlayTitlebar } from "@/components/layout/app-window-titlebar-policy";
 import { detectPlatform, type PlatformId } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 
@@ -34,8 +35,4 @@ export function AppWindowShell({ children, variant = "settings" }: AppWindowShel
       <div className="app-window-body flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
     </div>
   );
-}
-
-export function shouldRenderOverlayTitlebar(platform: PlatformId): boolean {
-  return platform === "macos";
 }
