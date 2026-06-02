@@ -33,7 +33,7 @@ use tray::{
     maybe_show_main_for_dev, open_app_window, set_tray_panel_height, setup_app_windows,
     setup_main_panel, setup_tray, show_main_panel, sync_tray_usage,
 };
-use widget::{hide_widget, setup_widget, show_widget, toggle_widget};
+use widget::{hide_widget, set_widget_height, setup_widget, show_widget, toggle_widget};
 
 #[tauri::command]
 fn app_version() -> &'static str {
@@ -117,6 +117,7 @@ pub fn run() -> anyhow::Result<()> {
             updater::install_update,
             show_widget,
             hide_widget,
+            set_widget_height,
             toggle_widget,
             diagnostics::report_frontend_boot,
             diagnostics::report_frontend_error,

@@ -12,6 +12,34 @@ Mochi is a cross-platform desktop companion for AI coding tools. It tracks sessi
 
 Mochi exists because of [steipete/codexbar](https://github.com/steipete/codexbar). CodexBar proved how useful a focused menu-bar usage tracker for Codex could be; Mochi takes that spark seriously and expands the idea into a cross-platform companion for macOS, Windows, and Linux, with tray, widget, CLI, and status-bar surfaces that feel native on each platform.
 
+## Features
+
+- **Tray app** — Dynamic icon with usage bars; click for a compact panel where the desktop supports direct tray activation, with a menu fallback for GNOME/AppIndicator desktops.
+- **Desktop widget** — Floating overview for desktops where tray support is unreliable.
+- **Settings** — Enable providers, configure refresh intervals, update channel, and privacy-related options.
+- **Providers** — Top v1 providers (Codex, Claude, Cursor, Gemini, Copilot, Antigravity, Factory/Droid, z.ai, Kiro, Augment) with clear stale/error/incident states.
+- **CLI & status bar** — `mochi usage`, `mochi status`, Waybar JSON, and automation-friendly output.
+- **Privacy-first** — Local-only storage, no server-side aggregation, opt-in browser cookie access.
+
+## Requirements
+
+Runtime installers handle most platform dependencies:
+
+| OS          | Packages / runtime                                                                                                  | Notes                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Linux**   | Ayatana or legacy AppIndicator, `libsecret-1-0`, `librsvg2`; optional GNOME AppIndicator extension on Ubuntu/Debian | Formats: **AppImage**, **`.deb`**, **`.rpm` only** (not Flatpak). Cookie import uses `~/.config` profiles + GNOME Keyring/KWallet. [docs/linux.md](docs/linux.md) |
+| **Windows** | Microsoft Edge **WebView2** Runtime (winget or bootstrapper)                                                        | Cookie import uses DPAPI + Chromium `Local State`                                                                                                                 |
+| **macOS**   | None via script                                                                                                     | First cookie import may prompt Keychain; Safari import supported                                                                                                  |
+
+Installer requirements:
+
+- **macOS / Linux scripts:** `curl`, `jq`
+- **macOS:** `hdiutil`, `ditto`
+- **Linux `.deb` / `.rpm`:** `sudo` and the matching package manager
+- **Windows:** PowerShell 5.1+
+- **Optional:** `GITHUB_TOKEN` for higher GitHub API rate limits
+- **Linux opt-outs:** `MOCHI_SKIP_DEPS=1` skips runtime dependency setup; `MOCHI_GNOME_TRAY=0` skips the optional GNOME tray extension step
+
 ## Install
 
 Install from [GitHub Releases](https://github.com/BrainerVirus/mochi/releases). Scripts default to the latest **stable** release. Pass **`-i`** (or **`--unstable`**) for the unstable channel (latest prerelease from `main`).
@@ -30,7 +58,7 @@ Unstable:
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i
 ```
 
-**Homebrew** (temporary cask from the selected release; requires [Homebrew](https://brew.sh/)):
+**Homebrew** (optional local cask from the selected release; requires [Homebrew](https://brew.sh/)):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash
@@ -43,6 +71,8 @@ curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/ins
 ```
 
 _Advanced:_ the direct script accepts `MOCHI_INSTALL_DIR` (default `/Applications`) if you need a non-system location.\_
+
+The Homebrew script does not require a Brew account. It generates a temporary local cask from the GitHub release asset and installs that cask. A normal `brew install --cask brainervirus/tap/mochi` flow would require publishing a Homebrew tap repository or submitting a cask PR upstream; until then, prefer the direct installer if the local cask path fails on your machine.
 
 ### Linux
 
@@ -63,6 +93,8 @@ Package selection:
 | `MOCHI_PACKAGE` | `appimage`, `deb`, `rpm`, `auto` | `auto` (deb on Debian/Ubuntu, rpm on Fedora/RHEL, else AppImage) |
 
 AppImage installs to `~/.local/bin/mochi`.
+
+On GNOME, the installer attempts to install and enable AppIndicator support so the tray icon can expose the usage panel. You may need to log out and back in after the first install. Set `MOCHI_GNOME_TRAY=0` only if you want to skip this optional desktop integration step.
 
 ### Windows (PowerShell)
 
@@ -99,35 +131,9 @@ $env:MOCHI_VERSION = "v1.0.0"
 
 Set `MOCHI_UNSTABLE=1` instead of `-i` / `-Unstable` if you prefer environment variables.
 
-### Requirements
-
-- **macOS / Linux scripts:** `curl`, `jq`
-- **macOS:** `hdiutil`, `ditto`
-- **Linux `.deb` / `.rpm`:** `sudo` and the matching package manager
-- **Windows:** PowerShell 5.1+
-- **Optional:** `GITHUB_TOKEN` for higher GitHub API rate limits
-- **`MOCHI_SKIP_DEPS=1`:** skip automatic runtime dependency setup (see below)
-
 See [docs/releasing.md](docs/releasing.md) for stable vs unstable release channels.
 
-### Platform requirements (what install scripts set up)
-
-| OS          | Packages / runtime                                                                                                  | Notes                                                                                                                                                             |
-| ----------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Linux**   | Ayatana or legacy AppIndicator, `libsecret-1-0`, `librsvg2`; optional GNOME AppIndicator extension on Ubuntu/Debian | Formats: **AppImage**, **`.deb`**, **`.rpm` only** (not Flatpak). Cookie import uses `~/.config` profiles + GNOME Keyring/KWallet. [docs/linux.md](docs/linux.md) |
-| **Windows** | Microsoft Edge **WebView2** Runtime (winget or bootstrapper)                                                        | Cookie import uses DPAPI + Chromium `Local State`                                                                                                                 |
-| **macOS**   | None via script                                                                                                     | First cookie import may prompt Keychain; Safari import supported                                                                                                  |
-
 Linux install runs `scripts/install/lib/linux-deps.sh` before downloading the release artifact. Windows install runs `Ensure-MochiRuntimeDependencies` before MSI/NSIS.
-
-## Features
-
-- **Tray app** — Dynamic icon with usage bars; click for a compact panel, secondary action for refresh, settings, updates, and quit.
-- **Desktop widget** — Floating overview for desktops where tray support is unreliable (especially Linux).
-- **Settings** — Enable providers, configure refresh intervals, update channel, and privacy-related options.
-- **Providers** — Top v1 providers (Codex, Claude, Cursor, Gemini, Copilot, Antigravity, Factory/Droid, z.ai, Kiro, Augment) with clear stale/error/incident states.
-- **CLI & status bar** — `mochi usage`, `mochi status`, Waybar JSON, and automation-friendly output.
-- **Privacy-first** — Local-only storage, no server-side aggregation, opt-in browser cookie access.
 
 ## Tech stack
 
@@ -140,7 +146,7 @@ Linux install runs `scripts/install/lib/linux-deps.sh` before downloading the re
 
 See [docs/tech-stack.md](docs/tech-stack.md) for versions, folder layout, and conventions.
 
-## Prerequisites
+## Development Requirements
 
 - **Node.js** 24 LTS or newer (`.nvmrc` pins **25** for local/CI parity; npm 11 ships with Node 25)
 - **pnpm** 9.15.x — enable via [Corepack](https://nodejs.org/api/corepack.html) (`corepack enable`); version pinned in `package.json` `packageManager`

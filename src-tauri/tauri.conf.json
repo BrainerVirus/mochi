@@ -46,7 +46,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://mochi-app.github.io/mochi/updates/{{target}}/{{arch}}/{{current_version}}/{{channel}}.json"
+        "https://mochi-app.github.io/mochi/updates/{{target}}/{{arch}}/{{current_version}}/stable.json"
       ],
       "pubkey": "MOCHI_UPDATER_PUBLIC_KEY_REPLACED_BY_CI"
     }

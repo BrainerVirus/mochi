@@ -21,6 +21,8 @@ export function useUpdateCheck(enabled = isTauriRuntime()) {
 
 export function useUpdateInstall() {
   const queryClient = useQueryClient();
+  const { data: settings } = useQuery(settingsQueryOptions);
+  const channel = settings?.update_channel ?? "stable";
   const [progress, setProgress] = useState<UpdateDownloadProgress | null>(null);
   const [phase, setPhase] = useState<"idle" | "downloading" | "installing" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function useUpdateInstall() {
       setProgress({ downloaded: 0, total: null });
       setErrorMessage(null);
       markPostUpdateRefreshPending();
-      await installUpdate();
+      await installUpdate(channel);
     },
     onError: (error) => {
       setPhase("error");
@@ -69,8 +71,8 @@ export function useUpdateInstall() {
     },
   });
 
-  const checkNow = useCallback(async (channel: string) => {
-    return checkForUpdate(channel);
+  const checkNow = useCallback(async (nextChannel: string) => {
+    return checkForUpdate(nextChannel);
   }, []);
 
   return {

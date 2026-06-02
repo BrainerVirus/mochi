@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Ensure Linux runtime dependencies for Mochi (tray indicator, libsecret, SVG).
 # Sourced from install-linux.sh. Idempotent; honors MOCHI_SKIP_DEPS=1.
+# Set MOCHI_GNOME_TRAY=0 to skip the optional GNOME AppIndicator extension step.
 set -euo pipefail
 
 mochi_deps_log() {
@@ -64,40 +65,58 @@ mochi_ensure_debian_deps() {
     fi
   fi
 
+  mochi_ensure_gnome_tray_extension
+}
+
+mochi_is_gnome_desktop() {
   local desktop="${XDG_CURRENT_DESKTOP:-}"
-  if [[ "${desktop}" == *"GNOME"* || "${desktop}" == *"gnome"* ]]; then
-    local ext_pkg=""
-    if apt-cache show gnome-shell-extension-appindicator >/dev/null 2>&1; then
-      ext_pkg="gnome-shell-extension-appindicator"
-    elif apt-cache show gnome-shell-extension-ubuntu-appindicators >/dev/null 2>&1; then
-      ext_pkg="gnome-shell-extension-ubuntu-appindicators"
-    fi
-    if [[ -n "${ext_pkg}" ]]; then
-      if mochi_dpkg_installed "${ext_pkg}"; then
-        mochi_deps_log "ok (already installed): ${ext_pkg}"
-      elif [[ "${MOCHI_DEPS_DRY_RUN:-0}" == "1" ]]; then
-        mochi_deps_log "[dry-run] would install ${ext_pkg}"
-      else
-        sudo apt-get install -y --no-install-recommends "${ext_pkg}" || \
-          mochi_deps_warn "could not install ${ext_pkg}; install a GNOME AppIndicator extension manually"
-      fi
-      if command -v gnome-extensions >/dev/null 2>&1; then
-        local uuid=""
-        if [[ "${ext_pkg}" == *"ubuntu-appindicators"* ]]; then
-          uuid="ubuntu-appindicators@ubuntu.com"
-        else
-          uuid="appindicatorsupport@rgcjonas.gmail.com"
-        fi
-        if [[ "${MOCHI_DEPS_DRY_RUN:-0}" != "1" ]]; then
-          gnome-extensions enable "${uuid}" 2>/dev/null || \
-            mochi_deps_warn "enable extension ${uuid} in GNOME Extensions, then log out and back in"
-        fi
-      else
-        mochi_deps_warn "log out and back in after installing ${ext_pkg} so the tray icon can appear"
-      fi
+  [[ "${desktop}" == *"GNOME"* || "${desktop}" == *"gnome"* ]]
+}
+
+mochi_ensure_gnome_tray_extension() {
+  if [[ "${MOCHI_GNOME_TRAY:-1}" == "0" ]]; then
+    mochi_deps_log "Skipping GNOME tray extension setup (MOCHI_GNOME_TRAY=0)"
+    return 0
+  fi
+
+  if ! mochi_is_gnome_desktop; then
+    return 0
+  fi
+
+  local ext_pkg=""
+  if apt-cache show gnome-shell-extension-appindicator >/dev/null 2>&1; then
+    ext_pkg="gnome-shell-extension-appindicator"
+  elif apt-cache show gnome-shell-extension-ubuntu-appindicators >/dev/null 2>&1; then
+    ext_pkg="gnome-shell-extension-ubuntu-appindicators"
+  fi
+
+  if [[ -z "${ext_pkg}" ]]; then
+    mochi_deps_warn "GNOME detected but no AppIndicator package found; see docs/linux.md"
+    return 0
+  fi
+
+  if mochi_dpkg_installed "${ext_pkg}"; then
+    mochi_deps_log "ok (already installed): ${ext_pkg}"
+  elif [[ "${MOCHI_DEPS_DRY_RUN:-0}" == "1" ]]; then
+    mochi_deps_log "[dry-run] would install ${ext_pkg}"
+  else
+    sudo apt-get install -y --no-install-recommends "${ext_pkg}" || \
+      mochi_deps_warn "could not install ${ext_pkg}; install a GNOME AppIndicator extension manually"
+  fi
+
+  if command -v gnome-extensions >/dev/null 2>&1; then
+    local uuid=""
+    if [[ "${ext_pkg}" == *"ubuntu-appindicators"* ]]; then
+      uuid="ubuntu-appindicators@ubuntu.com"
     else
-      mochi_deps_warn "GNOME detected but no AppIndicator package found; see docs/linux.md"
+      uuid="appindicatorsupport@rgcjonas.gmail.com"
     fi
+    if [[ "${MOCHI_DEPS_DRY_RUN:-0}" != "1" ]]; then
+      gnome-extensions enable "${uuid}" 2>/dev/null || \
+        mochi_deps_warn "enable extension ${uuid} in GNOME Extensions, then log out and back in"
+    fi
+  else
+    mochi_deps_warn "log out and back in after installing ${ext_pkg} so the tray icon can appear"
   fi
 }
 

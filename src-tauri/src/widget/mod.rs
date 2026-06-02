@@ -1,6 +1,6 @@
 mod commands;
 
-pub use commands::{hide_widget, setup_widget, show_widget, toggle_widget};
+pub use commands::{hide_widget, set_widget_height, setup_widget, show_widget, toggle_widget};
 
 use serde::{Deserialize, Serialize};
 
