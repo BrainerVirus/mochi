@@ -1,4 +1,4 @@
-import { setTrayPanelHeight } from "@/lib/tauri/commands";
+import { setTrayPanelHeight, setWidgetHeight } from "@/lib/tauri/commands";
 import {
   animateTrayPanelHeightTo,
   prefersReducedMotion,
@@ -13,16 +13,18 @@ export function isTauriTrayPanel(): boolean {
 export function syncTrayPanelHeightInstant(
   layout: HTMLElement,
   lastHeightRef: { current: number | null },
+  target: "tray" | "widget" = "tray",
 ): void {
   const height = resolveTrayPanelHeight(layout);
   lastHeightRef.current = height;
-  void setTrayPanelHeight(height);
+  void (target === "widget" ? setWidgetHeight(height) : setTrayPanelHeight(height));
 }
 
 export function observeTrayPanelHeight(
   layout: HTMLElement,
   lastHeightRef: { current: number | null },
   isTabAnimatingRef: { current: boolean },
+  target: "tray" | "widget" = "tray",
 ): () => void {
   let frame = 0;
 
@@ -33,7 +35,7 @@ export function observeTrayPanelHeight(
 
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
-      syncTrayPanelHeightInstant(layout, lastHeightRef);
+      syncTrayPanelHeightInstant(layout, lastHeightRef, target);
     });
   };
 
@@ -65,10 +67,11 @@ interface TabHeightAnimationRefs {
 export function runTrayPanelTabHeightAnimation(
   layout: HTMLElement,
   refs: TabHeightAnimationRefs,
+  target: "tray" | "widget" = "tray",
 ): () => void {
   if (refs.isInitialTabRef.current) {
     refs.isInitialTabRef.current = false;
-    syncTrayPanelHeightInstant(layout, refs.lastHeightRef);
+    syncTrayPanelHeightInstant(layout, refs.lastHeightRef, target);
     return () => {};
   }
 
@@ -83,7 +86,7 @@ export function runTrayPanelTabHeightAnimation(
     if (fromHeight === toHeight || prefersReducedMotion()) {
       refs.lastHeightRef.current = toHeight;
       refs.isTabAnimatingRef.current = false;
-      void setTrayPanelHeight(toHeight);
+      void (target === "widget" ? setWidgetHeight(toHeight) : setTrayPanelHeight(toHeight));
       return;
     }
 
@@ -92,7 +95,7 @@ export function runTrayPanelTabHeightAnimation(
       to: toHeight,
       onUpdate: (height) => {
         refs.lastHeightRef.current = height;
-        void setTrayPanelHeight(height);
+        void (target === "widget" ? setWidgetHeight(height) : setTrayPanelHeight(height));
       },
       onComplete: () => {
         refs.lastHeightRef.current = toHeight;

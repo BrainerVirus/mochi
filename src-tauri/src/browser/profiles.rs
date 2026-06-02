@@ -33,7 +33,7 @@ fn chromium_user_data_root_for(home: &Path, browser: BrowserKind) -> PathBuf {
     }
 }
 
-/// Gecko profiles root (`.../Profiles/`).
+/// Gecko profiles root.
 pub fn gecko_profiles_root(home: &Path, browser: BrowserKind) -> Option<PathBuf> {
     let folder = browser.gecko_profiles_folder()?;
     Some(gecko_profiles_root_for(home, browser, folder))
@@ -61,12 +61,11 @@ fn gecko_profiles_root_for(home: &Path, browser: BrowserKind, folder: &str) -> P
     #[cfg(all(unix, not(target_os = "macos")))]
     {
         let _folder = folder;
-        let base = match browser {
+        match browser {
             BrowserKind::Firefox => home.join(".mozilla").join("firefox"),
             BrowserKind::Zen => home.join(".zen"),
             _ => home.join(".mozilla").join("firefox"),
-        };
-        base.join("Profiles")
+        }
     }
 }
 
@@ -242,9 +241,15 @@ mod tests {
 
     #[test]
     #[cfg(all(unix, not(target_os = "macos")))]
-    fn linux_zen_profiles_root() {
+    fn linux_gecko_profiles_roots_are_profile_containers() {
         let home = Path::new("/home/test");
-        let root = gecko_profiles_root(home, BrowserKind::Zen).expect("zen root");
-        assert_eq!(root, PathBuf::from("/home/test/.zen/Profiles"));
+        assert_eq!(
+            gecko_profiles_root(home, BrowserKind::Firefox).expect("firefox root"),
+            PathBuf::from("/home/test/.mozilla/firefox")
+        );
+        assert_eq!(
+            gecko_profiles_root(home, BrowserKind::Zen).expect("zen root"),
+            PathBuf::from("/home/test/.zen")
+        );
     }
 }

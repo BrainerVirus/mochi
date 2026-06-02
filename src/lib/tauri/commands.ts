@@ -43,8 +43,8 @@ export async function checkForUpdate(channel: string): Promise<UpdateInfo> {
   return UpdateInfoSchema.parse(result);
 }
 
-export function installUpdate(): Promise<void> {
-  return invoke<void>("install_update");
+export function installUpdate(channel: string): Promise<void> {
+  return invoke<void>("install_update", { channel });
 }
 
 export async function getUsageSnapshots(): Promise<UsageSnapshots> {
@@ -118,6 +118,10 @@ export function openExternalUrl(url: string): Promise<void> {
 
 export function setTrayPanelHeight(height: number): Promise<void> {
   return invoke<void>("set_tray_panel_height", { height });
+}
+
+export function setWidgetHeight(height: number): Promise<void> {
+  return invoke<void>("set_widget_height", { height });
 }
 
 export function quitApp(): Promise<void> {

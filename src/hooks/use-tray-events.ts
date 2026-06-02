@@ -7,7 +7,12 @@ import { queryKeys } from "@/lib/query/keys";
 import { refreshProviderMutationOptions } from "@/lib/query/refresh-provider";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import type { MochiSettings, UpdateChannel } from "@/lib/schemas/settings";
-import { saveSettings, syncTrayUsage, openAppWindow } from "@/lib/tauri/commands";
+import {
+  openAppWindow,
+  refreshEnabledProviders,
+  saveSettings,
+  syncTrayUsage,
+} from "@/lib/tauri/commands";
 import {
   shouldHandleAppNavigateEvent,
   shouldHandleTrayNavigateEvent,
@@ -54,8 +59,9 @@ export function useTrayEvents() {
         void navigate({ to: event.payload });
       }),
       listen("tray-refresh", () => {
-        void queryClient
-          .invalidateQueries({ queryKey: queryKeys.usageSnapshots })
+        void refreshEnabledProviders()
+          .catch(() => undefined)
+          .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }))
           .then(() => syncTrayUsage());
       }),
       listen<UpdateChannel>("tray-set-channel", (event) => {
@@ -91,4 +97,8 @@ export function useTrayEvents() {
       });
     };
   }, [navigate, queryClient]);
+}
+
+export function shouldRunProviderRefreshForTrayEvent(eventName: string): boolean {
+  return eventName === "tray-refresh";
 }

@@ -69,6 +69,7 @@ pub async fn sync_tray_usage(
 }
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let usage_item = MenuItem::with_id(app, "usage", "Show usage", true, None::<&str>)?;
     let refresh_item = MenuItem::with_id(app, "refresh", "Refresh usage", true, None::<&str>)?;
     let widget_item = MenuItem::with_id(app, "widget", "Show widget", true, None::<&str>)?;
     let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
@@ -88,6 +89,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let menu = Menu::with_items(
         app,
         &[
+            &usage_item,
             &refresh_item,
             &widget_item,
             &settings_item,
@@ -106,6 +108,9 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
+            "usage" => {
+                open_tray_panel(app, "/");
+            }
             "refresh" => {
                 let _ = app.emit("tray-refresh", ());
             }

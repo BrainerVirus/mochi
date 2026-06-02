@@ -4,6 +4,8 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_updater::UpdaterExt;
 
+const UPDATE_ENDPOINT_BASE: &str = "https://mochi-app.github.io/mochi/updates";
+
 #[derive(Debug, Clone, Serialize)]
 pub struct UpdateInfo {
     pub available: bool,
@@ -23,9 +25,7 @@ pub async fn check_for_update(
     app: tauri::AppHandle,
     channel: String,
 ) -> Result<UpdateInfo, String> {
-    let update = app
-        .updater()
-        .map_err(|error| error.to_string())?
+    let update = updater_for_channel(&app, &channel)?
         .check()
         .await
         .map_err(|error| error.to_string())?;
@@ -47,10 +47,8 @@ pub async fn check_for_update(
 }
 
 #[tauri::command]
-pub async fn install_update(app: AppHandle) -> Result<(), String> {
-    if let Some(update) = app
-        .updater()
-        .map_err(|error| error.to_string())?
+pub async fn install_update(app: AppHandle, channel: String) -> Result<(), String> {
+    if let Some(update) = updater_for_channel(&app, &channel)?
         .check()
         .await
         .map_err(|error| error.to_string())?
@@ -83,6 +81,30 @@ pub async fn install_update(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+fn updater_for_channel(
+    app: &AppHandle,
+    channel: &str,
+) -> Result<tauri_plugin_updater::Updater, String> {
+    let endpoint = update_endpoint_for_channel(channel)?;
+    app.updater_builder()
+        .endpoints(vec![endpoint])
+        .map_err(|error| error.to_string())?
+        .build()
+        .map_err(|error| error.to_string())
+}
+
+fn update_endpoint_for_channel(channel: &str) -> Result<reqwest::Url, String> {
+    let channel = match channel {
+        "stable" | "unstable" => channel,
+        other => return Err(format!("unsupported update channel: {other}")),
+    };
+
+    reqwest::Url::parse(&format!(
+        "{UPDATE_ENDPOINT_BASE}/{{{{target}}}}/{{{{arch}}}}/{{{{current_version}}}}/{channel}.json"
+    ))
+    .map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -108,5 +130,21 @@ mod tests {
         let json = serde_json::to_string(&progress).expect("serialize");
         assert!(json.contains("1024"));
         assert!(json.contains("4096"));
+    }
+
+    #[test]
+    fn update_endpoint_inlines_channel_and_keeps_supported_updater_tokens() {
+        let stable = update_endpoint_for_channel("stable").expect("stable endpoint");
+        let unstable = update_endpoint_for_channel("unstable").expect("unstable endpoint");
+
+        assert!(stable.as_str().ends_with("/stable.json"));
+        assert!(unstable.as_str().ends_with("/unstable.json"));
+        assert!(stable.as_str().contains("%7B%7Btarget%7D%7D"));
+        assert!(!stable.as_str().contains("channel"));
+    }
+
+    #[test]
+    fn update_endpoint_rejects_unknown_channel() {
+        assert!(update_endpoint_for_channel("beta").is_err());
     }
 }

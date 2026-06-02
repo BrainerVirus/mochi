@@ -5,6 +5,7 @@ import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
 import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { useTrayPanelFocusReset } from "@/hooks/use-tray-panel-focus-reset";
+import { useTrayPanelHeight } from "@/hooks/use-tray-panel-height";
 import { useTrayPanelShortcuts } from "@/hooks/use-tray-panel-shortcuts";
 import { useTrayPanelState } from "@/hooks/use-tray-panel-state";
 import { quitApp } from "@/lib/tauri/commands";
@@ -30,6 +31,7 @@ export function WidgetWindow() {
   } = useTrayPanelState();
 
   useTrayPanelFocusReset(layoutRef);
+  useTrayPanelHeight(layoutRef, selectedTab, { target: "widget" });
   useTrayPanelShortcuts({
     onRefresh: () => {
       void refreshAll();
@@ -40,7 +42,7 @@ export function WidgetWindow() {
   });
 
   return (
-    <div className="bg-background flex h-screen min-h-0 flex-col overflow-hidden">
+    <div className="bg-background flex h-full min-h-0 flex-col overflow-hidden">
       <TrayPanelShell layoutRef={layoutRef}>
         <section
           data-tray-panel-content

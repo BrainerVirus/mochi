@@ -113,6 +113,16 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn set_widget_height(app: AppHandle, height: f64) -> Result<(), String> {
+    let window = widget_window(&app)?;
+    let width = widget_logical_width(&window);
+    let height = height.clamp(WIDGET_MIN_HEIGHT, 720.0);
+    window
+        .set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }))
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub fn hide_widget(app: AppHandle) -> Result<(), String> {
     let window = widget_window(&app)?;
     let hide_result = window.hide();
@@ -137,4 +147,13 @@ pub fn toggle_widget(app: AppHandle) -> Result<(), String> {
 fn widget_window(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
     app.get_webview_window(WIDGET_LABEL)
         .ok_or_else(|| format!("missing widget window: {WIDGET_LABEL}"))
+}
+
+fn widget_logical_width(window: &WebviewWindow) -> f64 {
+    let scale_factor = window.scale_factor().unwrap_or(1.0);
+    let width = window
+        .inner_size()
+        .map(|size| f64::from(size.width) / scale_factor)
+        .unwrap_or(320.0);
+    width.clamp(WIDGET_MIN_WIDTH, WIDGET_MAX_WIDTH)
 }

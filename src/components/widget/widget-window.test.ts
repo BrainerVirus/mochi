@@ -12,4 +12,11 @@ describe("WidgetWindow", () => {
     expect(source).toContain("TrayPanelFooter");
     expect(source).not.toContain("Card");
   });
+
+  it("syncs its native height to the shared tray panel content", () => {
+    const source = readFileSync(resolve("src/components/widget/widget-window.tsx"), "utf8");
+
+    expect(source).toContain('useTrayPanelHeight(layoutRef, selectedTab, { target: "widget" })');
+    expect(source).not.toContain("h-screen");
+  });
 });

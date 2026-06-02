@@ -14,7 +14,9 @@ export type ReleaseNotesCache = z.infer<typeof ReleaseNotesCacheSchema>;
 
 export function cacheReleaseNotes(entry: ReleaseNotesCache): void {
   try {
-    localStorage.setItem(RELEASE_NOTES_CACHE_KEY, JSON.stringify(entry));
+    const value = JSON.stringify(entry);
+    localStorage.setItem(RELEASE_NOTES_CACHE_KEY, value);
+    localStorage.setItem(`mochi:release-notes:${entry.channel}:v1`, value);
   } catch {
     // Private browsing or quota exceeded.
   }
@@ -23,6 +25,21 @@ export function cacheReleaseNotes(entry: ReleaseNotesCache): void {
 export function readCachedReleaseNotes(): ReleaseNotesCache | null {
   try {
     const raw = localStorage.getItem(RELEASE_NOTES_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = ReleaseNotesCacheSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function readCachedReleaseNotesForChannel(channel: string): ReleaseNotesCache | null {
+  const channelKey = `mochi:release-notes:${channel}:v1`;
+  try {
+    const raw = localStorage.getItem(channelKey) ?? localStorage.getItem(RELEASE_NOTES_CACHE_KEY);
     if (!raw) {
       return null;
     }

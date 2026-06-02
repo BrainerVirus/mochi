@@ -8,7 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { DEFAULT_MOCHI_SETTINGS } from "@/lib/schemas/settings";
 
-import { getSettings, refreshEnabledProviders } from "./commands";
+import { getSettings, installUpdate, refreshEnabledProviders, setWidgetHeight } from "./commands";
 
 describe("getSettings", () => {
   beforeEach(() => {
@@ -48,5 +48,33 @@ describe("refreshEnabledProviders", () => {
 
     expect(invoke).toHaveBeenCalledWith("refresh_enabled_providers");
     expect(snapshots[0]?.provider).toBe("codex");
+  });
+});
+
+describe("update commands", () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset();
+  });
+
+  it("passes the selected channel when installing updates", async () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    await installUpdate("unstable");
+
+    expect(invoke).toHaveBeenCalledWith("install_update", { channel: "unstable" });
+  });
+});
+
+describe("widget commands", () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset();
+  });
+
+  it("syncs widget height through Tauri", async () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    await setWidgetHeight(456);
+
+    expect(invoke).toHaveBeenCalledWith("set_widget_height", { height: 456 });
   });
 });

@@ -8,7 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { ReleaseNotesDialog } from "@/components/updates/release-notes-dialog";
 import { useUpdateCheck, useUpdateInstall } from "@/hooks/use-update-install";
 import type { MochiSettings } from "@/lib/schemas/settings";
-import { readCachedReleaseNotes } from "@/lib/updates/release-notes-cache";
+import { fetchCurrentReleaseNotes } from "@/lib/updates/current-release-notes";
+import {
+  readCachedReleaseNotesForChannel,
+  type ReleaseNotesCache,
+} from "@/lib/updates/release-notes-cache";
 import {
   resolveSettingsUpdateStatusLabel,
   shouldShowSettingsInstallButton,
@@ -22,7 +26,7 @@ export function SettingsUpdateSection({ channel }: SettingsUpdateSectionProps) {
   const [notesOpen, setNotesOpen] = useState(false);
   const { data: updateInfo, isFetching, refetch, isError, error } = useUpdateCheck();
   const install = useUpdateInstall();
-  const cachedNotes = readCachedReleaseNotes();
+  const { cachedNotes, refreshNotes } = useSettingsReleaseNotes(channel);
 
   const updateAvailable = updateInfo?.available ?? false;
   const version = updateInfo?.version ?? cachedNotes?.version ?? null;
@@ -69,7 +73,7 @@ export function SettingsUpdateSection({ channel }: SettingsUpdateSectionProps) {
           installPending={install.isPending}
           showInstall={showInstall}
           onCheck={() => {
-            void refetch();
+            void refetch().then(refreshNotes);
           }}
           onInstall={() => {
             install.mutate();
@@ -88,11 +92,27 @@ export function SettingsUpdateSection({ channel }: SettingsUpdateSectionProps) {
         notes={notes}
         isChecking={isFetching}
         onRecheck={() => {
-          void refetch();
+          void refetch().then(refreshNotes);
         }}
       />
     </>
   );
+}
+
+function useSettingsReleaseNotes(channel: MochiSettings["update_channel"]) {
+  const [fetchedNotes, setFetchedNotes] = useState<ReleaseNotesCache | null>(null);
+  const cachedNotes =
+    fetchedNotes?.channel === channel ? fetchedNotes : readCachedReleaseNotesForChannel(channel);
+
+  function refreshNotes() {
+    void fetchCurrentReleaseNotes(channel).then((entry) => {
+      if (entry) {
+        setFetchedNotes(entry);
+      }
+    });
+  }
+
+  return { cachedNotes, refreshNotes };
 }
 
 function UpdateProgress({

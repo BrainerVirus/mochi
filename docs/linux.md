@@ -10,12 +10,12 @@ The one-line installer sets up runtime dependencies (tray indicator, libsecret, 
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
 ```
 
-The installer resolves `main` to the latest commit SHA so GitHub’s raw CDN does not serve a stale `common.sh`. You should see `Mochi_0.1.3_amd64.deb` in the download line, not `Mochi_x64.app.tar.gz`. If an old script is cached, pin the install ref: `MOCHI_INSTALL_REF=097112d curl -fsSL ... | bash`.
+The installer resolves `main` to the latest commit SHA so GitHub’s raw CDN does not serve a stale `common.sh`. You should see a native Linux artifact in the download line (`.deb`, `.rpm`, or `.AppImage`), not a macOS `.dmg` or app archive.
 
-**Stable (recommended):** installs the latest non-prerelease tag (use **v0.1.3+** for the Linux blank-window fix; avoid **v0.1.2** on Linux).
+**Stable (recommended):** installs the latest non-prerelease tag.
 
 ```bash
-MOCHI_VERSION=v0.1.3 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
 ```
 
 **Unstable** (`-i` uses the `unstable` release tag, not deprecated v0.1.0):
@@ -24,19 +24,19 @@ MOCHI_VERSION=v0.1.3 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/m
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i
 ```
 
-Set `MOCHI_SKIP_DEPS=1` to skip the dependency phase. See [README](../README.md) for package formats and pinning releases.
+Set `MOCHI_SKIP_DEPS=1` to skip the dependency phase. Set `MOCHI_GNOME_TRAY=0` to skip the optional GNOME AppIndicator extension step. See [README](../README.md) for package formats and pinning releases.
 
 ## Tray Support
 
 Tray availability depends on the desktop environment. If the tray is unavailable, use widget mode or status-bar mode.
 
-**GNOME (Ubuntu 24.04 default):** the install script tries to install and enable an AppIndicator extension (for example [AppIndicator and KStatusNotifierItem Support](https://extensions.gnome.org/extension/615/appindicator-support/)). **Log out and back in** after install if the tray icon still does not appear.
+**GNOME (Ubuntu 24.04 default):** the install script tries to install and enable an AppIndicator extension such as `gnome-shell-extension-appindicator` or Ubuntu's appindicator extension. **Log out and back in** after first install if the tray icon still does not appear. GNOME/AppIndicator shells may still open the indicator menu on icon click; Mochi keeps the usage popover on direct tray activation when the desktop exposes it, and puts **Show usage** first in the indicator menu as the fallback.
 
 **Settings / tray panel look wrong (mostly transparent):** older builds used transparent GTK windows without native blur. Current builds use opaque windows on Linux with CSS “glass” styling. Reinstall from a recent release if you still see a hollow window with only the title bar visible.
 
 **Blank white windows on Ubuntu 24.04 / GNOME:** Mochi disables two WebKitGTK acceleration paths by default on Linux (`WEBKIT_DISABLE_DMABUF_RENDERER=1` and `WEBKIT_DISABLE_COMPOSITING_MODE=1`) before creating Tauri webviews. This avoids common compositor blank-window failures. To test native accelerated WebKit rendering anyway, launch with `MOCHI_ALLOW_WEBKIT_ACCELERATION=1 mochi`.
 
-**Workaround while the tray is missing:** open **Settings** from the app menu if available, use the desktop **widget** from the tray menu when the tray works, or run `mochi` from a terminal and use [status-bar mode](#status-bar) below. Settings shows a Linux note when the tray may be unavailable.
+**Workaround while the tray is missing:** open **Settings** from the app menu if available, use the desktop **widget** from the tray menu when the tray works, or run `mochi` from a terminal and use [status-bar mode](#status-bar) below. Settings shows a Linux note when tray support may be unavailable or waiting for a GNOME extension restart.
 
 ## Browser cookie import
 
