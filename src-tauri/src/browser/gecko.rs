@@ -127,10 +127,8 @@ fn read_gecko_cookies_from_db(path: &Path, domains: &[&str]) -> rusqlite::Result
 mod tests {
     use super::*;
 
-    #[cfg(target_os = "macos")]
     use rusqlite::Connection;
 
-    #[cfg(target_os = "macos")]
     fn write_gecko_fixture(path: &Path, host: &str, name: &str, value: &str) {
         let connection = Connection::open(path).expect("open fixture db");
         connection

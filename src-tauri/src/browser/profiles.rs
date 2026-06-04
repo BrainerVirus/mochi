@@ -86,30 +86,27 @@ fn extra_chromium_user_data_roots(home: &Path, browser: BrowserKind) -> Vec<Path
             roots.push(linux_snap_current_config_root(home, snap_name, segment));
         }
 
-        return roots;
+        roots
     }
 
-    let _ = home;
-    let _ = browser;
-    Vec::new()
+    #[cfg(not(all(unix, not(target_os = "macos"))))]
+    {
+        let _ = home;
+        let _ = browser;
+        Vec::new()
+    }
 }
 
 fn extra_gecko_profiles_roots(home: &Path, browser: BrowserKind) -> Vec<PathBuf> {
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        match browser {
-            BrowserKind::Firefox => {
-                return vec![
-                    linux_flatpak_home_relative_root(
-                        home,
-                        "org.mozilla.firefox",
-                        ".mozilla/firefox",
-                    ),
-                    linux_flatpak_config_root(home, "org.mozilla.firefox", "mozilla/firefox"),
-                    linux_flatpak_dot_config_root(home, "org.mozilla.firefox", "mozilla/firefox"),
-                    linux_snap_home_relative_root(home, "firefox", ".mozilla/firefox"),
-                ];
-            }
+        let roots = match browser {
+            BrowserKind::Firefox => vec![
+                linux_flatpak_home_relative_root(home, "org.mozilla.firefox", ".mozilla/firefox"),
+                linux_flatpak_config_root(home, "org.mozilla.firefox", "mozilla/firefox"),
+                linux_flatpak_dot_config_root(home, "org.mozilla.firefox", "mozilla/firefox"),
+                linux_snap_home_relative_root(home, "firefox", ".mozilla/firefox"),
+            ],
             BrowserKind::Zen => {
                 let mut roots: Vec<PathBuf> = linux_zen_flatpak_app_ids()
                     .iter()
@@ -127,20 +124,20 @@ fn extra_gecko_profiles_roots(home: &Path, browser: BrowserKind) -> Vec<PathBuf>
                     roots.push(linux_snap_home_relative_root(home, snap_name, "zen"));
                     roots.push(linux_snap_common_config_root(home, snap_name, "zen"));
                 }
-                return roots;
+                roots
             }
-            _ => {}
-        }
+            _ => Vec::new(),
+        };
+
+        roots
     }
 
-    let _ = home;
-    let _ = browser;
-    Vec::new()
-}
-
-#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
-fn zen_flatpak_profiles_root(home: &Path) -> PathBuf {
-    linux_flatpak_home_relative_root(home, "app.zen_browser.zen", ".zen")
+    #[cfg(not(all(unix, not(target_os = "macos"))))]
+    {
+        let _ = home;
+        let _ = browser;
+        Vec::new()
+    }
 }
 
 #[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
@@ -451,7 +448,7 @@ mod tests {
         let home = Path::new("/home/test");
 
         assert_eq!(
-            zen_flatpak_profiles_root(home),
+            linux_flatpak_home_relative_root(home, "app.zen_browser.zen", ".zen"),
             PathBuf::from("/home/test/.var/app/app.zen_browser.zen/.zen")
         );
     }
