@@ -72,16 +72,13 @@ jobs:
           releaseBody: |
             ## Mochi Unstable
 
-            Latest `main` build with Linux parity repairs.
+            Latest `main` build with Linux browser discovery and window stability fixes.
 
             ### What's changed
-            - **Refresh fixes** — background refresh, tray refresh, and manual refresh now perform real enabled-provider fetches before updating cached usage.
-            - **Linux browser detection** — Firefox and Zen profiles are discovered from their Linux profile roots so Cursor, OpenCode, and OpenCode Go can import active sessions.
-            - **Updater fixes** — stable and unstable update checks/install actions use explicit channel endpoints, and What's New can fetch the current release notes even when updater checks fail.
-            - **Linux windows** — settings/widget windows no longer render the macOS drag region on Linux, keeping native controls and mouse wheel scrolling available immediately.
-            - **GNOME tray guidance** — the installer can set up AppIndicator support, the indicator menu starts with Show usage, and Linux docs explain the GNOME fallback behavior.
-            - **Widget polish** — widget height sync removes the extra bottom space while preserving the user's current widget width.
-            - **Docs** — README hierarchy now puts features and requirements before install, with clearer Homebrew local-cask guidance.
+            - **Safer usage windows** — scheduled usage polling reads cached snapshots instead of starting live provider refreshes when settings, widget, or usage windows open.
+            - **Linux Chromium discovery** — Chrome, Edge, Brave, Chromium, Vivaldi, Yandex, and Helium scan native, Flatpak, and Snap profile roots.
+            - **Linux Gecko discovery** — Firefox and Zen scan native, Flatpak, and Snap profile roots, including Zen's current and historical Flatpak app IDs.
+            - **GitHub Flow docs** — agent instructions now forbid tool prefixes such as `codex/` in branch names.
 
             ### Install unstable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
@@ -109,16 +106,13 @@ jobs:
             const body = [
               "## Mochi Unstable",
               "",
-              "Latest `main` build with Linux parity repairs.",
+              "Latest `main` build with Linux browser discovery and window stability fixes.",
               "",
               "### What's changed",
-              "- **Refresh fixes** — background refresh, tray refresh, and manual refresh now perform real enabled-provider fetches before updating cached usage.",
-              "- **Linux browser detection** — Firefox and Zen profiles are discovered from their Linux profile roots so Cursor, OpenCode, and OpenCode Go can import active sessions.",
-              "- **Updater fixes** — stable and unstable update checks/install actions use explicit channel endpoints, and What's New can fetch the current release notes even when updater checks fail.",
-              "- **Linux windows** — settings/widget windows no longer render the macOS drag region on Linux, keeping native controls and mouse wheel scrolling available immediately.",
-              "- **GNOME tray guidance** — the installer can set up AppIndicator support, the indicator menu starts with Show usage, and Linux docs explain the GNOME fallback behavior.",
-              "- **Widget polish** — widget height sync removes the extra bottom space while preserving the user's current widget width.",
-              "- **Docs** — README hierarchy now puts features and requirements before install, with clearer Homebrew local-cask guidance.",
+              "- **Safer usage windows** — scheduled usage polling reads cached snapshots instead of starting live provider refreshes when settings, widget, or usage windows open.",
+              "- **Linux Chromium discovery** — Chrome, Edge, Brave, Chromium, Vivaldi, Yandex, and Helium scan native, Flatpak, and Snap profile roots.",
+              "- **Linux Gecko discovery** — Firefox and Zen scan native, Flatpak, and Snap profile roots, including Zen's current and historical Flatpak app IDs.",
+              "- **GitHub Flow docs** — agent instructions now forbid tool prefixes such as `codex/` in branch names.",
               "",
               "### Install unstable",
               "- macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`",

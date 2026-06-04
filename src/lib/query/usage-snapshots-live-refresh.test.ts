@@ -9,10 +9,10 @@ describe("createUsageSnapshotsQueryOptions live refresh", () => {
     expect(options.queryFn?.name).toBe("getUsageSnapshots");
   });
 
-  it("refreshes enabled providers on the configured interval", () => {
+  it("keeps scheduled polling on the cache read path", () => {
     const options = createUsageSnapshotsQueryOptions(300);
 
-    expect(options.queryFn?.name).toBe("refreshEnabledProviders");
+    expect(options.queryFn?.name).toBe("getUsageSnapshots");
     expect(options.refetchInterval).toBe(300_000);
     expect(options.refetchIntervalInBackground).toBe(true);
   });

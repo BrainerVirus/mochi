@@ -49,6 +49,7 @@ These rules are mirrored for Cursor and OpenCode. Treat the Markdown files under
 This repository uses GitHub Flow. Agents and contributors must keep `main` deployable and do all work on short-lived branches created from `main`.
 
 - Use branch names that describe the work: `feature/*`, `fix/*`, `chore/*`, or `docs/*`.
+- Do not add agent/tool prefixes such as `codex/`, `cursor/`, or `opencode/` to branch names. If a tool default suggests such a prefix, this repository's GitHub Flow naming wins.
 - Open pull requests into `main`; do not push directly to `main`.
 - Follow `.github/PULL_REQUEST_TEMPLATE.md` when preparing PR descriptions.
 - Run the required validation commands locally before opening a PR whenever feasible:
