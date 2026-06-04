@@ -13,6 +13,16 @@ pub fn chromium_user_data_root(home: &Path, browser: BrowserKind) -> Option<Path
     Some(chromium_user_data_root_for(home, browser))
 }
 
+pub fn chromium_user_data_roots(home: &Path, browser: BrowserKind) -> Vec<PathBuf> {
+    let Some(primary) = chromium_user_data_root(home, browser) else {
+        return Vec::new();
+    };
+
+    let mut roots = vec![primary];
+    roots.extend(extra_chromium_user_data_roots(home, browser));
+    dedupe_roots(roots)
+}
+
 fn chromium_user_data_root_for(home: &Path, browser: BrowserKind) -> PathBuf {
     #[cfg(target_os = "macos")]
     {
@@ -37,6 +47,189 @@ fn chromium_user_data_root_for(home: &Path, browser: BrowserKind) -> PathBuf {
 pub fn gecko_profiles_root(home: &Path, browser: BrowserKind) -> Option<PathBuf> {
     let folder = browser.gecko_profiles_folder()?;
     Some(gecko_profiles_root_for(home, browser, folder))
+}
+
+pub fn gecko_profiles_roots(home: &Path, browser: BrowserKind) -> Vec<PathBuf> {
+    let Some(primary) = gecko_profiles_root(home, browser) else {
+        return Vec::new();
+    };
+
+    let mut roots = vec![primary];
+    roots.extend(extra_gecko_profiles_roots(home, browser));
+
+    dedupe_roots(roots)
+}
+
+fn dedupe_roots(roots: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut deduped = Vec::new();
+    for root in roots {
+        if !deduped.contains(&root) {
+            deduped.push(root);
+        }
+    }
+    deduped
+}
+
+fn extra_chromium_user_data_roots(home: &Path, browser: BrowserKind) -> Vec<PathBuf> {
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let segment = linux_chromium_config_dir(browser);
+        let mut roots = Vec::new();
+
+        for app_id in linux_flatpak_app_ids(browser) {
+            roots.push(linux_flatpak_config_root(home, app_id, segment));
+            roots.push(linux_flatpak_dot_config_root(home, app_id, segment));
+        }
+
+        for snap_name in linux_snap_names(browser) {
+            roots.push(linux_snap_common_config_root(home, snap_name, segment));
+            roots.push(linux_snap_current_config_root(home, snap_name, segment));
+        }
+
+        return roots;
+    }
+
+    let _ = home;
+    let _ = browser;
+    Vec::new()
+}
+
+fn extra_gecko_profiles_roots(home: &Path, browser: BrowserKind) -> Vec<PathBuf> {
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        match browser {
+            BrowserKind::Firefox => {
+                return vec![
+                    linux_flatpak_home_relative_root(
+                        home,
+                        "org.mozilla.firefox",
+                        ".mozilla/firefox",
+                    ),
+                    linux_flatpak_config_root(home, "org.mozilla.firefox", "mozilla/firefox"),
+                    linux_flatpak_dot_config_root(home, "org.mozilla.firefox", "mozilla/firefox"),
+                    linux_snap_home_relative_root(home, "firefox", ".mozilla/firefox"),
+                ];
+            }
+            BrowserKind::Zen => {
+                let mut roots: Vec<PathBuf> = linux_zen_flatpak_app_ids()
+                    .iter()
+                    .flat_map(|app_id| {
+                        [
+                            linux_flatpak_home_relative_root(home, app_id, ".zen"),
+                            linux_flatpak_home_relative_root(home, app_id, "zen"),
+                            linux_flatpak_config_root(home, app_id, "zen"),
+                            linux_flatpak_dot_config_root(home, app_id, "zen"),
+                        ]
+                    })
+                    .collect();
+                for snap_name in linux_zen_snap_names() {
+                    roots.push(linux_snap_home_relative_root(home, snap_name, ".zen"));
+                    roots.push(linux_snap_home_relative_root(home, snap_name, "zen"));
+                    roots.push(linux_snap_common_config_root(home, snap_name, "zen"));
+                }
+                return roots;
+            }
+            _ => {}
+        }
+    }
+
+    let _ = home;
+    let _ = browser;
+    Vec::new()
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn zen_flatpak_profiles_root(home: &Path) -> PathBuf {
+    linux_flatpak_home_relative_root(home, "app.zen_browser.zen", ".zen")
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_flatpak_config_root(home: &Path, app_id: &str, config_segment: &str) -> PathBuf {
+    home.join(".var")
+        .join("app")
+        .join(app_id)
+        .join("config")
+        .join(config_segment)
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_flatpak_dot_config_root(home: &Path, app_id: &str, config_segment: &str) -> PathBuf {
+    linux_flatpak_home_relative_root(home, app_id, &format!(".config/{config_segment}"))
+}
+
+fn linux_flatpak_home_relative_root(home: &Path, app_id: &str, relative: &str) -> PathBuf {
+    home.join(".var").join("app").join(app_id).join(relative)
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_snap_common_config_root(home: &Path, snap_name: &str, config_segment: &str) -> PathBuf {
+    linux_snap_home_relative_root(home, snap_name, &format!(".config/{config_segment}"))
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_snap_current_config_root(home: &Path, snap_name: &str, config_segment: &str) -> PathBuf {
+    home.join("snap")
+        .join(snap_name)
+        .join("current")
+        .join(".config")
+        .join(config_segment)
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_snap_home_relative_root(home: &Path, snap_name: &str, relative: &str) -> PathBuf {
+    home.join("snap")
+        .join(snap_name)
+        .join("common")
+        .join(relative)
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_flatpak_app_ids(browser: BrowserKind) -> &'static [&'static str] {
+    match browser {
+        BrowserKind::Chrome => &["com.google.Chrome"],
+        BrowserKind::ChromeBeta => &["com.google.Chrome.Beta"],
+        BrowserKind::ChromeCanary => &["com.google.ChromeDev"],
+        BrowserKind::Edge => &["com.microsoft.Edge"],
+        BrowserKind::EdgeBeta => &["com.microsoft.Edge.Beta"],
+        BrowserKind::EdgeCanary => &["com.microsoft.EdgeDev"],
+        BrowserKind::Brave => &["com.brave.Browser"],
+        BrowserKind::BraveBeta => &["com.brave.Browser.Beta"],
+        BrowserKind::BraveNightly => &["com.brave.Browser.Nightly"],
+        BrowserKind::Chromium => &["org.chromium.Chromium"],
+        BrowserKind::Helium => &["net.imput.helium"],
+        BrowserKind::Vivaldi => &["com.vivaldi.Vivaldi"],
+        BrowserKind::Yandex => &["ru.yandex.Browser"],
+        _ => &[],
+    }
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_snap_names(browser: BrowserKind) -> &'static [&'static str] {
+    match browser {
+        BrowserKind::Chrome => &["google-chrome"],
+        BrowserKind::ChromeBeta => &["google-chrome-beta"],
+        BrowserKind::ChromeCanary => &["google-chrome-unstable"],
+        BrowserKind::Edge => &["microsoft-edge"],
+        BrowserKind::EdgeBeta => &["microsoft-edge-beta"],
+        BrowserKind::EdgeCanary => &["microsoft-edge-dev"],
+        BrowserKind::Brave => &["brave"],
+        BrowserKind::BraveBeta => &["brave-beta"],
+        BrowserKind::BraveNightly => &["brave-nightly"],
+        BrowserKind::Chromium => &["chromium"],
+        BrowserKind::Vivaldi => &["vivaldi"],
+        BrowserKind::Yandex => &["yandex-browser"],
+        _ => &[],
+    }
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_zen_flatpak_app_ids() -> &'static [&'static str] {
+    &["app.zen_browser.zen", "io.github.zen_browser.zen"]
+}
+
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn linux_zen_snap_names() -> &'static [&'static str] {
+    &["zen-browser", "zen"]
 }
 
 fn gecko_profiles_root_for(home: &Path, browser: BrowserKind, folder: &str) -> PathBuf {
@@ -251,5 +444,154 @@ mod tests {
             gecko_profiles_root(home, BrowserKind::Zen).expect("zen root"),
             PathBuf::from("/home/test/.zen")
         );
+    }
+
+    #[test]
+    fn zen_flatpak_profiles_root_uses_flathub_app_storage() {
+        let home = Path::new("/home/test");
+
+        assert_eq!(
+            zen_flatpak_profiles_root(home),
+            PathBuf::from("/home/test/.var/app/app.zen_browser.zen/.zen")
+        );
+    }
+
+    #[test]
+    fn linux_flatpak_config_root_uses_app_private_config_storage() {
+        let home = Path::new("/home/test");
+
+        assert_eq!(
+            linux_flatpak_config_root(home, "com.vivaldi.Vivaldi", "vivaldi"),
+            PathBuf::from("/home/test/.var/app/com.vivaldi.Vivaldi/config/vivaldi")
+        );
+    }
+
+    #[test]
+    fn linux_flatpak_home_relative_root_preserves_gecko_dot_directories() {
+        let home = Path::new("/home/test");
+
+        assert_eq!(
+            linux_flatpak_home_relative_root(home, "org.mozilla.firefox", ".mozilla/firefox"),
+            PathBuf::from("/home/test/.var/app/org.mozilla.firefox/.mozilla/firefox")
+        );
+    }
+
+    #[test]
+    fn linux_snap_common_config_root_uses_snap_common_storage() {
+        let home = Path::new("/home/test");
+
+        assert_eq!(
+            linux_snap_common_config_root(home, "chromium", "chromium"),
+            PathBuf::from("/home/test/snap/chromium/common/.config/chromium")
+        );
+    }
+
+    #[test]
+    fn linux_flatpak_app_ids_cover_supported_chromium_family_packages() {
+        assert_eq!(
+            linux_flatpak_app_ids(BrowserKind::Chrome),
+            &["com.google.Chrome"]
+        );
+        assert_eq!(
+            linux_flatpak_app_ids(BrowserKind::ChromeBeta),
+            &["com.google.Chrome.Beta"]
+        );
+        assert_eq!(
+            linux_flatpak_app_ids(BrowserKind::ChromeCanary),
+            &["com.google.ChromeDev"]
+        );
+        assert_eq!(
+            linux_flatpak_app_ids(BrowserKind::Edge),
+            &["com.microsoft.Edge"]
+        );
+        assert_eq!(
+            linux_flatpak_app_ids(BrowserKind::Brave),
+            &["com.brave.Browser"]
+        );
+        assert_eq!(
+            linux_flatpak_app_ids(BrowserKind::Chromium),
+            &["org.chromium.Chromium"]
+        );
+        assert_eq!(
+            linux_flatpak_app_ids(BrowserKind::Vivaldi),
+            &["com.vivaldi.Vivaldi"]
+        );
+        assert_eq!(
+            linux_flatpak_app_ids(BrowserKind::Yandex),
+            &["ru.yandex.Browser"]
+        );
+    }
+
+    #[test]
+    fn linux_snap_names_cover_supported_chromium_family_packages() {
+        assert_eq!(linux_snap_names(BrowserKind::Chrome), &["google-chrome"]);
+        assert_eq!(linux_snap_names(BrowserKind::Edge), &["microsoft-edge"]);
+        assert_eq!(linux_snap_names(BrowserKind::Brave), &["brave"]);
+        assert_eq!(linux_snap_names(BrowserKind::Chromium), &["chromium"]);
+        assert_eq!(linux_snap_names(BrowserKind::Vivaldi), &["vivaldi"]);
+        assert_eq!(linux_snap_names(BrowserKind::Yandex), &["yandex-browser"]);
+    }
+
+    #[test]
+    fn linux_zen_flatpak_app_ids_include_current_and_historical_ids() {
+        assert_eq!(
+            linux_zen_flatpak_app_ids(),
+            &["app.zen_browser.zen", "io.github.zen_browser.zen"]
+        );
+    }
+
+    #[test]
+    #[cfg(all(unix, not(target_os = "macos")))]
+    fn linux_supported_chromium_roots_include_native_flatpak_and_snap_layouts() {
+        let home = Path::new("/home/test");
+        let roots = chromium_user_data_roots(home, BrowserKind::Vivaldi);
+
+        assert!(roots.contains(&PathBuf::from("/home/test/.config/vivaldi")));
+        assert!(roots.contains(&PathBuf::from(
+            "/home/test/.var/app/com.vivaldi.Vivaldi/config/vivaldi"
+        )));
+        assert!(roots.contains(&PathBuf::from(
+            "/home/test/snap/vivaldi/common/.config/vivaldi"
+        )));
+    }
+
+    #[test]
+    #[cfg(all(unix, not(target_os = "macos")))]
+    fn linux_supported_gecko_roots_include_firefox_and_zen_package_layouts() {
+        let home = Path::new("/home/test");
+
+        let firefox_roots = gecko_profiles_roots(home, BrowserKind::Firefox);
+        assert!(firefox_roots.contains(&PathBuf::from("/home/test/.mozilla/firefox")));
+        assert!(firefox_roots.contains(&PathBuf::from(
+            "/home/test/.var/app/org.mozilla.firefox/.mozilla/firefox"
+        )));
+        assert!(firefox_roots.contains(&PathBuf::from(
+            "/home/test/.var/app/org.mozilla.firefox/config/mozilla/firefox"
+        )));
+        assert!(firefox_roots.contains(&PathBuf::from(
+            "/home/test/.var/app/org.mozilla.firefox/.config/mozilla/firefox"
+        )));
+        assert!(firefox_roots.contains(&PathBuf::from(
+            "/home/test/snap/firefox/common/.mozilla/firefox"
+        )));
+
+        let zen_roots = gecko_profiles_roots(home, BrowserKind::Zen);
+        assert!(zen_roots.contains(&PathBuf::from("/home/test/.zen")));
+        assert!(zen_roots.contains(&PathBuf::from(
+            "/home/test/.var/app/app.zen_browser.zen/.zen"
+        )));
+        assert!(zen_roots.contains(&PathBuf::from(
+            "/home/test/.var/app/io.github.zen_browser.zen/.zen"
+        )));
+        assert!(zen_roots.contains(&PathBuf::from(
+            "/home/test/.var/app/app.zen_browser.zen/config/zen"
+        )));
+        assert!(zen_roots.contains(&PathBuf::from(
+            "/home/test/.var/app/app.zen_browser.zen/.config/zen"
+        )));
+        assert!(zen_roots.contains(&PathBuf::from("/home/test/snap/zen-browser/common/.zen")));
+        assert!(zen_roots.contains(&PathBuf::from(
+            "/home/test/snap/zen-browser/common/.config/zen"
+        )));
     }
 }

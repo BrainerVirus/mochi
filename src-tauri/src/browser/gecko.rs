@@ -19,25 +19,23 @@ pub struct GeckoCookieStore {
 }
 
 pub fn discover_gecko_stores(home: &Path, browser: BrowserKind) -> Vec<GeckoCookieStore> {
-    let Some(profiles_root) = profiles::gecko_profiles_root(home, browser) else {
-        return Vec::new();
-    };
-
-    let Ok(entries) = fs::read_dir(&profiles_root) else {
-        return Vec::new();
-    };
-
-    let mut profiles: Vec<(u8, String, PathBuf)> = entries
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_dir())
-        .filter_map(|entry| {
-            let name = entry.file_name().to_string_lossy().into_owned();
-            let cookies_db = entry.path().join("cookies.sqlite");
-            if cookies_db.is_file() {
-                Some((profile_sort_rank(&name), name, cookies_db))
-            } else {
-                None
-            }
+    let mut profiles: Vec<(u8, String, PathBuf)> = profiles::gecko_profiles_roots(home, browser)
+        .into_iter()
+        .filter_map(|profiles_root| fs::read_dir(&profiles_root).ok())
+        .flat_map(|entries| {
+            entries
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| entry.path().is_dir())
+                .filter_map(|entry| {
+                    let name = entry.file_name().to_string_lossy().into_owned();
+                    let cookies_db = entry.path().join("cookies.sqlite");
+                    if cookies_db.is_file() {
+                        Some((profile_sort_rank(&name), name, cookies_db))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
         })
         .collect();
 
@@ -195,5 +193,38 @@ mod tests {
     #[test]
     fn profile_sort_prefers_default_release() {
         assert!(profile_sort_rank("abc.default-release") < profile_sort_rank("abc.default"));
+    }
+
+    #[test]
+    #[cfg(all(unix, not(target_os = "macos")))]
+    fn discover_zen_profile_from_flatpak_storage() {
+        let temp = std::env::temp_dir().join(format!(
+            "mochi-zen-flatpak-discover-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let profile = temp
+            .join(".var/app/app.zen_browser.zen/.zen")
+            .join("abc.default-release");
+        fs::create_dir_all(&profile).expect("profile dir");
+        write_gecko_fixture(
+            &profile.join("cookies.sqlite"),
+            ".cursor.com",
+            "WorkosCursorSessionToken",
+            "zen-flatpak-token",
+        );
+
+        let stores = discover_gecko_stores(&temp, BrowserKind::Zen);
+        assert_eq!(stores.len(), 1);
+        assert!(stores[0].label.contains("Zen"));
+        assert!(stores[0].cookies_db.is_file());
+
+        let cookies = read_gecko_cookies(&stores[0], &["cursor.com"]).expect("cookies");
+        assert_eq!(cookies.len(), 1);
+        assert_eq!(cookies[0].value, "zen-flatpak-token");
+
+        let _ = fs::remove_dir_all(temp);
     }
 }

@@ -18,26 +18,28 @@ pub struct ChromiumCookieStore {
 }
 
 pub fn discover_chromium_stores(home: &Path, browser: BrowserKind) -> Vec<ChromiumCookieStore> {
-    let Some(root) = profiles::chromium_user_data_root(home, browser) else {
-        return Vec::new();
-    };
-
-    let Ok(entries) = fs::read_dir(&root) else {
-        return Vec::new();
-    };
-
-    let mut profiles_found: Vec<(String, PathBuf)> = entries
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_dir())
-        .filter_map(|entry| {
-            let name = entry.file_name().to_string_lossy().into_owned();
-            if name == "Default" || name.starts_with("Profile ") || name.starts_with("user-") {
-                Some((name, entry.path()))
-            } else {
-                None
-            }
-        })
-        .collect();
+    let mut profiles_found: Vec<(String, PathBuf)> =
+        profiles::chromium_user_data_roots(home, browser)
+            .into_iter()
+            .filter_map(|root| fs::read_dir(&root).ok())
+            .flat_map(|entries| {
+                entries
+                    .filter_map(|entry| entry.ok())
+                    .filter(|entry| entry.path().is_dir())
+                    .filter_map(|entry| {
+                        let name = entry.file_name().to_string_lossy().into_owned();
+                        if name == "Default"
+                            || name.starts_with("Profile ")
+                            || name.starts_with("user-")
+                        {
+                            Some((name, entry.path()))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect();
 
     profiles_found.sort_by(|left, right| left.0.cmp(&right.0));
 
