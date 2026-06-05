@@ -24,7 +24,10 @@ pub fn format_usage_text(states: &[ProviderUsageState]) -> String {
                 format!("{} credentials missing", provider_label(state.provider))
             }
             (ProviderUsageStateKind::CredentialsNeedRefresh, None) => {
-                format!("{} credentials need refresh", provider_label(state.provider))
+                format!(
+                    "{} credentials need refresh",
+                    provider_label(state.provider)
+                )
             }
             (_, None) => format!(
                 "{} {}",

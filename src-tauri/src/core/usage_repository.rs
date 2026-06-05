@@ -18,7 +18,10 @@ pub trait UsageRepository: Send + Sync {
     fn delete_provider(&self, provider: ProviderId) -> UsageRepositoryResult<()>;
     fn prune_history_before(&self, cutoff_rfc3339: &str) -> UsageRepositoryResult<()>;
     fn initial_provider_detection_completed(&self) -> UsageRepositoryResult<bool>;
-    fn set_initial_provider_detection_completed(&self, completed: bool) -> UsageRepositoryResult<()>;
+    fn set_initial_provider_detection_completed(
+        &self,
+        completed: bool,
+    ) -> UsageRepositoryResult<()>;
 }
 
 #[derive(Debug, Clone)]
@@ -121,8 +124,14 @@ impl UsageRepository for SqliteUsageRepository {
             .map(serde_json::to_string)
             .transpose()
             .map_err(|error| error.to_string())?;
-        let last_success_at = state.snapshot.as_ref().map(|snapshot| snapshot.updated_at.as_str());
-        let last_error = state.message.as_deref().filter(|_| state.health == ProviderHealth::Error);
+        let last_success_at = state
+            .snapshot
+            .as_ref()
+            .map(|snapshot| snapshot.updated_at.as_str());
+        let last_error = state
+            .message
+            .as_deref()
+            .filter(|_| state.health == ProviderHealth::Error);
         let last_fetch_attempt_json = state
             .snapshot
             .as_ref()
@@ -182,7 +191,11 @@ impl UsageRepository for SqliteUsageRepository {
                 INSERT INTO usage_history (provider, snapshot_json, updated_at)
                 VALUES (?1, ?2, ?3)
                 ",
-                params![snapshot.provider.as_str(), snapshot_json, snapshot.updated_at],
+                params![
+                    snapshot.provider.as_str(),
+                    snapshot_json,
+                    snapshot.updated_at
+                ],
             )
             .map_err(|error| error.to_string())?;
 
@@ -233,7 +246,10 @@ impl UsageRepository for SqliteUsageRepository {
         Ok(value.as_deref() == Some("true"))
     }
 
-    fn set_initial_provider_detection_completed(&self, completed: bool) -> UsageRepositoryResult<()> {
+    fn set_initial_provider_detection_completed(
+        &self,
+        completed: bool,
+    ) -> UsageRepositoryResult<()> {
         let connection = self.lock()?;
         connection
             .execute(
@@ -356,8 +372,7 @@ mod tests {
     #[test]
     fn stores_latest_and_successful_history() {
         let repo = repo();
-        let state =
-            ProviderUsageState::fresh(snapshot(ProviderId::Claude, "2026-06-04T12:00:00Z"));
+        let state = ProviderUsageState::fresh(snapshot(ProviderId::Claude, "2026-06-04T12:00:00Z"));
 
         repo.put_latest(&state).expect("put latest");
         repo.append_success_history(state.snapshot.as_ref().expect("snapshot"))
@@ -395,8 +410,7 @@ mod tests {
     #[test]
     fn delete_provider_removes_latest_and_history() {
         let repo = repo();
-        let state =
-            ProviderUsageState::fresh(snapshot(ProviderId::Claude, "2026-06-04T12:00:00Z"));
+        let state = ProviderUsageState::fresh(snapshot(ProviderId::Claude, "2026-06-04T12:00:00Z"));
         repo.put_latest(&state).expect("put latest");
         repo.append_success_history(state.snapshot.as_ref().expect("snapshot"))
             .expect("history");

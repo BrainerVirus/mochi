@@ -193,7 +193,7 @@ function normalizeProviderUsageStateInput(state: unknown): unknown {
     return state;
   }
 
-  const snapshot = normalizeUsageSnapshotInput((state as { snapshot?: unknown }).snapshot);
+  const snapshot = "snapshot" in state ? normalizeUsageSnapshotInput(state.snapshot) : undefined;
   return { ...state, provider, snapshot };
 }
 

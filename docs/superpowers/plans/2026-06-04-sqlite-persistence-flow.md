@@ -65,6 +65,7 @@ Modify installer files:
 ### Task 1: Provider Usage State Model
 
 **Files:**
+
 - Create: `src-tauri/src/core/usage_state.rs`
 - Modify: `src-tauri/src/core/mod.rs`
 - Test: `src-tauri/src/core/usage_state.rs`
@@ -270,6 +271,7 @@ git commit -m "feat(usage): add provider state model"
 ### Task 2: SQLite Usage Repository
 
 **Files:**
+
 - Create: `src-tauri/src/core/usage_repository.rs`
 - Modify: `src-tauri/src/core/mod.rs`
 - Test: `src-tauri/src/core/usage_repository.rs`
@@ -501,6 +503,7 @@ git commit -m "feat(usage): add sqlite repository"
 ### Task 3: Repository-Backed UsageStore
 
 **Files:**
+
 - Modify: `src-tauri/src/core/usage_store.rs`
 - Test: `src-tauri/src/core/usage_store.rs`
 
@@ -617,6 +620,7 @@ git commit -m "feat(usage): persist usage store"
 ### Task 4: Startup Reconciliation
 
 **Files:**
+
 - Modify: `src-tauri/src/status/mod.rs`
 - Modify: `src-tauri/src/lib.rs`
 - Test: `src-tauri/src/status/mod.rs`
@@ -715,6 +719,7 @@ git commit -m "feat(usage): reconcile startup providers"
 ### Task 5: Refresh Controller And Cache-Only Reads
 
 **Files:**
+
 - Create: `src-tauri/src/status/refresh_controller.rs`
 - Modify: `src-tauri/src/status/mod.rs`
 - Test: `src-tauri/src/status/refresh_controller.rs`, `src-tauri/src/status/mod.rs`
@@ -847,6 +852,7 @@ git commit -m "feat(usage): add refresh controller"
 ### Task 6: Settings Save Reconciliation
 
 **Files:**
+
 - Modify: `src-tauri/src/settings/commands.rs`
 - Modify: `src-tauri/src/status/mod.rs`
 - Modify: `src/hooks/use-tray-events.ts`
@@ -955,6 +961,7 @@ git commit -m "feat(settings): reconcile usage state"
 ### Task 7: Frontend Usage State Rendering
 
 **Files:**
+
 - Modify: `src/lib/schemas/usage.ts`
 - Modify: `src/lib/tauri/commands.ts`
 - Modify: `src/components/tray/tray-panel-content.tsx`
@@ -1132,6 +1139,7 @@ git commit -m "feat(ui): render usage states"
 ### Task 8: CLI Usage And Status-Bar Cache Reads
 
 **Files:**
+
 - Modify: `src-tauri/src/cli/mod.rs`
 - Create: `src-tauri/src/cli/usage.rs`
 - Modify: `src-tauri/src/lib.rs`
@@ -1304,6 +1312,7 @@ git commit -m "feat(cli): read cached usage"
 ### Task 9: macOS CLI Installer Link
 
 **Files:**
+
 - Modify: `scripts/install/install-macos.sh`
 - Create: `scripts/install/install-macos.test.sh` or `scripts/install/install-macos.test.mjs`
 - Test: installer test file
@@ -1400,6 +1409,7 @@ git commit -m "fix(install): link macos cli"
 ### Task 10: End-To-End Verification And Cleanup
 
 **Files:**
+
 - Modify: only the files named by the failing verification output from Tasks 1-9.
 
 - [ ] **Step 1: Run full frontend verification**

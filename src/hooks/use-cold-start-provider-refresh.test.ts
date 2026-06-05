@@ -15,7 +15,10 @@ function settings(enabledProviders: MochiSettings["enabled_providers"]): MochiSe
   };
 }
 
-function state(provider: ProviderUsageState["provider"], kind: ProviderUsageState["kind"] = "fetching") {
+function state(
+  provider: ProviderUsageState["provider"],
+  kind: ProviderUsageState["kind"] = "fetching",
+) {
   return {
     provider,
     kind,

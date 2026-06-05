@@ -178,9 +178,8 @@ fn initialize_usage_store(app: &tauri::AppHandle, settings_state: &SettingsState
     if !initial_detection_completed {
         let _ = settings_state.update(settings.clone());
     }
-    let _ = repository.set_initial_provider_detection_completed(
-        reconciliation.initial_detection_completed,
-    );
+    let _ = repository
+        .set_initial_provider_detection_completed(reconciliation.initial_detection_completed);
 
     let store = UsageStore::with_repository(repository.clone());
     let _ = store.load_latest_states(&settings.enabled_providers);

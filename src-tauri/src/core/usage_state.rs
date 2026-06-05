@@ -129,10 +129,7 @@ mod tests {
         let state = ProviderUsageState::credentials_need_refresh(ProviderId::Codex);
 
         assert_eq!(state.provider, ProviderId::Codex);
-        assert_eq!(
-            state.kind,
-            ProviderUsageStateKind::CredentialsNeedRefresh
-        );
+        assert_eq!(state.kind, ProviderUsageStateKind::CredentialsNeedRefresh);
         assert!(state.snapshot.is_none());
         assert_eq!(state.health, ProviderHealth::Error);
         assert_eq!(state.message.as_deref(), Some("credentials need refresh"));

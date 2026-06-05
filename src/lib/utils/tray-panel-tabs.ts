@@ -45,7 +45,10 @@ export function buildTrayPanelTabsFromStates(
   };
   const seen = new Set<ProviderId>();
   const providerTabs = states
-    .filter((state) => enabledProviders.length === 0 || isEnabledProvider(state.provider, enabledProviders))
+    .filter(
+      (state) =>
+        enabledProviders.length === 0 || isEnabledProvider(state.provider, enabledProviders),
+    )
     .filter((state) => {
       if (seen.has(state.provider)) {
         return false;

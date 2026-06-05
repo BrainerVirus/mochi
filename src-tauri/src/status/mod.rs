@@ -4,8 +4,8 @@ use crate::core::models::{ProviderHealth, ProviderId, UsageSnapshot, UsageWindow
 use crate::core::provider::{
     FetchContext, Provider, ProviderEnrichment, ProviderError, ProviderResult,
 };
-use crate::core::usage_store::{current_timestamp, failed_attempt, UsageStore};
 use crate::core::usage_state::ProviderUsageState;
+use crate::core::usage_store::{current_timestamp, failed_attempt, UsageStore};
 use crate::providers::built_in_providers;
 use crate::providers::credential_probe::provider_has_credentials;
 use crate::settings::{MochiSettings, SettingsState};

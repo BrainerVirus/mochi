@@ -115,20 +115,13 @@ export function ProviderUsageSection({
       <div
         className={`${trayPanelSpacing.headerToMeters} flex flex-col ${trayPanelSpacing.meterGap}`}
       >
-        {message ? (
-          <p className="text-muted-foreground text-[11px] leading-snug">{message}</p>
-        ) : null}
-        {isFetching ? <ProviderUsageSkeleton /> : null}
-        {snapshot ? (
-          <UsageWindowMeters windows={windows} fillActivationKey={fillActivationKey} />
-        ) : null}
-        {snapshot?.provider_cost ? (
-          <ProviderCostSection
-            cost={snapshot.provider_cost}
-            compact
-            fillActivationKey={fillActivationKey}
-          />
-        ) : null}
+        <ProviderUsageBody
+          message={message}
+          isFetching={isFetching}
+          snapshot={snapshot}
+          windows={windows}
+          fillActivationKey={fillActivationKey}
+        />
       </div>
       {showProviderActions ? (
         <>
@@ -137,6 +130,37 @@ export function ProviderUsageSection({
         </>
       ) : null}
     </section>
+  );
+}
+
+function ProviderUsageBody({
+  message,
+  isFetching,
+  snapshot,
+  windows,
+  fillActivationKey,
+}: {
+  message: string | null | undefined;
+  isFetching: boolean;
+  snapshot: UsageSnapshot | undefined;
+  windows: ReturnType<typeof rateWindows>;
+  fillActivationKey: string | undefined;
+}) {
+  return (
+    <>
+      {message ? <p className="text-muted-foreground text-[11px] leading-snug">{message}</p> : null}
+      {isFetching ? <ProviderUsageSkeleton /> : null}
+      {snapshot ? (
+        <UsageWindowMeters windows={windows} fillActivationKey={fillActivationKey} />
+      ) : null}
+      {snapshot?.provider_cost ? (
+        <ProviderCostSection
+          cost={snapshot.provider_cost}
+          compact
+          fillActivationKey={fillActivationKey}
+        />
+      ) : null}
+    </>
   );
 }
 

@@ -68,7 +68,9 @@ mod tests {
         );
         let output = format_output_from_states(
             "text",
-            &[crate::core::usage_state::ProviderUsageState::fresh(snapshot)],
+            &[crate::core::usage_state::ProviderUsageState::fresh(
+                snapshot,
+            )],
         );
 
         assert_eq!(output, "Mochi 72% (Claude)");
