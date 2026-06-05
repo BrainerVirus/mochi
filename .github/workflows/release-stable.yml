@@ -74,13 +74,13 @@ jobs:
           releaseBody: |
             ## Mochi ${{ github.ref_name }}
 
-            Stable Linux browser discovery and window stability release.
+            Stable release: SQLite-backed usage persistence, refresh controller, and cached-usage CLI.
 
             ### What's changed
-            - **Safer usage windows** — scheduled usage polling reads cached snapshots instead of starting live provider refreshes when settings, widget, or usage windows open.
-            - **Linux Chromium discovery** — Chrome, Edge, Brave, Chromium, Vivaldi, Yandex, and Helium scan native, Flatpak, and Snap profile roots.
-            - **Linux Gecko discovery** — Firefox and Zen scan native, Flatpak, and Snap profile roots, including Zen's current and historical Flatpak app IDs.
-            - **GitHub Flow docs** — agent instructions now forbid tool prefixes such as `codex/` in branch names.
+            - **SQLite usage persistence** — provider snapshots, transitions, and last-refresh metadata now live in a local SQLite store, so the tray, widget, and settings show last-known data before the first live refresh and survive restarts.
+            - **Refresh controller** — scheduled refreshes are gated by enabled providers, refresh-on-startup policy, and successful credential detection, so disabled providers and missing credentials no longer trigger network calls.
+            - **Cached-usage CLI** — `mochi usage` reads the same SQLite store on macOS, Linux, and Windows, returning the latest snapshot without spawning a new refresh.
+            - **macOS CLI symlink** — the macOS installer now links the bundled CLI to `~/.local/bin/mochi` for direct shell use.
 
             ### Install stable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`
@@ -111,13 +111,13 @@ jobs:
             const body = [
               `## Mochi ${tag}`,
               "",
-              "Stable Linux browser discovery and window stability release.",
+              "Stable release: SQLite-backed usage persistence, refresh controller, and cached-usage CLI.",
               "",
               "### What's changed",
-              "- **Safer usage windows** — scheduled usage polling reads cached snapshots instead of starting live provider refreshes when settings, widget, or usage windows open.",
-              "- **Linux Chromium discovery** — Chrome, Edge, Brave, Chromium, Vivaldi, Yandex, and Helium scan native, Flatpak, and Snap profile roots.",
-              "- **Linux Gecko discovery** — Firefox and Zen scan native, Flatpak, and Snap profile roots, including Zen's current and historical Flatpak app IDs.",
-              "- **GitHub Flow docs** — agent instructions now forbid tool prefixes such as `codex/` in branch names.",
+              "- **SQLite usage persistence** — provider snapshots, transitions, and last-refresh metadata now live in a local SQLite store, so the tray, widget, and settings show last-known data before the first live refresh and survive restarts.",
+              "- **Refresh controller** — scheduled refreshes are gated by enabled providers, refresh-on-startup policy, and successful credential detection, so disabled providers and missing credentials no longer trigger network calls.",
+              "- **Cached-usage CLI** — `mochi usage` reads the same SQLite store on macOS, Linux, and Windows, returning the latest snapshot without spawning a new refresh.",
+              "- **macOS CLI symlink** — the macOS installer now links the bundled CLI to `~/.local/bin/mochi` for direct shell use.",
               "",
               "### Install stable",
               "- macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`",
