@@ -1,14 +1,21 @@
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
 
+use crate::core::models::ProviderId;
+use crate::core::provider::FetchContext;
 use crate::core::provider_metadata::{
     provider_registry, AuthRequirement, ImplementationStatus, SettingsFieldDefinition,
     SettingsFieldKind, StrategyDefinition,
 };
-use crate::providers::credential_probe::{credential_status_map, detected_provider_ids};
+use crate::core::usage_state::ProviderUsageState;
+use crate::core::usage_store::{current_timestamp, UsageStore};
+use crate::providers::credential_probe::{
+    credential_status_map, detected_provider_ids, provider_has_credentials,
+};
 
 use super::storage::{load_settings, save_settings as persist_settings, settings_file_path};
 use super::MochiSettings;
@@ -103,8 +110,26 @@ pub fn get_settings(state: State<'_, SettingsState>) -> Result<MochiSettings, St
 pub fn save_settings(
     settings: MochiSettings,
     state: State<'_, SettingsState>,
+    usage_store: State<'_, UsageStore>,
 ) -> Result<MochiSettings, String> {
-    state.update(settings)
+    let previous = state.current()?;
+    let next = state.update(settings)?;
+
+    for provider in disabled_provider_ids(&previous, &next) {
+        usage_store.delete_provider(provider)?;
+    }
+
+    let ctx = FetchContext::from_settings(&next);
+    for provider in newly_enabled_provider_ids(&previous, &next) {
+        let state = if provider_has_credentials(provider, &ctx) {
+            ProviderUsageState::fetching(provider, current_timestamp())
+        } else {
+            ProviderUsageState::missing_credentials(provider, current_timestamp())
+        };
+        usage_store.put_state(state)?;
+    }
+
+    Ok(next)
 }
 
 #[tauri::command]
@@ -200,6 +225,35 @@ fn settings_field_kind_label(kind: SettingsFieldKind) -> &'static str {
     }
 }
 
+fn disabled_provider_ids(previous: &MochiSettings, next: &MochiSettings) -> Vec<ProviderId> {
+    let next: HashSet<_> = next
+        .enabled_providers
+        .iter()
+        .filter_map(|id| ProviderId::parse(id))
+        .collect();
+
+    previous
+        .enabled_providers
+        .iter()
+        .filter_map(|id| ProviderId::parse(id))
+        .filter(|provider| !next.contains(provider))
+        .collect()
+}
+
+fn newly_enabled_provider_ids(previous: &MochiSettings, next: &MochiSettings) -> Vec<ProviderId> {
+    let previous: HashSet<_> = previous
+        .enabled_providers
+        .iter()
+        .filter_map(|id| ProviderId::parse(id))
+        .collect();
+
+    next.enabled_providers
+        .iter()
+        .filter_map(|id| ProviderId::parse(id))
+        .filter(|provider| !previous.contains(provider))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -227,5 +281,21 @@ mod tests {
         assert!(path.is_file());
 
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn disabled_providers_are_detected_from_settings_change() {
+        let previous = MochiSettings {
+            enabled_providers: vec!["claude".into(), "cursor".into()],
+            ..MochiSettings::default()
+        };
+        let next = MochiSettings {
+            enabled_providers: vec!["claude".into()],
+            ..MochiSettings::default()
+        };
+
+        let disabled = disabled_provider_ids(&previous, &next);
+
+        assert_eq!(disabled, vec![crate::core::models::ProviderId::Cursor]);
     }
 }

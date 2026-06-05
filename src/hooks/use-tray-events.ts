@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect } from "react";
@@ -28,8 +33,7 @@ export function useSaveSettings() {
   return useMutation({
     ...saveSettingsMutationOptions(),
     onSuccess: (settings) => {
-      queryClient.setQueryData(queryKeys.settings, settings);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+      void reconcileSettingsSaveSuccess(queryClient, settings);
     },
   });
 }
@@ -74,7 +78,7 @@ export function useTrayEvents() {
           ...current,
           update_channel: event.payload,
         }).then((settings) => {
-          queryClient.setQueryData(queryKeys.settings, settings);
+          void reconcileSettingsSaveSuccess(queryClient, settings);
         });
       }),
       listen("tray-check-update", () => {
@@ -101,4 +105,14 @@ export function useTrayEvents() {
 
 export function shouldRunProviderRefreshForTrayEvent(eventName: string): boolean {
   return eventName === "tray-refresh";
+}
+
+export async function reconcileSettingsSaveSuccess(
+  queryClient: Pick<QueryClient, "setQueryData" | "invalidateQueries">,
+  settings: MochiSettings,
+  syncUsage: () => Promise<void> = syncTrayUsage,
+): Promise<void> {
+  queryClient.setQueryData(queryKeys.settings, settings);
+  await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+  await syncUsage();
 }
