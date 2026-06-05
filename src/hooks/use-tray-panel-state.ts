@@ -6,7 +6,10 @@ import { useUsageData } from "@/hooks/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { useTrayUiStore } from "@/lib/stores/tray-ui-store";
 import { syncTrayUsage } from "@/lib/tauri/commands";
-import { buildTrayPanelTabs, filterSnapshotsForTrayPanel } from "@/lib/utils/tray-panel-tabs";
+import {
+  buildTrayPanelTabsFromStates,
+  filterUsageStatesForTrayPanel,
+} from "@/lib/utils/tray-panel-tabs";
 import { parseTrayTabChange } from "@/lib/utils/tray-tab-selection";
 
 export function useTrayPanelState() {
@@ -27,8 +30,15 @@ export function useTrayPanelState() {
     selectedTab,
   });
 
-  const snapshots = filterSnapshotsForTrayPanel(data ?? [], enabledProviders);
-  const tabs = buildTrayPanelTabs(data ?? [], enabledProviders);
+  const states = filterUsageStatesForTrayPanel(data ?? [], enabledProviders);
+  const tabs = buildTrayPanelTabsFromStates(data ?? [], enabledProviders);
+
+  useEffect(() => {
+    if (tabs.some((tab) => tab.id === selectedTab)) {
+      return;
+    }
+    setSelectedTab("overview");
+  }, [selectedTab, setSelectedTab, tabs]);
 
   useEffect(() => {
     void syncTrayUsage(selectedTab);
@@ -63,7 +73,7 @@ export function useTrayPanelState() {
     refreshProviderMutation,
     selectedTab,
     refreshingProvider,
-    snapshots,
+    states,
     tabs,
     handleTabChange,
     handleRefreshProvider,

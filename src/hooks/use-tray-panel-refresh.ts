@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { queryKeys } from "@/lib/query/keys";
 import type { ProviderId } from "@/lib/schemas/usage";
 import type { TraySelectedTab } from "@/lib/stores/tray-ui-store";
-import { refreshProvider, syncTrayUsage } from "@/lib/tauri/commands";
+import { refreshEnabledProviders, syncTrayUsage } from "@/lib/tauri/commands";
 
 interface UseTrayPanelRefreshOptions {
   enabledProviders: ProviderId[];
@@ -28,7 +28,7 @@ export function useTrayPanelRefresh({
     setIsRefreshingAll(true);
     try {
       if (enabledProviders.length > 0) {
-        await Promise.allSettled(enabledProviders.map((provider) => refreshProvider(provider)));
+        await refreshEnabledProviders();
       }
       await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
       await syncTrayUsage(selectedTab);

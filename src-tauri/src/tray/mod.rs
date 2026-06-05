@@ -25,7 +25,8 @@ pub use panel::{
     show_tray_panel_centered, MAIN_PANEL_LABEL, SETTINGS_WINDOW_LABEL,
 };
 pub use presentation::{
-    pick_tray_snapshot, resolve_tray_presentation, TrayIconPresentation, TraySelection,
+    pick_tray_snapshot, provider_display_name, resolve_tray_presentation, TrayIconPresentation,
+    TraySelection,
 };
 pub use usage::{aggregate_used_percent, tray_usage_tone, TrayUsageTone, TRAY_ID};
 

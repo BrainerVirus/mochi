@@ -19,15 +19,20 @@ pub mod updater;
 pub mod widget;
 
 use clap::Parser;
+use std::path::PathBuf;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
+use time::format_description::well_known::Rfc3339;
+use time::{Duration, OffsetDateTime};
 
 use cli::{Cli, Command};
+use core::usage_repository::{SqliteUsageRepository, UsageRepository};
 use core::usage_store::UsageStore;
 use lifecycle::{should_prevent_exit_request, AppLifecycle};
+use providers::credential_probe::detected_provider_ids;
 use settings::{
-    get_provider_catalog, get_provider_credential_status, get_settings, save_settings,
-    SettingsState,
+    get_provider_catalog, get_provider_credential_status, get_settings, load_settings,
+    save_settings, settings_file_path, SettingsState,
 };
 use tray::{
     maybe_show_main_for_dev, open_app_window, set_tray_panel_height, setup_app_windows,
@@ -86,8 +91,10 @@ pub fn run() -> anyhow::Result<()> {
             macos::set_tray_only_activation_policy(app.handle());
 
             diagnostics::setup(app.handle())?;
-            app.manage(SettingsState::new(app.handle())?);
-            app.manage(UsageStore::new(None));
+            let settings_state = SettingsState::new(app.handle())?;
+            let usage_store = initialize_usage_store(app.handle(), &settings_state);
+            app.manage(settings_state);
+            app.manage(usage_store);
             app.manage(AppLifecycle::default());
             setup_main_panel(app.handle())?;
             setup_app_windows(app.handle())?;
@@ -137,10 +144,70 @@ pub fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn usage_database_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|path| path.join("usage.sqlite3"))
+        .map_err(|error| error.to_string())
+}
+
+fn initialize_usage_store(app: &tauri::AppHandle, settings_state: &SettingsState) -> UsageStore {
+    let Ok(db_path) = usage_database_path(app) else {
+        return UsageStore::new(None);
+    };
+
+    let Ok(repository) = SqliteUsageRepository::open(&db_path) else {
+        return UsageStore::new(None);
+    };
+
+    let repository = std::sync::Arc::new(repository);
+    let mut settings = match settings_state.current() {
+        Ok(settings) => settings,
+        Err(_) => return UsageStore::with_repository(repository),
+    };
+    let initial_detection_completed = repository
+        .initial_provider_detection_completed()
+        .unwrap_or(false);
+    let detected = detected_provider_ids(&settings);
+    let reconciliation = status::reconcile_first_start_enabled_providers(
+        &mut settings,
+        initial_detection_completed,
+        detected,
+    );
+
+    if !initial_detection_completed {
+        let _ = settings_state.update(settings.clone());
+    }
+    let _ = repository
+        .set_initial_provider_detection_completed(reconciliation.initial_detection_completed);
+
+    let store = UsageStore::with_repository(repository.clone());
+    let _ = store.load_latest_states(&settings.enabled_providers);
+    let cutoff = (OffsetDateTime::now_utc() - Duration::days(90))
+        .format(&Rfc3339)
+        .unwrap_or_else(|_| "1970-01-01T00:00:00Z".to_string());
+    let _ = repository.prune_history_before(&cutoff);
+
+    store
+}
+
 fn run_cli(command: Command) -> anyhow::Result<()> {
     match command {
+        Command::Usage {
+            provider,
+            refresh,
+            json,
+        } => {
+            let states = cli_usage_states(provider.as_deref(), refresh)?;
+            if json {
+                println!("{}", cli::usage::format_usage_json(&states)?);
+            } else {
+                println!("{}", cli::usage::format_usage_text(&states));
+            }
+        }
         Command::StatusBar { format } => {
-            let output = status_bar::format_output(&format, 42, "Claude");
+            let states = cli_usage_states(None, false)?;
+            let output = status_bar::format_output_from_states(&format, &states);
             println!("{output}");
         }
         Command::Diagnostics { bundle } => {
@@ -153,4 +220,87 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn cli_usage_states(
+    provider: Option<&str>,
+    refresh: bool,
+) -> anyhow::Result<Vec<core::usage_state::ProviderUsageState>> {
+    let settings = cli_config_dir()
+        .map(|dir| load_settings(&settings_file_path(&dir)))
+        .unwrap_or_default();
+    let repository = cli_data_dir()
+        .map(|dir| dir.join("usage.sqlite3"))
+        .and_then(|path| core::usage_repository::SqliteUsageRepository::open(&path).ok());
+    let store = repository
+        .map(|repository| UsageStore::with_repository(std::sync::Arc::new(repository)))
+        .unwrap_or_else(|| UsageStore::new(None));
+
+    let mut enabled = settings.enabled_providers.clone();
+    if let Some(provider) = provider {
+        let provider = core::models::ProviderId::parse(provider)
+            .ok_or_else(|| anyhow::anyhow!("unknown provider: {provider}"))?;
+        enabled = vec![provider.as_str().to_string()];
+    }
+
+    let mut settings = settings;
+    settings.enabled_providers = enabled;
+    let _ = store.load_latest_states(&settings.enabled_providers);
+
+    if refresh {
+        eprintln!("Refreshing usage...");
+        let runtime = tokio::runtime::Runtime::new()?;
+        let _ = runtime.block_on(status::refresh_enabled_snapshots(&store, &settings));
+        let _ = store.load_latest_states(&settings.enabled_providers);
+    }
+
+    Ok(status::read_cached_usage_states(&store, &settings))
+}
+
+fn cli_config_dir() -> Option<PathBuf> {
+    platform_base_config_dir().map(|base| base.join("app.mochi.Mochi"))
+}
+
+fn cli_data_dir() -> Option<PathBuf> {
+    platform_base_data_dir().map(|base| base.join("app.mochi.Mochi"))
+}
+
+#[cfg(target_os = "macos")]
+fn platform_base_config_dir() -> Option<PathBuf> {
+    std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home| home.join("Library").join("Application Support"))
+}
+
+#[cfg(target_os = "macos")]
+fn platform_base_data_dir() -> Option<PathBuf> {
+    platform_base_config_dir()
+}
+
+#[cfg(target_os = "windows")]
+fn platform_base_config_dir() -> Option<PathBuf> {
+    std::env::var_os("APPDATA").map(PathBuf::from)
+}
+
+#[cfg(target_os = "windows")]
+fn platform_base_data_dir() -> Option<PathBuf> {
+    std::env::var_os("LOCALAPPDATA")
+        .or_else(|| std::env::var_os("APPDATA"))
+        .map(PathBuf::from)
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn platform_base_config_dir() -> Option<PathBuf> {
+    std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn platform_base_data_dir() -> Option<PathBuf> {
+    std::env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local").join("share"))
+        })
 }

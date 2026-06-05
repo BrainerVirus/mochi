@@ -1,6 +1,50 @@
 import { describe, expect, it } from "vitest";
 
-import { parseUsageSnapshots } from "./usage";
+import { ProviderUsageStateSchema, parseUsageSnapshots } from "./usage";
+
+describe("ProviderUsageStateSchema", () => {
+  it("parses missing credentials provider state without snapshot", () => {
+    const state = ProviderUsageStateSchema.parse({
+      provider: "claude",
+      kind: "missing_credentials",
+      snapshot: null,
+      health: "error",
+      message: "credentials missing",
+      updated_at: "2026-06-04T12:00:00Z",
+    });
+
+    expect(state.provider).toBe("claude");
+    expect(state.kind).toBe("missing_credentials");
+    expect(state.snapshot).toBeNull();
+  });
+
+  it("parses fresh provider state with snapshot", () => {
+    const state = ProviderUsageStateSchema.parse({
+      provider: "cursor",
+      kind: "fresh",
+      health: "ok",
+      message: null,
+      updated_at: "2026-06-04T12:00:00Z",
+      snapshot: {
+        provider: "cursor",
+        primary: {
+          label: "Session",
+          used_percent: 50,
+          remaining_percent: 50,
+          resets_at: null,
+        },
+        secondary: null,
+        extra_windows: [],
+        updated_at: "2026-06-04T12:00:00Z",
+        source: "test",
+        health: "ok",
+        is_stale: false,
+      },
+    });
+
+    expect(state.snapshot?.provider).toBe("cursor");
+  });
+});
 
 describe("parseUsageSnapshots health metadata", () => {
   it("accepts snapshots with health and stale metadata", () => {

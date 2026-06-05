@@ -111,6 +111,32 @@ export const UsageSnapshotsSchema = z.array(UsageSnapshotSchema);
 
 export type UsageSnapshots = z.infer<typeof UsageSnapshotsSchema>;
 
+export const ProviderUsageStateKindSchema = z.enum([
+  "fresh",
+  "fetching",
+  "stale_error",
+  "missing_credentials",
+  "credentials_need_refresh",
+  "error",
+]);
+
+export type ProviderUsageStateKind = z.infer<typeof ProviderUsageStateKindSchema>;
+
+export const ProviderUsageStateSchema = z.object({
+  provider: ProviderIdSchema,
+  kind: ProviderUsageStateKindSchema,
+  snapshot: UsageSnapshotSchema.nullable().optional(),
+  health: ProviderHealthSchema,
+  message: z.string().nullable().optional(),
+  updated_at: z.string(),
+});
+
+export type ProviderUsageState = z.infer<typeof ProviderUsageStateSchema>;
+
+export const ProviderUsageStatesSchema = z.array(ProviderUsageStateSchema);
+
+export type ProviderUsageStates = z.infer<typeof ProviderUsageStatesSchema>;
+
 const PROVIDER_ID_ALIASES: Record<string, ProviderId> = {
   opencodego: "opencode-go",
   "open-code-go": "opencode-go",
@@ -155,6 +181,36 @@ export function parseUsageSnapshots(data: unknown): UsageSnapshots {
   });
 
   return UsageSnapshotsSchema.parse(normalized);
+}
+
+function normalizeProviderUsageStateInput(state: unknown): unknown {
+  if (!state || typeof state !== "object" || !("provider" in state)) {
+    return state;
+  }
+
+  const provider = normalizeProviderId((state as { provider: unknown }).provider);
+  if (!provider) {
+    return state;
+  }
+
+  const snapshot = "snapshot" in state ? normalizeUsageSnapshotInput(state.snapshot) : undefined;
+  return { ...state, provider, snapshot };
+}
+
+export function parseProviderUsageStates(data: unknown): ProviderUsageStates {
+  if (!Array.isArray(data)) {
+    return ProviderUsageStatesSchema.parse(data);
+  }
+
+  const normalized = data.map(normalizeProviderUsageStateInput).filter((state) => {
+    if (!state || typeof state !== "object" || !("provider" in state)) {
+      return false;
+    }
+
+    return ProviderIdSchema.safeParse((state as { provider: unknown }).provider).success;
+  });
+
+  return ProviderUsageStatesSchema.parse(normalized);
 }
 
 export const UpdateInfoSchema = z.object({

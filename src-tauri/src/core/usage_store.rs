@@ -1,35 +1,43 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
 use crate::core::models::{FetchAttempt, ProviderHealth, ProviderId, UsageSnapshot};
 use crate::core::provider::ProviderError;
+use crate::core::usage_repository::UsageRepository;
+use crate::core::usage_state::ProviderUsageState;
 
 #[derive(Debug, Clone)]
 struct CacheEntry {
     snapshot: UsageSnapshot,
 }
 
-/// In-memory usage cache with optional persistence path stub and last-known-good fallback.
-#[derive(Debug, Default)]
+/// In-memory usage cache with optional repository persistence and last-known-good fallback.
+#[derive(Default)]
 pub struct UsageStore {
     entries: RwLock<HashMap<ProviderId, CacheEntry>>,
-    persistence_path: Option<PathBuf>,
+    states: RwLock<HashMap<ProviderId, ProviderUsageState>>,
+    repository: Option<Arc<dyn UsageRepository>>,
 }
 
 impl UsageStore {
-    pub fn new(persistence_path: Option<PathBuf>) -> Self {
+    pub fn new(_persistence_path: Option<PathBuf>) -> Self {
         Self {
             entries: RwLock::new(HashMap::new()),
-            persistence_path,
+            states: RwLock::new(HashMap::new()),
+            repository: None,
         }
     }
 
-    pub fn persistence_path(&self) -> Option<&PathBuf> {
-        self.persistence_path.as_ref()
+    pub fn with_repository(repository: Arc<dyn UsageRepository>) -> Self {
+        Self {
+            entries: RwLock::new(HashMap::new()),
+            states: RwLock::new(HashMap::new()),
+            repository: Some(repository),
+        }
     }
 
     pub fn get_snapshots(&self, enabled_providers: &[String]) -> Vec<UsageSnapshot> {
@@ -49,14 +57,45 @@ impl UsageStore {
             .collect()
     }
 
+    pub fn get_states(&self, enabled_providers: &[String]) -> Vec<ProviderUsageState> {
+        let states = self
+            .states
+            .read()
+            .unwrap_or_else(|error| error.into_inner());
+
+        enabled_providers
+            .iter()
+            .filter_map(|id| ProviderId::parse(id))
+            .filter_map(|provider_id| states.get(&provider_id).cloned())
+            .collect()
+    }
+
     pub fn record_success(&self, snapshot: UsageSnapshot) {
         let provider_id = snapshot.provider;
         let mut entries = self
             .entries
             .write()
             .unwrap_or_else(|error| error.into_inner());
-        entries.insert(provider_id, CacheEntry { snapshot });
-        // Persistence hook: write JSON to `persistence_path` in a later phase.
+        entries.insert(
+            provider_id,
+            CacheEntry {
+                snapshot: snapshot.clone(),
+            },
+        );
+        drop(entries);
+
+        let state = ProviderUsageState::fresh(snapshot.clone());
+        let mut states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        states.insert(provider_id, state.clone());
+        drop(states);
+
+        if let Some(repository) = &self.repository {
+            let _ = repository.put_latest(&state);
+            let _ = repository.append_success_history(&snapshot);
+        }
     }
 
     pub fn record_failure(
@@ -75,9 +114,23 @@ impl UsageStore {
             let mut snapshot = entry.snapshot.clone();
             snapshot.health = ProviderHealth::Stale;
             snapshot.is_stale = true;
-            snapshot.error = Some(message);
+            snapshot.error = Some(message.clone());
             snapshot.last_fetch_attempt = Some(attempt);
             entry.snapshot = snapshot.clone();
+            drop(entries);
+
+            let state = ProviderUsageState::stale_error(snapshot.clone(), message);
+            let mut states = self
+                .states
+                .write()
+                .unwrap_or_else(|error| error.into_inner());
+            states.insert(provider_id, state.clone());
+            drop(states);
+
+            if let Some(repository) = &self.repository {
+                let _ = repository.put_latest(&state);
+            }
+
             return Some(snapshot);
         }
 
@@ -112,8 +165,107 @@ impl UsageStore {
                 snapshot: snapshot.clone(),
             },
         );
+        drop(entries);
+
+        let state = ProviderUsageState::error(
+            provider_id,
+            snapshot.error.clone().unwrap_or_default(),
+            snapshot.updated_at.clone(),
+        );
+        let mut states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        states.insert(provider_id, state.clone());
+        drop(states);
+
+        if let Some(repository) = &self.repository {
+            let _ = repository.put_latest(&state);
+        }
 
         snapshot
+    }
+
+    pub fn delete_provider(&self, provider: ProviderId) -> Result<(), String> {
+        let mut entries = self
+            .entries
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        entries.remove(&provider);
+        drop(entries);
+
+        let mut states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        states.remove(&provider);
+        drop(states);
+
+        if let Some(repository) = &self.repository {
+            repository.delete_provider(provider)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn load_latest_states(
+        &self,
+        enabled_providers: &[String],
+    ) -> Result<Vec<ProviderUsageState>, String> {
+        let Some(repository) = &self.repository else {
+            return Ok(Vec::new());
+        };
+        let states = repository.latest_for_enabled(enabled_providers)?;
+        let mut entries = self
+            .entries
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        let mut memory_states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+
+        for state in &states {
+            memory_states.insert(state.provider, state.clone());
+            if let Some(snapshot) = &state.snapshot {
+                entries.insert(
+                    state.provider,
+                    CacheEntry {
+                        snapshot: snapshot.clone(),
+                    },
+                );
+            }
+        }
+
+        Ok(states)
+    }
+
+    pub fn put_state(&self, state: ProviderUsageState) -> Result<(), String> {
+        if let Some(snapshot) = &state.snapshot {
+            let mut entries = self
+                .entries
+                .write()
+                .unwrap_or_else(|error| error.into_inner());
+            entries.insert(
+                state.provider,
+                CacheEntry {
+                    snapshot: snapshot.clone(),
+                },
+            );
+        }
+
+        let mut states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        states.insert(state.provider, state.clone());
+        drop(states);
+
+        if let Some(repository) = &self.repository {
+            repository.put_latest(&state)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -136,6 +288,7 @@ pub fn failed_attempt(strategy_id: impl Into<String>, error: &ProviderError) -> 
 mod tests {
     use super::*;
     use crate::core::models::UsageWindow;
+    use crate::core::usage_repository::UsageRepository;
 
     fn sample_snapshot(provider: ProviderId, used_percent: f32) -> UsageSnapshot {
         UsageSnapshot::new(
@@ -209,5 +362,48 @@ mod tests {
         let cached = store.get_snapshots(&["codex".into()]);
         assert_eq!(cached.len(), 1);
         assert_eq!(cached[0].health, ProviderHealth::Error);
+    }
+
+    #[test]
+    fn record_success_persists_latest_and_history() {
+        let repository = crate::core::usage_repository::SqliteUsageRepository::from_connection(
+            rusqlite::Connection::open_in_memory().expect("sqlite"),
+        )
+        .expect("repo");
+        let store = UsageStore::with_repository(std::sync::Arc::new(repository.clone()));
+
+        store.record_success(sample_snapshot(ProviderId::Claude, 10.0));
+
+        let latest = repository
+            .latest_for_enabled(&["claude".into()])
+            .expect("latest");
+        assert_eq!(latest.len(), 1);
+        assert!(latest[0].snapshot.is_some());
+
+        let history_count: i64 = repository
+            .connection()
+            .query_row("SELECT COUNT(*) FROM usage_history", [], |row| row.get(0))
+            .expect("history count");
+        assert_eq!(history_count, 1);
+    }
+
+    #[test]
+    fn delete_provider_removes_memory_and_repository_state() {
+        let repository = crate::core::usage_repository::SqliteUsageRepository::from_connection(
+            rusqlite::Connection::open_in_memory().expect("sqlite"),
+        )
+        .expect("repo");
+        let store = UsageStore::with_repository(std::sync::Arc::new(repository.clone()));
+        store.record_success(sample_snapshot(ProviderId::Claude, 10.0));
+
+        store
+            .delete_provider(ProviderId::Claude)
+            .expect("delete provider");
+
+        assert!(store.get_snapshots(&["claude".into()]).is_empty());
+        assert!(repository
+            .latest_for_enabled(&["claude".into()])
+            .expect("latest")
+            .is_empty());
     }
 }

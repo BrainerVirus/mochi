@@ -28,8 +28,7 @@ export function useSaveSettings() {
   return useMutation({
     ...saveSettingsMutationOptions(),
     onSuccess: (settings) => {
-      queryClient.setQueryData(queryKeys.settings, settings);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+      void reconcileSettingsSaveSuccess(queryClient, settings);
     },
   });
 }
@@ -74,7 +73,7 @@ export function useTrayEvents() {
           ...current,
           update_channel: event.payload,
         }).then((settings) => {
-          queryClient.setQueryData(queryKeys.settings, settings);
+          void reconcileSettingsSaveSuccess(queryClient, settings);
         });
       }),
       listen("tray-check-update", () => {
@@ -101,4 +100,19 @@ export function useTrayEvents() {
 
 export function shouldRunProviderRefreshForTrayEvent(eventName: string): boolean {
   return eventName === "tray-refresh";
+}
+
+export async function reconcileSettingsSaveSuccess(
+  queryClient: SettingsSaveSuccessQueryClient,
+  settings: MochiSettings,
+  syncUsage: () => Promise<void> = syncTrayUsage,
+): Promise<void> {
+  queryClient.setQueryData(queryKeys.settings, settings);
+  await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+  await syncUsage();
+}
+
+interface SettingsSaveSuccessQueryClient {
+  setQueryData: (queryKey: readonly unknown[], settings: MochiSettings) => unknown;
+  invalidateQueries: (options: { queryKey: readonly unknown[] }) => Promise<unknown>;
 }

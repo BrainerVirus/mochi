@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+pub mod usage;
+
 #[derive(Debug, Parser)]
 #[command(name = "mochi", version, about = "Soft alerts before hard limits.")]
 pub struct Cli {
@@ -12,6 +14,8 @@ pub enum Command {
     Usage {
         #[arg(short, long)]
         provider: Option<String>,
+        #[arg(long)]
+        refresh: bool,
         #[arg(long)]
         json: bool,
     },

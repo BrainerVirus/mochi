@@ -1,20 +1,25 @@
+pub mod refresh_controller;
+
 use crate::core::models::{ProviderHealth, ProviderId, UsageSnapshot, UsageWindow};
 use crate::core::provider::{
     FetchContext, Provider, ProviderEnrichment, ProviderError, ProviderResult,
 };
+use crate::core::usage_state::ProviderUsageState;
 use crate::core::usage_store::{current_timestamp, failed_attempt, UsageStore};
 use crate::providers::built_in_providers;
 use crate::providers::credential_probe::provider_has_credentials;
 use crate::settings::{MochiSettings, SettingsState};
+use refresh_controller::RefreshController;
+use std::sync::OnceLock;
 use tauri::State;
 
 #[tauri::command]
 pub async fn get_usage_snapshots(
     store: State<'_, UsageStore>,
     state: State<'_, SettingsState>,
-) -> Result<Vec<UsageSnapshot>, String> {
+) -> Result<Vec<ProviderUsageState>, String> {
     let settings = state.current()?;
-    Ok(read_cached_snapshots(&store, &settings))
+    Ok(read_cached_usage_states(&store, &settings))
 }
 
 #[tauri::command]
@@ -27,6 +32,19 @@ pub async fn refresh_provider(
     let ctx = FetchContext::from_settings(&settings);
     let provider_id =
         ProviderId::parse(&provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
+
+    if !provider_has_credentials(provider_id, &ctx) {
+        store.record_error(
+            provider_id,
+            "credentials missing",
+            failed_attempt("live-fetch", &ProviderError::NotConfigured),
+        );
+        return Err("credentials missing".to_string());
+    }
+
+    let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
+        return Err("refresh already in progress".to_string());
+    };
 
     match fetch_provider_snapshot(provider_id, &ctx).await {
         Ok(Some(snapshot)) => {
@@ -110,6 +128,85 @@ pub fn read_cached_snapshots(store: &UsageStore, settings: &MochiSettings) -> Ve
     snapshots
 }
 
+pub fn read_cached_usage_states(
+    store: &UsageStore,
+    settings: &MochiSettings,
+) -> Vec<ProviderUsageState> {
+    let ctx = FetchContext::from_settings(settings);
+    let mut states = store.get_states(&settings.enabled_providers);
+    let present: std::collections::HashSet<_> = states.iter().map(|state| state.provider).collect();
+    let snapshots = store.get_snapshots(&settings.enabled_providers);
+
+    for snapshot in snapshots {
+        if present.contains(&snapshot.provider) {
+            continue;
+        }
+        states.push(state_from_snapshot(snapshot));
+    }
+
+    let present: std::collections::HashSet<_> = states.iter().map(|state| state.provider).collect();
+    for provider_id in settings
+        .enabled_providers
+        .iter()
+        .filter_map(|id| ProviderId::parse(id))
+    {
+        if present.contains(&provider_id) {
+            continue;
+        }
+
+        let state = if provider_has_credentials(provider_id, &ctx) {
+            ProviderUsageState::fetching(provider_id, current_timestamp())
+        } else {
+            ProviderUsageState::missing_credentials(provider_id, current_timestamp())
+        };
+        states.push(state);
+    }
+
+    states
+}
+
+fn state_from_snapshot(snapshot: UsageSnapshot) -> ProviderUsageState {
+    if snapshot.is_stale {
+        let message = snapshot
+            .error
+            .clone()
+            .unwrap_or_else(|| "cached usage is stale".to_string());
+        return ProviderUsageState::stale_error(snapshot, message);
+    }
+
+    if snapshot.health == ProviderHealth::Error {
+        return ProviderUsageState::error(
+            snapshot.provider,
+            snapshot
+                .error
+                .clone()
+                .unwrap_or_else(|| "usage unavailable".to_string()),
+            snapshot.updated_at,
+        );
+    }
+
+    ProviderUsageState::fresh(snapshot)
+}
+
+pub struct StartupReconciliation {
+    pub initial_detection_completed: bool,
+}
+
+pub fn reconcile_first_start_enabled_providers(
+    settings: &mut MochiSettings,
+    initial_detection_completed: bool,
+    detected_provider_ids: Vec<String>,
+) -> StartupReconciliation {
+    if !initial_detection_completed {
+        settings.enabled_providers = detected_provider_ids;
+        settings.normalize_provider_ids();
+    }
+
+    StartupReconciliation {
+        initial_detection_completed: true,
+    }
+}
+
 fn credential_pending_snapshot(provider_id: ProviderId) -> UsageSnapshot {
     UsageSnapshot::new(
         provider_id,
@@ -133,6 +230,19 @@ pub async fn refresh_enabled_snapshots(
         if !is_provider_enabled(provider_id, &settings.enabled_providers) {
             continue;
         }
+
+        if !provider_has_credentials(provider_id, &ctx) {
+            store.record_error(
+                provider_id,
+                "credentials missing",
+                failed_attempt("live-fetch", &ProviderError::NotConfigured),
+            );
+            continue;
+        }
+
+        let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
+            continue;
+        };
 
         match fetch_provider_snapshot(provider_id, &ctx).await {
             Ok(Some(snapshot)) => {
@@ -166,6 +276,11 @@ pub async fn refresh_enabled_snapshots(
     }
 
     Ok(snapshots)
+}
+
+fn refresh_controller() -> &'static RefreshController {
+    static CONTROLLER: OnceLock<RefreshController> = OnceLock::new();
+    CONTROLLER.get_or_init(RefreshController::default)
 }
 
 fn is_provider_enabled(provider_id: ProviderId, enabled_providers: &[String]) -> bool {
@@ -296,6 +411,32 @@ mod tests {
         assert_eq!(snapshots[0].primary.used_percent, 55.0);
     }
 
+    #[test]
+    fn first_start_auto_enables_detected_providers_once() {
+        let mut settings = MochiSettings::default();
+        let detected = vec!["claude".to_string(), "cursor".to_string()];
+
+        let next = reconcile_first_start_enabled_providers(&mut settings, false, detected);
+
+        assert!(next.initial_detection_completed);
+        assert_eq!(settings.enabled_providers, vec!["claude", "cursor"]);
+    }
+
+    #[test]
+    fn later_start_keeps_user_provider_preferences() {
+        let mut settings = settings_with_enabled(&["claude"]);
+        let detected = vec![
+            "claude".to_string(),
+            "cursor".to_string(),
+            "gemini".to_string(),
+        ];
+
+        let next = reconcile_first_start_enabled_providers(&mut settings, true, detected);
+
+        assert!(next.initial_detection_completed);
+        assert_eq!(settings.enabled_providers, vec!["claude"]);
+    }
+
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn refresh_enabled_snapshots_returns_only_enabled_providers() {
@@ -328,6 +469,27 @@ mod tests {
             .expect("empty enabled list should succeed");
 
         assert!(snapshots.is_empty());
+    }
+
+    #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
+    async fn refresh_enabled_snapshots_skips_missing_credentials() {
+        let _guard = test_env::LOCK.lock().expect("env lock");
+        std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
+        std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+        std::env::remove_var("CLAUDE_CODE_OAUTH_TOKEN");
+        let store = UsageStore::new(None);
+        let settings = settings_with_enabled(&["claude"]);
+
+        let snapshots = refresh_enabled_snapshots(&store, &settings)
+            .await
+            .expect("refresh");
+
+        assert!(snapshots.is_empty());
+        assert!(read_cached_snapshots(&store, &settings)
+            .iter()
+            .any(|snapshot| snapshot.provider == ProviderId::Claude
+                && snapshot.error.as_deref() == Some("credentials missing")));
     }
 
     #[tokio::test]

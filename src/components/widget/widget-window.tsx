@@ -24,7 +24,7 @@ export function WidgetWindow() {
     refreshProviderMutation,
     selectedTab,
     refreshingProvider,
-    snapshots,
+    states,
     tabs,
     handleTabChange,
     handleRefreshProvider,
@@ -57,7 +57,7 @@ export function WidgetWindow() {
             activeTab={selectedTab}
             onTabChange={handleTabChange}
             tabs={tabs}
-            snapshots={snapshots}
+            states={states}
             onRefreshProvider={handleRefreshProvider}
             refreshingProvider={refreshingProvider}
           />
