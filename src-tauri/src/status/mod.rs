@@ -110,6 +110,25 @@ pub fn read_cached_snapshots(store: &UsageStore, settings: &MochiSettings) -> Ve
     snapshots
 }
 
+pub struct StartupReconciliation {
+    pub initial_detection_completed: bool,
+}
+
+pub fn reconcile_first_start_enabled_providers(
+    settings: &mut MochiSettings,
+    initial_detection_completed: bool,
+    detected_provider_ids: Vec<String>,
+) -> StartupReconciliation {
+    if !initial_detection_completed {
+        settings.enabled_providers = detected_provider_ids;
+        settings.normalize_provider_ids();
+    }
+
+    StartupReconciliation {
+        initial_detection_completed: true,
+    }
+}
+
 fn credential_pending_snapshot(provider_id: ProviderId) -> UsageSnapshot {
     UsageSnapshot::new(
         provider_id,
@@ -294,6 +313,32 @@ mod tests {
         assert_eq!(snapshots.len(), 1);
         assert_eq!(snapshots[0].provider, ProviderId::Claude);
         assert_eq!(snapshots[0].primary.used_percent, 55.0);
+    }
+
+    #[test]
+    fn first_start_auto_enables_detected_providers_once() {
+        let mut settings = MochiSettings::default();
+        let detected = vec!["claude".to_string(), "cursor".to_string()];
+
+        let next = reconcile_first_start_enabled_providers(&mut settings, false, detected);
+
+        assert!(next.initial_detection_completed);
+        assert_eq!(settings.enabled_providers, vec!["claude", "cursor"]);
+    }
+
+    #[test]
+    fn later_start_keeps_user_provider_preferences() {
+        let mut settings = settings_with_enabled(&["claude"]);
+        let detected = vec![
+            "claude".to_string(),
+            "cursor".to_string(),
+            "gemini".to_string(),
+        ];
+
+        let next = reconcile_first_start_enabled_providers(&mut settings, true, detected);
+
+        assert!(next.initial_detection_completed);
+        assert_eq!(settings.enabled_providers, vec!["claude"]);
     }
 
     #[tokio::test]

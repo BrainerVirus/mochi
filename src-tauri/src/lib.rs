@@ -21,10 +21,14 @@ pub mod widget;
 use clap::Parser;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
+use time::format_description::well_known::Rfc3339;
+use time::{Duration, OffsetDateTime};
 
 use cli::{Cli, Command};
+use core::usage_repository::{SqliteUsageRepository, UsageRepository};
 use core::usage_store::UsageStore;
 use lifecycle::{should_prevent_exit_request, AppLifecycle};
+use providers::credential_probe::detected_provider_ids;
 use settings::{
     get_provider_catalog, get_provider_credential_status, get_settings, save_settings,
     SettingsState,
@@ -86,8 +90,10 @@ pub fn run() -> anyhow::Result<()> {
             macos::set_tray_only_activation_policy(app.handle());
 
             diagnostics::setup(app.handle())?;
-            app.manage(SettingsState::new(app.handle())?);
-            app.manage(UsageStore::new(None));
+            let settings_state = SettingsState::new(app.handle())?;
+            let usage_store = initialize_usage_store(app.handle(), &settings_state);
+            app.manage(settings_state);
+            app.manage(usage_store);
             app.manage(AppLifecycle::default());
             setup_main_panel(app.handle())?;
             setup_app_windows(app.handle())?;
@@ -135,6 +141,54 @@ pub fn run() -> anyhow::Result<()> {
         });
 
     Ok(())
+}
+
+pub fn usage_database_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|path| path.join("usage.sqlite3"))
+        .map_err(|error| error.to_string())
+}
+
+fn initialize_usage_store(app: &tauri::AppHandle, settings_state: &SettingsState) -> UsageStore {
+    let Ok(db_path) = usage_database_path(app) else {
+        return UsageStore::new(None);
+    };
+
+    let Ok(repository) = SqliteUsageRepository::open(&db_path) else {
+        return UsageStore::new(None);
+    };
+
+    let repository = std::sync::Arc::new(repository);
+    let mut settings = match settings_state.current() {
+        Ok(settings) => settings,
+        Err(_) => return UsageStore::with_repository(repository),
+    };
+    let initial_detection_completed = repository
+        .initial_provider_detection_completed()
+        .unwrap_or(false);
+    let detected = detected_provider_ids(&settings);
+    let reconciliation = status::reconcile_first_start_enabled_providers(
+        &mut settings,
+        initial_detection_completed,
+        detected,
+    );
+
+    if !initial_detection_completed {
+        let _ = settings_state.update(settings.clone());
+    }
+    let _ = repository.set_initial_provider_detection_completed(
+        reconciliation.initial_detection_completed,
+    );
+
+    let store = UsageStore::with_repository(repository.clone());
+    let _ = store.load_latest_states(&settings.enabled_providers);
+    let cutoff = (OffsetDateTime::now_utc() - Duration::days(90))
+        .format(&Rfc3339)
+        .unwrap_or_else(|_| "1970-01-01T00:00:00Z".to_string());
+    let _ = repository.prune_history_before(&cutoff);
+
+    store
 }
 
 fn run_cli(command: Command) -> anyhow::Result<()> {
