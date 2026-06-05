@@ -1,3 +1,5 @@
+pub mod refresh_controller;
+
 use crate::core::models::{ProviderHealth, ProviderId, UsageSnapshot, UsageWindow};
 use crate::core::provider::{
     FetchContext, Provider, ProviderEnrichment, ProviderError, ProviderResult,
@@ -6,6 +8,8 @@ use crate::core::usage_store::{current_timestamp, failed_attempt, UsageStore};
 use crate::providers::built_in_providers;
 use crate::providers::credential_probe::provider_has_credentials;
 use crate::settings::{MochiSettings, SettingsState};
+use refresh_controller::RefreshController;
+use std::sync::OnceLock;
 use tauri::State;
 
 #[tauri::command]
@@ -27,6 +31,19 @@ pub async fn refresh_provider(
     let ctx = FetchContext::from_settings(&settings);
     let provider_id =
         ProviderId::parse(&provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
+
+    if !provider_has_credentials(provider_id, &ctx) {
+        store.record_error(
+            provider_id,
+            "credentials missing",
+            failed_attempt("live-fetch", &ProviderError::NotConfigured),
+        );
+        return Err("credentials missing".to_string());
+    }
+
+    let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
+        return Err("refresh already in progress".to_string());
+    };
 
     match fetch_provider_snapshot(provider_id, &ctx).await {
         Ok(Some(snapshot)) => {
@@ -153,6 +170,19 @@ pub async fn refresh_enabled_snapshots(
             continue;
         }
 
+        if !provider_has_credentials(provider_id, &ctx) {
+            store.record_error(
+                provider_id,
+                "credentials missing",
+                failed_attempt("live-fetch", &ProviderError::NotConfigured),
+            );
+            continue;
+        }
+
+        let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
+            continue;
+        };
+
         match fetch_provider_snapshot(provider_id, &ctx).await {
             Ok(Some(snapshot)) => {
                 store.record_success(snapshot.clone());
@@ -185,6 +215,11 @@ pub async fn refresh_enabled_snapshots(
     }
 
     Ok(snapshots)
+}
+
+fn refresh_controller() -> &'static RefreshController {
+    static CONTROLLER: OnceLock<RefreshController> = OnceLock::new();
+    CONTROLLER.get_or_init(RefreshController::default)
 }
 
 fn is_provider_enabled(provider_id: ProviderId, enabled_providers: &[String]) -> bool {
@@ -373,6 +408,27 @@ mod tests {
             .expect("empty enabled list should succeed");
 
         assert!(snapshots.is_empty());
+    }
+
+    #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
+    async fn refresh_enabled_snapshots_skips_missing_credentials() {
+        let _guard = test_env::LOCK.lock().expect("env lock");
+        std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
+        std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+        std::env::remove_var("CLAUDE_CODE_OAUTH_TOKEN");
+        let store = UsageStore::new(None);
+        let settings = settings_with_enabled(&["claude"]);
+
+        let snapshots = refresh_enabled_snapshots(&store, &settings)
+            .await
+            .expect("refresh");
+
+        assert!(snapshots.is_empty());
+        assert!(read_cached_snapshots(&store, &settings)
+            .iter()
+            .any(|snapshot| snapshot.provider == ProviderId::Claude
+                && snapshot.error.as_deref() == Some("credentials missing")));
     }
 
     #[tokio::test]
