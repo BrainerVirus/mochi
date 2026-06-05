@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MochiSettings } from "@/lib/schemas/settings";
-import type { UsageSnapshot } from "@/lib/schemas/usage";
+import type { ProviderUsageState } from "@/lib/schemas/usage";
 
 import { shouldRefreshEnabledProvidersOnBoot } from "./use-cold-start-provider-refresh";
 
@@ -15,39 +15,29 @@ function settings(enabledProviders: MochiSettings["enabled_providers"]): MochiSe
   };
 }
 
-function snapshot(provider: UsageSnapshot["provider"], source = "credentials-detected") {
+function state(provider: ProviderUsageState["provider"], kind: ProviderUsageState["kind"] = "fetching") {
   return {
     provider,
-    primary: {
-      label: "Pending fetch",
-      used_percent: 100,
-      remaining_percent: 0,
-      resets_at: null,
-    },
-    secondary: null,
+    kind,
+    snapshot: null,
+    health: kind === "fresh" ? "ok" : "stale",
+    message: kind === "fetching" ? "fetching usage" : null,
     updated_at: "2026-05-31T12:00:00Z",
-    source,
-    health: "error",
-    is_stale: false,
-    error: source === "credentials-detected" ? "Usage fetch pending" : null,
-    extra_windows: [],
-  } satisfies UsageSnapshot;
+  } satisfies ProviderUsageState;
 }
 
 describe("shouldRefreshEnabledProvidersOnBoot", () => {
-  it("refreshes when an enabled provider has only a credential-detected pending snapshot", () => {
-    expect(shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [snapshot("codex")])).toBe(
-      true,
-    );
+  it("refreshes when an enabled provider is in fetching state", () => {
+    expect(shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [state("codex")])).toBe(true);
   });
 
-  it("does not refresh when enabled providers already have real snapshots", () => {
+  it("does not refresh when enabled providers already have fresh state", () => {
     expect(
-      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [snapshot("codex", "test")]),
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [state("codex", "fresh")]),
     ).toBe(false);
   });
 
   it("does not refresh when no providers are enabled", () => {
-    expect(shouldRefreshEnabledProvidersOnBoot(settings([]), [snapshot("codex")])).toBe(false);
+    expect(shouldRefreshEnabledProvidersOnBoot(settings([]), [state("codex")])).toBe(false);
   });
 });

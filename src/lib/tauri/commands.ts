@@ -17,7 +17,9 @@ import {
   UpdateInfoSchema,
   UsageSnapshotSchema,
   UsageSnapshotsSchema,
+  parseProviderUsageStates,
   type ProviderId,
+  type ProviderUsageStates,
   type UpdateInfo,
   type UsageSnapshot,
   type UsageSnapshots,
@@ -50,6 +52,11 @@ export function installUpdate(channel: string): Promise<void> {
 export async function getUsageSnapshots(): Promise<UsageSnapshots> {
   const result = await invoke<unknown>("get_usage_snapshots");
   return UsageSnapshotsSchema.parse(result);
+}
+
+export async function getUsageStates(): Promise<ProviderUsageStates> {
+  const result = await invoke<unknown>("get_usage_snapshots");
+  return parseProviderUsageStates(result);
 }
 
 export async function refreshProvider(provider: ProviderId): Promise<UsageSnapshot> {

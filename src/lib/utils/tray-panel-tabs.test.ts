@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import type { UsageSnapshot } from "@/lib/schemas/usage";
 
 import { STATIC_SNAPSHOT_EPOCH } from "./is-provider-configured";
-import { buildTrayPanelTabs, filterSnapshotsForTrayPanel } from "./tray-panel-tabs";
+import {
+  buildTrayPanelTabs,
+  buildTrayPanelTabsFromStates,
+  filterSnapshotsForTrayPanel,
+} from "./tray-panel-tabs";
 
 function snapshot(
   provider: UsageSnapshot["provider"],
@@ -43,6 +47,27 @@ describe("buildTrayPanelTabs", () => {
     );
 
     expect(tabs.map((tab) => tab.id)).toEqual(["overview", "codex", "claude"]);
+  });
+
+  it("builds tabs for missing credential state rows", () => {
+    const tabs = buildTrayPanelTabsFromStates(
+      [
+        {
+          provider: "claude",
+          kind: "missing_credentials",
+          snapshot: null,
+          health: "error",
+          message: "credentials missing",
+          updated_at: "2026-06-04T12:00:00Z",
+        },
+      ],
+      ["claude"],
+    );
+
+    expect(tabs).toEqual([
+      { id: "overview", label: "Overview" },
+      { id: "claude", label: "Claude" },
+    ]);
   });
 });
 

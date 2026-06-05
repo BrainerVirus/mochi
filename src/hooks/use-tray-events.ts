@@ -1,5 +1,4 @@
 import {
-  type QueryClient,
   useMutation,
   useQuery,
   useQueryClient,
@@ -108,11 +107,16 @@ export function shouldRunProviderRefreshForTrayEvent(eventName: string): boolean
 }
 
 export async function reconcileSettingsSaveSuccess(
-  queryClient: Pick<QueryClient, "setQueryData" | "invalidateQueries">,
+  queryClient: SettingsSaveSuccessQueryClient,
   settings: MochiSettings,
   syncUsage: () => Promise<void> = syncTrayUsage,
 ): Promise<void> {
   queryClient.setQueryData(queryKeys.settings, settings);
   await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
   await syncUsage();
+}
+
+interface SettingsSaveSuccessQueryClient {
+  setQueryData: (queryKey: readonly unknown[], settings: MochiSettings) => unknown;
+  invalidateQueries: (options: { queryKey: readonly unknown[] }) => Promise<unknown>;
 }

@@ -1,11 +1,17 @@
 import { RefreshCwIcon } from "lucide-react";
 
-import { rateWindows, type ProviderId, type UsageSnapshot } from "@/lib/schemas/usage";
+import {
+  rateWindows,
+  type ProviderId,
+  type ProviderUsageState,
+  type UsageSnapshot,
+} from "@/lib/schemas/usage";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
 import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatUpdatedAgo } from "@/lib/utils/format-updated-ago";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
@@ -43,7 +49,8 @@ function UsageWindowMeters({
 }
 
 interface ProviderUsageSectionProps {
-  snapshot: UsageSnapshot;
+  snapshot?: UsageSnapshot;
+  state?: ProviderUsageState;
   onRefresh?: (provider: ProviderId) => void;
   isRefreshing?: boolean;
   planLabel?: string | null;
@@ -53,30 +60,39 @@ interface ProviderUsageSectionProps {
 
 export function ProviderUsageSection({
   snapshot,
+  state,
   onRefresh,
   isRefreshing = false,
   planLabel = null,
   showProviderActions = false,
   fillActivationKey,
 }: ProviderUsageSectionProps) {
-  const windows = rateWindows(snapshot);
+  const provider = snapshot?.provider ?? state?.provider;
+  if (!provider) {
+    return null;
+  }
+
+  const windows = snapshot ? rateWindows(snapshot) : [];
+  const updatedAt = snapshot?.updated_at ?? state?.updated_at;
+  const message = state?.message ?? snapshot?.error;
+  const isFetching = state?.kind === "fetching";
 
   return (
     <section className="flex flex-col">
       <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-            <ProviderIcon provider={snapshot.provider} className="size-4" />
-            <span className="truncate">{getProviderLabel(snapshot.provider)}</span>
+            <ProviderIcon provider={provider} className="size-4" />
+            <span className="truncate">{getProviderLabel(provider)}</span>
             {planLabel ? (
               <Badge variant="outline" className="text-[10px] font-normal">
                 {planLabel}
               </Badge>
             ) : null}
           </h3>
-          <p className="text-muted-foreground text-[11px]">
-            {formatUpdatedAgo(snapshot.updated_at)}
-          </p>
+          {updatedAt ? (
+            <p className="text-muted-foreground text-[11px]">{formatUpdatedAgo(updatedAt)}</p>
+          ) : null}
         </div>
         {onRefresh ? (
           <Button
@@ -84,9 +100,9 @@ export function ProviderUsageSection({
             size="icon-sm"
             className="shrink-0 cursor-pointer"
             disabled={isRefreshing}
-            aria-label={`Refresh ${getProviderLabel(snapshot.provider)} usage`}
+            aria-label={`Refresh ${getProviderLabel(provider)} usage`}
             onClick={() => {
-              onRefresh(snapshot.provider);
+              onRefresh(provider);
             }}
           >
             <RefreshCwIcon
@@ -99,11 +115,14 @@ export function ProviderUsageSection({
       <div
         className={`${trayPanelSpacing.headerToMeters} flex flex-col ${trayPanelSpacing.meterGap}`}
       >
-        {snapshot.error ? (
-          <p className="text-destructive text-[11px] leading-snug">{snapshot.error}</p>
+        {message ? (
+          <p className="text-muted-foreground text-[11px] leading-snug">{message}</p>
         ) : null}
-        <UsageWindowMeters windows={windows} fillActivationKey={fillActivationKey} />
-        {snapshot.provider_cost ? (
+        {isFetching ? <ProviderUsageSkeleton /> : null}
+        {snapshot ? (
+          <UsageWindowMeters windows={windows} fillActivationKey={fillActivationKey} />
+        ) : null}
+        {snapshot?.provider_cost ? (
           <ProviderCostSection
             cost={snapshot.provider_cost}
             compact
@@ -114,9 +133,21 @@ export function ProviderUsageSection({
       {showProviderActions ? (
         <>
           <TrayPanelDivider />
-          <ProviderUsageActions provider={snapshot.provider} />
+          <ProviderUsageActions provider={provider} />
         </>
       ) : null}
     </section>
+  );
+}
+
+function ProviderUsageSkeleton() {
+  return (
+    <div className="flex flex-col gap-1.5" aria-hidden="true">
+      <Skeleton className="h-1.5 w-full rounded-full" />
+      <div className="flex items-center justify-between gap-2">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-10" />
+      </div>
+    </div>
   );
 }

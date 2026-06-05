@@ -6,7 +6,7 @@ import { useTabFillActivationKey } from "@/hooks/use-tab-fill-activation-key";
 import { useUsageData } from "@/hooks/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
-import { buildTrayPanelTabs } from "@/lib/utils/tray-panel-tabs";
+import { buildTrayPanelTabsFromStates } from "@/lib/utils/tray-panel-tabs";
 import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
 interface UsageSnapshotsPanelProps {
@@ -17,8 +17,8 @@ interface UsageSnapshotsPanelProps {
   enabledProviderCount: number;
   activeTab: string;
   onTabChange: (value: string) => void;
-  tabs: ReturnType<typeof buildTrayPanelTabs>;
-  snapshots: NonNullable<ReturnType<typeof useUsageData>["data"]>;
+  tabs: ReturnType<typeof buildTrayPanelTabsFromStates>;
+  states: NonNullable<ReturnType<typeof useUsageData>["data"]>;
   onRefreshProvider: (provider: ProviderId) => void;
   refreshingProvider: ProviderId | null;
 }
@@ -32,7 +32,7 @@ export function UsageSnapshotsPanel({
   activeTab,
   onTabChange,
   tabs,
-  snapshots,
+  states,
   onRefreshProvider,
   refreshingProvider,
 }: UsageSnapshotsPanelProps) {
@@ -55,7 +55,7 @@ export function UsageSnapshotsPanel({
     );
   }
 
-  if (isSuccess && snapshots.length === 0) {
+  if (isSuccess && states.length === 0) {
     return (
       <p className="text-muted-foreground px-3 py-6 text-center text-xs">
         {usageSnapshotsEmptyMessage(enabledProviderCount)}
@@ -63,14 +63,14 @@ export function UsageSnapshotsPanel({
     );
   }
 
-  if (isSuccess && snapshots.length > 0) {
-    const activeSnapshot = snapshots.find((snapshot) => snapshot.provider === activeTab);
+  if (isSuccess && states.length > 0) {
+    const activeState = states.find((state) => state.provider === activeTab);
 
     return (
       <TabUsageContent
         activeTab={activeTab}
-        activeSnapshot={activeSnapshot}
-        snapshots={snapshots}
+        activeState={activeState}
+        states={states}
         tabs={tabs}
         onTabChange={onTabChange}
         onRefreshProvider={onRefreshProvider}
@@ -84,16 +84,16 @@ export function UsageSnapshotsPanel({
 
 function TabUsageContent({
   activeTab,
-  activeSnapshot,
-  snapshots,
+  activeState,
+  states,
   tabs,
   onTabChange,
   onRefreshProvider,
   refreshingProvider,
 }: {
   activeTab: string;
-  activeSnapshot: UsageSnapshotsPanelProps["snapshots"][number] | undefined;
-  snapshots: UsageSnapshotsPanelProps["snapshots"];
+  activeState: UsageSnapshotsPanelProps["states"][number] | undefined;
+  states: UsageSnapshotsPanelProps["states"];
   tabs: UsageSnapshotsPanelProps["tabs"];
   onTabChange: UsageSnapshotsPanelProps["onTabChange"];
   onRefreshProvider: UsageSnapshotsPanelProps["onRefreshProvider"];
@@ -109,17 +109,18 @@ function TabUsageContent({
         {activeTab === "overview" ? (
           <TrayOverview
             key={fillActivationKey}
-            snapshots={snapshots}
+            states={states}
             onRefreshProvider={onRefreshProvider}
             refreshingProvider={refreshingProvider}
             fillActivationKey={fillActivationKey}
           />
-        ) : activeSnapshot ? (
+        ) : activeState ? (
           <ProviderUsageSection
             key={fillActivationKey}
-            snapshot={activeSnapshot}
+            state={activeState}
+            snapshot={activeState.snapshot ?? undefined}
             onRefresh={onRefreshProvider}
-            isRefreshing={refreshingProvider === activeSnapshot.provider}
+            isRefreshing={refreshingProvider === activeState.provider}
             showProviderActions
             fillActivationKey={fillActivationKey}
           />

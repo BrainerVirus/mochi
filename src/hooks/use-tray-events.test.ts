@@ -16,10 +16,10 @@ describe("tray event refresh policy", () => {
   it("invalidates cached usage and syncs tray usage after settings save", async () => {
     const calls: string[] = [];
     const queryClient = {
-      setQueryData: (queryKey: readonly string[]) => {
+      setQueryData: (queryKey: readonly unknown[]) => {
         calls.push(`set:${queryKey.join("/")}`);
       },
-      invalidateQueries: ({ queryKey }: { queryKey: readonly string[] }) => {
+      invalidateQueries: ({ queryKey }: { queryKey: readonly unknown[] }) => {
         calls.push(`invalidate:${queryKey.join("/")}`);
         return Promise.resolve();
       },

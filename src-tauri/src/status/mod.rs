@@ -5,6 +5,7 @@ use crate::core::provider::{
     FetchContext, Provider, ProviderEnrichment, ProviderError, ProviderResult,
 };
 use crate::core::usage_store::{current_timestamp, failed_attempt, UsageStore};
+use crate::core::usage_state::ProviderUsageState;
 use crate::providers::built_in_providers;
 use crate::providers::credential_probe::provider_has_credentials;
 use crate::settings::{MochiSettings, SettingsState};
@@ -16,9 +17,9 @@ use tauri::State;
 pub async fn get_usage_snapshots(
     store: State<'_, UsageStore>,
     state: State<'_, SettingsState>,
-) -> Result<Vec<UsageSnapshot>, String> {
+) -> Result<Vec<ProviderUsageState>, String> {
     let settings = state.current()?;
-    Ok(read_cached_snapshots(&store, &settings))
+    Ok(read_cached_usage_states(&store, &settings))
 }
 
 #[tauri::command]
@@ -125,6 +126,66 @@ pub fn read_cached_snapshots(store: &UsageStore, settings: &MochiSettings) -> Ve
     }
 
     snapshots
+}
+
+pub fn read_cached_usage_states(
+    store: &UsageStore,
+    settings: &MochiSettings,
+) -> Vec<ProviderUsageState> {
+    let ctx = FetchContext::from_settings(settings);
+    let mut states = store.get_states(&settings.enabled_providers);
+    let present: std::collections::HashSet<_> = states.iter().map(|state| state.provider).collect();
+    let snapshots = store.get_snapshots(&settings.enabled_providers);
+
+    for snapshot in snapshots {
+        if present.contains(&snapshot.provider) {
+            continue;
+        }
+        states.push(state_from_snapshot(snapshot));
+    }
+
+    let present: std::collections::HashSet<_> = states.iter().map(|state| state.provider).collect();
+    for provider_id in settings
+        .enabled_providers
+        .iter()
+        .filter_map(|id| ProviderId::parse(id))
+    {
+        if present.contains(&provider_id) {
+            continue;
+        }
+
+        let state = if provider_has_credentials(provider_id, &ctx) {
+            ProviderUsageState::fetching(provider_id, current_timestamp())
+        } else {
+            ProviderUsageState::missing_credentials(provider_id, current_timestamp())
+        };
+        states.push(state);
+    }
+
+    states
+}
+
+fn state_from_snapshot(snapshot: UsageSnapshot) -> ProviderUsageState {
+    if snapshot.is_stale {
+        let message = snapshot
+            .error
+            .clone()
+            .unwrap_or_else(|| "cached usage is stale".to_string());
+        return ProviderUsageState::stale_error(snapshot, message);
+    }
+
+    if snapshot.health == ProviderHealth::Error {
+        return ProviderUsageState::error(
+            snapshot.provider,
+            snapshot
+                .error
+                .clone()
+                .unwrap_or_else(|| "usage unavailable".to_string()),
+            snapshot.updated_at,
+        );
+    }
+
+    ProviderUsageState::fresh(snapshot)
 }
 
 pub struct StartupReconciliation {

@@ -19,6 +19,7 @@ struct CacheEntry {
 #[derive(Default)]
 pub struct UsageStore {
     entries: RwLock<HashMap<ProviderId, CacheEntry>>,
+    states: RwLock<HashMap<ProviderId, ProviderUsageState>>,
     repository: Option<Arc<dyn UsageRepository>>,
 }
 
@@ -26,6 +27,7 @@ impl UsageStore {
     pub fn new(_persistence_path: Option<PathBuf>) -> Self {
         Self {
             entries: RwLock::new(HashMap::new()),
+            states: RwLock::new(HashMap::new()),
             repository: None,
         }
     }
@@ -33,6 +35,7 @@ impl UsageStore {
     pub fn with_repository(repository: Arc<dyn UsageRepository>) -> Self {
         Self {
             entries: RwLock::new(HashMap::new()),
+            states: RwLock::new(HashMap::new()),
             repository: Some(repository),
         }
     }
@@ -54,6 +57,19 @@ impl UsageStore {
             .collect()
     }
 
+    pub fn get_states(&self, enabled_providers: &[String]) -> Vec<ProviderUsageState> {
+        let states = self
+            .states
+            .read()
+            .unwrap_or_else(|error| error.into_inner());
+
+        enabled_providers
+            .iter()
+            .filter_map(|id| ProviderId::parse(id))
+            .filter_map(|provider_id| states.get(&provider_id).cloned())
+            .collect()
+    }
+
     pub fn record_success(&self, snapshot: UsageSnapshot) {
         let provider_id = snapshot.provider;
         let mut entries = self
@@ -68,8 +84,15 @@ impl UsageStore {
         );
         drop(entries);
 
+        let state = ProviderUsageState::fresh(snapshot.clone());
+        let mut states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        states.insert(provider_id, state.clone());
+        drop(states);
+
         if let Some(repository) = &self.repository {
-            let state = ProviderUsageState::fresh(snapshot.clone());
             let _ = repository.put_latest(&state);
             let _ = repository.append_success_history(&snapshot);
         }
@@ -96,8 +119,16 @@ impl UsageStore {
             entry.snapshot = snapshot.clone();
             drop(entries);
 
+            let state = ProviderUsageState::stale_error(snapshot.clone(), message);
+            let mut states = self
+                .states
+                .write()
+                .unwrap_or_else(|error| error.into_inner());
+            states.insert(provider_id, state.clone());
+            drop(states);
+
             if let Some(repository) = &self.repository {
-                let _ = repository.put_latest(&ProviderUsageState::stale_error(snapshot.clone(), message));
+                let _ = repository.put_latest(&state);
             }
 
             return Some(snapshot);
@@ -136,12 +167,20 @@ impl UsageStore {
         );
         drop(entries);
 
+        let state = ProviderUsageState::error(
+            provider_id,
+            snapshot.error.clone().unwrap_or_default(),
+            snapshot.updated_at.clone(),
+        );
+        let mut states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        states.insert(provider_id, state.clone());
+        drop(states);
+
         if let Some(repository) = &self.repository {
-            let _ = repository.put_latest(&ProviderUsageState::error(
-                provider_id,
-                snapshot.error.clone().unwrap_or_default(),
-                snapshot.updated_at.clone(),
-            ));
+            let _ = repository.put_latest(&state);
         }
 
         snapshot
@@ -154,6 +193,13 @@ impl UsageStore {
             .unwrap_or_else(|error| error.into_inner());
         entries.remove(&provider);
         drop(entries);
+
+        let mut states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        states.remove(&provider);
+        drop(states);
 
         if let Some(repository) = &self.repository {
             repository.delete_provider(provider)?;
@@ -174,8 +220,13 @@ impl UsageStore {
             .entries
             .write()
             .unwrap_or_else(|error| error.into_inner());
+        let mut memory_states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
 
         for state in &states {
+            memory_states.insert(state.provider, state.clone());
             if let Some(snapshot) = &state.snapshot {
                 entries.insert(
                     state.provider,
@@ -202,6 +253,13 @@ impl UsageStore {
                 },
             );
         }
+
+        let mut states = self
+            .states
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        states.insert(state.provider, state.clone());
+        drop(states);
 
         if let Some(repository) = &self.repository {
             repository.put_latest(&state)?;

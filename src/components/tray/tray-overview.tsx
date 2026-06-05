@@ -1,34 +1,35 @@
 import { Fragment } from "react";
 
-import type { ProviderId, UsageSnapshot } from "@/lib/schemas/usage";
+import type { ProviderId, ProviderUsageState } from "@/lib/schemas/usage";
 
 import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
 
 interface TrayOverviewProps {
-  snapshots: UsageSnapshot[];
+  states: ProviderUsageState[];
   onRefreshProvider?: (provider: ProviderId) => void;
   refreshingProvider?: ProviderId | null;
   fillActivationKey?: string;
 }
 
 export function TrayOverview({
-  snapshots,
+  states,
   onRefreshProvider,
   refreshingProvider = null,
   fillActivationKey,
 }: TrayOverviewProps) {
   return (
     <div className="flex flex-col">
-      {snapshots.map((snapshot, index) => (
-        <Fragment key={snapshot.provider}>
+      {states.map((state, index) => (
+        <Fragment key={state.provider}>
           <ProviderUsageSection
-            snapshot={snapshot}
+            state={state}
+            snapshot={state.snapshot ?? undefined}
             onRefresh={onRefreshProvider}
-            isRefreshing={refreshingProvider === snapshot.provider}
+            isRefreshing={refreshingProvider === state.provider}
             fillActivationKey={fillActivationKey}
           />
-          {index < snapshots.length - 1 ? <TrayPanelDivider /> : null}
+          {index < states.length - 1 ? <TrayPanelDivider /> : null}
         </Fragment>
       ))}
     </div>
