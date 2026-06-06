@@ -42,8 +42,8 @@ mod tests {
             "tauri.conf.json must not boot the widget from a deep route"
         );
         assert!(
-            conf.contains(r#""url": "index.html""#),
-            "tauri.conf.json widget window must boot from the SPA shell"
+            !conf.contains(r#""label": "widget""#),
+            "the widget must be created by the Rust builder, not precreated from tauri.conf.json"
         );
     }
 }

@@ -11,21 +11,7 @@
   },
   "app": {
     "macOSPrivateApi": true,
-    "windows": [
-      {
-        "label": "widget",
-        "title": "Mochi Widget",
-        "url": "index.html",
-        "width": 360,
-        "height": 420,
-        "minWidth": 320,
-        "minHeight": 200,
-        "visible": false,
-        "alwaysOnTop": false,
-        "decorations": true,
-        "resizable": true
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null,
       "capabilities": ["default"]
