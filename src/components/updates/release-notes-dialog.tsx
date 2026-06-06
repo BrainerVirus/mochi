@@ -19,6 +19,7 @@ interface ReleaseNotesDialogProps {
   onOpenChange: (open: boolean) => void;
   version: string | null;
   channel: string;
+  notesDescription?: string;
   notes: string | null;
   isChecking: boolean;
   onRecheck: () => void;
@@ -29,6 +30,7 @@ export function ReleaseNotesDialog({
   onOpenChange,
   version,
   channel,
+  notesDescription,
   notes,
   isChecking,
   onRecheck,
@@ -41,7 +43,8 @@ export function ReleaseNotesDialog({
         <DialogHeader className="shrink-0 border-b px-4 pt-4 pb-3 text-left">
           <DialogTitle>What&apos;s new</DialogTitle>
           <DialogDescription>
-            {version ? `Version ${version}` : "Release notes"} · Channel: {channel}
+            {notesDescription ?? (version ? `Version ${version}` : "Release notes")} · Channel:{" "}
+            {channel}
           </DialogDescription>
         </DialogHeader>
 

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { sanitizeReleaseNotesForApp } from "@/lib/updates/sanitize-release-notes";
+
 export const RELEASE_NOTES_CACHE_KEY = "mochi:release-notes:v1";
 export const POST_UPDATE_REFRESH_KEY = "mochi:post-update-refresh:v1";
 
@@ -8,11 +10,13 @@ const ReleaseNotesCacheSchema = z.object({
   notes: z.string(),
   channel: z.string(),
   cachedAt: z.string(),
+  source: z.enum(["updater", "installed-release"]).default("updater"),
 });
 
 export type ReleaseNotesCache = z.infer<typeof ReleaseNotesCacheSchema>;
+type ReleaseNotesCacheInput = z.input<typeof ReleaseNotesCacheSchema>;
 
-export function cacheReleaseNotes(entry: ReleaseNotesCache): void {
+export function cacheReleaseNotes(entry: ReleaseNotesCacheInput): void {
   try {
     const value = JSON.stringify(entry);
     localStorage.setItem(RELEASE_NOTES_CACHE_KEY, value);
@@ -30,7 +34,7 @@ export function readCachedReleaseNotes(): ReleaseNotesCache | null {
     }
 
     const parsed = ReleaseNotesCacheSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : null;
+    return parsed.success ? sanitizeCachedReleaseNotes(parsed.data) : null;
   } catch {
     return null;
   }
@@ -45,10 +49,18 @@ export function readCachedReleaseNotesForChannel(channel: string): ReleaseNotesC
     }
 
     const parsed = ReleaseNotesCacheSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : null;
+    return parsed.success ? sanitizeCachedReleaseNotes(parsed.data) : null;
   } catch {
     return null;
   }
+}
+
+function sanitizeCachedReleaseNotes(entry: ReleaseNotesCache): ReleaseNotesCache {
+  return {
+    ...entry,
+    notes: sanitizeReleaseNotesForApp(entry.notes),
+    source: entry.source ?? "updater",
+  };
 }
 
 export function markPostUpdateRefreshPending(): void {

@@ -11,6 +11,11 @@ export function UpdatePage() {
   const search = updateRouteApi.useSearch();
   const { data: updateInfo, isFetching, refetch, isError, error } = useUpdateCheck();
   const cachedNotes = readCachedReleaseNotes();
+  const notesSource = updateInfo?.notes ? "updater" : (cachedNotes?.source ?? "updater");
+  const notesDescription =
+    notesSource === "installed-release"
+      ? "Release notes for the installed version."
+      : "Release notes from the latest update check.";
 
   return (
     <AppWindowShell variant="update">
@@ -19,6 +24,7 @@ export function UpdatePage() {
         updateAvailable={updateInfo?.available ?? false}
         version={updateInfo?.version ?? cachedNotes?.version ?? null}
         channel={updateInfo?.channel ?? cachedNotes?.channel ?? "stable"}
+        notesDescription={notesDescription}
         notes={updateInfo?.notes ?? cachedNotes?.notes ?? null}
         isChecking={isFetching}
         checkError={isError ? (error?.message ?? "Could not check for updates") : null}

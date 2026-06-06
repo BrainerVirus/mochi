@@ -14,6 +14,7 @@ interface UpdatePageContentProps {
   updateAvailable: boolean;
   version: string | null;
   channel: string;
+  notesDescription?: string;
   notes: string | null;
   isChecking: boolean;
   checkError: string | null;
@@ -39,9 +40,13 @@ function UpdatePageHeader({
   updateAvailable,
   version,
   channel,
+  notesDescription,
   sections,
   installPhase,
-}: Pick<UpdatePageContentProps, "notesOnly" | "updateAvailable" | "version" | "channel"> & {
+}: Pick<
+  UpdatePageContentProps,
+  "notesOnly" | "updateAvailable" | "version" | "channel" | "notesDescription"
+> & {
   sections: PatchNotesSection[];
   installPhase: "idle" | "downloading" | "installing" | "error";
 }) {
@@ -59,7 +64,9 @@ function UpdatePageHeader({
         <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold tracking-tight">{title}</h1>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            {notesOnly ? "Release notes from your last update check." : `Channel: ${channel}`}
+            {notesOnly
+              ? (notesDescription ?? "Release notes from your last update check.")
+              : `Channel: ${channel}`}
           </p>
         </div>
       </div>

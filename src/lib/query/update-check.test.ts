@@ -45,7 +45,8 @@ describe("createUpdateCheckQueryOptions", () => {
       available: true,
       version: "0.1.6",
       channel: "unstable",
-      notes: "Current release only",
+      notes:
+        "### What's changed\n- Current release only\n\n### Install stable\n- macOS: `curl example`",
     });
 
     const options = createUpdateCheckQueryOptions("unstable");
@@ -59,7 +60,8 @@ describe("createUpdateCheckQueryOptions", () => {
       expect.objectContaining({
         version: "0.1.6",
         channel: "unstable",
-        notes: "Current release only",
+        notes: "### What's changed\n- Current release only",
+        source: "updater",
       }),
     );
   });
