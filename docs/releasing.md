@@ -31,7 +31,7 @@ Stable users receive only stable updates. Unstable users receive builds from `ma
 
 ## Updater Feed
 
-Release workflows must generate signed Tauri updater artifacts and publish versioned feeds under `https://mochi-app.github.io/mochi/updates/{target}/{arch}/{current_version}/{channel}.json`.
+Release workflows must generate signed Tauri updater artifacts and publish versioned feeds under `https://brainervirus.github.io/mochi/updates/{target}/{arch}/{current_version}/{channel}.json`.
 
 Required secrets:
 
@@ -47,7 +47,7 @@ The first stable repair release publishes both `stable.json` and `unstable.json`
 Validate representative endpoints after publication:
 
 ```bash
-curl -fsS https://mochi-app.github.io/mochi/updates/darwin/aarch64/0.1.7/stable.json
-curl -fsS https://mochi-app.github.io/mochi/updates/linux/x86_64/0.1.7/stable.json
-curl -fsS https://mochi-app.github.io/mochi/updates/windows/x86_64/0.1.7/stable.json
+curl -fsS https://brainervirus.github.io/mochi/updates/darwin/aarch64/0.1.7/stable.json
+curl -fsS https://brainervirus.github.io/mochi/updates/linux/x86_64/0.1.7/stable.json
+curl -fsS https://brainervirus.github.io/mochi/updates/windows/x86_64/0.1.7/stable.json
 ```

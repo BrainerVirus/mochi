@@ -197,7 +197,7 @@ jobs:
             updates/windows/x86_64/0.1.7/stable.json \
             updates/windows/x86_64/0.1.7/unstable.json
           do
-            url="https://mochi-app.github.io/mochi/${path}"
+            url="https://brainervirus.github.io/mochi/${path}"
             curl --fail --silent --show-error --location "${url}" --output feed.json
             node scripts/release/validate-updater-feed.mjs feed.json
           done

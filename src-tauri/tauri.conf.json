@@ -47,7 +47,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://mochi-app.github.io/mochi/updates/{{target}}/{{arch}}/{{current_version}}/stable.json"
+        "https://brainervirus.github.io/mochi/updates/{{target}}/{{arch}}/{{current_version}}/stable.json"
       ],
       "pubkey": "MOCHI_UPDATER_PUBLIC_KEY_REPLACED_BY_CI"
     }
