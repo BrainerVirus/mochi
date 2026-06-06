@@ -19,10 +19,10 @@
         "width": 360,
         "height": 420,
         "minWidth": 320,
-        "maxWidth": 480,
         "minHeight": 200,
         "visible": false,
-        "alwaysOnTop": true,
+        "alwaysOnTop": false,
+        "decorations": true,
         "resizable": true
       }
     ],

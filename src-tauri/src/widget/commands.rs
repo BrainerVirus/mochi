@@ -1,9 +1,9 @@
-use tauri::{AppHandle, Manager, WebviewWindow, WindowEvent};
+use tauri::{AppHandle, Manager, WebviewWindow};
 
-use crate::diagnostics::{log_line, DiagnosticsState};
+use crate::diagnostics::DiagnosticsState;
 use crate::frontend::app_shell_url;
 
-use super::{WIDGET_LABEL, WIDGET_MAX_WIDTH, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH, WIDGET_WIDTH};
+use super::{WIDGET_LABEL, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH, WIDGET_WIDTH};
 
 pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if app.get_webview_window(WIDGET_LABEL).is_some() {
@@ -11,17 +11,7 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let window = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
-        .title("Mochi Widget")
-        .inner_size(WIDGET_WIDTH, 420.0)
-        .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
-        .max_inner_size(WIDGET_MAX_WIDTH, 720.0)
-        .resizable(true)
-        .visible(false)
-        .always_on_top(true)
-        .build()?;
-
-    prepare_widget_window_events(&window)?;
+    let window = build_widget_window(app)?;
     record_widget_window_controls(app, &window, "rust-builder");
     if let Some(state) = app.try_state::<DiagnosticsState>() {
         let url = window
@@ -33,49 +23,27 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn prepare_widget_window_events(window: &WebviewWindow) -> Result<(), Box<dyn std::error::Error>> {
-    let window_for_events = window.clone();
-    window.on_window_event(move |event| {
-        if let WindowEvent::CloseRequested { api, .. } = event {
-            api.prevent_close();
-            let app = window_for_events.app_handle();
-            if let Some(state) = app.try_state::<DiagnosticsState>() {
-                state.record_window_event(WIDGET_LABEL, "close_requested -> hide");
-            }
-            log_line(
-                "window",
-                &format!("{WIDGET_LABEL}: close_requested -> hide"),
-            );
-            let hide_result = window_for_events.hide();
-            crate::diagnostics::log_window_action_result(
-                WIDGET_LABEL,
-                "hide",
-                hide_result.as_ref().map(|_| ()),
-            );
-        }
-    });
-    Ok(())
+fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
+    let window = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
+        .title("Mochi Widget")
+        .inner_size(WIDGET_WIDTH, 420.0)
+        .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
+        .decorations(true)
+        .resizable(true)
+        .visible(false)
+        .build()?;
+
+    Ok(window)
 }
 
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(window) = app.get_webview_window(WIDGET_LABEL) {
-        prepare_widget_window_events(&window)?;
         record_widget_window_controls(app, &window, "tauri-config");
-        let _ = window.set_always_on_top(true);
+        let _ = window.set_always_on_top(false);
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
             width: WIDGET_MIN_WIDTH,
             height: WIDGET_MIN_HEIGHT,
         })));
-        let _ = window.set_max_size(Some(tauri::Size::Logical(tauri::LogicalSize {
-            width: WIDGET_MAX_WIDTH,
-            height: 720.0,
-        })));
-        let hide_result = window.hide();
-        crate::diagnostics::log_window_action_result(
-            WIDGET_LABEL,
-            "hide_prepare",
-            hide_result.as_ref().map(|_| ()),
-        );
     }
 
     Ok(())
@@ -83,7 +51,7 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 
 #[tauri::command]
 pub fn show_widget(app: AppHandle) -> Result<(), String> {
-    let window = widget_window(&app)?;
+    let window = ensure_widget_window(&app)?;
     record_widget_window_controls(&app, &window, "tauri-config");
 
     let show_result = window.show();
@@ -124,7 +92,9 @@ pub fn set_widget_height(app: AppHandle, height: f64) -> Result<(), String> {
 
 #[tauri::command]
 pub fn hide_widget(app: AppHandle) -> Result<(), String> {
-    let window = widget_window(&app)?;
+    let Some(window) = app.get_webview_window(WIDGET_LABEL) else {
+        return Ok(());
+    };
     let hide_result = window.hide();
     crate::diagnostics::log_window_action_result(
         WIDGET_LABEL,
@@ -136,7 +106,7 @@ pub fn hide_widget(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn toggle_widget(app: AppHandle) -> Result<(), String> {
-    let window = widget_window(&app)?;
+    let window = ensure_widget_window(&app)?;
     if window.is_visible().map_err(|error| error.to_string())? {
         hide_widget(app)
     } else {
@@ -144,9 +114,26 @@ pub fn toggle_widget(app: AppHandle) -> Result<(), String> {
     }
 }
 
-fn widget_window(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
+fn widget_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     app.get_webview_window(WIDGET_LABEL)
         .ok_or_else(|| format!("missing widget window: {WIDGET_LABEL}"))
+}
+
+fn ensure_widget_window(app: &AppHandle) -> Result<WebviewWindow, String> {
+    if let Some(window) = app.get_webview_window(WIDGET_LABEL) {
+        return Ok(window);
+    }
+
+    let window = build_widget_window(app).map_err(|error| error.to_string())?;
+    record_widget_window_controls(app, &window, "rust-builder");
+    if let Some(state) = app.try_state::<DiagnosticsState>() {
+        let url = window
+            .url()
+            .map(|parsed| parsed.to_string())
+            .unwrap_or_else(|_| "unknown".into());
+        state.record_window_created(WIDGET_LABEL, &url, true, false);
+    }
+    Ok(window)
 }
 
 fn record_widget_window_controls(app: &AppHandle, window: &WebviewWindow, creation_source: &str) {
@@ -166,5 +153,5 @@ fn widget_logical_width(window: &WebviewWindow) -> f64 {
         .inner_size()
         .map(|size| f64::from(size.width) / scale_factor)
         .unwrap_or(WIDGET_WIDTH);
-    width.clamp(WIDGET_MIN_WIDTH, WIDGET_MAX_WIDTH)
+    width.max(WIDGET_MIN_WIDTH)
 }

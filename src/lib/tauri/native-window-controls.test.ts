@@ -1,0 +1,45 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+describe("native desktop window controls", () => {
+  it("keeps settings as a normal decorated taskbar window", () => {
+    const source = readFileSync(resolve("src-tauri/src/tray/panel.rs"), "utf8");
+    const appWindowSection = source.slice(
+      source.indexOf("pub fn prepare_app_window"),
+      source.indexOf("fn ensure_main_panel_window"),
+    );
+
+    expect(appWindowSection).not.toContain("prevent_close");
+    expect(appWindowSection).not.toContain("set_skip_taskbar(true)");
+    expect(appWindowSection).not.toContain(".skip_taskbar(true)");
+  });
+
+  it("lets the widget native close button close the native window", () => {
+    const source = readFileSync(resolve("src-tauri/src/widget/commands.rs"), "utf8");
+
+    expect(source).not.toContain("WindowEvent::CloseRequested");
+    expect(source).not.toContain("prevent_close");
+    expect(source).not.toContain("close_requested -> hide");
+  });
+
+  it("does not reset native decorations after decorated windows are created", () => {
+    const source = readFileSync(resolve("src-tauri/src/linux_window_controls.rs"), "utf8");
+
+    expect(source).not.toContain("set_decorations(true)");
+    expect(source).not.toContain("set_resizable(true)");
+    expect(source).toContain("linux_builder_decorations");
+    expect(source).toContain("linux_builder_resizable");
+  });
+
+  it("declares widget native decorations in tauri config", () => {
+    const config = JSON.parse(readFileSync(resolve("src-tauri/tauri.conf.json"), "utf8"));
+    const widget = config.app.windows.find(
+      (window: { label: string }) => window.label === "widget",
+    );
+
+    expect(widget.decorations).toBe(true);
+    expect(widget.resizable).toBe(true);
+  });
+});
