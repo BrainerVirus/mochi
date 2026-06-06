@@ -7,14 +7,42 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: unstable-release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  metadata:
+    name: Prepare Unstable Metadata
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.unstable_metadata.outputs.tag }}
+      base_version: ${{ steps.unstable_metadata.outputs.base_version }}
+    steps:
+      - name: Prepare unstable release metadata
+        id: unstable_metadata
+        shell: bash
+        env:
+          MOCHI_UNSTABLE_BASE_VERSION: ${{ vars.MOCHI_UNSTABLE_BASE_VERSION || '0.2.1' }}
+        run: |
+          [[ "${MOCHI_UNSTABLE_BASE_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "MOCHI_UNSTABLE_BASE_VERSION must be semver"; exit 1; }
+          node -e '
+            const [major, minor, patch] = process.env.MOCHI_UNSTABLE_BASE_VERSION.split(".").map(Number);
+            const ok = major > 0 || minor > 2 || (minor === 2 && patch > 0);
+            if (!ok) {
+              console.error("MOCHI_UNSTABLE_BASE_VERSION must be greater than 0.2.0");
+              process.exit(1);
+            }
+          '
+          echo "tag=unstable-$(date -u +%Y%m%d.%H%M%S)" >> "${GITHUB_OUTPUT}"
+          echo "base_version=${MOCHI_UNSTABLE_BASE_VERSION}" >> "${GITHUB_OUTPUT}"
+
   build:
     name: Unstable Release (${{ matrix.target }})
+    needs: metadata
     runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
@@ -59,6 +87,24 @@ jobs:
           workspaces: src-tauri -> target
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
+      - name: Verify updater signing configuration
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          MOCHI_UPDATER_PUBLIC_KEY: ${{ secrets.MOCHI_UPDATER_PUBLIC_KEY }}
+        run: |
+          test -n "${TAURI_SIGNING_PRIVATE_KEY}" || { echo "missing TAURI_SIGNING_PRIVATE_KEY"; exit 1; }
+          test -n "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD}" || { echo "missing TAURI_SIGNING_PRIVATE_KEY_PASSWORD"; exit 1; }
+          test -n "${MOCHI_UPDATER_PUBLIC_KEY}" || { echo "missing MOCHI_UPDATER_PUBLIC_KEY"; exit 1; }
+          node -e '
+            const fs = require("fs");
+            const path = "src-tauri/tauri.conf.json";
+            const pubkey = process.env.MOCHI_UPDATER_PUBLIC_KEY;
+            const text = fs.readFileSync(path, "utf8").replace("MOCHI_UPDATER_PUBLIC_KEY_REPLACED_BY_CI", pubkey);
+            if (text.includes("MOCHI_UPDATER_PUBLIC_KEY_REPLACED_BY_CI")) process.exit(1);
+            fs.writeFileSync(path, text);
+          '
       - name: Build unstable Tauri app
         uses: tauri-apps/tauri-action@v0.6.2
         env:
@@ -67,8 +113,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: unstable
-          releaseName: Mochi Unstable
+          tagName: ${{ needs.metadata.outputs.tag }}
+          releaseName: Mochi Unstable ${{ needs.metadata.outputs.tag }}
           releaseBody: |
             ## Mochi Unstable
 
@@ -92,10 +138,91 @@ jobs:
         with:
           name: mochi-unstable-${{ matrix.target }}
           path: src-tauri/target/**/release/bundle/**
+      - name: Upload updater bundle artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: updater-bundle-${{ matrix.platform }}-${{ matrix.target }}
+          path: src-tauri/target/**/release/bundle/**
+          if-no-files-found: error
+
+  updater-feed:
+    name: Publish Unstable Updater Feed
+    needs: [metadata, build]
+    runs-on: ubuntu-24.04
+    env:
+      MOCHI_UNSTABLE_BASE_VERSION: ${{ needs.metadata.outputs.base_version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Download updater bundle artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: updater-bundle-*
+          path: updater-bundles
+          merge-multiple: true
+      - name: Build updater artifact manifest
+        shell: bash
+        env:
+          CHANNEL: unstable
+          CHANNELS: unstable
+          UPDATER_FEED_BASE_URL: https://mochi-app.github.io/mochi/updates
+          TAG_NAME: ${{ needs.metadata.outputs.tag }}
+          RELEASE_BASE_URL: https://github.com/BrainerVirus/mochi/releases/download/${{ needs.metadata.outputs.tag }}
+        run: |
+          cat > release-notes.md <<'EOF'
+          ### What's changed
+          - See the GitHub release notes for this version.
+          EOF
+          node scripts/release/collect-updater-artifacts.mjs \
+            --artifactRoot=updater-bundles \
+            --channel="${CHANNEL}" \
+            --tagName="${TAG_NAME}" \
+            --unstableBaseVersion="${MOCHI_UNSTABLE_BASE_VERSION}" \
+            --releaseBaseUrl="${RELEASE_BASE_URL}" \
+            --releaseNotesPath=release-notes.md \
+            --outputPath=updater-feed.json \
+            --pubDate="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+          node -e '
+            const fs = require("fs");
+            const manifest = JSON.parse(fs.readFileSync("updater-feed.json", "utf8"));
+            manifest.channels = process.env.CHANNELS.split(",").map((value) => value.trim()).filter(Boolean);
+            fs.writeFileSync("updater-feed.json", `${JSON.stringify(manifest, null, 2)}\n`);
+          '
+      - name: Build updater feeds
+        run: node scripts/release/build-updater-feed.mjs --manifest=updater-feed.json --out=public
+      - name: Validate updater feeds
+        run: |
+          node scripts/release/validate-updater-feed.mjs \
+            public/updates/darwin/aarch64/0.1.7/unstable.json \
+            public/updates/darwin/x86_64/0.1.7/unstable.json \
+            public/updates/linux/x86_64/0.1.7/unstable.json \
+            public/updates/windows/x86_64/0.1.7/unstable.json
+      - name: Upload updater Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+      - name: Deploy updater feed to GitHub Pages
+        uses: actions/deploy-pages@v4
+      - name: Validate published updater endpoints
+        shell: bash
+        run: |
+          sleep 30
+          for path in \
+            updates/darwin/aarch64/0.1.7/unstable.json \
+            updates/darwin/x86_64/0.2.0/unstable.json \
+            updates/linux/x86_64/0.2.0/unstable.json \
+            updates/windows/x86_64/0.1.7/unstable.json
+          do
+            url="https://mochi-app.github.io/mochi/${path}"
+            curl --fail --silent --show-error --location "${url}" --output feed.json
+            node scripts/release/validate-updater-feed.mjs feed.json
+          done
 
   release-notes:
     name: Publish Unstable Release Notes
-    needs: build
+    needs: [metadata, build]
     runs-on: ubuntu-24.04
     steps:
       - name: Update unstable release body
@@ -103,8 +230,9 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
+            const tag = "${{ needs.metadata.outputs.tag }}";
             const body = [
-              "## Mochi Unstable",
+              `## Mochi ${tag}`,
               "",
               "Latest `main` build with Linux browser discovery and window stability fixes.",
               "",
@@ -122,7 +250,7 @@ jobs:
             const release = await github.rest.repos.getReleaseByTag({
               owner,
               repo,
-              tag: "unstable",
+              tag,
             });
             await github.rest.repos.updateRelease({
               owner,
