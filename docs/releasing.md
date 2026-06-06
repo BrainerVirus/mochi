@@ -51,3 +51,28 @@ curl -fsS https://brainervirus.github.io/mochi/updates/darwin/aarch64/0.1.7/stab
 curl -fsS https://brainervirus.github.io/mochi/updates/linux/x86_64/0.1.7/stable.json
 curl -fsS https://brainervirus.github.io/mochi/updates/windows/x86_64/0.1.7/stable.json
 ```
+
+## Linux Window-Control Diagnostic Unstable Builds
+
+Use workflow dispatch on `release-unstable.yml` with `linux_window_experiment` set to one of:
+
+- `baseline-sequenced-logs`
+- `on-demand-visible`
+- `on-demand-hidden`
+- `builder-size-only`
+- `show-focus-only`
+- `unminimize-show-focus`
+
+Install with the unstable installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i
+```
+
+After each diagnostic build, run:
+
+```bash
+mochi diagnostics --bundle
+```
+
+Attach the bundle and record the result in `docs/qa/linux-native-window-controls-experiments.md`.
