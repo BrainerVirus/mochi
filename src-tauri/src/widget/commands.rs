@@ -61,7 +61,10 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
         .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
         .decorations(true)
         .resizable(true)
-        .visible(false)
+        .visible(matches!(
+            crate::window_policy::decorated_window_initial_visibility(),
+            crate::window_policy::DecoratedWindowInitialVisibility::Visible
+        ))
         .build()?;
 
     Ok(window)
@@ -85,33 +88,75 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
     let window = ensure_widget_window(&app)?;
     record_widget_window_controls(&app, &window, "tauri-config");
 
-    let show_result = window.show();
-    crate::diagnostics::log_window_action_result(
-        WIDGET_LABEL,
-        "show",
-        show_result.as_ref().map(|_| ()),
-    );
-    show_result.map_err(|error| error.to_string())?;
-    record_widget_window_lifecycle(&window, "after-show", "on-demand", "hidden");
+    match crate::window_policy::first_show_sequence() {
+        crate::window_policy::FirstShowSequence::AlreadyVisibleFocus => {
+            let focus_result = window.set_focus();
+            crate::diagnostics::log_window_action_result(
+                WIDGET_LABEL,
+                "set_focus",
+                focus_result.as_ref().map(|_| ()),
+            );
+            record_widget_window_lifecycle(&window, "after-focus", "on-demand", "visible");
+            focus_result.map_err(|error| error.to_string())
+        }
+        crate::window_policy::FirstShowSequence::ShowUnminimizeFocus => {
+            let show_result = window.show();
+            crate::diagnostics::log_window_action_result(
+                WIDGET_LABEL,
+                "show",
+                show_result.as_ref().map(|_| ()),
+            );
+            show_result.map_err(|error| error.to_string())?;
+            record_widget_window_lifecycle(&window, "after-show", "startup-precreate", "hidden");
 
-    let unminimize_result = window.unminimize();
-    crate::diagnostics::log_window_action_result(
-        WIDGET_LABEL,
-        "unminimize",
-        unminimize_result.as_ref().map(|_| ()),
-    );
-    unminimize_result.map_err(|error| error.to_string())?;
-    record_widget_window_lifecycle(&window, "after-unminimize", "on-demand", "hidden");
-    record_widget_window_controls(&app, &window, "tauri-config");
+            let unminimize_result = window.unminimize();
+            crate::diagnostics::log_window_action_result(
+                WIDGET_LABEL,
+                "unminimize",
+                unminimize_result.as_ref().map(|_| ()),
+            );
+            unminimize_result.map_err(|error| error.to_string())?;
+            record_widget_window_lifecycle(&window, "after-unminimize", "startup-precreate", "hidden");
+            record_widget_window_controls(&app, &window, "tauri-config");
 
-    let focus_result = window.set_focus();
-    crate::diagnostics::log_window_action_result(
-        WIDGET_LABEL,
-        "set_focus",
-        focus_result.as_ref().map(|_| ()),
-    );
-    record_widget_window_lifecycle(&window, "after-focus", "on-demand", "hidden");
-    focus_result.map_err(|error| error.to_string())
+            let focus_result = window.set_focus();
+            crate::diagnostics::log_window_action_result(
+                WIDGET_LABEL,
+                "set_focus",
+                focus_result.as_ref().map(|_| ()),
+            );
+            record_widget_window_lifecycle(&window, "after-focus", "startup-precreate", "hidden");
+            focus_result.map_err(|error| error.to_string())
+        }
+        _ => {
+            // For other sequences, fall back to ShowUnminimizeFocus
+            let show_result = window.show();
+            crate::diagnostics::log_window_action_result(
+                WIDGET_LABEL,
+                "show",
+                show_result.as_ref().map(|_| ()),
+            );
+            show_result.map_err(|error| error.to_string())?;
+            record_widget_window_controls(&app, &window, "tauri-config");
+
+            let unminimize_result = window.unminimize();
+            crate::diagnostics::log_window_action_result(
+                WIDGET_LABEL,
+                "unminimize",
+                unminimize_result.as_ref().map(|_| ()),
+            );
+            unminimize_result.map_err(|error| error.to_string())?;
+            record_widget_window_controls(&app, &window, "tauri-config");
+
+            let focus_result = window.set_focus();
+            crate::diagnostics::log_window_action_result(
+                WIDGET_LABEL,
+                "set_focus",
+                focus_result.as_ref().map(|_| ()),
+            );
+            focus_result.map_err(|error| error.to_string())
+        }
+    }
 }
 
 #[tauri::command]

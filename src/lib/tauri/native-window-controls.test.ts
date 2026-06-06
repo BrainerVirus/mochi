@@ -42,4 +42,19 @@ describe("native desktop window controls", () => {
     expect(widget.decorations).toBe(true);
     expect(widget.resizable).toBe(true);
   });
+
+  it("does not precreate decorated linux app windows for on-demand-visible", () => {
+    const lib = readFileSync(resolve("src-tauri/src/lib.rs"), "utf8");
+    const policy = readFileSync(resolve("src-tauri/src/window_policy.rs"), "utf8");
+
+    expect(policy).toContain("OnDemandVisible");
+    expect(lib).toContain("should_precreate_decorated_windows_at_startup");
+  });
+
+  it("widget config is not the permanent linux on-demand creation source", () => {
+    const commands = readFileSync(resolve("src-tauri/src/widget/commands.rs"), "utf8");
+
+    expect(commands).toContain("build_widget_window");
+    expect(commands).toContain("DecoratedWindowInitialVisibility::Visible");
+  });
 });

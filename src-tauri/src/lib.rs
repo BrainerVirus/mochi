@@ -98,9 +98,11 @@ pub fn run() -> anyhow::Result<()> {
             app.manage(usage_store);
             app.manage(AppLifecycle::default());
             setup_main_panel(app.handle())?;
-            setup_app_windows(app.handle())?;
+            if window_policy::should_precreate_decorated_windows_at_startup() {
+                setup_app_windows(app.handle())?;
+                setup_widget(app.handle())?;
+            }
             setup_tray(app.handle())?;
-            setup_widget(app.handle())?;
             maybe_show_main_for_dev(app.handle());
             diagnostics::log_visible_windows(app.handle());
             Ok(())
