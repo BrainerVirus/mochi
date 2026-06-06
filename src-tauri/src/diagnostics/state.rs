@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use super::log::log_line;
 use super::{FrontendBootPayload, FrontendErrorPayload};
 use crate::frontend::APP_SHELL_ASSET;
+use crate::linux_window_controls::LinuxWindowControlDiagnostics;
 use tauri::Manager;
 
 const MAX_EVENTS: usize = 300;
@@ -109,6 +110,25 @@ impl DiagnosticsState {
             let detail = format!("{label}: {event}");
             log_line("window.event", &detail);
             push_event(&mut inner.events, "window.event", detail);
+        }
+    }
+
+    pub fn record_linux_window_controls(&self, diagnostics: LinuxWindowControlDiagnostics) {
+        if let Ok(mut inner) = self.inner() {
+            let detail = format!(
+                "label={} platform={} source={} decorations={} ok={} error={:?} resizable={} ok={} error={:?}",
+                diagnostics.label,
+                diagnostics.platform,
+                diagnostics.creation_source,
+                diagnostics.decorations_action,
+                diagnostics.decorations_ok,
+                diagnostics.decorations_error,
+                diagnostics.resizable_action,
+                diagnostics.resizable_ok,
+                diagnostics.resizable_error
+            );
+            log_line("window.linux_controls", &detail);
+            push_event(&mut inner.events, "window.linux_controls", detail);
         }
     }
 }

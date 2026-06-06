@@ -12,6 +12,7 @@ import {
   DEFAULT_MOCHI_SETTINGS,
   MochiSettingsSchema,
   type MochiSettings,
+  type UpdateChannel,
 } from "@/lib/schemas/settings";
 import {
   UpdateInfoSchema,
@@ -97,6 +98,10 @@ export function toggleWidget(): Promise<void> {
 
 export function syncTrayUsage(selection?: TraySelectedTab): Promise<void> {
   return invoke<void>("sync_tray_usage", { selection: selection ?? null });
+}
+
+export function syncTrayUpdateChannel(channel: UpdateChannel): Promise<void> {
+  return invoke<void>("sync_tray_update_channel", { channel });
 }
 
 export function showMainPanel(): Promise<void> {

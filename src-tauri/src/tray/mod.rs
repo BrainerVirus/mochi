@@ -9,14 +9,14 @@ mod vibrancy;
 mod window_transparency;
 
 use tauri::{
-    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
+    menu::{CheckMenuItem, CheckMenuItemBuilder, Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, State,
 };
 
 use crate::core::models::UsageSnapshot;
 use crate::core::usage_store::UsageStore;
-use crate::settings::SettingsState;
+use crate::settings::{SettingsState, UpdateChannel};
 use crate::status::read_cached_snapshots;
 
 pub use panel::{
@@ -31,6 +31,93 @@ pub use presentation::{
 pub use usage::{aggregate_used_percent, tray_usage_tone, TrayUsageTone, TRAY_ID};
 
 use icon::tray_icon_for_presentation;
+
+type Runtime = tauri::Wry;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum TrayMenuEntry {
+    Item {
+        id: &'static str,
+        label: &'static str,
+    },
+    Channel {
+        id: &'static str,
+        label: &'static str,
+        checked: bool,
+    },
+    Submenu {
+        label: &'static str,
+        children: Vec<TrayMenuEntry>,
+    },
+    Separator,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct TrayMenuModel {
+    entries: Vec<TrayMenuEntry>,
+}
+
+#[derive(Clone)]
+pub struct TrayChannelMenuState {
+    stable: CheckMenuItem<Runtime>,
+    unstable: CheckMenuItem<Runtime>,
+}
+
+impl TrayChannelMenuState {
+    fn set_channel(&self, channel: &str) -> Result<(), String> {
+        let unstable = channel == "unstable";
+        self.stable
+            .set_checked(!unstable)
+            .map_err(|error| error.to_string())?;
+        self.unstable
+            .set_checked(unstable)
+            .map_err(|error| error.to_string())
+    }
+}
+
+fn build_tray_menu_model(channel: &str) -> TrayMenuModel {
+    let unstable = channel == "unstable";
+    TrayMenuModel {
+        entries: vec![
+            TrayMenuEntry::Item {
+                id: "widget",
+                label: "Open widget",
+            },
+            TrayMenuEntry::Item {
+                id: "refresh",
+                label: "Refresh usage",
+            },
+            TrayMenuEntry::Item {
+                id: "settings",
+                label: "Settings",
+            },
+            TrayMenuEntry::Submenu {
+                label: "Update channel",
+                children: vec![
+                    TrayMenuEntry::Channel {
+                        id: "channel-stable",
+                        label: "Stable",
+                        checked: !unstable,
+                    },
+                    TrayMenuEntry::Channel {
+                        id: "channel-unstable",
+                        label: "Unstable",
+                        checked: unstable,
+                    },
+                ],
+            },
+            TrayMenuEntry::Item {
+                id: "update",
+                label: "Check for updates",
+            },
+            TrayMenuEntry::Separator,
+            TrayMenuEntry::Item {
+                id: "quit",
+                label: "Quit Mochi",
+            },
+        ],
+    }
+}
 
 pub fn apply_tray_usage(
     app: &AppHandle,
@@ -69,37 +156,73 @@ pub async fn sync_tray_usage(
     apply_tray_usage(&app, &snapshots, tray_selection)
 }
 
+#[tauri::command]
+pub fn sync_tray_update_channel(
+    channel: String,
+    state: State<'_, TrayChannelMenuState>,
+) -> Result<(), String> {
+    state.set_channel(channel.as_str())
+}
+
+fn build_menu_from_model(
+    app: &AppHandle,
+    model: &TrayMenuModel,
+) -> Result<(Menu<Runtime>, TrayChannelMenuState), Box<dyn std::error::Error>> {
+    let menu = Menu::new(app)?;
+    let mut stable_channel_item = None;
+    let mut unstable_channel_item = None;
+
+    for entry in &model.entries {
+        match entry {
+            TrayMenuEntry::Item { id, label } => {
+                let item = MenuItem::with_id(app, *id, *label, true, None::<&str>)?;
+                menu.append(&item)?;
+            }
+            TrayMenuEntry::Channel { .. } => {}
+            TrayMenuEntry::Submenu { label, children } => {
+                let submenu = Submenu::new(app, *label, true)?;
+                for child in children {
+                    if let TrayMenuEntry::Channel { id, label, checked } = child {
+                        let item = CheckMenuItemBuilder::with_id(*id, *label)
+                            .checked(*checked)
+                            .build(app)?;
+                        if *id == "channel-stable" {
+                            stable_channel_item = Some(item.clone());
+                        } else if *id == "channel-unstable" {
+                            unstable_channel_item = Some(item.clone());
+                        }
+                        submenu.append(&item)?;
+                    }
+                }
+                menu.append(&submenu)?;
+            }
+            TrayMenuEntry::Separator => {
+                let separator = PredefinedMenuItem::separator(app)?;
+                menu.append(&separator)?;
+            }
+        }
+    }
+
+    let state = TrayChannelMenuState {
+        stable: stable_channel_item.ok_or("missing stable channel menu item")?,
+        unstable: unstable_channel_item.ok_or("missing unstable channel menu item")?,
+    };
+
+    Ok((menu, state))
+}
+
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    let usage_item = MenuItem::with_id(app, "usage", "Show usage", true, None::<&str>)?;
-    let refresh_item = MenuItem::with_id(app, "refresh", "Refresh usage", true, None::<&str>)?;
-    let widget_item = MenuItem::with_id(app, "widget", "Show widget", true, None::<&str>)?;
-    let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
-    let stable_channel_item =
-        MenuItem::with_id(app, "channel-stable", "Stable", true, None::<&str>)?;
-    let unstable_channel_item =
-        MenuItem::with_id(app, "channel-unstable", "Unstable", true, None::<&str>)?;
-    let channel_menu = Submenu::with_items(
-        app,
-        "Update channel",
-        true,
-        &[&stable_channel_item, &unstable_channel_item],
-    )?;
-    let update_item = MenuItem::with_id(app, "update", "Check for updates", true, None::<&str>)?;
-    let separator = PredefinedMenuItem::separator(app)?;
-    let quit_item = MenuItem::with_id(app, "quit", "Quit Mochi", true, None::<&str>)?;
-    let menu = Menu::with_items(
-        app,
-        &[
-            &usage_item,
-            &refresh_item,
-            &widget_item,
-            &settings_item,
-            &channel_menu,
-            &update_item,
-            &separator,
-            &quit_item,
-        ],
-    )?;
+    let current_channel = app
+        .try_state::<SettingsState>()
+        .and_then(|state| state.current().ok())
+        .map(|settings| match settings.update_channel {
+            UpdateChannel::Stable => "stable".to_string(),
+            UpdateChannel::Unstable => "unstable".to_string(),
+        })
+        .unwrap_or_else(|| "stable".to_string());
+    let model = build_tray_menu_model(&current_channel);
+    let (menu, channel_state) = build_menu_from_model(app, &model)?;
+    app.manage(channel_state);
 
     let icon = icon::tray_icon_fallback();
 
@@ -109,9 +232,6 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
-            "usage" => {
-                open_tray_panel(app, "/");
-            }
             "refresh" => {
                 let _ = app.emit("tray-refresh", ());
             }
@@ -179,5 +299,70 @@ mod tests {
         let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
         assert_eq!(presentation.remaining_percent, 50);
         assert!(presentation.tooltip.contains("50% left"));
+    }
+
+    #[test]
+    fn tray_menu_model_removes_show_usage_and_prioritizes_widget() {
+        let model = build_tray_menu_model("stable");
+        let labels = tray_menu_labels(&model);
+        assert_eq!(labels.first(), Some(&"Open widget"));
+        assert!(!labels.contains(&"Show usage"));
+        assert!(!labels.contains(&"Show widget"));
+        assert!(labels.contains(&"Refresh usage"));
+        assert!(labels.contains(&"Settings"));
+        assert!(labels.contains(&"Update channel"));
+    }
+
+    #[test]
+    fn tray_menu_model_marks_current_channel() {
+        assert_eq!(
+            checked_channel_id(&build_tray_menu_model("stable")),
+            Some("channel-stable")
+        );
+        assert_eq!(
+            checked_channel_id(&build_tray_menu_model("unstable")),
+            Some("channel-unstable")
+        );
+        assert_eq!(
+            checked_channel_id(&build_tray_menu_model("unexpected")),
+            Some("channel-stable")
+        );
+    }
+
+    fn tray_menu_labels(model: &TrayMenuModel) -> Vec<&'static str> {
+        fn collect(entry: &TrayMenuEntry, labels: &mut Vec<&'static str>) {
+            match entry {
+                TrayMenuEntry::Item { label, .. }
+                | TrayMenuEntry::Channel { label, .. }
+                | TrayMenuEntry::Submenu { label, .. } => labels.push(label),
+                TrayMenuEntry::Separator => {}
+            }
+
+            if let TrayMenuEntry::Submenu { children, .. } = entry {
+                for child in children {
+                    collect(child, labels);
+                }
+            }
+        }
+
+        let mut labels = Vec::new();
+        for entry in &model.entries {
+            collect(entry, &mut labels);
+        }
+        labels
+    }
+
+    fn checked_channel_id(model: &TrayMenuModel) -> Option<&'static str> {
+        model.entries.iter().find_map(|entry| match entry {
+            TrayMenuEntry::Submenu { children, .. } => {
+                children.iter().find_map(|child| match child {
+                    TrayMenuEntry::Channel {
+                        id, checked: true, ..
+                    } => Some(*id),
+                    _ => None,
+                })
+            }
+            _ => None,
+        })
     }
 }

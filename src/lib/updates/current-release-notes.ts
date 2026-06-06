@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { UpdateChannel } from "@/lib/schemas/settings";
 import { appVersion } from "@/lib/tauri/commands";
 import { cacheReleaseNotes, type ReleaseNotesCache } from "@/lib/updates/release-notes-cache";
+import { sanitizeReleaseNotesForApp } from "@/lib/updates/sanitize-release-notes";
 
 const GITHUB_RELEASE_API = "https://api.github.com/repos/BrainerVirus/mochi/releases/tags";
 
@@ -40,7 +41,7 @@ export async function fetchCurrentReleaseNotes(
   }
 
   const release = parsed.data;
-  const notes = release.body?.trim();
+  const notes = sanitizeReleaseNotesForApp(release.body);
   if (!notes) {
     return null;
   }
@@ -50,6 +51,7 @@ export async function fetchCurrentReleaseNotes(
     notes,
     channel,
     cachedAt: new Date().toISOString(),
+    source: "installed-release" as const,
   };
   cacheReleaseNotes(entry);
   return entry;

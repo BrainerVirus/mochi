@@ -14,6 +14,7 @@ interface UpdatePageContentProps {
   updateAvailable: boolean;
   version: string | null;
   channel: string;
+  notesDescription?: string;
   notes: string | null;
   isChecking: boolean;
   checkError: string | null;
@@ -23,13 +24,12 @@ interface UpdatePageContentProps {
 export function UpdatePageContent(props: UpdatePageContentProps) {
   const sections = useMemo(() => splitPatchNotesSections(props.notes), [props.notes]);
   const install = useUpdateInstall();
-  const hasScrollableNotes = sections.length > 0;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <UpdatePageHeader {...props} sections={sections} installPhase={install.phase} />
       <Separator />
-      <UpdateNotesBody {...props} sections={sections} scrollable={hasScrollableNotes} />
+      <UpdateNotesBody {...props} sections={sections} />
       <UpdatePageFooter {...props} install={install} />
     </div>
   );
@@ -40,9 +40,13 @@ function UpdatePageHeader({
   updateAvailable,
   version,
   channel,
+  notesDescription,
   sections,
   installPhase,
-}: Pick<UpdatePageContentProps, "notesOnly" | "updateAvailable" | "version" | "channel"> & {
+}: Pick<
+  UpdatePageContentProps,
+  "notesOnly" | "updateAvailable" | "version" | "channel" | "notesDescription"
+> & {
   sections: PatchNotesSection[];
   installPhase: "idle" | "downloading" | "installing" | "error";
 }) {
@@ -60,7 +64,9 @@ function UpdatePageHeader({
         <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold tracking-tight">{title}</h1>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            {notesOnly ? "Release notes from your last update check." : `Channel: ${channel}`}
+            {notesOnly
+              ? (notesDescription ?? "Release notes from your last update check.")
+              : `Channel: ${channel}`}
           </p>
         </div>
       </div>
@@ -74,10 +80,8 @@ function UpdateNotesBody({
   isChecking,
   checkError,
   sections,
-  scrollable,
 }: Pick<UpdatePageContentProps, "notesOnly" | "updateAvailable" | "isChecking" | "checkError"> & {
   sections: PatchNotesSection[];
-  scrollable: boolean;
 }) {
   const content = (
     <>
@@ -92,19 +96,16 @@ function UpdateNotesBody({
     </>
   );
 
-  if (scrollable) {
-    return (
-      <ScrollFadeRegion
-        orientation="vertical"
-        className="min-h-0 flex-1"
-        scrollClassName="overscroll-y-contain"
-      >
-        <div className={`${trayPanelSpacing.contentX} py-2`}>{content}</div>
-      </ScrollFadeRegion>
-    );
-  }
-
-  return <div className={`shrink-0 ${trayPanelSpacing.contentX} py-2`}>{content}</div>;
+  return (
+    <ScrollFadeRegion
+      orientation="vertical"
+      controls="none"
+      className="min-h-0 flex-1"
+      scrollClassName="overscroll-y-contain"
+    >
+      <div className={`${trayPanelSpacing.contentX} py-2`}>{content}</div>
+    </ScrollFadeRegion>
+  );
 }
 
 function PatchNotesSections({ sections }: { sections: PatchNotesSection[] }) {

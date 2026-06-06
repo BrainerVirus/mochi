@@ -3,7 +3,7 @@ use tauri::{AppHandle, Manager, WebviewWindow, WindowEvent};
 use crate::diagnostics::{log_line, DiagnosticsState};
 use crate::frontend::app_shell_url;
 
-use super::{WIDGET_LABEL, WIDGET_MAX_WIDTH, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH};
+use super::{WIDGET_LABEL, WIDGET_MAX_WIDTH, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH, WIDGET_WIDTH};
 
 pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if app.get_webview_window(WIDGET_LABEL).is_some() {
@@ -13,7 +13,7 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     let window = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
         .title("Mochi Widget")
-        .inner_size(320.0, 420.0)
+        .inner_size(WIDGET_WIDTH, 420.0)
         .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
         .max_inner_size(WIDGET_MAX_WIDTH, 720.0)
         .resizable(true)
@@ -22,7 +22,7 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
 
     prepare_widget_window_events(&window)?;
-    crate::linux_window_controls::prepare_decorated_window(&window, WIDGET_LABEL);
+    record_widget_window_controls(app, &window, "rust-builder");
     if let Some(state) = app.try_state::<DiagnosticsState>() {
         let url = window
             .url()
@@ -60,7 +60,7 @@ fn prepare_widget_window_events(window: &WebviewWindow) -> Result<(), Box<dyn st
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(window) = app.get_webview_window(WIDGET_LABEL) {
         prepare_widget_window_events(&window)?;
-        crate::linux_window_controls::prepare_decorated_window(&window, WIDGET_LABEL);
+        record_widget_window_controls(app, &window, "tauri-config");
         let _ = window.set_always_on_top(true);
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
             width: WIDGET_MIN_WIDTH,
@@ -84,7 +84,7 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 #[tauri::command]
 pub fn show_widget(app: AppHandle) -> Result<(), String> {
     let window = widget_window(&app)?;
-    crate::linux_window_controls::prepare_decorated_window(&window, WIDGET_LABEL);
+    record_widget_window_controls(&app, &window, "tauri-config");
 
     let show_result = window.show();
     crate::diagnostics::log_window_action_result(
@@ -101,7 +101,7 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
         unminimize_result.as_ref().map(|_| ()),
     );
     unminimize_result.map_err(|error| error.to_string())?;
-    crate::linux_window_controls::prepare_decorated_window(&window, WIDGET_LABEL);
+    record_widget_window_controls(&app, &window, "tauri-config");
 
     let focus_result = window.set_focus();
     crate::diagnostics::log_window_action_result(
@@ -149,11 +149,22 @@ fn widget_window(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
         .ok_or_else(|| format!("missing widget window: {WIDGET_LABEL}"))
 }
 
+fn record_widget_window_controls(app: &AppHandle, window: &WebviewWindow, creation_source: &str) {
+    let diagnostics = crate::linux_window_controls::prepare_decorated_window(
+        window,
+        WIDGET_LABEL,
+        creation_source,
+    );
+    if let Some(state) = app.try_state::<DiagnosticsState>() {
+        state.record_linux_window_controls(diagnostics);
+    }
+}
+
 fn widget_logical_width(window: &WebviewWindow) -> f64 {
     let scale_factor = window.scale_factor().unwrap_or(1.0);
     let width = window
         .inner_size()
         .map(|size| f64::from(size.width) / scale_factor)
-        .unwrap_or(320.0);
+        .unwrap_or(WIDGET_WIDTH);
     width.clamp(WIDGET_MIN_WIDTH, WIDGET_MAX_WIDTH)
 }

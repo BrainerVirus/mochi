@@ -5,7 +5,6 @@ import { useSaveSettings, useSettings } from "@/hooks/use-tray-events";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
-import { LinuxTrayHint } from "./linux-tray-hint";
 import { resolveSettingsFormState } from "./settings-form-state";
 import { GeneralSettingsSection, ProviderSettingsSection } from "./settings-sections";
 import { useSettingsTabState } from "./settings-tab-state";
@@ -73,11 +72,11 @@ function SettingsEditor({ settings, isLoading, isSaving, onSave }: SettingsEdito
 
       <ScrollFadeRegion
         orientation="vertical"
+        controls="none"
         className="min-h-0 flex-1"
         scrollClassName="overscroll-y-contain"
       >
         <div className={`${trayPanelSpacing.contentX} ${trayPanelSpacing.contentTop}`}>
-          <LinuxTrayHint />
           {activeTab === "general" ? (
             isLoading ? (
               <SettingsLoadingState />

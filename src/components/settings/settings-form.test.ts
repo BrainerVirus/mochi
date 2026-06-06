@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_MOCHI_SETTINGS } from "@/lib/schemas/settings";
@@ -46,5 +49,13 @@ describe("resolveSettingsFormState", () => {
         isError: true,
       }),
     ).toEqual({ kind: "error" });
+  });
+});
+
+describe("SettingsForm source", () => {
+  it("does not render the linux tray hint in the normal settings form", () => {
+    const source = readFileSync(resolve("src/components/settings/settings-form.tsx"), "utf8");
+    expect(source).not.toContain("LinuxTrayHint");
+    expect(source).not.toContain("data-linux-tray-hint");
   });
 });

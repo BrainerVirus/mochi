@@ -16,9 +16,9 @@
         "label": "widget",
         "title": "Mochi Widget",
         "url": "index.html",
-        "width": 320,
+        "width": 360,
         "height": 420,
-        "minWidth": 280,
+        "minWidth": 320,
         "maxWidth": 480,
         "minHeight": 200,
         "visible": false,
@@ -33,6 +33,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": ["app", "dmg", "msi", "nsis", "appimage", "deb", "rpm"],
     "icon": [
       "icons/32x32.png",

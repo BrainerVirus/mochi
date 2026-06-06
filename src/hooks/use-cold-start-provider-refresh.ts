@@ -6,7 +6,8 @@ import { useUsageData } from "@/hooks/use-usage-data";
 import { queryKeys } from "@/lib/query/keys";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderUsageState } from "@/lib/schemas/usage";
-import { refreshEnabledProviders, syncTrayUsage } from "@/lib/tauri/commands";
+import { syncCurrentTrayUsage } from "@/lib/stores/tray-ui-store";
+import { refreshEnabledProviders } from "@/lib/tauri/commands";
 import { isTauriRuntime } from "@/lib/tauri/runtime";
 
 export function shouldRefreshEnabledProvidersOnBoot(
@@ -19,6 +20,17 @@ export function shouldRefreshEnabledProvidersOnBoot(
 
   const enabled = new Set(settings.enabled_providers);
   return states.some((state) => enabled.has(state.provider) && state.kind === "fetching");
+}
+
+export async function runColdStartProviderRefreshSequence(
+  settings: MochiSettings,
+  refresh: () => Promise<unknown>,
+  invalidate: () => Promise<unknown>,
+  syncUsage: (settings: Pick<MochiSettings, "enabled_providers">) => Promise<unknown>,
+) {
+  await refresh();
+  await invalidate();
+  await syncUsage(settings);
 }
 
 export function useColdStartProviderRefresh() {
@@ -38,13 +50,13 @@ export function useColdStartProviderRefresh() {
     }
 
     didRefreshRef.current = true;
-    void refreshEnabledProviders()
-      .then(() => {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
-        void syncTrayUsage();
-      })
-      .catch(() => {
-        didRefreshRef.current = false;
-      });
+    void runColdStartProviderRefreshSequence(
+      settings,
+      refreshEnabledProviders,
+      () => queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }),
+      syncCurrentTrayUsage,
+    ).catch(() => {
+      didRefreshRef.current = false;
+    });
   }, [queryClient, settings, states]);
 }

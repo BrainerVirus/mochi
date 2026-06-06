@@ -31,6 +31,9 @@ export function SettingsUpdateSection({ channel }: SettingsUpdateSectionProps) {
   const updateAvailable = updateInfo?.available ?? false;
   const version = updateInfo?.version ?? cachedNotes?.version ?? null;
   const notes = updateInfo?.notes ?? cachedNotes?.notes ?? null;
+  const notesSource = updateInfo?.notes ? "updater" : (cachedNotes?.source ?? "updater");
+  const notesDescription =
+    notesSource === "installed-release" ? "Installed version notes" : undefined;
   const statusLabel = resolveSettingsUpdateStatusLabel({
     updateAvailable,
     version,
@@ -89,6 +92,7 @@ export function SettingsUpdateSection({ channel }: SettingsUpdateSectionProps) {
         onOpenChange={setNotesOpen}
         version={version}
         channel={updateInfo?.channel ?? cachedNotes?.channel ?? channel}
+        notesDescription={notesDescription}
         notes={notes}
         isChecking={isFetching}
         onRecheck={() => {
