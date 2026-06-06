@@ -43,3 +43,11 @@ Required secrets:
 The feed is backfilled for supported installed versions, currently `0.1.7` and `0.2.0`, so older installed apps can recover through in-app update. Every supported recovery version must have both `stable.json` and `unstable.json` for macOS arm64/x64, Linux x64, and Windows x64.
 
 The first stable repair release publishes both `stable.json` and `unstable.json` from tags like `v0.2.1` so installed unstable-channel apps recover from missing feeds. Later unstable releases publish `unstable.json` from tags like `unstable-20260606.123456` using a feed version such as `0.2.1-unstable.20260606.123456`, where `0.2.1` is the explicit `MOCHI_UNSTABLE_BASE_VERSION`. Workflows must fail when any required updater bundle or `.sig` file is missing.
+
+Validate representative endpoints after publication:
+
+```bash
+curl -fsS https://mochi-app.github.io/mochi/updates/darwin/aarch64/0.1.7/stable.json
+curl -fsS https://mochi-app.github.io/mochi/updates/linux/x86_64/0.1.7/stable.json
+curl -fsS https://mochi-app.github.io/mochi/updates/windows/x86_64/0.1.7/stable.json
+```

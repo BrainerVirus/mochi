@@ -30,7 +30,7 @@ Set `MOCHI_SKIP_DEPS=1` to skip the dependency phase. Set `MOCHI_GNOME_TRAY=0` t
 
 Tray availability depends on the desktop environment. If the tray is unavailable, use widget mode or status-bar mode.
 
-**GNOME (Ubuntu 24.04 default):** the install script tries to install and enable an AppIndicator extension such as `gnome-shell-extension-appindicator` or Ubuntu's appindicator extension. **Log out and back in** after first install if the tray icon still does not appear. GNOME/AppIndicator shells may still open the indicator menu on icon click; Mochi keeps the usage popover on direct tray activation when the desktop exposes it, and puts **Show usage** first in the indicator menu as the fallback.
+**GNOME (Ubuntu 24.04 default):** the install script tries to install and enable an AppIndicator extension such as `gnome-shell-extension-appindicator` or Ubuntu's appindicator extension. **Log out and back in** after first install if the tray icon still does not appear. GNOME/AppIndicator shells may still open the indicator menu on icon click; Mochi keeps the usage popover on direct tray activation when the desktop exposes it, and puts **Open widget** first in the indicator menu as the fallback.
 
 **Settings / tray panel look wrong (mostly transparent):** older builds used transparent GTK windows without native blur. Current builds use opaque windows on Linux with CSS “glass” styling. Reinstall from a recent release if you still see a hollow window with only the title bar visible.
 
@@ -94,3 +94,14 @@ The desktop app writes `diagnostics.log` while it runs. Reports include version,
 Linux **AppImage**, **`.deb`**, and **`.rpm`** builds use the in-app Tauri updater (same flow as macOS and Windows). Re-run the install script or use your package manager to upgrade pinned releases.
 
 If you previously used Flatpak, uninstall it and switch to `install-linux.sh` (deb on Ubuntu/Debian, AppImage elsewhere).
+
+### Tray and Widget QA
+
+On Ubuntu, verify:
+
+- Native tray menu does not contain `Show usage`.
+- `Open widget` is the first action.
+- Stable/unstable channel submenu shows the current channel checked.
+- Selecting a provider tab keeps that provider percentage in the tray after refresh interval elapses.
+- Mouse wheel and trackpad scrolling work in widget, settings, update page, and What's New dialog.
+- Settings and widget native minimize/maximize/close controls work.
