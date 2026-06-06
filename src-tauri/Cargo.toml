@@ -1,6 +1,6 @@
 [package]
 name = "mochi"
-version = "0.2.0"
+version = "0.2.1"
 description = "Soft alerts before hard limits."
 authors = ["Mochi contributors"]
 edition = "2021"
