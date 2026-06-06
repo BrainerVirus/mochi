@@ -72,7 +72,7 @@ Two GitHub Actions workflows handle releases. Both are triggered automatically b
 - **Triggers:** push to `main`, manual dispatch.
 - **Tag:** auto-generated as `unstable-YYYYMMDD.HHMMSS`.
 - **Channel:** `unstable` (prerelease).
-- **Updater feeds:** deploys both `stable.json` and `unstable.json` for recovery versions (0.1.7, 0.2.0, latest) to GitHub Pages.
+- **Updater feeds:** deploys `unstable.json` for recovery versions (0.1.7, 0.2.0, latest) to GitHub Pages.
 - **Notes location:** `releaseBody` in `.github/workflows/release-unstable.yml` and the `release-notes` job at the bottom of the same file. Both must match.
 
 ### Stable Release
@@ -80,7 +80,7 @@ Two GitHub Actions workflows handle releases. Both are triggered automatically b
 - **Triggers:** push of a `vMAJOR.MINOR.PATCH` tag, manual dispatch (requires the tag to exist).
 - **Tag:** must be created manually after all changes are on `main`.
 - **Channel:** `stable`.
-- **Updater feeds:** deploys `stable.json` for recovery versions (0.1.7, 0.2.0, latest) to GitHub Pages. Always runs last and overwrites any unstable Pages deployment.
+- **Updater feeds:** deploys both `stable.json` and `unstable.json` for recovery versions (0.1.7, 0.2.0, latest) to GitHub Pages. This is the only workflow that deploys to Pages, ensuring feeds are always consistent.
 - **Notes location:** `releaseBody` in `.github/workflows/release-stable.yml` and the `release-notes` job at the bottom of the same file. Both must match.
 
 ### How to Cut a Stable Release
