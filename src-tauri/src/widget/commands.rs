@@ -33,11 +33,11 @@ fn record_widget_window_lifecycle(
         .app_handle()
         .try_state::<crate::diagnostics::DiagnosticsState>()
     {
-        let experiment = crate::window_policy::active_linux_window_experiment().name();
+        let policy = crate::window_policy::active_decorated_window_policy().name;
         state.record_window_lifecycle(
             WIDGET_LABEL,
             phase,
-            experiment,
+            policy,
             creation,
             initial_visibility,
             logical_outer_size(window),
