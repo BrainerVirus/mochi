@@ -6,13 +6,17 @@ import { useEffect } from "react";
 import { queryKeys } from "@/lib/query/keys";
 import { refreshProviderMutationOptions } from "@/lib/query/refresh-provider";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
-import type { MochiSettings, UpdateChannel } from "@/lib/schemas/settings";
+import {
+  DEFAULT_MOCHI_SETTINGS,
+  type MochiSettings,
+  type UpdateChannel,
+} from "@/lib/schemas/settings";
+import { syncCurrentTrayUsage } from "@/lib/stores/tray-ui-store";
 import {
   openAppWindow,
   refreshEnabledProviders,
   saveSettings,
   syncTrayUpdateChannel,
-  syncTrayUsage,
 } from "@/lib/tauri/commands";
 import {
   shouldHandleAppNavigateEvent,
@@ -59,10 +63,14 @@ export function useTrayEvents() {
         void navigate({ to: event.payload });
       }),
       listen("tray-refresh", () => {
-        void refreshEnabledProviders()
-          .catch(() => undefined)
-          .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }))
-          .then(() => syncTrayUsage());
+        const settings =
+          queryClient.getQueryData<MochiSettings>(queryKeys.settings) ?? DEFAULT_MOCHI_SETTINGS;
+        void runTrayRefreshEventSequence(
+          queryClient,
+          settings,
+          refreshEnabledProviders,
+          syncCurrentTrayUsage,
+        );
       }),
       listen<UpdateChannel>("tray-set-channel", (event) => {
         const current = queryClient.getQueryData<MochiSettings>(queryKeys.settings);
@@ -103,19 +111,36 @@ export function shouldRunProviderRefreshForTrayEvent(eventName: string): boolean
   return eventName === "tray-refresh";
 }
 
+export async function runTrayRefreshEventSequence(
+  queryClient: TrayRefreshEventQueryClient,
+  settings: MochiSettings,
+  refresh: () => Promise<unknown>,
+  syncUsage: (settings: Pick<MochiSettings, "enabled_providers">) => Promise<unknown>,
+) {
+  await refresh().catch(() => undefined);
+  await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+  await syncUsage(settings);
+}
+
 export async function reconcileSettingsSaveSuccess(
   queryClient: SettingsSaveSuccessQueryClient,
   settings: MochiSettings,
-  syncUsage: () => Promise<void> = syncTrayUsage,
+  syncUsage: (
+    settings: Pick<MochiSettings, "enabled_providers">,
+  ) => Promise<void> = syncCurrentTrayUsage,
   syncChannel: (channel: UpdateChannel) => Promise<void> = syncTrayUpdateChannel,
 ): Promise<void> {
   queryClient.setQueryData(queryKeys.settings, settings);
   await syncChannel(settings.update_channel);
   await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
-  await syncUsage();
+  await syncUsage(settings);
 }
 
 interface SettingsSaveSuccessQueryClient {
   setQueryData: (queryKey: readonly unknown[], settings: MochiSettings) => unknown;
+  invalidateQueries: (options: { queryKey: readonly unknown[] }) => Promise<unknown>;
+}
+
+interface TrayRefreshEventQueryClient {
   invalidateQueries: (options: { queryKey: readonly unknown[] }) => Promise<unknown>;
 }

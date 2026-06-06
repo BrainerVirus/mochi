@@ -1,6 +1,8 @@
 import { create } from "zustand";
 
+import type { MochiSettings } from "@/lib/schemas/settings";
 import { ProviderIdSchema, type ProviderId } from "@/lib/schemas/usage";
+import { syncTrayUsage } from "@/lib/tauri/commands";
 
 export type TraySelectedTab = "overview" | ProviderId;
 
@@ -52,3 +54,29 @@ export const useTrayUiStore = create<TrayUiStore>((set) => ({
     set({ selectedTab: tab });
   },
 }));
+
+export function resolveValidTraySelection(
+  selected: TraySelectedTab,
+  enabledProviders: ProviderId[],
+): TraySelectedTab {
+  if (selected === "overview") {
+    return "overview";
+  }
+
+  return enabledProviders.includes(selected) ? selected : "overview";
+}
+
+export function currentTraySelection(): TraySelectedTab {
+  return useTrayUiStore.getState().selectedTab;
+}
+
+export function syncCurrentTrayUsage(
+  settings: Pick<MochiSettings, "enabled_providers">,
+): Promise<void> {
+  const selected = currentTraySelection();
+  const validSelection = resolveValidTraySelection(selected, settings.enabled_providers);
+  if (validSelection !== selected) {
+    useTrayUiStore.getState().setSelectedTab(validSelection);
+  }
+  return syncTrayUsage(validSelection);
+}

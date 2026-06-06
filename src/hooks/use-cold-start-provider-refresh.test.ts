@@ -1,9 +1,34 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderUsageState } from "@/lib/schemas/usage";
+import { syncCurrentTrayUsage, useTrayUiStore } from "@/lib/stores/tray-ui-store";
+import { syncTrayUsage } from "@/lib/tauri/commands";
 
-import { shouldRefreshEnabledProvidersOnBoot } from "./use-cold-start-provider-refresh";
+import {
+  runColdStartProviderRefreshSequence,
+  shouldRefreshEnabledProvidersOnBoot,
+} from "./use-cold-start-provider-refresh";
+
+vi.mock("@/lib/tauri/commands", () => ({
+  getSettings: vi.fn(() =>
+    Promise.resolve({
+      update_channel: "stable",
+      refresh_interval_seconds: 300,
+      enabled_providers: ["codex"],
+      show_notifications: true,
+      provider_configs: {},
+    }),
+  ),
+  getUsageStates: vi.fn(() => Promise.resolve([])),
+  refreshEnabledProviders: vi.fn(() => Promise.resolve()),
+  syncTrayUsage: vi.fn(() => Promise.resolve()),
+}));
+
+beforeEach(() => {
+  vi.mocked(syncTrayUsage).mockClear();
+  useTrayUiStore.getState().setSelectedTab("overview");
+});
 
 function settings(enabledProviders: MochiSettings["enabled_providers"]): MochiSettings {
   return {
@@ -42,5 +67,18 @@ describe("shouldRefreshEnabledProvidersOnBoot", () => {
 
   it("does not refresh when no providers are enabled", () => {
     expect(shouldRefreshEnabledProvidersOnBoot(settings([]), [state("codex")])).toBe(false);
+  });
+
+  it("cold start refresh syncs the selected provider from the store after invalidating cache", async () => {
+    useTrayUiStore.getState().setSelectedTab("codex");
+
+    await runColdStartProviderRefreshSequence(
+      { ...settings(["codex"]), enabled_providers: ["codex"] },
+      () => Promise.resolve(),
+      () => Promise.resolve(),
+      syncCurrentTrayUsage,
+    );
+
+    expect(syncTrayUsage).toHaveBeenCalledWith("codex");
   });
 });

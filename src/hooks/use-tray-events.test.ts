@@ -1,12 +1,29 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_MOCHI_SETTINGS } from "@/lib/schemas/settings";
+import { syncCurrentTrayUsage, useTrayUiStore } from "@/lib/stores/tray-ui-store";
+import { syncTrayUsage } from "@/lib/tauri/commands";
 
 import {
   reconcileSettingsSaveSuccess,
+  runTrayRefreshEventSequence,
   shouldRunProviderRefreshForTrayEvent,
 } from "./use-tray-events";
+
+vi.mock("@/lib/tauri/commands", () => ({
+  getSettings: vi.fn(() => Promise.resolve(DEFAULT_MOCHI_SETTINGS)),
+  openAppWindow: vi.fn(() => Promise.resolve()),
+  refreshEnabledProviders: vi.fn(() => Promise.resolve()),
+  saveSettings: vi.fn((settings) => Promise.resolve(settings)),
+  syncTrayUpdateChannel: vi.fn(() => Promise.resolve()),
+  syncTrayUsage: vi.fn(() => Promise.resolve()),
+}));
+
+beforeEach(() => {
+  vi.mocked(syncTrayUsage).mockClear();
+  useTrayUiStore.getState().setSelectedTab("overview");
+});
 
 describe("tray event refresh policy", () => {
   it("runs a real provider refresh before resyncing tray usage", () => {
@@ -44,5 +61,38 @@ describe("tray event refresh policy", () => {
       `invalidate:${queryKeys.usageSnapshots.join("/")}`,
       "sync-usage",
     ]);
+  });
+
+  it("native tray refresh syncs the selected provider from the store", async () => {
+    useTrayUiStore.getState().setSelectedTab("codex");
+    const queryClient = {
+      invalidateQueries: () => Promise.resolve(),
+    };
+
+    await runTrayRefreshEventSequence(
+      queryClient,
+      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: ["codex"] },
+      () => Promise.resolve(),
+      syncCurrentTrayUsage,
+    );
+
+    expect(syncTrayUsage).toHaveBeenCalledWith("codex");
+  });
+
+  it("settings save syncs the selected provider from the store", async () => {
+    useTrayUiStore.getState().setSelectedTab("codex");
+    const queryClient = {
+      setQueryData: () => undefined,
+      invalidateQueries: () => Promise.resolve(),
+    };
+
+    await reconcileSettingsSaveSuccess(
+      queryClient,
+      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: ["codex"] },
+      () => syncCurrentTrayUsage({ enabled_providers: ["codex"] }),
+      () => Promise.resolve(),
+    );
+
+    expect(syncTrayUsage).toHaveBeenCalledWith("codex");
   });
 });

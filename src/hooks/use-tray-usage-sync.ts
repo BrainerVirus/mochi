@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 
+import { useSettings } from "@/hooks/use-tray-events";
 import { useUsageData } from "@/hooks/use-usage-data";
-import { useTrayUiStore } from "@/lib/stores/tray-ui-store";
+import { syncCurrentTrayUsage, useTrayUiStore } from "@/lib/stores/tray-ui-store";
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
 export function useTrayUsageSync() {
   const { data, isSuccess } = useUsageData();
+  const { data: settings } = useSettings();
   const selectedTab = useTrayUiStore((state) => state.selectedTab);
 
   // Tab changes and tray open: update menu bar from Rust cache immediately (no live fetch).
@@ -14,10 +16,10 @@ export function useTrayUsageSync() {
   }, [selectedTab]);
 
   useEffect(() => {
-    if (!isSuccess) {
+    if (!isSuccess || !settings) {
       return;
     }
 
-    void syncTrayUsage(selectedTab);
-  }, [data, isSuccess, selectedTab]);
+    void syncCurrentTrayUsage(settings);
+  }, [data, isSuccess, selectedTab, settings]);
 }
