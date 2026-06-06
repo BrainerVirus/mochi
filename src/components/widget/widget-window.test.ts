@@ -30,16 +30,18 @@ describe("WidgetWindow", () => {
     expect(source).toContain("max-w-[360px]");
   });
 
-  it("keeps tauri widget defaults aligned with rust widget builder", () => {
+  it("keeps the widget out of static tauri config so linux experiments can create it on demand", () => {
     const config = JSON.parse(readFileSync(resolve("src-tauri/tauri.conf.json"), "utf8"));
     const widget = config.app.windows.find(
       (window: { label: string }) => window.label === "widget",
     );
-    expect(widget.width).toBe(360);
-    expect(widget.height).toBe(420);
-    expect(widget.minWidth).toBe(320);
-    expect(widget).not.toHaveProperty("maxWidth");
-    expect(widget.alwaysOnTop).toBe(false);
+    expect(widget).toBeUndefined();
+
+    const source = readFileSync(resolve("src-tauri/src/widget/commands.rs"), "utf8");
+    expect(source).toContain(".inner_size(WIDGET_WIDTH, 420.0)");
+    expect(source).toContain(".min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)");
+    expect(source).toContain(".decorations(true)");
+    expect(source).toContain(".resizable(true)");
   });
 
   it("does not force the decorated widget to stay always on top", () => {
