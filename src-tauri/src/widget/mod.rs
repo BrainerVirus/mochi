@@ -5,7 +5,8 @@ pub use commands::{hide_widget, set_widget_height, setup_widget, show_widget, to
 use serde::{Deserialize, Serialize};
 
 pub const WIDGET_LABEL: &str = "widget";
-pub const WIDGET_MIN_WIDTH: f64 = 280.0;
+pub const WIDGET_WIDTH: f64 = 360.0;
+pub const WIDGET_MIN_WIDTH: f64 = 320.0;
 pub const WIDGET_MAX_WIDTH: f64 = 480.0;
 pub const WIDGET_MIN_HEIGHT: f64 = 200.0;
 
