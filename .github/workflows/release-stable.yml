@@ -184,7 +184,7 @@ jobs:
         with:
           path: public
       - name: Deploy updater feed to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         env:
           GITHUB_SHA: ${{ github.sha }}-stable
       - name: Validate published updater endpoints
