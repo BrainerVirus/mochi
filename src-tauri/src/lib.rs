@@ -17,6 +17,7 @@ pub mod status_bar;
 pub mod tray;
 pub mod updater;
 pub mod widget;
+pub mod window_policy;
 
 use clap::Parser;
 use std::path::PathBuf;
