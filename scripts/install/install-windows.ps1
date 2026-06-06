@@ -50,6 +50,12 @@ function Resolve-ReleaseTag {
   $releases = Get-GitHubJson "$ApiBase/releases?per_page=30"
 
   if ($Unstable) {
+    $unstableTag = $releases |
+      Where-Object { $_.prerelease -and -not $_.draft -and $_.tag_name -match '^unstable-[0-9]{8}\.[0-9]{6}$' } |
+      Sort-Object { [datetime]$(if ($_.published_at) { $_.published_at } else { $_.created_at }) } -Descending |
+      Select-Object -First 1
+    if ($unstableTag) { return $unstableTag.tag_name }
+
     $unstableTag = $releases | Where-Object { $_.tag_name -eq 'unstable' -and -not $_.draft } | Select-Object -First 1
     if ($unstableTag) { return $unstableTag.tag_name }
 
