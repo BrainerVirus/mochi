@@ -27,5 +27,3 @@ export function TrayPanelShell({ children, layoutRef }: TrayPanelShellProps) {
     </main>
   );
 }
-
-export { trayPanelShellClassName };

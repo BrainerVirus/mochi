@@ -34,7 +34,7 @@ pub fn prepare_decorated_window(
             resizable_result.as_ref().map(|_| ()),
         );
 
-        return LinuxWindowControlDiagnostics {
+        LinuxWindowControlDiagnostics {
             label: label.to_string(),
             platform: "linux".to_string(),
             creation_source: creation_source.to_string(),
@@ -44,7 +44,7 @@ pub fn prepare_decorated_window(
             resizable_action: "linux_set_resizable".to_string(),
             resizable_error: resizable_result.as_ref().err().map(ToString::to_string),
             resizable_ok: resizable_result.is_ok(),
-        };
+        }
     }
 
     #[cfg(not(target_os = "linux"))]
