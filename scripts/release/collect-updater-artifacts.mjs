@@ -1,11 +1,11 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, join, sep } from "node:path";
 
 const REQUIRED_ARTIFACTS = {
-  "darwin-aarch64": [/aarch64\.app\.tar\.gz$/],
-  "darwin-x86_64": [/(x64|x86_64)\.app\.tar\.gz$/],
-  "linux-x86_64": [/amd64\.AppImage\.tar\.gz$/, /x86_64\.AppImage\.tar\.gz$/],
-  "windows-x86_64": [/(x64|x86_64).*\.nsis\.zip$/],
+  "darwin-aarch64": [/aarch64.*macos.*Mochi\.app\.tar\.gz$/],
+  "darwin-x86_64": [/x86_64.*macos.*Mochi\.app\.tar\.gz$/],
+  "linux-x86_64": [/appimage.*amd64\.AppImage\.tar\.gz$/],
+  "windows-x86_64": [/nsis.*x64-setup\.exe$/],
 };
 
 async function listFiles(root) {
@@ -16,6 +16,10 @@ async function listFiles(root) {
       const parentPath = entry.parentPath ?? root;
       return join(parentPath, entry.name);
     });
+}
+
+function toPosixPath(filePath) {
+  return filePath.split(sep).join("/");
 }
 
 function versionFromTag(tagName, unstableBaseVersion) {
@@ -58,7 +62,8 @@ export async function collectUpdaterArtifacts({
   const artifacts = {};
   for (const [platform, patterns] of Object.entries(REQUIRED_ARTIFACTS)) {
     const artifactPath = files.find(
-      (file) => !file.endsWith(".sig") && patterns.some((pattern) => pattern.test(basename(file))),
+      (file) =>
+        !file.endsWith(".sig") && patterns.some((pattern) => pattern.test(toPosixPath(file))),
     );
     if (!artifactPath) throw new Error(`missing updater artifact for ${platform}`);
 

@@ -15,10 +15,26 @@ async function writeArtifact(root, relativePath, signature) {
 describe("collectUpdaterArtifacts", () => {
   it("derives version, pubDate, release URLs, signatures, and stable channel", async () => {
     const root = await mkdtemp(join(tmpdir(), "mochi-updater-artifacts-"));
-    await writeArtifact(root, "macos/Mochi_aarch64.app.tar.gz", "sig-darwin-arm");
-    await writeArtifact(root, "macos/Mochi_x64.app.tar.gz", "sig-darwin-x64");
-    await writeArtifact(root, "linux/Mochi_0.2.1_amd64.AppImage.tar.gz", "sig-linux");
-    await writeArtifact(root, "windows/Mochi_0.2.1_x64-setup.nsis.zip", "sig-windows");
+    await writeArtifact(
+      root,
+      "updater-bundle-macos-26-macos-arm64/aarch64-apple-darwin/release/bundle/macos/Mochi.app.tar.gz",
+      "sig-darwin-arm",
+    );
+    await writeArtifact(
+      root,
+      "updater-bundle-macos-26-intel-macos-x64/x86_64-apple-darwin/release/bundle/macos/Mochi.app.tar.gz",
+      "sig-darwin-x64",
+    );
+    await writeArtifact(
+      root,
+      "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage.tar.gz",
+      "sig-linux",
+    );
+    await writeArtifact(
+      root,
+      "updater-bundle-windows-2025-vs2026-windows-x64/release/bundle/nsis/Mochi_0.2.1_x64-setup.exe",
+      "sig-windows",
+    );
 
     const manifestPath = join(root, "updater-feed.json");
     const manifest = await collectUpdaterArtifacts({
@@ -35,18 +51,40 @@ describe("collectUpdaterArtifacts", () => {
     expect(manifest.channels).toEqual(["stable"]);
     expect(manifest.pubDate).toBe("2026-06-06T12:34:56.000Z");
     expect(manifest.artifacts["darwin-aarch64"].signature).toBe("sig-darwin-arm");
+    expect(manifest.artifacts["darwin-aarch64"].url).toBe(
+      "https://github.com/BrainerVirus/mochi/releases/download/v0.2.1/Mochi.app.tar.gz",
+    );
     expect(manifest.artifacts["linux-x86_64"].url).toBe(
       "https://github.com/BrainerVirus/mochi/releases/download/v0.2.1/Mochi_0.2.1_amd64.AppImage.tar.gz",
+    );
+    expect(manifest.artifacts["windows-x86_64"].url).toBe(
+      "https://github.com/BrainerVirus/mochi/releases/download/v0.2.1/Mochi_0.2.1_x64-setup.exe",
     );
     expect(JSON.parse(await readFile(manifestPath, "utf8"))).toEqual(manifest);
   });
 
   it("derives an unstable version that is newer than the recovery versions", async () => {
     const root = await mkdtemp(join(tmpdir(), "mochi-updater-artifacts-"));
-    await writeArtifact(root, "macos/Mochi_aarch64.app.tar.gz", "sig-darwin-arm");
-    await writeArtifact(root, "macos/Mochi_x64.app.tar.gz", "sig-darwin-x64");
-    await writeArtifact(root, "linux/Mochi_0.2.1_amd64.AppImage.tar.gz", "sig-linux");
-    await writeArtifact(root, "windows/Mochi_0.2.1_x64-setup.nsis.zip", "sig-windows");
+    await writeArtifact(
+      root,
+      "updater-bundle-macos-26-macos-arm64/aarch64-apple-darwin/release/bundle/macos/Mochi.app.tar.gz",
+      "sig-darwin-arm",
+    );
+    await writeArtifact(
+      root,
+      "updater-bundle-macos-26-intel-macos-x64/x86_64-apple-darwin/release/bundle/macos/Mochi.app.tar.gz",
+      "sig-darwin-x64",
+    );
+    await writeArtifact(
+      root,
+      "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage.tar.gz",
+      "sig-linux",
+    );
+    await writeArtifact(
+      root,
+      "updater-bundle-windows-2025-vs2026-windows-x64/release/bundle/nsis/Mochi_0.2.1_x64-setup.exe",
+      "sig-windows",
+    );
 
     const manifest = await collectUpdaterArtifacts({
       artifactRoot: root,
@@ -67,8 +105,16 @@ describe("collectUpdaterArtifacts", () => {
 
   it("fails when an updater signature is missing", async () => {
     const root = await mkdtemp(join(tmpdir(), "mochi-updater-artifacts-"));
-    await mkdir(join(root, "linux"), { recursive: true });
-    await writeFile(join(root, "linux/Mochi_0.2.1_amd64.AppImage.tar.gz"), "artifact");
+    await mkdir(join(root, "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        root,
+        "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage.tar.gz",
+      ),
+      "artifact",
+    );
 
     await expect(
       collectUpdaterArtifacts({
