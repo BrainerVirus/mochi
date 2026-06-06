@@ -220,6 +220,7 @@ fn ensure_widget_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     }
 
     let window = build_widget_window(app).map_err(|error| error.to_string())?;
+    record_widget_window_lifecycle(&window, "created", "on-demand", "visible");
     record_widget_window_controls(app, &window, "rust-builder");
     if let Some(state) = app.try_state::<DiagnosticsState>() {
         let url = window

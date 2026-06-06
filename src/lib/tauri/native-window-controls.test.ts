@@ -33,14 +33,17 @@ describe("native desktop window controls", () => {
     expect(source).toContain("linux_builder_resizable");
   });
 
-  it("declares widget native decorations in tauri config", () => {
+  it("does not precreate the decorated widget from tauri config", () => {
     const config = JSON.parse(readFileSync(resolve("src-tauri/tauri.conf.json"), "utf8"));
     const widget = config.app.windows.find(
       (window: { label: string }) => window.label === "widget",
     );
 
-    expect(widget.decorations).toBe(true);
-    expect(widget.resizable).toBe(true);
+    expect(widget).toBeUndefined();
+
+    const source = readFileSync(resolve("src-tauri/src/widget/commands.rs"), "utf8");
+    expect(source).toContain(".decorations(true)");
+    expect(source).toContain(".resizable(true)");
   });
 
   it("does not precreate decorated linux app windows for on-demand-visible", () => {
@@ -56,5 +59,6 @@ describe("native desktop window controls", () => {
 
     expect(commands).toContain("build_widget_window");
     expect(commands).toContain("DecoratedWindowInitialVisibility::Visible");
+    expect(commands).toContain('record_widget_window_lifecycle(&window, "created", "on-demand"');
   });
 });
