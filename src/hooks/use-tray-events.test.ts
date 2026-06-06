@@ -25,15 +25,24 @@ describe("tray event refresh policy", () => {
       },
     };
 
-    await reconcileSettingsSaveSuccess(queryClient, DEFAULT_MOCHI_SETTINGS, () => {
-      calls.push("sync");
-      return Promise.resolve();
-    });
+    await reconcileSettingsSaveSuccess(
+      queryClient,
+      DEFAULT_MOCHI_SETTINGS,
+      () => {
+        calls.push("sync-usage");
+        return Promise.resolve();
+      },
+      (channel) => {
+        calls.push(`sync-channel:${channel}`);
+        return Promise.resolve();
+      },
+    );
 
     expect(calls).toEqual([
       `set:${queryKeys.settings.join("/")}`,
+      "sync-channel:stable",
       `invalidate:${queryKeys.usageSnapshots.join("/")}`,
-      "sync",
+      "sync-usage",
     ]);
   });
 });

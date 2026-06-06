@@ -11,6 +11,7 @@ import {
   openAppWindow,
   refreshEnabledProviders,
   saveSettings,
+  syncTrayUpdateChannel,
   syncTrayUsage,
 } from "@/lib/tauri/commands";
 import {
@@ -106,8 +107,10 @@ export async function reconcileSettingsSaveSuccess(
   queryClient: SettingsSaveSuccessQueryClient,
   settings: MochiSettings,
   syncUsage: () => Promise<void> = syncTrayUsage,
+  syncChannel: (channel: UpdateChannel) => Promise<void> = syncTrayUpdateChannel,
 ): Promise<void> {
   queryClient.setQueryData(queryKeys.settings, settings);
+  await syncChannel(settings.update_channel);
   await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
   await syncUsage();
 }
