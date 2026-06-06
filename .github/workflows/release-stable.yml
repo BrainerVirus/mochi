@@ -95,7 +95,6 @@ jobs:
           # Re-runs of this workflow should skip the build job and only run the
           # Pages updater-feed job; the build and release assets are immutable
           # once published.
-          releaseExists: ignore
           releaseBody: |
             ## Mochi ${{ github.ref_name }}
 
@@ -176,13 +175,17 @@ jobs:
         run: |
           node scripts/release/validate-updater-feed.mjs \
             public/updates/darwin/aarch64/0.1.7/stable.json \
-            public/updates/darwin/aarch64/0.1.7/unstable.json \
+            public/updates/darwin/aarch64/0.2.0/stable.json \
+            public/updates/darwin/aarch64/${{ github.ref_name }}/stable.json \
             public/updates/darwin/x86_64/0.1.7/stable.json \
-            public/updates/darwin/x86_64/0.1.7/unstable.json \
+            public/updates/darwin/x86_64/0.2.0/stable.json \
+            public/updates/darwin/x86_64/${{ github.ref_name }}/stable.json \
             public/updates/linux/x86_64/0.1.7/stable.json \
-            public/updates/linux/x86_64/0.1.7/unstable.json \
+            public/updates/linux/x86_64/0.2.0/stable.json \
+            public/updates/linux/x86_64/${{ github.ref_name }}/stable.json \
             public/updates/windows/x86_64/0.1.7/stable.json \
-            public/updates/windows/x86_64/0.1.7/unstable.json
+            public/updates/windows/x86_64/0.2.0/stable.json \
+            public/updates/windows/x86_64/${{ github.ref_name }}/stable.json
       - name: Upload updater Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
@@ -195,13 +198,20 @@ jobs:
         shell: bash
         run: |
           sleep 30
+          VERSION="${GITHUB_REF_NAME#v}"
           for path in \
             updates/darwin/aarch64/0.1.7/stable.json \
-            updates/darwin/aarch64/0.1.7/unstable.json \
+            updates/darwin/aarch64/0.2.0/stable.json \
+            updates/darwin/aarch64/${VERSION}/stable.json \
+            updates/darwin/x86_64/0.1.7/stable.json \
             updates/darwin/x86_64/0.2.0/stable.json \
-            updates/linux/x86_64/0.2.0/unstable.json \
+            updates/darwin/x86_64/${VERSION}/stable.json \
+            updates/linux/x86_64/0.1.7/stable.json \
+            updates/linux/x86_64/0.2.0/stable.json \
+            updates/linux/x86_64/${VERSION}/stable.json \
             updates/windows/x86_64/0.1.7/stable.json \
-            updates/windows/x86_64/0.1.7/unstable.json
+            updates/windows/x86_64/0.2.0/stable.json \
+            updates/windows/x86_64/${VERSION}/stable.json
           do
             url="https://brainervirus.github.io/mochi/${path}"
             curl --fail --silent --show-error --location "${url}" --output feed.json
