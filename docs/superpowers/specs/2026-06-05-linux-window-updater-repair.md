@@ -22,6 +22,13 @@
   - `Show widget` is third and named ambiguously.
   - Stable/unstable channels are plain `MenuItem`s, so no checked state can appear.
 - `Show usage` calls `open_tray_panel(app, "/")` from a native menu event. It duplicates the direct tray-icon behavior and is likely the crash path reported on Linux indicator menus.
+- Native tray percentage selection is not durable across every refresh path.
+  - The selected provider tab is stored only in frontend Zustand/localStorage by `src/lib/stores/tray-ui-store.ts`.
+  - Normal data-change sync in `src/hooks/use-tray-usage-sync.ts` correctly calls `syncTrayUsage(selectedTab)`.
+  - `src/hooks/use-cold-start-provider-refresh.ts` calls `syncTrayUsage()` with no selected tab after boot refresh.
+  - `src/hooks/use-tray-events.ts` calls `syncTrayUsage()` with no selected tab after native `tray-refresh` and after settings save.
+  - Rust `TraySelection::parse(None)` in `src-tauri/src/tray/presentation.rs` resolves to `TraySelection::Overview`, so any selection-less sync explicitly repaints the native tray as the general overview percentage.
+  - Default `refresh_interval_seconds` is 300 seconds, which matches the reported "after a few minutes" timing for refresh-related repaint bugs.
 - The widget window is created in `src-tauri/src/widget/commands.rs` with `inner_size(320.0, 420.0)` and then immediately height-synced by the frontend. On Linux screenshots, the native decorated outer window remains larger than the actual tray-panel content.
 - `src/components/widget/widget-window.tsx` wraps the tray panel in `bg-background flex h-full ... overflow-hidden`; `TrayPanelShell` adds the inner rounded panel. This creates a separate outer webview background plus an inner bordered container on Linux.
 - `src/components/layout/root-component.tsx` only applies full-height flex classes to the React root wrapper when `platform === "macos" || platform === "windows"`. Linux app/tray/widget routes still rely on `h-full` descendants, which can produce the empty lower region and broken scroll containers.
@@ -43,12 +50,13 @@
 ## Root Causes
 
 1. **Native tray menu drift:** The Linux indicator fallback menu still exposes an obsolete `Show usage` item and uses plain menu items for update channels.
-2. **Linux layout not getting full-height shell classes:** Linux is excluded from the full-height root wrapper even though Linux shell CSS and scroll containers depend on the same height chain.
-3. **Widget shell duplicates tray panel chrome:** The widget route combines a full webview background with the inner tray panel styling, while native Linux decorations add another outer frame.
-4. **Shared scroll primitive is too aggressive for Linux:** Hidden scrollbars, edge controls, mask overlays, and `overscroll-y-contain` are bundled together for every vertical scroll surface. This makes Linux wheel behavior fragile and hides the real scroll affordance.
-5. **Settings includes Linux onboarding copy in the persistent settings UI:** `LinuxTrayHint` belongs in docs or first-run diagnostics, not inside the normal settings window.
-6. **Release notes render release bodies instead of patch notes:** The current release bodies intentionally include install commands; the app shows them because no filtering/sanitization exists.
-7. **Updater artifacts and feed are missing:** The app checks a GitHub Pages feed that is not published. Builds are not configured to create updater artifacts, and the public key replacement is not guaranteed by the workflows.
+2. **Tray provider selection is lost at sync boundaries:** Some refresh flows call `syncTrayUsage()` without the current tab, and the Rust command treats a missing selection as overview/general.
+3. **Linux layout not getting full-height shell classes:** Linux is excluded from the full-height root wrapper even though Linux shell CSS and scroll containers depend on the same height chain.
+4. **Widget shell duplicates tray panel chrome:** The widget route combines a full webview background with the inner tray panel styling, while native Linux decorations add another outer frame.
+5. **Shared scroll primitive is too aggressive for Linux:** Hidden scrollbars, edge controls, mask overlays, and `overscroll-y-contain` are bundled together for every vertical scroll surface. This makes Linux wheel behavior fragile and hides the real scroll affordance.
+6. **Settings includes Linux onboarding copy in the persistent settings UI:** `LinuxTrayHint` belongs in docs or first-run diagnostics, not inside the normal settings window.
+7. **Release notes render release bodies instead of patch notes:** The current release bodies intentionally include install commands; the app shows them because no filtering/sanitization exists.
+8. **Updater artifacts and feed are missing:** The app checks a GitHub Pages feed that is not published. Builds are not configured to create updater artifacts, and the public key replacement is not guaranteed by the workflows.
 
 ## Required Behavior
 
@@ -65,6 +73,14 @@
   6. separator
   7. `Quit Mochi`
 - Convert channel entries to checked menu items and synchronize checked state after settings load and after `tray-set-channel`.
+
+### Tray provider percentage persistence
+
+- When the user selects a provider tab, the native tray title/icon must keep showing that provider until the user selects another tab or the provider becomes disabled/unavailable.
+- Scheduled polling, cold-start refresh, manual refresh, settings saves, and background usage-cache invalidations must not repaint the native tray to overview unless the stored selected tab is invalid.
+- Every frontend caller of `syncTrayUsage` must pass the current selected tab, or a central helper must read `useTrayUiStore.getState().selectedTab` and pass it.
+- Add a pure helper for selection validity: if the selected provider remains in the current tab list or enabled provider list, keep it; otherwise fall back to `overview`.
+- Add diagnostics for selection-less native tray sync attempts during development, because missing selection means "reset to overview" in the current Rust API.
 
 ### Linux widget and settings layout
 
@@ -127,7 +143,19 @@
 - Update `settings-form.tsx`, `tray-panel-shell.tsx`, `update-page-content.tsx`, and `release-notes-dialog.tsx` to use the safer vertical mode.
 - Add component/CSS tests proving Linux shells get full-height classes and vertical scroll regions do not render clickable overlays over the scrollport.
 
-### Task 3: Widget visual parity
+### Task 3: Tray selected-provider persistence
+
+- Modify `src/hooks/use-cold-start-provider-refresh.ts`, `src/hooks/use-tray-events.ts`, and any helper used by settings-save reconciliation so they call tray sync with the current selected tab.
+- Prefer a central frontend helper such as `syncCurrentTrayUsage()` under `src/lib/tauri/` or `src/lib/stores/` that reads `useTrayUiStore.getState().selectedTab` outside React render and calls `syncTrayUsage(selectedTab)`.
+- Keep `src/hooks/use-tray-usage-sync.ts` as the normal data-change sync path, but ensure it also uses the same helper or same selection-validity rules.
+- Add tests proving:
+  - cold-start refresh syncs the current selected provider, not `undefined`;
+  - native `tray-refresh` syncs the current selected provider after refreshing;
+  - settings-save reconciliation does not reset provider selection;
+  - invalid/disabled selected providers still fall back to `overview`.
+- Add Rust tests only if the command semantics change; if `None` continues to mean overview, frontend tests must enforce that no refresh path passes `None` accidentally.
+
+### Task 4: Widget visual parity
 
 - Modify `src/components/widget/widget-window.tsx`, `src/lib/utils/tray-panel-layout.ts`, and `src-tauri/src/widget/commands.rs`.
 - Remove redundant outer background/padding in the widget route.
@@ -135,13 +163,13 @@
 - Rename UI/native labels from "Show widget" to "Open widget" or a chosen final name.
 - Add tests for widget height clamp and route shell class names.
 
-### Task 4: Settings cleanup
+### Task 5: Settings cleanup
 
 - Remove `LinuxTrayHint` from `src/components/settings/settings-form.tsx`.
 - Keep Linux tray guidance in `docs/linux.md` and diagnostics only.
 - Add/update a test to assert settings does not render `data-linux-tray-hint`.
 
-### Task 5: Release-note sanitization
+### Task 6: Release-note sanitization
 
 - Add a `sanitizeReleaseNotesForApp(notes: string, version?: string)` helper under `src/lib/updates/`.
 - Keep headings/items under "What's changed", "Changes", "Fixes", "Features", and similar patch-note sections.
@@ -149,7 +177,7 @@
 - Use the sanitizer before caching and before rendering `ReleaseNotesDialog`/`UpdatePageContent`.
 - Add unit tests with the current `v0.2.0` release-body shape.
 
-### Task 6: Updater feed generation and validation
+### Task 7: Updater feed generation and validation
 
 - Modify `src-tauri/tauri.conf.json` to include `bundle.createUpdaterArtifacts`.
 - Add CI steps in both release workflows to:
