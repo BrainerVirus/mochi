@@ -11,7 +11,7 @@ import {
 } from "./use-cold-start-provider-refresh";
 
 vi.mock("@/lib/tauri/commands", () => ({
-  getSettings: vi.fn(() =>
+  getSettings: vi.fn<() => Promise<MochiSettings>>(() =>
     Promise.resolve({
       update_channel: "stable",
       refresh_interval_seconds: 300,
@@ -20,9 +20,9 @@ vi.mock("@/lib/tauri/commands", () => ({
       provider_configs: {},
     }),
   ),
-  getUsageStates: vi.fn(() => Promise.resolve([])),
-  refreshEnabledProviders: vi.fn(() => Promise.resolve()),
-  syncTrayUsage: vi.fn(() => Promise.resolve()),
+  getUsageStates: vi.fn<() => Promise<ProviderUsageState[]>>(() => Promise.resolve([])),
+  refreshEnabledProviders: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+  syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
 }));
 
 beforeEach(() => {

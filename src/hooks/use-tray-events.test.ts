@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { queryKeys } from "@/lib/query/keys";
-import { DEFAULT_MOCHI_SETTINGS } from "@/lib/schemas/settings";
+import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
 import { syncCurrentTrayUsage, useTrayUiStore } from "@/lib/stores/tray-ui-store";
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
@@ -12,12 +12,14 @@ import {
 } from "./use-tray-events";
 
 vi.mock("@/lib/tauri/commands", () => ({
-  getSettings: vi.fn(() => Promise.resolve(DEFAULT_MOCHI_SETTINGS)),
-  openAppWindow: vi.fn(() => Promise.resolve()),
-  refreshEnabledProviders: vi.fn(() => Promise.resolve()),
-  saveSettings: vi.fn((settings) => Promise.resolve(settings)),
-  syncTrayUpdateChannel: vi.fn(() => Promise.resolve()),
-  syncTrayUsage: vi.fn(() => Promise.resolve()),
+  getSettings: vi.fn<() => Promise<MochiSettings>>(() => Promise.resolve(DEFAULT_MOCHI_SETTINGS)),
+  openAppWindow: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+  refreshEnabledProviders: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+  saveSettings: vi.fn<(settings: MochiSettings) => Promise<MochiSettings>>((settings) =>
+    Promise.resolve(settings),
+  ),
+  syncTrayUpdateChannel: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+  syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
 }));
 
 beforeEach(() => {

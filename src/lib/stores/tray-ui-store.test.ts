@@ -5,7 +5,7 @@ import { syncTrayUsage } from "@/lib/tauri/commands";
 import { resolveValidTraySelection, syncCurrentTrayUsage, useTrayUiStore } from "./tray-ui-store";
 
 vi.mock("@/lib/tauri/commands", () => ({
-  syncTrayUsage: vi.fn(() => Promise.resolve()),
+  syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
 }));
 
 beforeEach(() => {

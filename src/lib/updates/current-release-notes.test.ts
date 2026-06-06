@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/tauri/commands", () => ({
-  appVersion: vi.fn(() => Promise.resolve("0.2.0")),
+  appVersion: vi.fn<() => Promise<string>>(() => Promise.resolve("0.2.0")),
 }));
 
 vi.mock("@/lib/updates/release-notes-cache", () => ({
-  cacheReleaseNotes: vi.fn(),
+  cacheReleaseNotes: vi.fn<(entry: unknown) => void>(),
 }));
 
 import { appVersion } from "@/lib/tauri/commands";
@@ -23,7 +23,12 @@ describe("current release notes", () => {
     vi.mocked(cacheReleaseNotes).mockClear();
     vi.stubGlobal(
       "fetch",
-      vi.fn(() =>
+      vi.fn<
+        () => Promise<{
+          ok: boolean;
+          json: () => Promise<{ tag_name: string; body: string }>;
+        }>
+      >(() =>
         Promise.resolve({
           ok: true,
           json: () =>
