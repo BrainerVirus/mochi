@@ -118,13 +118,12 @@ jobs:
           releaseBody: |
             ## Mochi Unstable
 
-            Latest `main` build with Linux browser discovery and window stability fixes.
+            Latest `main` build with refined Linux window controls and improved release infrastructure.
 
             ### What's changed
-            - **Safer usage windows** — scheduled usage polling reads cached snapshots instead of starting live provider refreshes when settings, widget, or usage windows open.
-            - **Linux Chromium discovery** — Chrome, Edge, Brave, Chromium, Vivaldi, Yandex, and Helium scan native, Flatpak, and Snap profile roots.
-            - **Linux Gecko discovery** — Firefox and Zen scan native, Flatpak, and Snap profile roots, including Zen's current and historical Flatpak app IDs.
-            - **GitHub Flow docs** — agent instructions now forbid tool prefixes such as `codex/` in branch names.
+            - **Refined Linux window controls** — simplified geometry calculations and removed redundant tray panel logic for cleaner, more reliable window controls on Linux.
+            - **Improved widget commands** — consolidated widget command handlers and added native window control test coverage.
+            - **Reliable release pipeline** — corrected updater feed validation, version paths, and Pages deployment to ensure stable and unstable channels update without conflicts.
 
             ### Install unstable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
@@ -260,13 +259,12 @@ jobs:
             const body = [
               `## Mochi ${tag}`,
               "",
-              "Latest `main` build with Linux browser discovery and window stability fixes.",
+              "Latest `main` build with refined Linux window controls and improved release infrastructure.",
               "",
               "### What's changed",
-              "- **Safer usage windows** — scheduled usage polling reads cached snapshots instead of starting live provider refreshes when settings, widget, or usage windows open.",
-              "- **Linux Chromium discovery** — Chrome, Edge, Brave, Chromium, Vivaldi, Yandex, and Helium scan native, Flatpak, and Snap profile roots.",
-              "- **Linux Gecko discovery** — Firefox and Zen scan native, Flatpak, and Snap profile roots, including Zen's current and historical Flatpak app IDs.",
-              "- **GitHub Flow docs** — agent instructions now forbid tool prefixes such as `codex/` in branch names.",
+              "- **Refined Linux window controls** — simplified geometry calculations and removed redundant tray panel logic for cleaner, more reliable window controls on Linux.",
+              "- **Improved widget commands** — consolidated widget command handlers and added native window control test coverage.",
+              "- **Reliable release pipeline** — corrected updater feed validation, version paths, and Pages deployment to ensure stable and unstable channels update without conflicts.",
               "",
               "### Install unstable",
               "- macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`",
