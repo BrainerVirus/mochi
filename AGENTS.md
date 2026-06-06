@@ -46,22 +46,45 @@ These rules are mirrored for Cursor and OpenCode. Treat the Markdown files under
 
 ## GitHub Flow
 
-This repository uses GitHub Flow. Agents and contributors must keep `main` deployable and do all work on short-lived branches created from `main`.
+This repository uses GitHub Flow. `main` must always be deployable.
 
-- Use branch names that describe the work: `feature/*`, `fix/*`, `chore/*`, or `docs/*`.
-- Do not add agent/tool prefixes such as `codex/`, `cursor/`, or `opencode/` to branch names. If a tool default suggests such a prefix, this repository's GitHub Flow naming wins.
-- Open pull requests into `main`; do not push directly to `main`.
-- Follow `.github/PULL_REQUEST_TEMPLATE.md` when preparing PR descriptions.
-- Run the required validation commands locally before opening a PR whenever feasible:
-  - `pnpm lint`
-  - `pnpm format:check`
-  - `pnpm test`
-  - `pnpm build`
-  - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
-  - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
-  - `cargo test --manifest-path src-tauri/Cargo.toml --all-targets`
-- Treat required GitHub checks as merge blockers. Fix failures on the branch before merging.
-- Stable releases are tags from `main` using `vMAJOR.MINOR.PATCH`; do not create long-lived release branches unless this workflow is explicitly changed.
+### Branch Rules
+
+1. **Always branch from `main`.** Never commit or push directly to `main`.
+2. **Branch names** must describe the work: `feature/*`, `fix/*`, `chore/*`, or `docs/*`.
+3. **No agent/tool prefixes** such as `codex/`, `cursor/`, or `opencode/` in branch names.
+4. **One concern per branch.** Keep PRs focused and reviewable.
+
+### Pull Request Rules
+
+1. **Squash merge every PR.** The PR title becomes the commit message on `main` — use conventional commit format (`feat(ui): add dark mode toggle`).
+2. **Delete the branch immediately after merge.** Both local and remote. Never leave stale branches.
+3. **All CI must pass before merge.** Treat required GitHub checks as merge blockers. Fix failures on the branch before merging.
+4. Follow `.github/PULL_REQUEST_TEMPLATE.md` when preparing PR descriptions.
+
+### Required Validation (run locally before opening a PR)
+
+```
+pnpm lint
+pnpm format:check
+pnpm test
+pnpm build
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --all-targets
+```
+
+### Agent Merge Workflow
+
+When completing work for the user:
+
+1. Create the branch from `main`.
+2. Make changes and commit with conventional messages.
+3. Push the branch and open a PR.
+4. Run validation commands. Fix any failures.
+5. Squash merge the PR.
+6. Delete the local and remote branch.
+7. If a release is needed, proceed to the Release Process section below.
 
 ## Release Process
 
