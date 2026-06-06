@@ -112,9 +112,9 @@ impl LinuxWindowPolicy {
 }
 
 pub fn active_linux_window_experiment() -> LinuxWindowExperiment {
-    LinuxWindowExperiment::parse(option_env!("MOCHI_LINUX_WINDOW_EXPERIMENT").unwrap_or(
-        "baseline-sequenced-logs",
-    ))
+    LinuxWindowExperiment::parse(
+        option_env!("MOCHI_LINUX_WINDOW_EXPERIMENT").unwrap_or("baseline-sequenced-logs"),
+    )
 }
 
 pub fn active_linux_window_policy() -> LinuxWindowPolicy {
@@ -197,17 +197,33 @@ mod tests {
     fn on_demand_visible_policy_creates_decorated_windows_on_user_action() {
         let policy = LinuxWindowPolicy::for_experiment(LinuxWindowExperiment::OnDemandVisible);
         assert_eq!(policy.creation_mode, DecoratedWindowCreationMode::OnDemand);
-        assert_eq!(policy.initial_visibility, DecoratedWindowInitialVisibility::Visible);
-        assert_eq!(policy.first_show_sequence, FirstShowSequence::AlreadyVisibleFocus);
+        assert_eq!(
+            policy.initial_visibility,
+            DecoratedWindowInitialVisibility::Visible
+        );
+        assert_eq!(
+            policy.first_show_sequence,
+            FirstShowSequence::AlreadyVisibleFocus
+        );
         assert!(!policy.mutate_size_before_first_show);
     }
 
     #[test]
     fn baseline_policy_matches_current_startup_hidden_behavior() {
-        let policy = LinuxWindowPolicy::for_experiment(LinuxWindowExperiment::BaselineSequencedLogs);
-        assert_eq!(policy.creation_mode, DecoratedWindowCreationMode::StartupPrecreate);
-        assert_eq!(policy.initial_visibility, DecoratedWindowInitialVisibility::Hidden);
-        assert_eq!(policy.first_show_sequence, FirstShowSequence::ShowUnminimizeFocus);
+        let policy =
+            LinuxWindowPolicy::for_experiment(LinuxWindowExperiment::BaselineSequencedLogs);
+        assert_eq!(
+            policy.creation_mode,
+            DecoratedWindowCreationMode::StartupPrecreate
+        );
+        assert_eq!(
+            policy.initial_visibility,
+            DecoratedWindowInitialVisibility::Hidden
+        );
+        assert_eq!(
+            policy.first_show_sequence,
+            FirstShowSequence::ShowUnminimizeFocus
+        );
         assert!(policy.mutate_size_before_first_show);
     }
 }

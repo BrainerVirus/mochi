@@ -153,6 +153,7 @@ impl DiagnosticsState {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn record_window_lifecycle(
         &self,
         label: &str,

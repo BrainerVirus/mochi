@@ -420,7 +420,12 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
                     unminimize_result.as_ref().map(|_| ()),
                 );
                 unminimize_result.map_err(|error| error.to_string())?;
-                record_app_window_lifecycle(&window, "after-unminimize", "startup-precreate", "hidden");
+                record_app_window_lifecycle(
+                    &window,
+                    "after-unminimize",
+                    "startup-precreate",
+                    "hidden",
+                );
                 record_app_window_controls(&window, "rust-builder");
 
                 let focus_result = window.set_focus();
@@ -479,16 +484,27 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
 fn logical_outer_size(window: &WebviewWindow) -> Option<(f64, f64)> {
     let scale = window.scale_factor().ok()?;
     let size = window.outer_size().ok()?;
-    Some((f64::from(size.width) / scale, f64::from(size.height) / scale))
+    Some((
+        f64::from(size.width) / scale,
+        f64::from(size.height) / scale,
+    ))
 }
 
 fn logical_inner_size(window: &WebviewWindow) -> Option<(f64, f64)> {
     let scale = window.scale_factor().ok()?;
     let size = window.inner_size().ok()?;
-    Some((f64::from(size.width) / scale, f64::from(size.height) / scale))
+    Some((
+        f64::from(size.width) / scale,
+        f64::from(size.height) / scale,
+    ))
 }
 
-fn record_app_window_lifecycle(window: &WebviewWindow, phase: &str, creation: &str, initial_visibility: &str) {
+fn record_app_window_lifecycle(
+    window: &WebviewWindow,
+    phase: &str,
+    creation: &str,
+    initial_visibility: &str,
+) {
     if let Some(state) = window
         .app_handle()
         .try_state::<crate::diagnostics::DiagnosticsState>()
