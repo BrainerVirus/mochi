@@ -92,6 +92,10 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Mochi ${{ github.ref_name }}
+          # Re-runs of this workflow should skip the build job and only run the
+          # Pages updater-feed job; the build and release assets are immutable
+          # once published.
+          releaseExists: ignore
           releaseBody: |
             ## Mochi ${{ github.ref_name }}
 
