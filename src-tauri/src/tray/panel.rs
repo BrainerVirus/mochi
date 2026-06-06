@@ -341,7 +341,9 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     }
 
     let window = ensure_settings_window(&app)?;
+    record_app_window_lifecycle(&window, "created", "startup-precreate", "hidden");
 
+    record_app_window_lifecycle(&window, "before-set-size", "startup-precreate", "hidden");
     let (width, height) = app_window_size_for_path(path.as_str());
     let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
     let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
@@ -360,6 +362,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
             420.0
         },
     })));
+    record_app_window_lifecycle(&window, "after-set-size", "startup-precreate", "hidden");
 
     if let Err(error) = ensure_app_window_vibrancy(&window) {
         eprintln!("[mochi] app window vibrancy unavailable: {error}");
@@ -380,6 +383,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
             "set_focus",
             focus_result.as_ref().map(|_| ()),
         );
+        record_app_window_lifecycle(&window, "after-focus", "startup-precreate", "hidden");
         focus_result.map_err(|error| error.to_string())?;
     } else {
         let show_result = window.show();
@@ -389,6 +393,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
             show_result.as_ref().map(|_| ()),
         );
         show_result.map_err(|error| error.to_string())?;
+        record_app_window_lifecycle(&window, "after-show", "startup-precreate", "hidden");
         record_app_window_controls(&window, "rust-builder");
 
         let unminimize_result = window.unminimize();
@@ -398,6 +403,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
             unminimize_result.as_ref().map(|_| ()),
         );
         unminimize_result.map_err(|error| error.to_string())?;
+        record_app_window_lifecycle(&window, "after-unminimize", "startup-precreate", "hidden");
         record_app_window_controls(&window, "rust-builder");
 
         let focus_result = window.set_focus();
@@ -406,10 +412,41 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
             "set_focus",
             focus_result.as_ref().map(|_| ()),
         );
+        record_app_window_lifecycle(&window, "after-focus", "startup-precreate", "hidden");
         focus_result.map_err(|error| error.to_string())?;
     }
 
     Ok(())
+}
+
+fn logical_outer_size(window: &WebviewWindow) -> Option<(f64, f64)> {
+    let scale = window.scale_factor().ok()?;
+    let size = window.outer_size().ok()?;
+    Some((f64::from(size.width) / scale, f64::from(size.height) / scale))
+}
+
+fn logical_inner_size(window: &WebviewWindow) -> Option<(f64, f64)> {
+    let scale = window.scale_factor().ok()?;
+    let size = window.inner_size().ok()?;
+    Some((f64::from(size.width) / scale, f64::from(size.height) / scale))
+}
+
+fn record_app_window_lifecycle(window: &WebviewWindow, phase: &str, creation: &str, initial_visibility: &str) {
+    if let Some(state) = window
+        .app_handle()
+        .try_state::<crate::diagnostics::DiagnosticsState>()
+    {
+        let experiment = crate::window_policy::active_linux_window_experiment().name();
+        state.record_window_lifecycle(
+            SETTINGS_WINDOW_LABEL,
+            phase,
+            experiment,
+            creation,
+            initial_visibility,
+            logical_outer_size(window),
+            logical_inner_size(window),
+        );
+    }
 }
 
 fn record_app_window_controls(window: &WebviewWindow, creation_source: &str) {

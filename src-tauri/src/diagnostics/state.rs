@@ -21,6 +21,27 @@ pub struct DiagnosticsInner {
     pub window_boots: HashMap<String, FrontendBootPayload>,
 }
 
+pub fn format_logical_size(size: Option<(f64, f64)>) -> String {
+    size.map(|(width, height)| format!("{width:.0}x{height:.0}"))
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
+pub fn window_lifecycle_detail(
+    label: &str,
+    phase: &str,
+    experiment: &str,
+    creation: &str,
+    initial_visibility: &str,
+    outer_size: Option<(f64, f64)>,
+    inner_size: Option<(f64, f64)>,
+) -> String {
+    format!(
+        "label={label} phase={phase} experiment={experiment} creation={creation} initial_visibility={initial_visibility} outer={} inner={}",
+        format_logical_size(outer_size),
+        format_logical_size(inner_size)
+    )
+}
+
 pub struct DiagnosticsState {
     inner: Mutex<DiagnosticsInner>,
 }
@@ -131,6 +152,31 @@ impl DiagnosticsState {
             push_event(&mut inner.events, "window.linux_controls", detail);
         }
     }
+
+    pub fn record_window_lifecycle(
+        &self,
+        label: &str,
+        phase: &str,
+        experiment: &str,
+        creation: &str,
+        initial_visibility: &str,
+        outer_size: Option<(f64, f64)>,
+        inner_size: Option<(f64, f64)>,
+    ) {
+        let detail = window_lifecycle_detail(
+            label,
+            phase,
+            experiment,
+            creation,
+            initial_visibility,
+            outer_size,
+            inner_size,
+        );
+        if let Ok(mut inner) = self.inner() {
+            log_line("window.lifecycle", &detail);
+            push_event(&mut inner.events, "window.lifecycle", detail);
+        }
+    }
 }
 
 fn push_event(events: &mut Vec<DiagnosticEvent>, kind: &str, detail: String) {
@@ -158,5 +204,31 @@ pub fn log_visible_windows(app: &tauri::AppHandle) {
             "window.snapshot",
             &format!("{label} url={url} visible={visible}"),
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn window_lifecycle_detail_includes_experiment_and_sequence() {
+        let detail = window_lifecycle_detail(
+            "settings",
+            "show",
+            "baseline-sequenced-logs",
+            "startup-precreate",
+            "hidden",
+            Some((520.0, 560.0)),
+            Some((520.0, 560.0)),
+        );
+
+        assert!(detail.contains("label=settings"));
+        assert!(detail.contains("phase=show"));
+        assert!(detail.contains("experiment=baseline-sequenced-logs"));
+        assert!(detail.contains("creation=startup-precreate"));
+        assert!(detail.contains("initial_visibility=hidden"));
+        assert!(detail.contains("outer=520x560"));
+        assert!(detail.contains("inner=520x560"));
     }
 }
