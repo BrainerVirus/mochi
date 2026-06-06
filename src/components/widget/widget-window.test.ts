@@ -16,14 +16,18 @@ describe("WidgetWindow", () => {
   it("syncs its native height to the shared tray panel content", () => {
     const source = readFileSync(resolve("src/components/widget/widget-window.tsx"), "utf8");
 
-    expect(source).toContain('useTrayPanelHeight(layoutRef, selectedTab, { target: "widget" })');
+    expect(source).not.toContain("useTrayPanelHeight");
     expect(source).not.toContain("h-screen");
   });
 
-  it("does not add an extra opaque outer widget surface", () => {
+  it("renders a native-window shell instead of nested tray panel chrome", () => {
     const source = readFileSync(resolve("src/components/widget/widget-window.tsx"), "utf8");
     expect(source).not.toContain("bg-background flex h-full");
-    expect(source).toContain("TrayPanelShell");
+    expect(source).not.toContain("TrayPanelShell");
+    expect(source).not.toContain("trayPanelShellClassName");
+    expect(source).toContain("overflow-y-auto");
+    expect(source).toContain("data-widget-window-shell");
+    expect(source).toContain("max-w-[360px]");
   });
 
   it("keeps tauri widget defaults aligned with rust widget builder", () => {
@@ -34,6 +38,16 @@ describe("WidgetWindow", () => {
     expect(widget.width).toBe(360);
     expect(widget.height).toBe(420);
     expect(widget.minWidth).toBe(320);
-    expect(widget.maxWidth).toBe(480);
+    expect(widget).not.toHaveProperty("maxWidth");
+    expect(widget.alwaysOnTop).toBe(false);
+  });
+
+  it("does not force the decorated widget to stay always on top", () => {
+    const source = readFileSync(resolve("src-tauri/src/widget/commands.rs"), "utf8");
+
+    expect(source).not.toContain(".always_on_top(true)");
+    expect(source).not.toContain("set_always_on_top(true)");
+    expect(source).not.toContain(".max_inner_size(");
+    expect(source).not.toContain("set_max_size(");
   });
 });

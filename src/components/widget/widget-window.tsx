@@ -3,9 +3,7 @@ import { useRef } from "react";
 import { UsageSnapshotsPanel } from "@/components/tray/tray-panel-content";
 import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
-import { TrayPanelShell } from "@/components/tray/tray-panel-shell";
 import { useTrayPanelFocusReset } from "@/hooks/use-tray-panel-focus-reset";
-import { useTrayPanelHeight } from "@/hooks/use-tray-panel-height";
 import { useTrayPanelShortcuts } from "@/hooks/use-tray-panel-shortcuts";
 import { useTrayPanelState } from "@/hooks/use-tray-panel-state";
 import { quitApp } from "@/lib/tauri/commands";
@@ -31,7 +29,6 @@ export function WidgetWindow() {
   } = useTrayPanelState();
 
   useTrayPanelFocusReset(layoutRef);
-  useTrayPanelHeight(layoutRef, selectedTab, { target: "widget" });
   useTrayPanelShortcuts({
     onRefresh: () => {
       void refreshAll();
@@ -42,11 +39,17 @@ export function WidgetWindow() {
   });
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <TrayPanelShell layoutRef={layoutRef}>
+    <main
+      data-widget-window-shell
+      className="app-window text-foreground flex h-full min-h-0 w-full flex-col overflow-hidden"
+    >
+      <div
+        ref={layoutRef}
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain"
+      >
         <section
           data-tray-panel-content
-          className="mx-auto flex w-full max-w-[360px] min-w-0 flex-col"
+          className="mx-auto flex w-full max-w-[360px] min-w-0 flex-col pt-3"
         >
           <UsageSnapshotsPanel
             error={error}
@@ -72,7 +75,7 @@ export function WidgetWindow() {
             }}
           />
         </section>
-      </TrayPanelShell>
-    </div>
+      </div>
+    </main>
   );
 }

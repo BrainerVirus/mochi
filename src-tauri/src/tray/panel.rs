@@ -8,7 +8,7 @@ use tauri::{
 use crate::frontend::app_shell_url;
 
 #[cfg(target_os = "macos")]
-use crate::macos::{set_regular_activation_policy, sync_activation_policy_for_visible_windows};
+use crate::macos::set_regular_activation_policy;
 use tauri_plugin_positioner::{Position, WindowExt};
 
 use super::window_transparency::window_uses_native_transparency;
@@ -74,33 +74,10 @@ fn configure_macos_overlay_titlebar(window: &WebviewWindow) {
 }
 
 pub fn prepare_app_window(window: &WebviewWindow) -> Result<(), Box<dyn std::error::Error>> {
-    // Hidden at startup — keep off taskbar/dock until the user opens settings/about.
-    let _ = window.set_skip_taskbar(true);
     record_app_window_controls(window, "rust-builder");
 
     #[cfg(target_os = "macos")]
     configure_macos_overlay_titlebar(window);
-
-    let window_for_events = window.clone();
-    window.on_window_event(move |event| {
-        if let WindowEvent::CloseRequested { api, .. } = event {
-            api.prevent_close();
-            let app = window_for_events.app_handle();
-            if let Some(state) = app.try_state::<crate::diagnostics::DiagnosticsState>() {
-                state.record_window_event(SETTINGS_WINDOW_LABEL, "close_requested -> hide");
-            }
-            let _ = window_for_events.set_skip_taskbar(true);
-            let hide_result = window_for_events.hide();
-            crate::diagnostics::log_window_action_result(
-                SETTINGS_WINDOW_LABEL,
-                "hide",
-                hide_result.as_ref().map(|_| ()),
-            );
-            let _ = emit_tray_navigate(app, "/");
-            #[cfg(target_os = "macos")]
-            sync_activation_policy_for_visible_windows(app);
-        }
-    });
 
     Ok(())
 }
@@ -128,8 +105,7 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         .transparent(window_uses_native_transparency())
         .decorations(true)
         .resizable(true)
-        .visible(false)
-        .skip_taskbar(true);
+        .visible(false);
 
     #[cfg(target_os = "macos")]
     let builder = builder
@@ -395,7 +371,6 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     set_regular_activation_policy(&app);
 
-    let _ = window.set_skip_taskbar(false);
     crate::app_branding::sync_app_window_branding(&app, &window);
 
     if window.is_visible().unwrap_or(false) {
