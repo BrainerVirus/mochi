@@ -98,13 +98,12 @@ jobs:
           releaseBody: |
             ## Mochi ${{ github.ref_name }}
 
-            Stable release: SQLite-backed usage persistence, refresh controller, and cached-usage CLI.
+            Stable release with refined Linux window controls and improved release infrastructure.
 
             ### What's changed
-            - **SQLite usage persistence** — provider snapshots, transitions, and last-refresh metadata now live in a local SQLite store, so the tray, widget, and settings show last-known data before the first live refresh and survive restarts.
-            - **Refresh controller** — scheduled refreshes are gated by enabled providers, refresh-on-startup policy, and successful credential detection, so disabled providers and missing credentials no longer trigger network calls.
-            - **Cached-usage CLI** — `mochi usage` reads the same SQLite store on macOS, Linux, and Windows, returning the latest snapshot without spawning a new refresh.
-            - **macOS CLI symlink** — the macOS installer now links the bundled CLI to `~/.local/bin/mochi` for direct shell use.
+            - **Refined Linux window controls** — simplified geometry calculations and removed redundant tray panel logic for cleaner, more reliable window controls on Linux.
+            - **Improved widget commands** — consolidated widget command handlers and added native window control test coverage.
+            - **Reliable release pipeline** — corrected updater feed validation, version paths, and Pages deployment to ensure stable and unstable channels update without conflicts.
 
             ### Install stable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`
@@ -172,20 +171,22 @@ jobs:
       - name: Build updater feeds
         run: node scripts/release/build-updater-feed.mjs --manifest=updater-feed.json --out=public
       - name: Validate updater feeds
+        shell: bash
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           node scripts/release/validate-updater-feed.mjs \
             public/updates/darwin/aarch64/0.1.7/stable.json \
             public/updates/darwin/aarch64/0.2.0/stable.json \
-            public/updates/darwin/aarch64/${{ github.ref_name }}/stable.json \
+            "public/updates/darwin/aarch64/${VERSION}/stable.json" \
             public/updates/darwin/x86_64/0.1.7/stable.json \
             public/updates/darwin/x86_64/0.2.0/stable.json \
-            public/updates/darwin/x86_64/${{ github.ref_name }}/stable.json \
+            "public/updates/darwin/x86_64/${VERSION}/stable.json" \
             public/updates/linux/x86_64/0.1.7/stable.json \
             public/updates/linux/x86_64/0.2.0/stable.json \
-            public/updates/linux/x86_64/${{ github.ref_name }}/stable.json \
+            "public/updates/linux/x86_64/${VERSION}/stable.json" \
             public/updates/windows/x86_64/0.1.7/stable.json \
             public/updates/windows/x86_64/0.2.0/stable.json \
-            public/updates/windows/x86_64/${{ github.ref_name }}/stable.json
+            "public/updates/windows/x86_64/${VERSION}/stable.json"
       - name: Upload updater Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
@@ -232,13 +233,12 @@ jobs:
             const body = [
               `## Mochi ${tag}`,
               "",
-              "Stable release: SQLite-backed usage persistence, refresh controller, and cached-usage CLI.",
+              "Stable release with refined Linux window controls and improved release infrastructure.",
               "",
               "### What's changed",
-              "- **SQLite usage persistence** — provider snapshots, transitions, and last-refresh metadata now live in a local SQLite store, so the tray, widget, and settings show last-known data before the first live refresh and survive restarts.",
-              "- **Refresh controller** — scheduled refreshes are gated by enabled providers, refresh-on-startup policy, and successful credential detection, so disabled providers and missing credentials no longer trigger network calls.",
-              "- **Cached-usage CLI** — `mochi usage` reads the same SQLite store on macOS, Linux, and Windows, returning the latest snapshot without spawning a new refresh.",
-              "- **macOS CLI symlink** — the macOS installer now links the bundled CLI to `~/.local/bin/mochi` for direct shell use.",
+              "- **Refined Linux window controls** — simplified geometry calculations and removed redundant tray panel logic for cleaner, more reliable window controls on Linux.",
+              "- **Improved widget commands** — consolidated widget command handlers and added native window control test coverage.",
+              "- **Reliable release pipeline** — corrected updater feed validation, version paths, and Pages deployment to ensure stable and unstable channels update without conflicts.",
               "",
               "### Install stable",
               "- macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash`",

@@ -63,6 +63,48 @@ This repository uses GitHub Flow. Agents and contributors must keep `main` deplo
 - Treat required GitHub checks as merge blockers. Fix failures on the branch before merging.
 - Stable releases are tags from `main` using `vMAJOR.MINOR.PATCH`; do not create long-lived release branches unless this workflow is explicitly changed.
 
+## Release Process
+
+Two GitHub Actions workflows handle releases. Both are triggered automatically but can also be run manually via `workflow_dispatch`.
+
+### Unstable Release
+
+- **Triggers:** push to `main`, manual dispatch.
+- **Tag:** auto-generated as `unstable-YYYYMMDD.HHMMSS`.
+- **Channel:** `unstable` (prerelease).
+- **Updater feeds:** deploys both `stable.json` and `unstable.json` for recovery versions (0.1.7, 0.2.0, latest) to GitHub Pages.
+- **Notes location:** `releaseBody` in `.github/workflows/release-unstable.yml` and the `release-notes` job at the bottom of the same file. Both must match.
+
+### Stable Release
+
+- **Triggers:** push of a `vMAJOR.MINOR.PATCH` tag, manual dispatch (requires the tag to exist).
+- **Tag:** must be created manually after all changes are on `main`.
+- **Channel:** `stable`.
+- **Updater feeds:** deploys `stable.json` for recovery versions (0.1.7, 0.2.0, latest) to GitHub Pages. Always runs last and overwrites any unstable Pages deployment.
+- **Notes location:** `releaseBody` in `.github/workflows/release-stable.yml` and the `release-notes` job at the bottom of the same file. Both must match.
+
+### How to Cut a Stable Release
+
+1. Ensure all changes are merged to `main` via PRs (never push directly).
+2. Bump `version` in `src-tauri/tauri.conf.json` to match the new tag (without `v` prefix).
+3. Commit the version bump on a `chore/release-*` branch, PR it into `main`.
+4. After the PR merges, pull `main`, then create and push the tag:
+   ```bash
+   git tag vMAJOR.MINOR.PATCH
+   git push origin vMAJOR.MINOR.PATCH
+   ```
+   This triggers the stable release workflow automatically.
+5. **Never** trigger the stable workflow via `workflow_dispatch` on `main` — it requires a `v*` tag ref to pass validation.
+
+### Updating Release Notes
+
+Release notes must be **user-facing highlights**, not internal changelog entries. Update them in **both** places inside each workflow file:
+
+1. The `releaseBody` field in the `tauri-action` step (used for the GitHub Release body).
+2. The `body` array in the `release-notes` job (used to overwrite the release body after publish).
+
+Keep stable and unstable notes in sync for the same set of changes. Focus on what the user experiences: new features, behavior changes, install instructions. Do not mention CI fixes, refactors, or internal tooling unless they affect the user.
+
 ## Structure And Maintainability
 
 - Frontend app entry and routes live under `app/`; shared UI/domain code goes under `src/` as defined in [docs/tech-stack.md](docs/tech-stack.md).
