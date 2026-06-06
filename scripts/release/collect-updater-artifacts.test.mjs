@@ -27,7 +27,7 @@ describe("collectUpdaterArtifacts", () => {
     );
     await writeArtifact(
       root,
-      "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage.tar.gz",
+      "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage",
       "sig-linux",
     );
     await writeArtifact(
@@ -55,7 +55,7 @@ describe("collectUpdaterArtifacts", () => {
       "https://github.com/BrainerVirus/mochi/releases/download/v0.2.1/Mochi.app.tar.gz",
     );
     expect(manifest.artifacts["linux-x86_64"].url).toBe(
-      "https://github.com/BrainerVirus/mochi/releases/download/v0.2.1/Mochi_0.2.1_amd64.AppImage.tar.gz",
+      "https://github.com/BrainerVirus/mochi/releases/download/v0.2.1/Mochi_0.2.1_amd64.AppImage",
     );
     expect(manifest.artifacts["windows-x86_64"].url).toBe(
       "https://github.com/BrainerVirus/mochi/releases/download/v0.2.1/Mochi_0.2.1_x64-setup.exe",
@@ -77,7 +77,7 @@ describe("collectUpdaterArtifacts", () => {
     );
     await writeArtifact(
       root,
-      "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage.tar.gz",
+      "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage",
       "sig-linux",
     );
     await writeArtifact(
@@ -111,7 +111,7 @@ describe("collectUpdaterArtifacts", () => {
     await writeFile(
       join(
         root,
-        "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage.tar.gz",
+        "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage",
       ),
       "artifact",
     );

@@ -4,7 +4,7 @@ import { basename, join, sep } from "node:path";
 const REQUIRED_ARTIFACTS = {
   "darwin-aarch64": [/aarch64.*macos.*Mochi\.app\.tar\.gz$/],
   "darwin-x86_64": [/x86_64.*macos.*Mochi\.app\.tar\.gz$/],
-  "linux-x86_64": [/appimage.*amd64\.AppImage\.tar\.gz$/],
+  "linux-x86_64": [/appimage.*amd64\.AppImage$/],
   "windows-x86_64": [/nsis.*x64-setup\.exe$/],
 };
 
