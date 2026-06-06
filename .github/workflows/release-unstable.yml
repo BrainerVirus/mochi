@@ -156,7 +156,7 @@ jobs:
         with:
           node-version-file: .nvmrc
       - name: Download updater bundle artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: updater-bundle-*
           path: updater-bundles
@@ -203,7 +203,7 @@ jobs:
             public/updates/windows/x86_64/0.1.7/unstable.json \
             public/updates/windows/x86_64/0.2.0/unstable.json
       - name: Upload updater Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: public
       - name: Deploy updater feed to GitHub Pages
@@ -235,7 +235,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Update unstable release body
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;
