@@ -21,6 +21,7 @@ interface ScrollFadeRegionProps {
   rowHeightClassName?: string;
   /** Space reserved at the fade edge for the ghost control (px). */
   fadeInset?: number;
+  controls?: "fade" | "none";
   /** Override default horizontal forward scroll (e.g. tab selection). */
   onCycleForward?: (scrollEl: HTMLDivElement) => void;
   /** Override default horizontal backward scroll (e.g. tab selection). */
@@ -112,6 +113,7 @@ function ScrollFadeViewport({
   canScrollEnd,
   maskClass,
   scrollClassName,
+  controls,
   onCycleForward,
   onCycleBackward,
   children,
@@ -122,6 +124,7 @@ function ScrollFadeViewport({
   canScrollEnd: boolean;
   maskClass: string | undefined;
   scrollClassName?: string;
+  controls: "fade" | "none";
   onCycleForward: () => void;
   onCycleBackward: () => void;
   children: ReactNode;
@@ -136,7 +139,8 @@ function ScrollFadeViewport({
       <div
         ref={scrollRef}
         className={cn(
-          "scrollbar-none overscroll-contain",
+          "overscroll-contain",
+          controls !== "none" && "scrollbar-none",
           isHorizontal
             ? "h-full w-full overflow-x-auto overflow-y-hidden"
             : "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
@@ -147,13 +151,15 @@ function ScrollFadeViewport({
         {children}
       </div>
 
-      <ScrollFadeEdgeOverlays
-        isHorizontal={isHorizontal}
-        canScrollStart={canScrollStart}
-        canScrollEnd={canScrollEnd}
-        onCycleBackward={onCycleBackward}
-        onCycleForward={onCycleForward}
-      />
+      {controls !== "none" ? (
+        <ScrollFadeEdgeOverlays
+          isHorizontal={isHorizontal}
+          canScrollStart={canScrollStart}
+          canScrollEnd={canScrollEnd}
+          onCycleBackward={onCycleBackward}
+          onCycleForward={onCycleForward}
+        />
+      ) : null}
     </div>
   );
 }
@@ -165,13 +171,17 @@ export function ScrollFadeRegion({
   scrollClassName,
   rowHeightClassName,
   fadeInset = 40,
+  controls = "fade",
   onCycleForward,
   onCycleBackward,
 }: ScrollFadeRegionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { canScrollStart, canScrollEnd } = useScrollOverflow(scrollRef, orientation);
   const isHorizontal = orientation === "horizontal";
-  const maskClass = scrollFadeMaskClass(orientation, canScrollStart, canScrollEnd);
+  const shouldUseMask = controls !== "none";
+  const maskClass = shouldUseMask
+    ? scrollFadeMaskClass(orientation, canScrollStart, canScrollEnd)
+    : undefined;
   const { cycleScrollForward, cycleScrollBackward } = useScrollCycle(
     scrollRef,
     orientation,
@@ -189,6 +199,7 @@ export function ScrollFadeRegion({
         canScrollEnd={canScrollEnd}
         maskClass={maskClass}
         scrollClassName={scrollClassName}
+        controls={controls}
         onCycleForward={cycleScrollForward}
         onCycleBackward={cycleScrollBackward}
       >

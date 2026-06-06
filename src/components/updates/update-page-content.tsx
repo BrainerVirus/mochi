@@ -23,13 +23,12 @@ interface UpdatePageContentProps {
 export function UpdatePageContent(props: UpdatePageContentProps) {
   const sections = useMemo(() => splitPatchNotesSections(props.notes), [props.notes]);
   const install = useUpdateInstall();
-  const hasScrollableNotes = sections.length > 0;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <UpdatePageHeader {...props} sections={sections} installPhase={install.phase} />
       <Separator />
-      <UpdateNotesBody {...props} sections={sections} scrollable={hasScrollableNotes} />
+      <UpdateNotesBody {...props} sections={sections} />
       <UpdatePageFooter {...props} install={install} />
     </div>
   );
@@ -74,10 +73,8 @@ function UpdateNotesBody({
   isChecking,
   checkError,
   sections,
-  scrollable,
 }: Pick<UpdatePageContentProps, "notesOnly" | "updateAvailable" | "isChecking" | "checkError"> & {
   sections: PatchNotesSection[];
-  scrollable: boolean;
 }) {
   const content = (
     <>
@@ -92,19 +89,16 @@ function UpdateNotesBody({
     </>
   );
 
-  if (scrollable) {
-    return (
-      <ScrollFadeRegion
-        orientation="vertical"
-        className="min-h-0 flex-1"
-        scrollClassName="overscroll-y-contain"
-      >
-        <div className={`${trayPanelSpacing.contentX} py-2`}>{content}</div>
-      </ScrollFadeRegion>
-    );
-  }
-
-  return <div className={`shrink-0 ${trayPanelSpacing.contentX} py-2`}>{content}</div>;
+  return (
+    <ScrollFadeRegion
+      orientation="vertical"
+      controls="none"
+      className="min-h-0 flex-1"
+      scrollClassName="overscroll-y-contain"
+    >
+      <div className={`${trayPanelSpacing.contentX} py-2`}>{content}</div>
+    </ScrollFadeRegion>
+  );
 }
 
 function PatchNotesSections({ sections }: { sections: PatchNotesSection[] }) {
