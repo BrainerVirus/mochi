@@ -73,6 +73,13 @@ describe("app-window platform CSS parity", () => {
     );
   });
 
+  it("applies app-window document backgrounds to widget windows", () => {
+    expect(css).toContain("html[data-widget-window]");
+    expect(css).toContain("html[data-widget-window] body");
+    expect(css).toContain("html[data-widget-window] #root");
+    expect(css).toContain('[data-platform="linux"] html[data-widget-window]');
+  });
+
   it("shows centered overlay titlebar only on macOS app windows", () => {
     expect(css).toMatch(/\.app-window-titlebar \{[\s\S]*display:\s*none/);
     expect(css).toContain('[data-platform="macos"] .app-window-titlebar');
