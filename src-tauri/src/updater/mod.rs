@@ -133,18 +133,26 @@ mod tests {
     }
 
     #[test]
-    fn update_endpoint_inlines_channel_and_keeps_supported_updater_tokens() {
-        let stable = update_endpoint_for_channel("stable").expect("stable endpoint");
-        let unstable = update_endpoint_for_channel("unstable").expect("unstable endpoint");
+    fn update_endpoint_builds_exact_stable_feed_url() {
+        let endpoint = update_endpoint_for_channel("stable").expect("stable endpoint");
+        assert_eq!(
+            endpoint.as_str(),
+            "https://mochi-app.github.io/mochi/updates/%7B%7Btarget%7D%7D/%7B%7Barch%7D%7D/%7B%7Bcurrent_version%7D%7D/stable.json"
+        );
+    }
 
-        assert!(stable.as_str().ends_with("/stable.json"));
-        assert!(unstable.as_str().ends_with("/unstable.json"));
-        assert!(stable.as_str().contains("%7B%7Btarget%7D%7D"));
-        assert!(!stable.as_str().contains("channel"));
+    #[test]
+    fn update_endpoint_builds_exact_unstable_feed_url() {
+        let endpoint = update_endpoint_for_channel("unstable").expect("unstable endpoint");
+        assert_eq!(
+            endpoint.as_str(),
+            "https://mochi-app.github.io/mochi/updates/%7B%7Btarget%7D%7D/%7B%7Barch%7D%7D/%7B%7Bcurrent_version%7D%7D/unstable.json"
+        );
     }
 
     #[test]
     fn update_endpoint_rejects_unknown_channel() {
-        assert!(update_endpoint_for_channel("beta").is_err());
+        let error = update_endpoint_for_channel("beta").expect_err("beta rejected");
+        assert!(error.contains("unsupported update channel: beta"));
     }
 }
