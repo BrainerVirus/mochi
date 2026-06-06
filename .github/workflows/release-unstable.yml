@@ -205,6 +205,8 @@ jobs:
           path: public
       - name: Deploy updater feed to GitHub Pages
         uses: actions/deploy-pages@v4
+        env:
+          GITHUB_SHA: ${{ github.sha }}-unstable
       - name: Validate published updater endpoints
         shell: bash
         run: |
