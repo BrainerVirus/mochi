@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: unstable-release-${{ github.ref }}
-  cancel-in-progress: true
+  group: release-pages
+  cancel-in-progress: false
 
 jobs:
   metadata:
