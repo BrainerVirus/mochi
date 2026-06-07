@@ -48,6 +48,15 @@ const ROOT_AREAS = [
   { dir: "features/tray/components", prefix: "@/features/tray/components" },
   { dir: "features/tray/hooks", prefix: "@/features/tray/hooks" },
   { dir: "features/tray/lib", prefix: "@/features/tray/lib" },
+  { dir: "features/widget/components", prefix: "@/features/widget/components" },
+  { dir: "features/about/components", prefix: "@/features/about/components" },
+  { dir: "features/settings/components", prefix: "@/features/settings/components" },
+  { dir: "features/settings/hooks", prefix: "@/features/settings/hooks" },
+  { dir: "features/usage/components", prefix: "@/features/usage/components" },
+  { dir: "features/usage/hooks", prefix: "@/features/usage/hooks" },
+  { dir: "features/updates/components", prefix: "@/features/updates/components" },
+  { dir: "features/updates/hooks", prefix: "@/features/updates/hooks" },
+  { dir: "features/layout/components", prefix: "@/features/layout/components" },
 ];
 
 const allEntries = {};

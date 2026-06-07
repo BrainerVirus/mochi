@@ -225,6 +225,105 @@
       ],
       "@/features/tray/lib/stores/tray-ui-store": [
         "./src/features/tray/lib/stores/tray-ui-store/tray-ui-store.ts"
+      ],
+      "@/features/widget/components/widget-window": [
+        "./src/features/widget/components/widget-window/widget-window.tsx"
+      ],
+      "@/features/about/components/about-page": [
+        "./src/features/about/components/about-page/about-page.tsx"
+      ],
+      "@/features/about/components/about-page-content": [
+        "./src/features/about/components/about-page-content/about-page-content.tsx"
+      ],
+      "@/features/settings/components/linux-tray-hint": [
+        "./src/features/settings/components/linux-tray-hint/linux-tray-hint.tsx"
+      ],
+      "@/features/settings/components/provider-config-fields": [
+        "./src/features/settings/components/provider-config-fields/provider-config-fields.tsx"
+      ],
+      "@/features/settings/components/provider-field-visibility": [
+        "./src/features/settings/components/provider-field-visibility/provider-field-visibility.ts"
+      ],
+      "@/features/settings/components/provider-token-fields": [
+        "./src/features/settings/components/provider-token-fields/provider-token-fields.tsx"
+      ],
+      "@/features/settings/components/settings-form": [
+        "./src/features/settings/components/settings-form/settings-form.tsx"
+      ],
+      "@/features/settings/components/settings-form-state": [
+        "./src/features/settings/components/settings-form-state/settings-form-state.ts"
+      ],
+      "@/features/settings/components/settings-page": [
+        "./src/features/settings/components/settings-page/settings-page.tsx"
+      ],
+      "@/features/settings/components/settings-page-content": [
+        "./src/features/settings/components/settings-page-content/settings-page-content.tsx"
+      ],
+      "@/features/settings/components/settings-sections": [
+        "./src/features/settings/components/settings-sections/settings-sections.tsx"
+      ],
+      "@/features/settings/components/settings-tab-state": [
+        "./src/features/settings/components/settings-tab-state/settings-tab-state.ts"
+      ],
+      "@/features/settings/components/settings-update-section": [
+        "./src/features/settings/components/settings-update-section/settings-update-section.tsx"
+      ],
+      "@/features/usage/components/provider-cost-section": [
+        "./src/features/usage/components/provider-cost-section/provider-cost-section.tsx"
+      ],
+      "@/features/usage/components/provider-usage-actions": [
+        "./src/features/usage/components/provider-usage-actions/provider-usage-actions.tsx"
+      ],
+      "@/features/usage/components/provider-usage-section": [
+        "./src/features/usage/components/provider-usage-section/provider-usage-section.tsx"
+      ],
+      "@/features/usage/components/usage-card": [
+        "./src/features/usage/components/usage-card/usage-card.tsx"
+      ],
+      "@/features/usage/components/usage-meter": [
+        "./src/features/usage/components/usage-meter/usage-meter.tsx"
+      ],
+      "@/features/usage/hooks/use-usage-data": [
+        "./src/features/usage/hooks/use-usage-data/use-usage-data.ts"
+      ],
+      "@/features/usage/hooks/use-usage-meter-fill": [
+        "./src/features/usage/hooks/use-usage-meter-fill/use-usage-meter-fill.ts"
+      ],
+      "@/features/usage/hooks/use-usage-meter-left-label": [
+        "./src/features/usage/hooks/use-usage-meter-left-label/use-usage-meter-left-label.ts"
+      ],
+      "@/features/updates/components/release-notes-dialog": [
+        "./src/features/updates/components/release-notes-dialog/release-notes-dialog.tsx"
+      ],
+      "@/features/updates/components/update-check-prefetch": [
+        "./src/features/updates/components/update-check-prefetch/update-check-prefetch.tsx"
+      ],
+      "@/features/updates/components/update-page": [
+        "./src/features/updates/components/update-page/update-page.tsx"
+      ],
+      "@/features/updates/components/update-page-content": [
+        "./src/features/updates/components/update-page-content/update-page-content.tsx"
+      ],
+      "@/features/updates/components/update-prompt": [
+        "./src/features/updates/components/update-prompt/update-prompt.tsx"
+      ],
+      "@/features/updates/hooks/use-post-update-refresh": [
+        "./src/features/updates/hooks/use-post-update-refresh/use-post-update-refresh.ts"
+      ],
+      "@/features/updates/hooks/use-update-install": [
+        "./src/features/updates/hooks/use-update-install/use-update-install.ts"
+      ],
+      "@/features/layout/components/app-window-shell": [
+        "./src/features/layout/components/app-window-shell/app-window-shell.tsx"
+      ],
+      "@/features/layout/components/app-window-titlebar-policy": [
+        "./src/features/layout/components/app-window-titlebar-policy/app-window-titlebar-policy.ts"
+      ],
+      "@/features/layout/components/root-component": [
+        "./src/features/layout/components/root-component/root-component.tsx"
+      ],
+      "@/features/layout/components/root-component-state": [
+        "./src/features/layout/components/root-component-state/root-component-state.ts"
       ]
     },
     "skipLibCheck": true,

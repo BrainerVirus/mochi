@@ -5,7 +5,7 @@ import {
   syncCurrentTrayUsage,
   useTrayUiStore,
 } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
-import { useUsageData } from "@/hooks/use-usage-data";
+import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
 export function useTrayUsageSync() {

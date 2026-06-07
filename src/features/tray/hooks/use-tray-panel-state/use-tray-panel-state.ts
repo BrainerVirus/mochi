@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRefreshProvider, useSettings } from "@/features/tray/hooks/use-tray-events";
 import { useTrayPanelRefresh } from "@/features/tray/hooks/use-tray-panel-refresh";
 import { useTrayUiStore } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
-import { useUsageData } from "@/hooks/use-usage-data";
+import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { syncTrayUsage } from "@/lib/tauri/commands";
 import {

@@ -2,8 +2,8 @@ import { Fragment } from "react";
 
 import type { ProviderId, ProviderUsageState } from "@/lib/schemas/usage";
 
-import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
 import { TrayPanelDivider } from "@/features/tray/components/tray-panel-divider";
+import { ProviderUsageSection } from "@/features/usage/components/provider-usage-section";
 
 interface TrayOverviewProps {
   states: ProviderUsageState[];

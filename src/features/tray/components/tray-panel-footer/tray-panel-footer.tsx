@@ -6,7 +6,7 @@ import {
   TrayMenuRow,
   type TrayMenuItem,
 } from "@/features/tray/components/tray-menu-row";
-import { useUpdateCheck } from "@/hooks/use-update-install";
+import { useUpdateCheck } from "@/features/updates/hooks/use-update-install/use-update-install";
 import { queryKeys } from "@/lib/query/keys";
 import { appVersion, openAppWindow } from "@/lib/tauri/commands";
 import { buildTrayUpdateFooterItems } from "@/lib/updates/tray-update-footer-items";

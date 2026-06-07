@@ -1,9 +1,9 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ProviderUsageSection } from "@/components/usage/provider-usage-section";
 import { TrayOverview } from "@/features/tray/components/tray-overview";
 import { TrayPanelTabList } from "@/features/tray/components/tray-panel-tab-list";
 import { useTabFillActivationKey } from "@/features/tray/hooks/use-tab-fill-activation-key/use-tab-fill-activation-key";
-import { useUsageData } from "@/hooks/use-usage-data";
+import { ProviderUsageSection } from "@/features/usage/components/provider-usage-section";
+import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 import { buildTrayPanelTabsFromStates } from "@/lib/utils/tray-panel-tabs";
