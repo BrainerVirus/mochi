@@ -105,7 +105,22 @@
       "@/lib/utils/usage-snapshots-empty-message": [
         "./src/lib/utils/usage-snapshots-empty-message/usage-snapshots-empty-message.ts"
       ],
-      "@/lib/utils/widget-density": ["./src/lib/utils/widget-density/widget-density.ts"]
+      "@/lib/utils/widget-density": ["./src/lib/utils/widget-density/widget-density.ts"],
+      "@/lib/updates/tray-update-footer-items": [
+        "./src/lib/updates/tray-update-footer-items/tray-update-footer-items.tsx"
+      ],
+      "@/components/mascot/mochi-chibi": [
+        "./src/shared/components/mascot/mochi-chibi/mochi-chibi.tsx"
+      ],
+      "@/components/mascot/mochi-mark": [
+        "./src/shared/components/mascot/mochi-mark/mochi-mark.tsx"
+      ],
+      "@/components/providers/provider-icon": [
+        "./src/shared/components/providers/provider-icon/provider-icon.tsx"
+      ],
+      "@/components/providers/provider-icon-sources": [
+        "./src/shared/components/providers/provider-icon-sources/provider-icon-sources.ts"
+      ]
     },
     "skipLibCheck": true,
     "strict": true,
