@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { UsageSnapshot } from "@/lib/schemas/usage";
 
-import { STATIC_SNAPSHOT_EPOCH } from "./is-provider-configured";
+import { STATIC_SNAPSHOT_EPOCH } from "@/lib/utils/is-provider-configured";
 import {
   buildTrayPanelTabs,
   buildTrayPanelTabsFromStates,

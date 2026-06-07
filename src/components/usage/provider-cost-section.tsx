@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import { useUsageMeterFill } from "@/hooks/use-usage-meter-fill";
 import { useUsageMeterLeftLabel } from "@/hooks/use-usage-meter-left-label";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 import { formatResetLine } from "@/lib/utils/format-reset-line";
 import { formatUsageMeterLeftLabel } from "@/lib/utils/usage-meter-fill-animation";
 import { getUsageMeterTone, usageMeterToneClasses } from "@/lib/utils/usage-meter-tone";

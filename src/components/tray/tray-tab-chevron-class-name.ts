@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 
 export function getTrayTabChevronButtonClassName(visible: boolean) {
   return cn(

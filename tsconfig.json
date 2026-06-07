@@ -12,7 +12,101 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client", "node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/lib/platform/detect": ["./src/lib/platform/detect/detect.ts"],
+      "@/lib/platform/index": ["./src/lib/platform/index/index.ts"],
+      "@/lib/platform/types": ["./src/lib/platform/types/types.ts"],
+      "@/lib/platform/use-system-color-scheme": [
+        "./src/lib/platform/use-system-color-scheme/use-system-color-scheme.ts"
+      ],
+      "@/lib/providers/dashboard-urls": ["./src/lib/providers/dashboard-urls/dashboard-urls.ts"],
+      "@/lib/query/client": ["./src/lib/query/client/client.ts"],
+      "@/lib/query/keys": ["./src/lib/query/keys/keys.ts"],
+      "@/lib/query/refresh-provider": ["./src/lib/query/refresh-provider/refresh-provider.ts"],
+      "@/lib/query/settings": ["./src/lib/query/settings/settings.ts"],
+      "@/lib/query/update-check": ["./src/lib/query/update-check/update-check.ts"],
+      "@/lib/query/usage-refetch-interval": [
+        "./src/lib/query/usage-refetch-interval/usage-refetch-interval.ts"
+      ],
+      "@/lib/query/usage-snapshots": ["./src/lib/query/usage-snapshots/usage-snapshots.ts"],
+      "@/lib/schemas/provider-catalog": ["./src/lib/schemas/provider-catalog/provider-catalog.ts"],
+      "@/lib/schemas/settings": ["./src/lib/schemas/settings/settings.ts"],
+      "@/lib/schemas/usage": ["./src/lib/schemas/usage/usage.ts"],
+      "@/lib/stores/ui-store": ["./src/lib/stores/ui-store/ui-store.ts"],
+      "@/lib/tauri/app-window": ["./src/lib/tauri/app-window/app-window.ts"],
+      "@/lib/tauri/commands": ["./src/lib/tauri/commands/commands.ts"],
+      "@/lib/tauri/diagnostics": ["./src/lib/tauri/diagnostics/diagnostics.ts"],
+      "@/lib/tauri/initial-window-route": [
+        "./src/lib/tauri/initial-window-route/initial-window-route.ts"
+      ],
+      "@/lib/tauri/runtime": ["./src/lib/tauri/runtime/runtime.ts"],
+      "@/lib/tauri/tray-panel-window": ["./src/lib/tauri/tray-panel-window/tray-panel-window.ts"],
+      "@/lib/tauri/widget-window": ["./src/lib/tauri/widget-window/widget-window.ts"],
+      "@/lib/tauri/window-events": ["./src/lib/tauri/window-events/window-events.ts"],
+      "@/lib/updates/current-release-notes": [
+        "./src/lib/updates/current-release-notes/current-release-notes.ts"
+      ],
+      "@/lib/updates/format-patch-notes": [
+        "./src/lib/updates/format-patch-notes/format-patch-notes.ts"
+      ],
+      "@/lib/updates/release-notes-cache": [
+        "./src/lib/updates/release-notes-cache/release-notes-cache.ts"
+      ],
+      "@/lib/updates/sanitize-release-notes": [
+        "./src/lib/updates/sanitize-release-notes/sanitize-release-notes.ts"
+      ],
+      "@/lib/updates/settings-update-status": [
+        "./src/lib/updates/settings-update-status/settings-update-status.ts"
+      ],
+      "@/lib/utils/aggregate-used-percent": [
+        "./src/lib/utils/aggregate-used-percent/aggregate-used-percent.ts"
+      ],
+      "@/lib/utils/cn": ["./src/lib/utils/cn/cn.ts"],
+      "@/lib/utils/format-reset-countdown": [
+        "./src/lib/utils/format-reset-countdown/format-reset-countdown.ts"
+      ],
+      "@/lib/utils/format-reset-line": ["./src/lib/utils/format-reset-line/format-reset-line.ts"],
+      "@/lib/utils/format-updated-ago": [
+        "./src/lib/utils/format-updated-ago/format-updated-ago.ts"
+      ],
+      "@/lib/utils/is-provider-configured": [
+        "./src/lib/utils/is-provider-configured/is-provider-configured.ts"
+      ],
+      "@/lib/utils/mascot-state": ["./src/lib/utils/mascot-state/mascot-state.ts"],
+      "@/lib/utils/provider-labels": ["./src/lib/utils/provider-labels/provider-labels.ts"],
+      "@/lib/utils/tray-panel-focus": ["./src/lib/utils/tray-panel-focus/tray-panel-focus.ts"],
+      "@/lib/utils/tray-panel-height-animation": [
+        "./src/lib/utils/tray-panel-height-animation/tray-panel-height-animation.ts"
+      ],
+      "@/lib/utils/tray-panel-height-sync": [
+        "./src/lib/utils/tray-panel-height-sync/tray-panel-height-sync.ts"
+      ],
+      "@/lib/utils/tray-panel-layout": ["./src/lib/utils/tray-panel-layout/tray-panel-layout.ts"],
+      "@/lib/utils/tray-panel-shortcut": [
+        "./src/lib/utils/tray-panel-shortcut/tray-panel-shortcut.ts"
+      ],
+      "@/lib/utils/tray-panel-spacing": [
+        "./src/lib/utils/tray-panel-spacing/tray-panel-spacing.ts"
+      ],
+      "@/lib/utils/tray-panel-tabs": ["./src/lib/utils/tray-panel-tabs/tray-panel-tabs.ts"],
+      "@/lib/utils/tray-tab-fill-activation": [
+        "./src/lib/utils/tray-tab-fill-activation/tray-tab-fill-activation.ts"
+      ],
+      "@/lib/utils/tray-tab-fill-scheduler": [
+        "./src/lib/utils/tray-tab-fill-scheduler/tray-tab-fill-scheduler.ts"
+      ],
+      "@/lib/utils/tray-tab-selection": [
+        "./src/lib/utils/tray-tab-selection/tray-tab-selection.ts"
+      ],
+      "@/lib/utils/usage-meter-fill-animation": [
+        "./src/lib/utils/usage-meter-fill-animation/usage-meter-fill-animation.ts"
+      ],
+      "@/lib/utils/usage-meter-tone": ["./src/lib/utils/usage-meter-tone/usage-meter-tone.ts"],
+      "@/lib/utils/usage-pace": ["./src/lib/utils/usage-pace/usage-pace.ts"],
+      "@/lib/utils/usage-snapshots-empty-message": [
+        "./src/lib/utils/usage-snapshots-empty-message/usage-snapshots-empty-message.ts"
+      ],
+      "@/lib/utils/widget-density": ["./src/lib/utils/widget-density/widget-density.ts"]
     },
     "skipLibCheck": true,
     "strict": true,

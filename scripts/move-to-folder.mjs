@@ -51,18 +51,15 @@ const newBaseContent = readFileSync(newBase, "utf8");
 const srcRoot = path.resolve(process.cwd(), "src");
 
 const rewrite = (content) => {
-  return content.replace(
-    /from\s+["'](\.\.?\/[^"']+)["']/g,
-    (match, relPath) => {
-      const newResolved = path.resolve(targetDir, relPath);
-      if (existsSync(`${newResolved}.ts`) || existsSync(`${newResolved}.tsx`)) {
-        return match;
-      }
-      const oldResolved = path.resolve(dir, relPath);
-      const aliasPath = "/" + path.relative(srcRoot, oldResolved).split(path.sep).join("/");
-      return `from "@${aliasPath}"`;
-    },
-  );
+  return content.replace(/from\s+["'](\.\.?\/[^"']+)["']/g, (match, relPath) => {
+    const newResolved = path.resolve(targetDir, relPath);
+    if (existsSync(`${newResolved}.ts`) || existsSync(`${newResolved}.tsx`)) {
+      return match;
+    }
+    const oldResolved = path.resolve(dir, relPath);
+    const aliasPath = "/" + path.relative(srcRoot, oldResolved).split(path.sep).join("/");
+    return `from "@${aliasPath}"`;
+  });
 };
 
 writeFileSync(newBase, rewrite(newBaseContent));

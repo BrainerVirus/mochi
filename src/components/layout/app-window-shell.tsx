@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import { shouldRenderOverlayTitlebar } from "@/components/layout/app-window-titlebar-policy";
-import { detectPlatform, type PlatformId } from "@/lib/platform";
-import { cn } from "@/lib/utils";
+import { detectPlatform } from "@/lib/platform/detect";
+import type { PlatformId } from "@/lib/platform/types";
+import { cn } from "@/lib/utils/cn";
 
 interface AppWindowShellProps {
   children: ReactNode;

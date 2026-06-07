@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 import { trayPanelDividerClassName, trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 
 type TrayPanelDividerProps = ComponentProps<"div"> & {

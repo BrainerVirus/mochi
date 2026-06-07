@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createUsageSnapshotsQueryOptions } from "./usage-snapshots";
+import { createUsageSnapshotsQueryOptions } from "@/lib/query/usage-snapshots";
 
 describe("createUsageSnapshotsQueryOptions live refresh", () => {
   it("uses cached snapshots before settings are loaded", () => {

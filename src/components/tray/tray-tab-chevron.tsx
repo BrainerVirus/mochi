@@ -12,7 +12,7 @@ import {
   SCROLL_OVERFLOW_SLIDE_PX,
 } from "@/components/tray/use-gsap-overflow-visibility";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 
 gsap.registerPlugin(useGSAP);
 

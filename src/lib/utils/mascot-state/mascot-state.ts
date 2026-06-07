@@ -1,6 +1,6 @@
 import type { UsageSnapshot } from "@/lib/schemas/usage";
 
-import { getUsageMeterTone } from "./usage-meter-tone";
+import { getUsageMeterTone } from "@/lib/utils/usage-meter-tone";
 
 export type MochiMascotState = "normal" | "warning" | "critical" | "reset-soon" | "all-good";
 

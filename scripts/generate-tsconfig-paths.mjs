@@ -32,7 +32,7 @@ const collectPaths = (dir, prefix) => {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     const child = path.join(dir, entry.name);
-    if (existsSync(child) && statSync(child).isDirectory() && findSameNamedFile(child)) {
+    if (existsSync(child) && statSync(child).isDirectory()) {
       entries.push(...collectPaths(child, `${prefix}/${entry.name}`));
     }
   }

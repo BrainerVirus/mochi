@@ -3,7 +3,7 @@ import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
 import { getSettings, saveSettings } from "@/lib/tauri/commands";
 
-import { queryKeys } from "./keys";
+import { queryKeys } from "@/lib/query/keys";
 
 export const settingsQueryOptions = queryOptions({
   queryKey: queryKeys.settings,

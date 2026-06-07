@@ -1,4 +1,4 @@
-import type { PlatformId } from "@/lib/platform";
+import type { PlatformId } from "@/lib/platform/types";
 
 export interface HydrationSafeRootState {
   isTrayPanelWindow: boolean;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ProviderIdSchema } from "./usage";
+import { ProviderIdSchema } from "@/lib/schemas/usage";
 
 export const CatalogSettingsFieldSchema = z.object({
   key: z.string(),
