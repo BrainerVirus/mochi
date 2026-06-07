@@ -19,12 +19,14 @@ This is a single coordinated refactor — the path resolver, oxlint rule, and CI
 ## File Structure Map
 
 ### Created (Phase 1)
+
 - `scripts/vite-folder-resolver.ts` — Vite plugin (~40 LOC).
 - `scripts/vite-folder-resolver.test.ts` — Vitest unit test for the plugin.
 - `scripts/tsconfig-folder-resolver.ts` — TypeScript Language Service Plugin mirror.
 - `docs/superpowers/specs/2026-06-07-frontend-structure-and-coverage-design.md` — the design spec.
 
 ### Modified (Phase 1)
+
 - `vite.config.ts` — register the resolver plugin.
 - `vitest.config.ts` — register the resolver plugin, add `test.coverage` config, expand `test.include`.
 - `tsconfig.json` — register the tsserver plugin, keep `"@/*": ["./src/*"]`.
@@ -35,12 +37,15 @@ This is a single coordinated refactor — the path resolver, oxlint rule, and CI
 - `.gitignore` — verify `coverage/` is ignored (already is, per project norm).
 
 ### Moved (Phases 2 & 3)
+
 See "Migration Map" section below. Every move is a `git mv` of a single file into a same-named folder, followed by an import path rewrite. The resolver plugin makes the import path identical to the current one.
 
 ### Created (Phase 4)
+
 - New `*.test.{ts,tsx}` files colocated with units that lack them. ~40-60 new test files based on the current gap (148 source files without tests out of 205).
 
 ### Modified (Phase 5)
+
 - `AGENTS.md` — replace the "Frontend Folder Structure" block with the new layout.
 - `docs/tech-stack.md` — update the layout diagram.
 - `docs/superpowers/specs/2026-05-19-mochi-design.md` — note that the implementation has moved to per-unit folders.
@@ -52,6 +57,7 @@ See "Migration Map" section below. Every move is a `git mv` of a single file int
 ### Phase 2 — `src/shared/`
 
 Current → New:
+
 - `src/lib/query/*` → `src/shared/lib/query/<unit>/<unit>.{ts,tsx}` for `client`, `keys`, `refresh-provider`, `settings`, `update-check`, `usage-refetch-interval`, `usage-snapshots`, `usage-snapshots-live-refresh`
 - `src/lib/schemas/*` → `src/shared/lib/schemas/<unit>/<unit>.{ts,tsx}` for `settings`, `usage`, `provider-catalog`
 - `src/lib/stores/ui-store.ts` → `src/shared/lib/stores/ui-store/ui-store.ts`
@@ -75,31 +81,38 @@ Current → New:
 Per-feature map. Test files (`*.test.{ts,tsx}`) move with their source into the same folder.
 
 #### `features/tray/` (28 source files)
+
 Components (13): `tray-event-bridge`, `tray-menu-row`, `tray-overview`, `tray-panel-content`, `tray-panel-divider`, `tray-panel-footer`, `tray-panel-shell`, `tray-panel-tab-list`, `tray-panel`, `tray-segment-item`, `tray-segmented-control`, `tray-tab-chevron`, `scroll-fade-overlays`, `scroll-fade-region`
 Hooks (11): `use-gsap-overflow-visibility`, `use-scroll-overflow`, `use-tray-segment-indicator-sync`, `use-tray-segment-indicators`, `use-tray-panel-focus-reset`, `use-tray-panel-height`, `use-tray-panel-refresh`, `use-tray-panel-shortcuts`, `use-tray-panel-state`, `use-tray-usage-sync`, `use-tab-fill-activation-key`
 Lib (9): `scroll-fade-cycle`, `segment-indicator-animation`, `segment-track-resize-observer`, `tray-panel-tab-cycle`, `tray-segment-indicator`, `tray-segment-indicator-executor`, `tray-segment-indicator-machine`, `tray-segmented-control-config`, `tray-tab-chevron-class-name`
 Also moves: `src/lib/stores/tray-ui-store.ts` → `src/features/tray/lib/stores/tray-ui-store/tray-ui-store.ts`
 
 #### `features/widget/` (1 source file)
+
 - `widget-window.tsx`
 
 #### `features/settings/` (10 source files)
+
 Components (7): `linux-tray-hint`, `provider-config-fields`, `provider-token-fields`, `settings-form`, `settings-page`, `settings-page-content`, `settings-sections`, `settings-update-section`
 Lib (2): `settings-form-state`, `settings-tab-state`, `provider-field-visibility`
 
 #### `features/usage/` (7 source files)
+
 Components (5): `provider-cost-section`, `provider-usage-actions`, `provider-usage-section`, `usage-card`, `usage-meter`
 Hooks (2): `use-usage-data`, `use-usage-meter-fill`, `use-usage-meter-left-label`
 
 #### `features/updates/` (7 source files)
+
 Components (5): `release-notes-dialog`, `update-check-prefetch`, `update-page`, `update-page-content`, `update-prompt`
 Hooks (2): `use-post-update-refresh`, `use-update-install`
 
 #### `features/layout/` (3 source files)
+
 Components (2): `app-window-shell`, `root-component`
 Lib (1): `app-window-titlebar-policy`, `root-component-state` (treated as lib utilities, not React state)
 
 #### `features/about/` (2 source files)
+
 Components (2): `about-page`, `about-page-content`
 
 ---
@@ -109,6 +122,7 @@ Components (2): `about-page`, `about-page-content`
 ### Task 1.1: Write the Vite folder-resolver plugin (TDD)
 
 **Files:**
+
 - Create: `scripts/vite-folder-resolver.ts`
 - Create: `scripts/vite-folder-resolver.test.ts`
 
@@ -144,10 +158,10 @@ describe("folderResolver", () => {
   it("resolves @/X/Y/Z to src/X/Y/Z/Z.ts when the folder contains Z.ts", async () => {
     writeFile(path.join(root, "features/tray/components/tray-panel/tray-panel.ts"), "export {};");
     const result = await (plugin.resolveId as any).call(
-      { },
+      {},
       "@/features/tray/components/tray-panel",
       undefined,
-      { },
+      {},
     );
     expect(result).toBe(path.join(root, "features/tray/components/tray-panel/tray-panel.ts"));
   });
@@ -156,40 +170,40 @@ describe("folderResolver", () => {
     writeFile(path.join(root, "features/tray/components/tray-panel/tray-panel.ts"));
     writeFile(path.join(root, "features/tray/components/tray-panel/tray-panel.tsx"));
     const result = await (plugin.resolveId as any).call(
-      { },
+      {},
       "@/features/tray/components/tray-panel",
       undefined,
-      { },
+      {},
     );
     expect(result).toBe(path.join(root, "features/tray/components/tray-panel/tray-panel.tsx"));
   });
 
   it("returns null when the source is not under the @/ alias", async () => {
-    const result = await (plugin.resolveId as any).call({ }, "react", undefined, { });
+    const result = await (plugin.resolveId as any).call({}, "react", undefined, {});
     expect(result).toBeNull();
   });
 
   it("returns null when the source is a node: import", async () => {
-    const result = await (plugin.resolveId as any).call({ }, "node:path", undefined, { });
+    const result = await (plugin.resolveId as any).call({}, "node:path", undefined, {});
     expect(result).toBeNull();
   });
 
   it("returns null when the source already has a file extension", async () => {
     const result = await (plugin.resolveId as any).call(
-      { },
+      {},
       "@/features/tray/components/tray-panel/tray-panel.tsx",
       undefined,
-      { },
+      {},
     );
     expect(result).toBeNull();
   });
 
   it("returns null when the folder does not exist", async () => {
     const result = await (plugin.resolveId as any).call(
-      { },
+      {},
       "@/features/tray/components/does-not-exist",
       undefined,
-      { },
+      {},
     );
     expect(result).toBeNull();
   });
@@ -197,10 +211,10 @@ describe("folderResolver", () => {
   it("returns null when the folder exists but has no same-name file", async () => {
     fs.mkdirSync(path.join(root, "features/tray/components/empty-folder"), { recursive: true });
     const result = await (plugin.resolveId as any).call(
-      { },
+      {},
       "@/features/tray/components/empty-folder",
       undefined,
-      { },
+      {},
     );
     expect(result).toBeNull();
   });
@@ -227,10 +241,7 @@ export interface FolderResolverOptions {
   alias?: string;
 }
 
-export const folderResolver = ({
-  srcRoot,
-  alias = "@/",
-}: FolderResolverOptions): Plugin => {
+export const folderResolver = ({ srcRoot, alias = "@/" }: FolderResolverOptions): Plugin => {
   return {
     name: "mochi:folder-resolver",
     enforce: "pre",
@@ -265,6 +276,7 @@ git commit -m "feat(build): add vite folder-resolver plugin with tests"
 ### Task 1.2: Register the plugin in vite.config.ts and vitest.config.ts
 
 **Files:**
+
 - Modify: `vite.config.ts`
 - Modify: `vitest.config.ts`
 
@@ -328,11 +340,14 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
-  plugins: [
-    folderResolver({ srcRoot: path.resolve(import.meta.dirname, "./src") }),
-  ],
+  plugins: [folderResolver({ srcRoot: path.resolve(import.meta.dirname, "./src") })],
   test: {
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "scripts/**/*.test.mjs", "scripts/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "scripts/**/*.test.mjs",
+      "scripts/**/*.test.ts",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "text-summary", "html", "lcov"],
@@ -387,6 +402,7 @@ Run: `pnpm test:coverage`
 Expected: Tests run, a coverage/ directory is created, exit code 0. (We haven't added the `test:coverage` script yet — add it now.)
 
 Update `package.json`:
+
 ```json
 {
   "scripts": {
@@ -407,6 +423,7 @@ git commit -m "build: wire folder-resolver and vitest coverage (no threshold yet
 ### Task 1.3: Add the tsconfig Language Service Plugin mirror
 
 **Files:**
+
 - Create: `scripts/tsconfig-folder-resolver.ts`
 - Modify: `tsconfig.json`
 
@@ -483,9 +500,7 @@ export = plugin;
     "paths": {
       "@/*": ["./src/*"]
     },
-    "plugins": [
-      { "name": "mochi-folder-resolver" }
-    ],
+    "plugins": [{ "name": "mochi-folder-resolver" }],
     "types": ["node"]
   },
   "include": ["app", "src", "scripts", "vite.config.ts", "vitest.config.ts"]
@@ -509,6 +524,7 @@ git commit -m "feat(tsconfig): add folder-resolver language service plugin"
 ### Task 1.4: Add oxlint rule banning barrel imports
 
 **Files:**
+
 - Modify: `.oxlintrc.json`
 
 - [ ] **Step 1: Add the no-restricted-imports rule**
@@ -556,35 +572,36 @@ git commit -m "chore(lint): ban barrel imports under @/ alias"
 ### Task 1.5: Add the CI coverage job
 
 **Files:**
+
 - Modify: `.github/workflows/pr.yml`
 
 - [ ] **Step 1: Add the `frontend-coverage` job after `frontend-tests`**
 
 ```yaml
-  frontend-coverage:
-    name: Frontend Coverage Gate
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v6
-        with:
-          package_json_file: package.json
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Run tests with coverage gate
-        run: pnpm test:coverage
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 14
+frontend-coverage:
+  name: Frontend Coverage Gate
+  runs-on: ubuntu-24.04
+  steps:
+    - uses: actions/checkout@v6
+    - uses: pnpm/action-setup@v6
+      with:
+        package_json_file: package.json
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+    - name: Install frontend dependencies
+      run: pnpm install --frozen-lockfile
+    - name: Run tests with coverage gate
+      run: pnpm test:coverage
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage/
+        retention-days: 14
 ```
 
 - [ ] **Step 2: Update the existing `frontend-tests` job to skip the no-threshold branch**
@@ -608,6 +625,7 @@ git push -u origin chore/ci-coverage-job
 ### Task 1.6: Add README badges
 
 **Files:**
+
 - Modify: `README.md`
 
 - [ ] **Step 1: Add the two badges at the top of the README, after the title**
@@ -634,6 +652,7 @@ git push -u origin docs/readme-badges
 ### Task 1.7: Write the design spec
 
 **Files:**
+
 - Create: `docs/superpowers/specs/2026-06-07-frontend-structure-and-coverage-design.md`
 
 - [ ] **Step 1: Write the spec**
@@ -680,6 +699,7 @@ If Tasks 1.5-1.7 are not already merged, consolidate them into one `chore/founda
 ### Task 2.1: Create a migration helper script (one-time)
 
 **Files:**
+
 - Create: `scripts/move-to-folder.mjs`
 
 This is a one-shot Node script that does the `git mv` + import rewrite for a single file. We invoke it once per file via a small shell loop.
@@ -988,6 +1008,7 @@ tree src/shared -L 3
 ```
 
 Expected:
+
 ```
 src/shared/
   assets/
@@ -1096,6 +1117,7 @@ tree src/features/tray -L 2
 ```
 
 Expected:
+
 ```
 src/features/tray/
   components/
@@ -1340,6 +1362,7 @@ tree src -L 3
 ```
 
 Expected:
+
 ```
 src/
   features/
@@ -1390,6 +1413,7 @@ rg "src/assets/" -l
 ## Phase 4: Test Coverage Fill-In
 
 This is the phase where the coverage threshold flips on. We do it carefully:
+
 1. Run `pnpm test:coverage` to find the gap.
 2. For each uncovered unit, write a test (TDD).
 3. For genuinely untestable units, apply `/* v8 ignore file -- @preserve */`.
@@ -1515,6 +1539,7 @@ For units that are inherently hard to test (GSAP setup, Tauri command wrappers t
 - [ ] **Step 1: Identify untestable units**
 
 Files where every branch is a Tauri side effect or a GSAP setup with no observable return value. Typical examples:
+
 - `src/shared/lib/tauri/commands.ts` (when the wrapper just calls `invoke` and returns the result)
 - `src/shared/lib/tauri/window-events.ts`
 - `src/shared/lib/tauri/widget-window.ts`
@@ -1543,6 +1568,7 @@ git commit -m "chore(coverage): ignore untestable tauri command wrapper"
 ### Task 4.4: Enable the coverage threshold
 
 **Files:**
+
 - Modify: `vitest.config.ts`
 
 - [ ] **Step 1: Uncomment the threshold block**
@@ -1592,6 +1618,7 @@ The `frontend-coverage` CI job is now a true blocking gate. Any PR that drops co
 ### Task 4.5: Add a Rust integration smoke test
 
 **Files:**
+
 - Create: `src-tauri/tests/cli_smoke.rs`
 
 Per the spec, this round adds minimal Rust test improvements and one integration test. No Rust coverage threshold this round.
@@ -1635,6 +1662,7 @@ Expected: PASS (or compile and run, depending on the binary name — adjust `CAR
 - [ ] **Step 3: Add `#[cfg(test)]` blocks to modules that lack them**
 
 Modules in `src-tauri/src/` that have no `#[cfg(test)]` block today:
+
 - `src-tauri/src/frontend.rs`
 - `src-tauri/src/macos.rs`
 - `src-tauri/src/linux_window_controls.rs`
@@ -1668,6 +1696,7 @@ git push -u origin test/rust-integration-smoke
 ### Task 5.1: Update AGENTS.md
 
 **Files:**
+
 - Modify: `AGENTS.md`
 
 - [ ] **Step 1: Replace the "Stack To Preserve" Frontend layout paragraph**
@@ -1722,6 +1751,7 @@ git push -u origin docs/agents-folder-layout
 ### Task 5.2: Update docs/tech-stack.md
 
 **Files:**
+
 - Modify: `docs/tech-stack.md`
 
 - [ ] **Step 1: Replace the "Frontend Folder Structure" section**
@@ -1758,6 +1788,7 @@ git push -u origin docs/tech-stack-folder-layout
 ### Task 5.3: Update the design spec
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-05-19-mochi-design.md`
 
 - [ ] **Step 1: Add a "Folder Layout Update" note at the top**
@@ -1818,14 +1849,14 @@ git commit -m "chore(scripts): remove one-shot move-to-folder helper"
 
 **Spec coverage:**
 
-| Spec section | Plan task(s) |
-|---|---|
-| Section 1: Goals, scope, non-goals | Phase 1-5 (all phases address) |
-| Section 2: Target structure (feature-slices, per-unit folders) | Phase 1 (resolver), Phase 2 (shared), Phase 3 (features) |
-| Section 3: Import path resolution (Vite + tsconfig plugin) | Task 1.1 (Vite plugin), Task 1.3 (tsconfig plugin) |
-| Section 4: Test coverage approach (v8, thresholds) | Task 1.2 (config), Task 4.4 (enable threshold) |
-| Section 5: CI gate (frontend-coverage job, badges) | Task 1.5 (CI job), Task 1.6 (badges) |
-| Section 6: Migration plan (5 phases, separate PRs) | All phases |
+| Spec section                                                              | Plan task(s)                                                               |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Section 1: Goals, scope, non-goals                                        | Phase 1-5 (all phases address)                                             |
+| Section 2: Target structure (feature-slices, per-unit folders)            | Phase 1 (resolver), Phase 2 (shared), Phase 3 (features)                   |
+| Section 3: Import path resolution (Vite + tsconfig plugin)                | Task 1.1 (Vite plugin), Task 1.3 (tsconfig plugin)                         |
+| Section 4: Test coverage approach (v8, thresholds)                        | Task 1.2 (config), Task 4.4 (enable threshold)                             |
+| Section 5: CI gate (frontend-coverage job, badges)                        | Task 1.5 (CI job), Task 1.6 (badges)                                       |
+| Section 6: Migration plan (5 phases, separate PRs)                        | All phases                                                                 |
 | Section 7: Out of scope (Rust threshold deferred, file renaming deferred) | Confirmed: Task 4.5 adds Rust smoke test but no threshold; no file renames |
 
 **Placeholder scan:** No "TBD", "TODO", "implement later", or "fill in details" found. All code blocks are complete or contain concrete shell commands.
