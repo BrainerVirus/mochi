@@ -115,7 +115,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "resolveJsonModule": true,
-    "forceConsistentCasingInFileNames": true,
-    "plugins": [{ "name": "mochi-folder-resolver" }]
+    "forceConsistentCasingInFileNames": true
   }
 }
