@@ -4,19 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      linux_window_experiment:
-        description: Linux window experiment to compile into the unstable build
-        required: false
-        default: baseline-sequenced-logs
-        type: choice
-        options:
-          - baseline-sequenced-logs
-          - on-demand-visible
-          - on-demand-hidden
-          - builder-size-only
-          - show-focus-only
-          - unminimize-show-focus
 
 permissions:
   contents: write
@@ -123,7 +110,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MOCHI_UPDATE_CHANNEL: unstable
-          MOCHI_LINUX_WINDOW_EXPERIMENT: ${{ github.event.inputs.linux_window_experiment || 'baseline-sequenced-logs' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
@@ -138,7 +124,6 @@ jobs:
             - **Refined Linux window controls** — simplified geometry calculations and removed redundant tray panel logic for cleaner, more reliable window controls on Linux.
             - **Improved widget commands** — consolidated widget command handlers and added native window control test coverage.
             - **Reliable release pipeline** — corrected updater feed validation, version paths, and Pages deployment to ensure stable and unstable channels update without conflicts.
-            - Linux window experiment: `${{ github.event.inputs.linux_window_experiment || 'baseline-sequenced-logs' }}`
 
             ### Install unstable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
@@ -255,7 +240,6 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const tag = "${{ needs.metadata.outputs.tag }}";
-            const experiment = "${{ github.event.inputs.linux_window_experiment || 'baseline-sequenced-logs' }}";
             const body = [
               `## Mochi ${tag}`,
               "",
@@ -265,7 +249,6 @@ jobs:
               "- **Refined Linux window controls** — simplified geometry calculations and removed redundant tray panel logic for cleaner, more reliable window controls on Linux.",
               "- **Improved widget commands** — consolidated widget command handlers and added native window control test coverage.",
               "- **Reliable release pipeline** — corrected updater feed validation, version paths, and Pages deployment to ensure stable and unstable channels update without conflicts.",
-              `- Linux window experiment: \`${experiment}\``,
               "",
               "### Install unstable",
               "- macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`",
