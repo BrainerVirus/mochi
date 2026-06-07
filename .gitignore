@@ -11,3 +11,5 @@ src-tauri/gen/schemas
 .nitro/
 
 .pnpm-store/
+
+coverage/
