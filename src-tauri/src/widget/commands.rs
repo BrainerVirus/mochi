@@ -53,7 +53,13 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let window = build_widget_window(app)?;
-    record_widget_window_lifecycle(&window, "created", "startup-precreate", "hidden");
+    let policy = crate::window_policy::active_decorated_window_policy();
+    record_widget_window_lifecycle(
+        &window,
+        "created",
+        policy.creation_label(),
+        policy.initial_visibility_label(),
+    );
     record_widget_window_controls(app, &window, "rust-builder");
     if let Some(state) = app.try_state::<DiagnosticsState>() {
         let url = window
@@ -83,7 +89,7 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
 
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(window) = app.get_webview_window(WIDGET_LABEL) {
-        record_widget_window_controls(app, &window, "tauri-config");
+        record_widget_window_controls(app, &window, "rust-builder");
         let _ = window.set_always_on_top(false);
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
             width: WIDGET_MIN_WIDTH,
@@ -97,7 +103,10 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 #[tauri::command]
 pub fn show_widget(app: AppHandle) -> Result<(), String> {
     let window = ensure_widget_window(&app)?;
-    record_widget_window_controls(&app, &window, "tauri-config");
+    let policy = crate::window_policy::active_decorated_window_policy();
+    let creation = policy.creation_label();
+    let initial_visibility = policy.initial_visibility_label();
+    record_widget_window_controls(&app, &window, creation);
 
     match crate::window_policy::first_show_sequence() {
         crate::window_policy::FirstShowSequence::AlreadyVisibleFocus => {
@@ -107,7 +116,7 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
                 "set_focus",
                 focus_result.as_ref().map(|_| ()),
             );
-            record_widget_window_lifecycle(&window, "after-focus", "on-demand", "visible");
+            record_widget_window_lifecycle(&window, "after-focus", creation, initial_visibility);
             focus_result.map_err(|error| error.to_string())
         }
         crate::window_policy::FirstShowSequence::ShowUnminimizeFocus => {
@@ -118,7 +127,7 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
                 show_result.as_ref().map(|_| ()),
             );
             show_result.map_err(|error| error.to_string())?;
-            record_widget_window_lifecycle(&window, "after-show", "startup-precreate", "hidden");
+            record_widget_window_lifecycle(&window, "after-show", creation, initial_visibility);
 
             let unminimize_result = window.unminimize();
             crate::diagnostics::log_window_action_result(
@@ -127,13 +136,8 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
                 unminimize_result.as_ref().map(|_| ()),
             );
             unminimize_result.map_err(|error| error.to_string())?;
-            record_widget_window_lifecycle(
-                &window,
-                "after-unminimize",
-                "startup-precreate",
-                "hidden",
-            );
-            record_widget_window_controls(&app, &window, "tauri-config");
+            record_widget_window_lifecycle(&window, "after-unminimize", creation, initial_visibility);
+            record_widget_window_controls(&app, &window, creation);
 
             let focus_result = window.set_focus();
             crate::diagnostics::log_window_action_result(
@@ -141,35 +145,7 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
                 "set_focus",
                 focus_result.as_ref().map(|_| ()),
             );
-            record_widget_window_lifecycle(&window, "after-focus", "startup-precreate", "hidden");
-            focus_result.map_err(|error| error.to_string())
-        }
-        _ => {
-            // For other sequences, fall back to ShowUnminimizeFocus
-            let show_result = window.show();
-            crate::diagnostics::log_window_action_result(
-                WIDGET_LABEL,
-                "show",
-                show_result.as_ref().map(|_| ()),
-            );
-            show_result.map_err(|error| error.to_string())?;
-            record_widget_window_controls(&app, &window, "tauri-config");
-
-            let unminimize_result = window.unminimize();
-            crate::diagnostics::log_window_action_result(
-                WIDGET_LABEL,
-                "unminimize",
-                unminimize_result.as_ref().map(|_| ()),
-            );
-            unminimize_result.map_err(|error| error.to_string())?;
-            record_widget_window_controls(&app, &window, "tauri-config");
-
-            let focus_result = window.set_focus();
-            crate::diagnostics::log_window_action_result(
-                WIDGET_LABEL,
-                "set_focus",
-                focus_result.as_ref().map(|_| ()),
-            );
+            record_widget_window_lifecycle(&window, "after-focus", creation, initial_visibility);
             focus_result.map_err(|error| error.to_string())
         }
     }
@@ -220,7 +196,13 @@ fn ensure_widget_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     }
 
     let window = build_widget_window(app).map_err(|error| error.to_string())?;
-    record_widget_window_lifecycle(&window, "created", "on-demand", "visible");
+    let policy = crate::window_policy::active_decorated_window_policy();
+    record_widget_window_lifecycle(
+        &window,
+        "created",
+        policy.creation_label(),
+        policy.initial_visibility_label(),
+    );
     record_widget_window_controls(app, &window, "rust-builder");
     if let Some(state) = app.try_state::<DiagnosticsState>() {
         let url = window

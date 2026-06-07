@@ -60,7 +60,9 @@ describe("native desktop window controls", () => {
 
     expect(commands).toContain("build_widget_window");
     expect(commands).toContain("DecoratedWindowInitialVisibility::Visible");
-    expect(commands).toContain('record_widget_window_lifecycle(&window, "created", "on-demand"');
+    expect(commands).toContain("active_decorated_window_policy()");
+    expect(commands).toContain("policy.creation_label()");
+    expect(commands).toContain("policy.initial_visibility_label()");
   });
 
   it("uses permanent policy labels for linux app window lifecycle", () => {
@@ -70,5 +72,14 @@ describe("native desktop window controls", () => {
     expect(source).toContain("policy.creation_label()");
     expect(source).toContain("policy.initial_visibility_label()");
     expect(source).not.toContain('"startup-precreate", "hidden"');
+  });
+
+  it("uses permanent policy labels for widget lifecycle", () => {
+    const source = readFileSync(resolve("src-tauri/src/widget/commands.rs"), "utf8");
+
+    expect(source).toContain("active_decorated_window_policy()");
+    expect(source).toContain("policy.creation_label()");
+    expect(source).toContain("policy.initial_visibility_label()");
+    expect(source).not.toContain("tauri-config");
   });
 });
