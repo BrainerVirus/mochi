@@ -29,14 +29,14 @@ pub fn format_logical_size(size: Option<(f64, f64)>) -> String {
 pub fn window_lifecycle_detail(
     label: &str,
     phase: &str,
-    experiment: &str,
+    policy: &str,
     creation: &str,
     initial_visibility: &str,
     outer_size: Option<(f64, f64)>,
     inner_size: Option<(f64, f64)>,
 ) -> String {
     format!(
-        "label={label} phase={phase} experiment={experiment} creation={creation} initial_visibility={initial_visibility} outer={} inner={}",
+        "label={label} phase={phase} policy={policy} creation={creation} initial_visibility={initial_visibility} outer={} inner={}",
         format_logical_size(outer_size),
         format_logical_size(inner_size)
     )
@@ -158,7 +158,7 @@ impl DiagnosticsState {
         &self,
         label: &str,
         phase: &str,
-        experiment: &str,
+        policy: &str,
         creation: &str,
         initial_visibility: &str,
         outer_size: Option<(f64, f64)>,
@@ -167,7 +167,7 @@ impl DiagnosticsState {
         let detail = window_lifecycle_detail(
             label,
             phase,
-            experiment,
+            policy,
             creation,
             initial_visibility,
             outer_size,
@@ -213,23 +213,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn window_lifecycle_detail_includes_experiment_and_sequence() {
+    fn window_lifecycle_detail_includes_policy_and_sequence() {
         let detail = window_lifecycle_detail(
             "settings",
             "show",
-            "baseline-sequenced-logs",
-            "startup-precreate",
-            "hidden",
+            "linux-on-demand-visible",
+            "on-demand",
+            "visible",
             Some((520.0, 560.0)),
             Some((520.0, 560.0)),
         );
 
         assert!(detail.contains("label=settings"));
         assert!(detail.contains("phase=show"));
-        assert!(detail.contains("experiment=baseline-sequenced-logs"));
-        assert!(detail.contains("creation=startup-precreate"));
-        assert!(detail.contains("initial_visibility=hidden"));
+        assert!(detail.contains("policy=linux-on-demand-visible"));
+        assert!(detail.contains("creation=on-demand"));
+        assert!(detail.contains("initial_visibility=visible"));
         assert!(detail.contains("outer=520x560"));
         assert!(detail.contains("inner=520x560"));
+        assert!(!detail.contains("experiment="));
     }
 }
