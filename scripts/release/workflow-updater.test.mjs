@@ -23,3 +23,18 @@ for (const workflow of [
     });
   });
 }
+
+describe("linux window experiment cleanup", () => {
+  it("does not publish temporary linux window experiment controls", () => {
+    const workflow = readFileSync(".github/workflows/release-unstable.yml", "utf8");
+    const buildScript = readFileSync("src-tauri/build.rs", "utf8");
+    const policy = readFileSync("src-tauri/src/window_policy.rs", "utf8");
+
+    expect(workflow).not.toContain("linux_window_experiment");
+    expect(workflow).not.toContain("MOCHI_LINUX_WINDOW_EXPERIMENT");
+    expect(workflow).not.toContain("Linux window experiment:");
+    expect(buildScript).not.toContain("MOCHI_LINUX_WINDOW_EXPERIMENT");
+    expect(policy).not.toContain("MOCHI_LINUX_WINDOW_EXPERIMENT");
+    expect(policy).not.toContain("LinuxWindowExperiment");
+  });
+});

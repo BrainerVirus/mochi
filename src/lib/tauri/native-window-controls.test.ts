@@ -46,11 +46,12 @@ describe("native desktop window controls", () => {
     expect(source).toContain(".resizable(true)");
   });
 
-  it("does not precreate decorated linux app windows for on-demand-visible", () => {
+  it("does not precreate decorated linux app windows under the permanent on-demand policy", () => {
     const lib = readFileSync(resolve("src-tauri/src/lib.rs"), "utf8");
     const policy = readFileSync(resolve("src-tauri/src/window_policy.rs"), "utf8");
 
-    expect(policy).toContain("OnDemandVisible");
+    expect(policy).toContain("linux-on-demand-visible");
+    expect(policy).toContain("DecoratedWindowCreationMode::OnDemand");
     expect(lib).toContain("should_precreate_decorated_windows_at_startup");
   });
 
@@ -59,6 +60,26 @@ describe("native desktop window controls", () => {
 
     expect(commands).toContain("build_widget_window");
     expect(commands).toContain("DecoratedWindowInitialVisibility::Visible");
-    expect(commands).toContain('record_widget_window_lifecycle(&window, "created", "on-demand"');
+    expect(commands).toContain("active_decorated_window_policy()");
+    expect(commands).toContain("policy.creation_label()");
+    expect(commands).toContain("policy.initial_visibility_label()");
+  });
+
+  it("uses permanent policy labels for linux app window lifecycle", () => {
+    const source = readFileSync(resolve("src-tauri/src/tray/panel.rs"), "utf8");
+
+    expect(source).toContain("active_decorated_window_policy()");
+    expect(source).toContain("policy.creation_label()");
+    expect(source).toContain("policy.initial_visibility_label()");
+    expect(source).not.toContain('"startup-precreate", "hidden"');
+  });
+
+  it("uses permanent policy labels for widget lifecycle", () => {
+    const source = readFileSync(resolve("src-tauri/src/widget/commands.rs"), "utf8");
+
+    expect(source).toContain("active_decorated_window_policy()");
+    expect(source).toContain("policy.creation_label()");
+    expect(source).toContain("policy.initial_visibility_label()");
+    expect(source).not.toContain("tauri-config");
   });
 });

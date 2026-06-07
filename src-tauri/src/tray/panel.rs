@@ -344,10 +344,13 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     }
 
     let window = ensure_settings_window(&app)?;
-    record_app_window_lifecycle(&window, "created", "startup-precreate", "hidden");
+    let policy = crate::window_policy::active_decorated_window_policy();
+    let creation = policy.creation_label();
+    let initial_visibility = policy.initial_visibility_label();
+    record_app_window_lifecycle(&window, "created", creation, initial_visibility);
 
     if crate::window_policy::should_mutate_size_before_first_show() {
-        record_app_window_lifecycle(&window, "before-set-size", "startup-precreate", "hidden");
+        record_app_window_lifecycle(&window, "before-set-size", creation, initial_visibility);
         let (width, height) = app_window_size_for_path(path.as_str());
         let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
@@ -366,7 +369,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
                 420.0
             },
         })));
-        record_app_window_lifecycle(&window, "after-set-size", "startup-precreate", "hidden");
+        record_app_window_lifecycle(&window, "after-set-size", creation, initial_visibility);
     }
 
     if let Err(error) = ensure_app_window_vibrancy(&window) {
@@ -389,7 +392,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
                 "set_focus",
                 focus_result.as_ref().map(|_| ()),
             );
-            record_app_window_lifecycle(&window, "after-focus", "on-demand", "visible");
+            record_app_window_lifecycle(&window, "after-focus", creation, initial_visibility);
             focus_result.map_err(|error| error.to_string())?;
         }
         crate::window_policy::FirstShowSequence::ShowUnminimizeFocus => {
@@ -400,7 +403,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
                     "set_focus",
                     focus_result.as_ref().map(|_| ()),
                 );
-                record_app_window_lifecycle(&window, "after-focus", "startup-precreate", "hidden");
+                record_app_window_lifecycle(&window, "after-focus", creation, initial_visibility);
                 focus_result.map_err(|error| error.to_string())?;
             } else {
                 let show_result = window.show();
@@ -410,7 +413,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
                     show_result.as_ref().map(|_| ()),
                 );
                 show_result.map_err(|error| error.to_string())?;
-                record_app_window_lifecycle(&window, "after-show", "startup-precreate", "hidden");
+                record_app_window_lifecycle(&window, "after-show", creation, initial_visibility);
                 record_app_window_controls(&window, "rust-builder");
 
                 let unminimize_result = window.unminimize();
@@ -423,8 +426,8 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
                 record_app_window_lifecycle(
                     &window,
                     "after-unminimize",
-                    "startup-precreate",
-                    "hidden",
+                    creation,
+                    initial_visibility,
                 );
                 record_app_window_controls(&window, "rust-builder");
 
@@ -434,45 +437,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
                     "set_focus",
                     focus_result.as_ref().map(|_| ()),
                 );
-                record_app_window_lifecycle(&window, "after-focus", "startup-precreate", "hidden");
-                focus_result.map_err(|error| error.to_string())?;
-            }
-        }
-        _ => {
-            // For other sequences, fall back to ShowUnminimizeFocus
-            if window.is_visible().unwrap_or(false) {
-                let focus_result = window.set_focus();
-                crate::diagnostics::log_window_action_result(
-                    SETTINGS_WINDOW_LABEL,
-                    "set_focus",
-                    focus_result.as_ref().map(|_| ()),
-                );
-                focus_result.map_err(|error| error.to_string())?;
-            } else {
-                let show_result = window.show();
-                crate::diagnostics::log_window_action_result(
-                    SETTINGS_WINDOW_LABEL,
-                    "show",
-                    show_result.as_ref().map(|_| ()),
-                );
-                show_result.map_err(|error| error.to_string())?;
-                record_app_window_controls(&window, "rust-builder");
-
-                let unminimize_result = window.unminimize();
-                crate::diagnostics::log_window_action_result(
-                    SETTINGS_WINDOW_LABEL,
-                    "unminimize",
-                    unminimize_result.as_ref().map(|_| ()),
-                );
-                unminimize_result.map_err(|error| error.to_string())?;
-                record_app_window_controls(&window, "rust-builder");
-
-                let focus_result = window.set_focus();
-                crate::diagnostics::log_window_action_result(
-                    SETTINGS_WINDOW_LABEL,
-                    "set_focus",
-                    focus_result.as_ref().map(|_| ()),
-                );
+                record_app_window_lifecycle(&window, "after-focus", creation, initial_visibility);
                 focus_result.map_err(|error| error.to_string())?;
             }
         }
@@ -509,11 +474,11 @@ fn record_app_window_lifecycle(
         .app_handle()
         .try_state::<crate::diagnostics::DiagnosticsState>()
     {
-        let experiment = crate::window_policy::active_linux_window_experiment().name();
+        let policy = crate::window_policy::active_decorated_window_policy().name;
         state.record_window_lifecycle(
             SETTINGS_WINDOW_LABEL,
             phase,
-            experiment,
+            policy,
             creation,
             initial_visibility,
             logical_outer_size(window),

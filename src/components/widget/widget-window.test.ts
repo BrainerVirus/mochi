@@ -30,7 +30,7 @@ describe("WidgetWindow", () => {
     expect(source).toContain("max-w-[360px]");
   });
 
-  it("keeps the widget out of static tauri config so linux experiments can create it on demand", () => {
+  it("keeps the widget out of static tauri config so linux can create it on demand", () => {
     const config = JSON.parse(readFileSync(resolve("src-tauri/tauri.conf.json"), "utf8"));
     const widget = config.app.windows.find(
       (window: { label: string }) => window.label === "widget",
