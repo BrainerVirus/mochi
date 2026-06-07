@@ -1,7 +1,7 @@
-import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
-import { SettingsTabSegmentedControl } from "@/components/tray/tray-segmented-control";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useSaveSettings, useSettings } from "@/hooks/use-tray-events";
+import { ScrollFadeRegion } from "@/features/tray/components/scroll-fade-region";
+import { SettingsTabSegmentedControl } from "@/features/tray/components/tray-segmented-control";
+import { useSaveSettings, useSettings } from "@/features/tray/hooks/use-tray-events";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
 

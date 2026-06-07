@@ -8,10 +8,10 @@ import {
 } from "@/lib/schemas/usage";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
-import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrayPanelDivider } from "@/features/tray/components/tray-panel-divider";
 import { formatUpdatedAgo } from "@/lib/utils/format-updated-ago";
 import { getProviderLabel } from "@/lib/utils/provider-labels";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";

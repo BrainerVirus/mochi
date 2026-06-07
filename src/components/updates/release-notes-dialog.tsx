@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 
-import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollFadeRegion } from "@/features/tray/components/scroll-fade-region";
 import { splitPatchNotesSections, type PatchNotesSection } from "@/lib/updates/format-patch-notes";
 
 interface ReleaseNotesDialogProps {

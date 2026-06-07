@@ -120,6 +120,111 @@
       ],
       "@/components/providers/provider-icon-sources": [
         "./src/shared/components/providers/provider-icon-sources/provider-icon-sources.ts"
+      ],
+      "@/features/tray/components/scroll-fade-cycle": [
+        "./src/features/tray/components/scroll-fade-cycle/scroll-fade-cycle.ts"
+      ],
+      "@/features/tray/components/scroll-fade-overlays": [
+        "./src/features/tray/components/scroll-fade-overlays/scroll-fade-overlays.tsx"
+      ],
+      "@/features/tray/components/scroll-fade-region": [
+        "./src/features/tray/components/scroll-fade-region/scroll-fade-region.tsx"
+      ],
+      "@/features/tray/components/segment-indicator-animation": [
+        "./src/features/tray/components/segment-indicator-animation/segment-indicator-animation.ts"
+      ],
+      "@/features/tray/components/segment-track-resize-observer": [
+        "./src/features/tray/components/segment-track-resize-observer/segment-track-resize-observer.ts"
+      ],
+      "@/features/tray/components/tray-event-bridge": [
+        "./src/features/tray/components/tray-event-bridge/tray-event-bridge.tsx"
+      ],
+      "@/features/tray/components/tray-menu-row": [
+        "./src/features/tray/components/tray-menu-row/tray-menu-row.tsx"
+      ],
+      "@/features/tray/components/tray-overview": [
+        "./src/features/tray/components/tray-overview/tray-overview.tsx"
+      ],
+      "@/features/tray/components/tray-panel": [
+        "./src/features/tray/components/tray-panel/tray-panel.tsx"
+      ],
+      "@/features/tray/components/tray-panel-content": [
+        "./src/features/tray/components/tray-panel-content/tray-panel-content.tsx"
+      ],
+      "@/features/tray/components/tray-panel-divider": [
+        "./src/features/tray/components/tray-panel-divider/tray-panel-divider.tsx"
+      ],
+      "@/features/tray/components/tray-panel-footer": [
+        "./src/features/tray/components/tray-panel-footer/tray-panel-footer.tsx"
+      ],
+      "@/features/tray/components/tray-panel-shell": [
+        "./src/features/tray/components/tray-panel-shell/tray-panel-shell.tsx"
+      ],
+      "@/features/tray/components/tray-panel-tab-cycle": [
+        "./src/features/tray/components/tray-panel-tab-cycle/tray-panel-tab-cycle.ts"
+      ],
+      "@/features/tray/components/tray-panel-tab-list": [
+        "./src/features/tray/components/tray-panel-tab-list/tray-panel-tab-list.tsx"
+      ],
+      "@/features/tray/components/tray-segment-indicator": [
+        "./src/features/tray/components/tray-segment-indicator/tray-segment-indicator.ts"
+      ],
+      "@/features/tray/components/tray-segment-indicator-machine": [
+        "./src/features/tray/components/tray-segment-indicator-machine/tray-segment-indicator-machine.ts"
+      ],
+      "@/features/tray/components/tray-segment-item": [
+        "./src/features/tray/components/tray-segment-item/tray-segment-item.tsx"
+      ],
+      "@/features/tray/components/tray-segmented-control": [
+        "./src/features/tray/components/tray-segmented-control/tray-segmented-control.tsx"
+      ],
+      "@/features/tray/components/tray-segmented-control-config": [
+        "./src/features/tray/components/tray-segmented-control-config/tray-segmented-control-config.ts"
+      ],
+      "@/features/tray/components/tray-tab-chevron": [
+        "./src/features/tray/components/tray-tab-chevron/tray-tab-chevron.tsx"
+      ],
+      "@/features/tray/components/tray-tab-chevron-class-name": [
+        "./src/features/tray/components/tray-tab-chevron-class-name/tray-tab-chevron-class-name.ts"
+      ],
+      "@/features/tray/components/use-gsap-overflow-visibility": [
+        "./src/features/tray/components/use-gsap-overflow-visibility/use-gsap-overflow-visibility.ts"
+      ],
+      "@/features/tray/components/use-scroll-overflow": [
+        "./src/features/tray/components/use-scroll-overflow/use-scroll-overflow.ts"
+      ],
+      "@/features/tray/components/use-tray-segment-indicator-sync": [
+        "./src/features/tray/components/use-tray-segment-indicator-sync/use-tray-segment-indicator-sync.ts"
+      ],
+      "@/features/tray/components/use-tray-segment-indicators": [
+        "./src/features/tray/components/use-tray-segment-indicators/use-tray-segment-indicators.ts"
+      ],
+      "@/features/tray/hooks/use-tab-fill-activation-key": [
+        "./src/features/tray/hooks/use-tab-fill-activation-key/use-tab-fill-activation-key.ts"
+      ],
+      "@/features/tray/hooks/use-tray-events": [
+        "./src/features/tray/hooks/use-tray-events/use-tray-events.ts"
+      ],
+      "@/features/tray/hooks/use-tray-panel-focus-reset": [
+        "./src/features/tray/hooks/use-tray-panel-focus-reset/use-tray-panel-focus-reset.ts"
+      ],
+      "@/features/tray/hooks/use-tray-panel-height": [
+        "./src/features/tray/hooks/use-tray-panel-height/use-tray-panel-height.ts"
+      ],
+      "@/features/tray/hooks/use-tray-panel-refresh": [
+        "./src/features/tray/hooks/use-tray-panel-refresh/use-tray-panel-refresh.ts"
+      ],
+      "@/features/tray/hooks/use-tray-panel-shortcuts": [
+        "./src/features/tray/hooks/use-tray-panel-shortcuts/use-tray-panel-shortcuts.ts"
+      ],
+      "@/features/tray/hooks/use-tray-panel-state": [
+        "./src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.ts"
+      ],
+      "@/features/tray/hooks/use-tray-usage-sync": [
+        "./src/features/tray/hooks/use-tray-usage-sync/use-tray-usage-sync.ts"
+      ],
+      "@/features/tray/lib/stores/tray-ui-store": [
+        "./src/features/tray/lib/stores/tray-ui-store/tray-ui-store.ts"
       ]
     },
     "skipLibCheck": true,

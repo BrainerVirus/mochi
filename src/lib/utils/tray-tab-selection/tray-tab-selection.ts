@@ -1,5 +1,5 @@
+import type { TraySelectedTab } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { ProviderIdSchema, type ProviderId } from "@/lib/schemas/usage";
-import type { TraySelectedTab } from "@/lib/stores/tray-ui-store";
 
 export function parseTrayTabChange(value: string): TraySelectedTab {
   if (value === "overview") {

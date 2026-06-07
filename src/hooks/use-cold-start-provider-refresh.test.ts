@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  syncCurrentTrayUsage,
+  useTrayUiStore,
+} from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderUsageState } from "@/lib/schemas/usage";
-import { syncCurrentTrayUsage, useTrayUiStore } from "@/lib/stores/tray-ui-store";
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
 import {

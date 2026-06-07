@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import type { TraySelectedTab } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { detectPlatformFromNavigator, parsePlatformId } from "@/lib/platform/detect";
 import type { PlatformId } from "@/lib/platform/types";
 import {
@@ -25,7 +26,6 @@ import {
   type UsageSnapshot,
   type UsageSnapshots,
 } from "@/lib/schemas/usage";
-import type { TraySelectedTab } from "@/lib/stores/tray-ui-store";
 import { isTauriRuntime } from "@/lib/tauri/runtime";
 
 export function appVersion(): Promise<string> {
