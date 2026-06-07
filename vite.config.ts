@@ -1,10 +1,13 @@
 /// <reference types="vitest/config" />
 
+import path from "node:path";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+
+import { folderResolver } from "./scripts/vite-folder-resolver";
 
 export default defineConfig({
   base: "./",
@@ -24,6 +27,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   plugins: [
+    folderResolver({ srcRoot: path.resolve(import.meta.dirname, "src") }),
     tailwindcss(),
     tanstackRouter({
       target: "react",

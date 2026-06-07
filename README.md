@@ -1,6 +1,7 @@
 # Mochi
 
 [![Pull Request](https://github.com/BrainerVirus/mochi/actions/workflows/pr.yml/badge.svg)](https://github.com/BrainerVirus/mochi/actions/workflows/pr.yml)
+[![Frontend Coverage](https://github.com/BrainerVirus/mochi/actions/workflows/pr.yml/badge.svg?branch=main&job=frontend-coverage)](https://github.com/BrainerVirus/mochi/actions/workflows/pr.yml)
 [![React Doctor](https://img.shields.io/badge/React%20Doctor-enabled-61dafb?logo=react&logoColor=111827)](https://react.doctor/)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-24c8db?logo=tauri&logoColor=white)](https://v2.tauri.app/)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=111827)](https://react.dev/)
