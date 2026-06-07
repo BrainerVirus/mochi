@@ -8,9 +8,6 @@ Environment for all rows unless noted:
 
 | Experiment              | Settings first open | About first open | Update first open | Widget first open | Close/reopen regression | Diagnostics bundle | Result  |
 | ----------------------- | ------------------- | ---------------- | ----------------- | ----------------- | ----------------------- | ------------------ | ------- |
-| baseline-sequenced-logs | Not run             | Not run          | Not run           | Not run           | Not run                 | Not attached       | Pending |
-| on-demand-visible       | Not run             | Not run          | Not run           | Not run           | Not run                 | Not attached       | Pending |
-| on-demand-hidden        | Not run             | Not run          | Not run           | Not run           | Not run                 | Not attached       | Pending |
-| builder-size-only       | Not run             | Not run          | Not run           | Not run           | Not run                 | Not attached       | Pending |
-| show-focus-only         | Not run             | Not run          | Not run           | Not run           | Not run                 | Not attached       | Pending |
-| unminimize-show-focus   | Not run             | Not run          | Not run           | Not run           | Not run                 | Not attached       | Pending |
+| on-demand-visible       | Pass                | Pass             | Pass              | Pass              | Pass                    | Attached           | unstable-20260606.233705 | Proven; promoted |
+
+Final result: `on-demand-visible` fixed native controls for settings and widget on Ubuntu Wayland. The behavior is promoted to the permanent Linux policy. Remaining variants were not needed.

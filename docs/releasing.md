@@ -52,27 +52,8 @@ curl -fsS https://brainervirus.github.io/mochi/updates/linux/x86_64/0.1.7/stable
 curl -fsS https://brainervirus.github.io/mochi/updates/windows/x86_64/0.1.7/stable.json
 ```
 
-## Linux Window-Control Diagnostic Unstable Builds
+## Linux Window Controls
 
-Use workflow dispatch on `release-unstable.yml` with `linux_window_experiment` set to one of:
+Linux decorated app windows are created on demand and visible. This avoids Ubuntu Wayland native titlebar hit-region failures caused by hidden precreation of decorated windows.
 
-- `baseline-sequenced-logs`
-- `on-demand-visible`
-- `on-demand-hidden`
-- `builder-size-only`
-- `show-focus-only`
-- `unminimize-show-focus`
-
-Install with the unstable installer:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i
-```
-
-After each diagnostic build, run:
-
-```bash
-mochi diagnostics --bundle
-```
-
-Attach the bundle and record the result in `docs/qa/linux-native-window-controls-experiments.md`.
+Do not add `MOCHI_LINUX_WINDOW_EXPERIMENT` back to release workflows. The proven behavior is now the default Linux behavior.
