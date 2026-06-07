@@ -39,15 +39,21 @@ const collectPaths = (dir, prefix) => {
   return entries;
 };
 
-const ROOT_AREAS = ["lib", "components", "hooks"];
+const ROOT_AREAS = [
+  { dir: "lib", prefix: "@/lib" },
+  { dir: "components", prefix: "@/components" },
+  { dir: "hooks", prefix: "@/hooks" },
+  { dir: "shared/components", prefix: "@/components" },
+  { dir: "shared/hooks", prefix: "@/hooks" },
+];
 
 const allEntries = {};
-for (const area of ROOT_AREAS) {
-  const dir = path.join(srcRoot, area);
-  if (!existsSync(dir)) continue;
-  const entries = collectPaths(dir, `@/${area}`);
+for (const { dir, prefix } of ROOT_AREAS) {
+  const fullDir = path.join(srcRoot, dir);
+  if (!existsSync(fullDir)) continue;
+  const entries = collectPaths(fullDir, prefix);
   for (const { alias, target } of entries) {
-    allEntries[alias] = [target];
+    if (!allEntries[alias]) allEntries[alias] = [target];
   }
 }
 

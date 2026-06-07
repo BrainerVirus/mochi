@@ -2,7 +2,7 @@ import type { ProviderId } from "@/lib/schemas/usage";
 
 import { cn } from "@/lib/utils";
 
-import { PROVIDER_BRAND_SVGS } from "./provider-icon-sources";
+import { PROVIDER_BRAND_SVGS } from "@/components/providers/provider-icon-sources";
 
 interface ProviderIconProps {
   provider: ProviderId;
