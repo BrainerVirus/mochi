@@ -44,6 +44,17 @@
     "no-console": "warn",
     "tailwindcss/no-unknown-classes": "error",
     "tailwindcss/no-conflicting-classes": "error",
-    "react-in-jsx-scope": "off"
+    "react-in-jsx-scope": "off",
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["@/*/index", "@/*/*/index", "@/*/*/*/index"],
+            "message": "Barrel imports are banned. Import the file directly by name (e.g. '@/features/tray/components/tray-panel/tray-panel')."
+          }
+        ]
+      }
+    ]
   }
 }
