@@ -2,8 +2,8 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { getUsageStates } from "@/lib/tauri/commands";
 
-import { queryKeys } from "./keys";
-import { usageRefreshIntervalMs } from "./usage-refetch-interval";
+import { queryKeys } from "@/lib/query/keys";
+import { usageRefreshIntervalMs } from "@/lib/query/usage-refetch-interval";
 
 export function createUsageSnapshotsQueryOptions(refreshIntervalSeconds?: number) {
   return queryOptions({

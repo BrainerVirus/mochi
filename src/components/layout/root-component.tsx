@@ -7,7 +7,8 @@ import {
   shouldUseFullHeightWindowShell,
 } from "@/components/layout/root-component-state";
 import { TrayEventBridge } from "@/components/tray/tray-event-bridge";
-import { detectPlatform, useSystemColorScheme } from "@/lib/platform";
+import { detectPlatform } from "@/lib/platform/detect";
+import { useSystemColorScheme } from "@/lib/platform/use-system-color-scheme";
 import { queryClient } from "@/lib/query/client";
 import { readIsAppWindow } from "@/lib/tauri/app-window";
 import { readIsTrayPanelWindow } from "@/lib/tauri/tray-panel-window";

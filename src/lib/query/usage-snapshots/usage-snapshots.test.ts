@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { queryKeys } from "./keys";
+import { queryKeys } from "@/lib/query/keys";
 import { createUsageSnapshotsQueryOptions } from "./usage-snapshots";
 
 describe("createUsageSnapshotsQueryOptions", () => {

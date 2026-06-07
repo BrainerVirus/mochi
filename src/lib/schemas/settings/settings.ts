@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { normalizeProviderId, ProviderIdSchema } from "./usage";
+import { normalizeProviderId, ProviderIdSchema } from "@/lib/schemas/usage";
 
 export const UpdateChannelSchema = z.enum(["stable", "unstable"]);
 

@@ -1,7 +1,7 @@
 import type { ProviderId, ProviderUsageState, UsageSnapshot } from "@/lib/schemas/usage";
 
-import { filterConfiguredSnapshots } from "./is-provider-configured";
-import { getProviderLabel } from "./provider-labels";
+import { filterConfiguredSnapshots } from "@/lib/utils/is-provider-configured";
+import { getProviderLabel } from "@/lib/utils/provider-labels";
 
 function isEnabledProvider(provider: ProviderId, enabledProviders: ProviderId[]): boolean {
   return enabledProviders.includes(provider);

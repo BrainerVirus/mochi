@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { detectPlatform, type PlatformId } from "@/lib/platform";
+import { detectPlatform } from "@/lib/platform/detect";
+import type { PlatformId } from "@/lib/platform/types";
 
 export function LinuxTrayHint() {
   const [platform, setPlatform] = useState<PlatformId>("unknown");
