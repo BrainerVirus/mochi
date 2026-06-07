@@ -308,7 +308,7 @@ it("uses permanent policy labels for linux app window lifecycle", () => {
   expect(source).toContain("active_decorated_window_policy()");
   expect(source).toContain("policy.creation_label()");
   expect(source).toContain("policy.initial_visibility_label()");
-  expect(source).not.toContain("startup-precreate\", \"hidden\"");
+  expect(source).not.toContain('startup-precreate", "hidden"');
 });
 ```
 
@@ -519,9 +519,7 @@ In `src/components/widget/widget-window.test.ts`, keep or add:
 ```ts
 it("keeps the widget out of static tauri config so linux can create it on demand", () => {
   const config = JSON.parse(readFileSync(resolve("src-tauri/tauri.conf.json"), "utf8"));
-  const widget = config.app.windows.find(
-    (window: { label: string }) => window.label === "widget",
-  );
+  const widget = config.app.windows.find((window: { label: string }) => window.label === "widget");
   expect(widget).toBeUndefined();
 });
 ```
@@ -810,21 +808,21 @@ Expected: FAIL while workflow/build script still mention `MOCHI_LINUX_WINDOW_EXP
 In `.github/workflows/release-unstable.yml`, replace:
 
 ```yaml
-  workflow_dispatch:
-    inputs:
-      linux_window_experiment:
+workflow_dispatch:
+  inputs:
+    linux_window_experiment:
 ```
 
 and its full nested block with:
 
 ```yaml
-  workflow_dispatch:
+workflow_dispatch:
 ```
 
 Remove this env entry from the Tauri build step:
 
 ```yaml
-          MOCHI_LINUX_WINDOW_EXPERIMENT: ${{ github.event.inputs.linux_window_experiment || 'baseline-sequenced-logs' }}
+MOCHI_LINUX_WINDOW_EXPERIMENT: ${{ github.event.inputs.linux_window_experiment || 'baseline-sequenced-logs' }}
 ```
 
 Remove this line from both release body locations:
@@ -836,7 +834,8 @@ Remove this line from both release body locations:
 Remove this JavaScript line from the `release-notes` job:
 
 ```js
-const experiment = "${{ github.event.inputs.linux_window_experiment || 'baseline-sequenced-logs' }}";
+const experiment =
+  "${{ github.event.inputs.linux_window_experiment || 'baseline-sequenced-logs' }}";
 ```
 
 Remove this body array entry:
