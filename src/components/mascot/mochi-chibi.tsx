@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils";
 
 interface MochiChibiProps {
   className?: string;

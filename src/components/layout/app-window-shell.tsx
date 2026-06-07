@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { shouldRenderOverlayTitlebar } from "@/components/layout/app-window-titlebar-policy";
 import { detectPlatform } from "@/lib/platform/detect";
 import type { PlatformId } from "@/lib/platform/types";
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils";
 
 interface AppWindowShellProps {
   children: ReactNode;

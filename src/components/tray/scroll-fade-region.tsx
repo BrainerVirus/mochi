@@ -8,7 +8,7 @@ import {
 } from "@/components/tray/scroll-fade-cycle";
 import { ScrollFadeEdgeOverlays } from "@/components/tray/scroll-fade-overlays";
 import { useScrollOverflow } from "@/components/tray/use-scroll-overflow";
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils";
 
 type ScrollFadeOrientation = "horizontal" | "vertical";
 

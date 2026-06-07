@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import { useUsageMeterFill } from "@/hooks/use-usage-meter-fill";
 import { useUsageMeterLeftLabel } from "@/hooks/use-usage-meter-left-label";
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils";
 import { formatResetLine } from "@/lib/utils/format-reset-line";
 import {
   formatUsageMeterLeftLabel,

@@ -12,7 +12,7 @@ import {
   type AppSegmentedControlVariant,
 } from "@/components/ui/app-segmented-control-utils";
 import { ToggleGroupItem } from "@/components/ui/toggle-group";
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils";
 
 export function SegmentIndicators({
   hoverIndicatorRef,

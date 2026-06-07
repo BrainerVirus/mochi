@@ -1,7 +1,7 @@
 "use client";
 
 import { ToggleGroup } from "@/components/ui/toggle-group";
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils";
 
 import {
   SegmentIndicators,

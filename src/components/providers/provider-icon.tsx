@@ -1,6 +1,6 @@
 import type { ProviderId } from "@/lib/schemas/usage";
 
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils";
 
 import { PROVIDER_BRAND_SVGS } from "./provider-icon-sources";
 

@@ -4,7 +4,7 @@ import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
 import { ToggleGroupItem } from "@/components/ui/toggle-group";
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils";
 
 const traySegmentItemClassName = cn(
   "relative z-10 inline-flex h-full min-w-[4.75rem] max-w-[7.5rem] shrink-0 flex-none cursor-pointer flex-row items-center justify-center gap-1.5 rounded-none border-0 px-3 shadow-none",

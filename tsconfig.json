@@ -61,7 +61,6 @@
       "@/lib/utils/aggregate-used-percent": [
         "./src/lib/utils/aggregate-used-percent/aggregate-used-percent.ts"
       ],
-      "@/lib/utils/cn": ["./src/lib/utils/cn/cn.ts"],
       "@/lib/utils/format-reset-countdown": [
         "./src/lib/utils/format-reset-countdown/format-reset-countdown.ts"
       ],
