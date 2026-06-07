@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  SETTINGS_PAGE_TAB_DEFAULTS,
-  TRAY_PAGE_TAB_DEFAULTS,
-  TRAY_SEGMENT_ROW_HEIGHT,
-} from "@/components/tray/tray-segmented-control-config";
-import {
   APP_SEGMENT_INDICATOR_RADIUS_CLASS,
   APP_SEGMENT_TRACK_RADIUS_CLASS,
   INLINE_SEGMENT_INDICATOR_RADIUS_CLASS,
@@ -16,6 +11,11 @@ import {
   usesSegmentActiveIndicator,
   usesSegmentHoverIndicator,
 } from "@/components/ui/app-segmented-control-utils";
+import {
+  SETTINGS_PAGE_TAB_DEFAULTS,
+  TRAY_PAGE_TAB_DEFAULTS,
+  TRAY_SEGMENT_ROW_HEIGHT,
+} from "@/features/tray/components/tray-segmented-control-config";
 
 describe("usesPageTabIndicators", () => {
   it("enables GSAP hover/active pills for page tabs", () => {

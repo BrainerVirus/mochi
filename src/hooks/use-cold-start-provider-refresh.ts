@@ -1,12 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
-import { useSettings } from "@/hooks/use-tray-events";
+import { useSettings } from "@/features/tray/hooks/use-tray-events";
+import { syncCurrentTrayUsage } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { useUsageData } from "@/hooks/use-usage-data";
 import { queryKeys } from "@/lib/query/keys";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderUsageState } from "@/lib/schemas/usage";
-import { syncCurrentTrayUsage } from "@/lib/stores/tray-ui-store";
 import { refreshEnabledProviders } from "@/lib/tauri/commands";
 import { isTauriRuntime } from "@/lib/tauri/runtime";
 

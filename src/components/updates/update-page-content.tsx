@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 
 import { MochiChibi } from "@/components/mascot/mochi-chibi";
-import { ScrollFadeRegion } from "@/components/tray/scroll-fade-region";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { ScrollFadeRegion } from "@/features/tray/components/scroll-fade-region";
 import { useUpdateInstall } from "@/hooks/use-update-install";
 import { splitPatchNotesSections, type PatchNotesSection } from "@/lib/updates/format-patch-notes";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";

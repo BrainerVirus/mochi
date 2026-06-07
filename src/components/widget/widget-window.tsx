@@ -1,11 +1,11 @@
 import { useRef } from "react";
 
-import { UsageSnapshotsPanel } from "@/components/tray/tray-panel-content";
-import { TrayPanelDivider } from "@/components/tray/tray-panel-divider";
-import { TrayPanelFooter } from "@/components/tray/tray-panel-footer";
-import { useTrayPanelFocusReset } from "@/hooks/use-tray-panel-focus-reset";
-import { useTrayPanelShortcuts } from "@/hooks/use-tray-panel-shortcuts";
-import { useTrayPanelState } from "@/hooks/use-tray-panel-state";
+import { UsageSnapshotsPanel } from "@/features/tray/components/tray-panel-content";
+import { TrayPanelDivider } from "@/features/tray/components/tray-panel-divider";
+import { TrayPanelFooter } from "@/features/tray/components/tray-panel-footer";
+import { useTrayPanelFocusReset } from "@/features/tray/hooks/use-tray-panel-focus-reset";
+import { useTrayPanelShortcuts } from "@/features/tray/hooks/use-tray-panel-shortcuts";
+import { useTrayPanelState } from "@/features/tray/hooks/use-tray-panel-state";
 import { quitApp } from "@/lib/tauri/commands";
 
 export function WidgetWindow() {

@@ -1,6 +1,6 @@
 import { ArrowDownCircleIcon, DownloadIcon } from "lucide-react";
 
-import type { TrayMenuItem } from "@/components/tray/tray-menu-row";
+import type { TrayMenuItem } from "@/features/tray/components/tray-menu-row";
 
 export interface TrayUpdateFooterOptions {
   updateAvailable: boolean;

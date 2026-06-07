@@ -5,7 +5,7 @@ import { useCallback, useRef } from "react";
 import {
   useTraySegmentIndicators,
   type UseTraySegmentIndicatorsOptions,
-} from "@/components/tray/use-tray-segment-indicators";
+} from "@/features/tray/components/use-tray-segment-indicators";
 
 export function useAppSegmentControlState(
   value: string,

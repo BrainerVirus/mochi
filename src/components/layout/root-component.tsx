@@ -6,7 +6,7 @@ import {
   getHydrationSafeRootState,
   shouldUseFullHeightWindowShell,
 } from "@/components/layout/root-component-state";
-import { TrayEventBridge } from "@/components/tray/tray-event-bridge";
+import { TrayEventBridge } from "@/features/tray/components/tray-event-bridge";
 import { detectPlatform } from "@/lib/platform/detect";
 import { useSystemColorScheme } from "@/lib/platform/use-system-color-scheme";
 import { queryClient } from "@/lib/query/client";
