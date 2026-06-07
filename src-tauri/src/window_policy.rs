@@ -94,7 +94,10 @@ mod tests {
             policy.initial_visibility,
             DecoratedWindowInitialVisibility::Visible
         );
-        assert_eq!(policy.first_show_sequence, FirstShowSequence::AlreadyVisibleFocus);
+        assert_eq!(
+            policy.first_show_sequence,
+            FirstShowSequence::AlreadyVisibleFocus
+        );
         assert!(!policy.mutate_size_before_first_show);
     }
 

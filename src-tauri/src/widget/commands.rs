@@ -136,7 +136,12 @@ pub fn show_widget(app: AppHandle) -> Result<(), String> {
                 unminimize_result.as_ref().map(|_| ()),
             );
             unminimize_result.map_err(|error| error.to_string())?;
-            record_widget_window_lifecycle(&window, "after-unminimize", creation, initial_visibility);
+            record_widget_window_lifecycle(
+                &window,
+                "after-unminimize",
+                creation,
+                initial_visibility,
+            );
             record_widget_window_controls(&app, &window, creation);
 
             let focus_result = window.set_focus();

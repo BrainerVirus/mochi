@@ -423,7 +423,12 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
                     unminimize_result.as_ref().map(|_| ()),
                 );
                 unminimize_result.map_err(|error| error.to_string())?;
-                record_app_window_lifecycle(&window, "after-unminimize", creation, initial_visibility);
+                record_app_window_lifecycle(
+                    &window,
+                    "after-unminimize",
+                    creation,
+                    initial_visibility,
+                );
                 record_app_window_controls(&window, "rust-builder");
 
                 let focus_result = window.set_focus();
