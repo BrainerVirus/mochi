@@ -2,6 +2,8 @@
 
 Date: 2026-05-19
 
+> **Update 2026-06-07:** the frontend has been restructured from "feature folder + flat files" into feature-slices with per-unit folders. See [2026-06-07-frontend-structure-and-coverage-design.md](2026-06-07-frontend-structure-and-coverage-design.md) for the new layout. Coverage threshold of 80% (lines/functions/statements) and 75% (branches) is now CI-enforced.
+
 ## Summary
 
 Mochi is a friendly, cross-platform usage companion for AI coding tools. It tracks session limits, weekly limits, reset windows, provider status, and local usage signals for tools such as Codex, Claude, Cursor, Gemini, Copilot, Antigravity, Factory/Droid, z.ai, Kiro, and Augment.
