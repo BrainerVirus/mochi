@@ -118,6 +118,8 @@ pub fn run() -> anyhow::Result<()> {
             status::get_usage_snapshots,
             status::refresh_provider,
             status::refresh_enabled_providers,
+            status::refresh_all_providers,
+            status::refresh_single_provider,
             show_main_panel,
             open_app_window,
             open_external_url,
