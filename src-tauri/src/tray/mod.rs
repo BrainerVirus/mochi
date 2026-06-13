@@ -17,7 +17,7 @@ use tauri::{
 use crate::core::models::UsageSnapshot;
 use crate::core::usage_store::UsageStore;
 use crate::settings::{SettingsState, UpdateChannel};
-use crate::status::read_cached_snapshots;
+use crate::status::{read_cached_snapshots, RefreshCompletePayload};
 
 pub use panel::{
     maybe_show_main_for_dev, open_app_window, open_tray_panel, record_tray_icon_event,
@@ -240,20 +240,22 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                             app.try_state::<crate::settings::SettingsState>()
                         {
                             if let Ok(settings) = settings_state.current() {
-                                let _ =
-                                    crate::status::refresh_all_providers_inner(&store, &settings)
-                                        .await
-                                        .map(|payload| {
-                                            let _ = app.emit("usage-refresh-complete", &payload);
-                                            // Update tray icon directly regardless of webview state
-                                            let snapshots =
-                                                read_cached_snapshots(&store, &settings);
-                                            let _ = apply_tray_usage(
-                                                &app,
-                                                &snapshots,
-                                                TraySelection::Overview,
-                                            );
-                                        });
+                                let payload = crate::status::refresh_all_providers_inner(
+                                    &store, &settings,
+                                )
+                                .await
+                                .unwrap_or_else(|_| RefreshCompletePayload {
+                                    states: crate::status::read_cached_usage_states(
+                                        &store, &settings,
+                                    ),
+                                });
+                                let _ = app.emit("usage-refresh-complete", &payload);
+                                let snapshots = read_cached_snapshots(&store, &settings);
+                                let _ = apply_tray_usage(
+                                    &app,
+                                    &snapshots,
+                                    TraySelection::Overview,
+                                );
                             }
                         }
                     }

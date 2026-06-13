@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -8,18 +8,21 @@ import { refreshAllProviders } from "@/lib/tauri/commands";
 export function useTrayPanelRefresh() {
   const queryClient = useQueryClient();
   const [isRefreshingAll, setIsRefreshingAll] = useState(false);
+  const isRefreshingRef = useRef(false);
 
   const refreshAll = useCallback(async () => {
-    if (isRefreshingAll) return;
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
     setIsRefreshingAll(true);
     try {
       await refreshAllProviders();
     } catch {
       void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
     } finally {
+      isRefreshingRef.current = false;
       setIsRefreshingAll(false);
     }
-  }, [isRefreshingAll, queryClient]);
+  }, [queryClient]);
 
   return { refreshAll, isRefreshingAll };
 }
