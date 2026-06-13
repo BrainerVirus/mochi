@@ -386,6 +386,62 @@ pub async fn refresh_all_providers(
     Ok(payload)
 }
 
+#[tauri::command]
+pub async fn refresh_single_provider(
+    app: AppHandle,
+    store: State<'_, UsageStore>,
+    settings_state: State<'_, SettingsState>,
+    provider: String,
+) -> Result<RefreshCompletePayload, String> {
+    let settings = settings_state.current()?;
+    let provider_id =
+        ProviderId::parse(&provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
+    let ctx = FetchContext::from_settings(&settings);
+
+    if !provider_has_credentials(provider_id, &ctx) {
+        store.record_error(
+            provider_id,
+            "credentials missing",
+            failed_attempt("live-fetch", &ProviderError::NotConfigured),
+        );
+        return Err("credentials missing".to_string());
+    }
+
+    let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
+        return Err("refresh already in progress".to_string());
+    };
+
+    match fetch_provider_snapshot(provider_id, &ctx).await {
+        Ok(Some(snapshot)) => {
+            store.record_success(snapshot);
+        }
+        Ok(None) => {
+            store.record_error(
+                provider_id,
+                "provider returned no snapshot",
+                failed_attempt("live-fetch", &ProviderError::NotConfigured),
+            );
+        }
+        Err(error) => {
+            if store
+                .record_failure(provider_id, &error, failed_attempt("live-fetch", &error))
+                .is_none()
+            {
+                store.record_error(
+                    provider_id,
+                    error.to_string(),
+                    failed_attempt("live-fetch", &error),
+                );
+            }
+        }
+    }
+
+    let states = read_cached_usage_states(&store, &settings);
+    let payload = RefreshCompletePayload { states };
+    let _ = app.emit("usage-refresh-complete", &payload);
+    Ok(payload)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
