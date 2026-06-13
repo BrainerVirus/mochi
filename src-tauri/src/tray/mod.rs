@@ -236,11 +236,15 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 let app = app.clone();
                 tauri::async_runtime::spawn(async move {
                     if let Some(store) = app.try_state::<crate::core::usage_store::UsageStore>() {
-                        if let Some(settings_state) = app.try_state::<crate::settings::SettingsState>() {
+                        if let Some(settings_state) =
+                            app.try_state::<crate::settings::SettingsState>()
+                        {
                             if let Ok(settings) = settings_state.current() {
                                 let _ = crate::status::refresh_all_providers_inner(
                                     &app, &store, &settings,
-                                ).await.map(|payload| {
+                                )
+                                .await
+                                .map(|payload| {
                                     let _ = app.emit("usage-refresh-complete", &payload);
                                 });
                             }
