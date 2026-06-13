@@ -21,7 +21,6 @@ export function TrayPanel() {
     isFetching,
     refreshAll,
     isRefreshingAll,
-    refreshProviderMutation,
     selectedTab,
     refreshingProvider,
     states,
@@ -62,7 +61,7 @@ export function TrayPanel() {
         />
         <TrayPanelDivider inset data-tray-panel-separator />
         <TrayPanelFooter
-          isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
+          isRefreshing={isFetching || refreshingProvider !== null || isRefreshingAll}
           onRefresh={() => {
             void refreshAll();
           }}
