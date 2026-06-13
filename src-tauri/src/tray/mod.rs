@@ -233,7 +233,20 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "refresh" => {
-                let _ = app.emit("tray-refresh", ());
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Some(store) = app.try_state::<crate::core::usage_store::UsageStore>() {
+                        if let Some(settings_state) = app.try_state::<crate::settings::SettingsState>() {
+                            if let Ok(settings) = settings_state.current() {
+                                let _ = crate::status::refresh_all_providers_inner(
+                                    &app, &store, &settings,
+                                ).await.map(|payload| {
+                                    let _ = app.emit("usage-refresh-complete", &payload);
+                                });
+                            }
+                        }
+                    }
+                });
             }
             "widget" => {
                 let _ = crate::widget::show_widget(app.clone());
