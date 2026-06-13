@@ -240,13 +240,12 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                             app.try_state::<crate::settings::SettingsState>()
                         {
                             if let Ok(settings) = settings_state.current() {
-                                let _ = crate::status::refresh_all_providers_inner(
-                                    &app, &store, &settings,
-                                )
-                                .await
-                                .map(|payload| {
-                                    let _ = app.emit("usage-refresh-complete", &payload);
-                                });
+                                let _ =
+                                    crate::status::refresh_all_providers_inner(&store, &settings)
+                                        .await
+                                        .map(|payload| {
+                                            let _ = app.emit("usage-refresh-complete", &payload);
+                                        });
                             }
                         }
                     }

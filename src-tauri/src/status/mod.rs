@@ -363,7 +363,6 @@ pub struct RefreshCompletePayload {
 /// Refresh all enabled providers to completion, then return updated states.
 /// Called from the tray handler; does NOT emit events — caller decides.
 pub async fn refresh_all_providers_inner(
-    _app: &AppHandle,
     store: &UsageStore,
     settings: &MochiSettings,
 ) -> Result<RefreshCompletePayload, ProviderError> {
@@ -379,7 +378,7 @@ pub async fn refresh_all_providers(
     settings_state: State<'_, SettingsState>,
 ) -> Result<RefreshCompletePayload, String> {
     let settings = settings_state.current()?;
-    let payload = refresh_all_providers_inner(&app, &store, &settings)
+    let payload = refresh_all_providers_inner(&store, &settings)
         .await
         .map_err(|e| e.to_string())?;
     let _ = app.emit("usage-refresh-complete", &payload);
