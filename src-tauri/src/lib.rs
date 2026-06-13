@@ -116,7 +116,6 @@ pub fn run() -> anyhow::Result<()> {
             get_provider_catalog,
             get_provider_credential_status,
             status::get_usage_snapshots,
-            status::refresh_provider,
             status::refresh_enabled_providers,
             status::refresh_all_providers,
             status::refresh_single_provider,

@@ -24,51 +24,6 @@ pub async fn get_usage_snapshots(
 }
 
 #[tauri::command]
-pub async fn refresh_provider(
-    store: State<'_, UsageStore>,
-    settings_state: State<'_, SettingsState>,
-    provider: String,
-) -> Result<UsageSnapshot, String> {
-    let settings = settings_state.current()?;
-    let ctx = FetchContext::from_settings(&settings);
-    let provider_id =
-        ProviderId::parse(&provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
-
-    if !provider_has_credentials(provider_id, &ctx) {
-        store.record_error(
-            provider_id,
-            "credentials missing",
-            failed_attempt("live-fetch", &ProviderError::NotConfigured),
-        );
-        return Err("credentials missing".to_string());
-    }
-
-    let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
-        return Err("refresh already in progress".to_string());
-    };
-
-    match fetch_provider_snapshot(provider_id, &ctx).await {
-        Ok(Some(snapshot)) => {
-            store.record_success(snapshot.clone());
-            Ok(snapshot)
-        }
-        Ok(None) => Err("provider returned no snapshot".to_string()),
-        Err(error) => {
-            if let Some(stale) =
-                store.record_failure(provider_id, &error, failed_attempt("live-fetch", &error))
-            {
-                Err(format!(
-                    "{} (serving stale cache)",
-                    stale.error.unwrap_or_default()
-                ))
-            } else {
-                Err(error.to_string())
-            }
-        }
-    }
-}
-
-#[tauri::command]
 pub async fn refresh_enabled_providers(
     store: State<'_, UsageStore>,
     settings_state: State<'_, SettingsState>,
@@ -656,53 +611,6 @@ mod tests {
         assert!(snapshots.is_empty());
     }
 
-    #[tokio::test]
-    #[allow(clippy::await_holding_lock)]
-    async fn refresh_provider_returns_snapshot_for_known_provider() {
-        let _guard = test_env::LOCK.lock().expect("env lock");
-        std::env::set_var(
-            "MOCHI_CLAUDE_SESSION_KEY",
-            "sk-ant-test-session-key-for-refresh",
-        );
-
-        let store = UsageStore::new(None);
-        let result = refresh_provider_with_store(&store, "claude".into()).await;
-
-        std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
-
-        match result {
-            Ok(snapshot) => {
-                assert_eq!(snapshot.provider, ProviderId::Claude);
-                assert_eq!(
-                    read_cached_snapshots(&store, &settings_with_enabled(&["claude"]))[0].provider,
-                    ProviderId::Claude
-                );
-            }
-            Err(_) => {
-                store.record_success(cached_claude_snapshot());
-                let cached = read_cached_snapshots(&store, &settings_with_enabled(&["claude"]));
-                assert_eq!(cached[0].provider, ProviderId::Claude);
-            }
-        }
-    }
-
-    async fn refresh_provider_with_store(
-        store: &UsageStore,
-        provider: String,
-    ) -> Result<UsageSnapshot, String> {
-        let provider_id =
-            ProviderId::parse(&provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
-
-        match fetch_provider_snapshot(provider_id, &FetchContext::empty()).await {
-            Ok(Some(snapshot)) => {
-                store.record_success(snapshot.clone());
-                Ok(snapshot)
-            }
-            Ok(None) => Err("provider returned no snapshot".to_string()),
-            Err(error) => Err(error.to_string()),
-        }
-    }
-
     #[test]
     fn is_provider_enabled_ignores_unknown_provider_ids() {
         assert!(!is_provider_enabled(
@@ -835,13 +743,4 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn refresh_provider_rejects_unknown_provider() {
-        let store = UsageStore::new(None);
-        let error = refresh_provider_with_store(&store, "not-a-provider".into())
-            .await
-            .expect_err("unknown provider should fail");
-
-        assert!(error.contains("unknown provider"));
-    }
 }
