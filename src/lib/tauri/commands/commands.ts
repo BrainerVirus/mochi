@@ -16,6 +16,7 @@ import {
   type UpdateChannel,
 } from "@/lib/schemas/settings";
 import {
+  ProviderUsageStatesSchema,
   UpdateInfoSchema,
   UsageSnapshotSchema,
   UsageSnapshotsSchema,
@@ -68,6 +69,18 @@ export async function refreshProvider(provider: ProviderId): Promise<UsageSnapsh
 export async function refreshEnabledProviders(): Promise<UsageSnapshots> {
   const result = await invoke<unknown>("refresh_enabled_providers");
   return UsageSnapshotsSchema.parse(result);
+}
+
+export async function refreshAllProviders(): Promise<ProviderUsageStates> {
+  const result = await invoke<{ states: unknown }>("refresh_all_providers");
+  return ProviderUsageStatesSchema.parse(result.states);
+}
+
+export async function refreshSingleProvider(
+  provider: ProviderId,
+): Promise<ProviderUsageStates> {
+  const result = await invoke<{ states: unknown }>("refresh_single_provider", { provider });
+  return ProviderUsageStatesSchema.parse(result.states);
 }
 
 export async function getSettings(): Promise<MochiSettings> {
