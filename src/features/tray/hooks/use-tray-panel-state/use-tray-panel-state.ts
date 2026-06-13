@@ -1,9 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useSettings } from "@/features/tray/hooks/use-tray-events";
 import { useTrayPanelRefresh } from "@/features/tray/hooks/use-tray-panel-refresh";
 import { useTrayUiStore } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
+import { queryKeys } from "@/lib/query/keys";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { refreshSingleProvider, syncTrayUsage } from "@/lib/tauri/commands";
 import {
@@ -19,6 +21,8 @@ export function useTrayPanelState() {
   const setSelectedTab = useTrayUiStore((state) => state.setSelectedTab);
   const [refreshingProvider, setRefreshingProvider] = useState<ProviderId | null>(null);
   const pendingRefreshes = useRef(0);
+
+  const queryClient = useQueryClient();
 
   const enabledProviders = useMemo(
     () => settings?.enabled_providers ?? [],
@@ -51,7 +55,7 @@ export function useTrayPanelState() {
     setRefreshingProvider(provider);
     void refreshSingleProvider(provider)
       .catch(() => {
-        // Errors are already recorded on Rust side
+        void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
       })
       .finally(() => {
         pendingRefreshes.current--;

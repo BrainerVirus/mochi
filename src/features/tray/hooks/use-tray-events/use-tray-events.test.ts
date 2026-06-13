@@ -78,7 +78,7 @@ describe("settings save reconciliation", () => {
 });
 
 describe("usage refresh complete handler", () => {
-  it("sets query data and reads cached settings", async () => {
+  it("sets query data and does not sync tray when no settings cached", async () => {
     const calls: string[] = [];
 
     handleUsageRefreshComplete(
@@ -102,9 +102,10 @@ describe("usage refresh complete handler", () => {
 
     expect(calls).toContain("set-data");
     expect(calls).toContain("get-settings");
+    expect(syncTrayUsage).not.toHaveBeenCalled();
   });
 
-  it("does not crash when settings are cached", async () => {
+  it("sets query data and syncs tray usage when settings are cached", async () => {
     const calls: string[] = [];
 
     handleUsageRefreshComplete(
@@ -120,5 +121,6 @@ describe("usage refresh complete handler", () => {
 
     expect(calls).toContain("set-data");
     expect(calls).toContain("get-settings");
+    expect(syncTrayUsage).toHaveBeenCalledWith("overview");
   });
 });

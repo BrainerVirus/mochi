@@ -19,7 +19,6 @@ use crate::core::usage_store::UsageStore;
 use crate::settings::{SettingsState, UpdateChannel};
 use crate::status::read_cached_snapshots;
 
-
 pub use panel::{
     maybe_show_main_for_dev, open_app_window, open_tray_panel, record_tray_icon_event,
     set_tray_panel_height, setup_app_windows, setup_main_panel, show_main_panel, show_tray_panel,
