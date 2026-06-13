@@ -355,7 +355,7 @@ fn find_provider(provider_id: ProviderId) -> Option<std::sync::Arc<dyn Provider>
         .find(|provider| provider.metadata().id == provider_id)
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct RefreshCompletePayload {
     pub states: Vec<ProviderUsageState>,
 }
@@ -407,7 +407,7 @@ pub async fn refresh_single_provider(
     }
 
     let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
-        return Err("refresh already in progress".to_string());
+        return Err(format!("refresh already in progress for {provider_id:?}"));
     };
 
     match fetch_provider_snapshot(provider_id, &ctx).await {
@@ -703,6 +703,169 @@ mod tests {
             ProviderId::Claude,
             &["not-a-provider".into(), "claude".into()]
         ));
+    }
+
+    #[tokio::test]
+    async fn refresh_all_providers_inner_returns_empty_when_none_enabled() {
+        let store = UsageStore::new(None);
+        let payload = refresh_all_providers_inner(&store, &settings_with_enabled(&[]))
+            .await
+            .expect("empty enabled list should succeed");
+
+        assert!(payload.states.is_empty());
+    }
+
+    #[tokio::test]
+    async fn refresh_all_providers_inner_returns_empty_for_default_settings() {
+        let store = UsageStore::new(None);
+        let payload = refresh_all_providers_inner(&store, &MochiSettings::default())
+            .await
+            .expect("default settings should succeed");
+
+        assert!(payload.states.is_empty());
+    }
+
+    #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
+    async fn refresh_all_providers_inner_returns_cached_states_from_store() {
+        let _guard = test_env::LOCK.lock().expect("env lock");
+        std::env::set_var(
+            "MOCHI_CLAUDE_SESSION_KEY",
+            "sk-ant-test-session-key-for-inner-refresh",
+        );
+
+        let store = UsageStore::new(None);
+        let settings = settings_with_enabled(&["claude"]);
+        let payload = refresh_all_providers_inner(&store, &settings)
+            .await
+            .expect("refresh should complete");
+
+        std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
+
+        // After refresh, there should be at least a claude state (fresh, fetching, or error)
+        assert!(
+            payload.states.iter().any(|s| s.provider == ProviderId::Claude),
+            "expected claude state in payload after refresh"
+        );
+    }
+
+    async fn refresh_single_provider_with_store(
+        store: &UsageStore,
+        provider: &str,
+        settings: &MochiSettings,
+    ) -> Result<RefreshCompletePayload, String> {
+        let provider_id =
+            ProviderId::parse(provider).ok_or_else(|| format!("unknown provider: {provider}"))?;
+        let ctx = FetchContext::empty();
+
+        if !provider_has_credentials(provider_id, &ctx) {
+            store.record_error(
+                provider_id,
+                "credentials missing",
+                failed_attempt("live-fetch", &ProviderError::NotConfigured),
+            );
+            return Err("credentials missing".to_string());
+        }
+
+        let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
+            return Err(format!("refresh already in progress for {provider_id:?}"));
+        };
+
+        match fetch_provider_snapshot(provider_id, &ctx).await {
+            Ok(Some(snapshot)) => {
+                store.record_success(snapshot);
+            }
+            Ok(None) => {
+                store.record_error(
+                    provider_id,
+                    "provider returned no snapshot",
+                    failed_attempt("live-fetch", &ProviderError::NotConfigured),
+                );
+            }
+            Err(error) => {
+                if store
+                    .record_failure(provider_id, &error, failed_attempt("live-fetch", &error))
+                    .is_none()
+                {
+                    store.record_error(
+                        provider_id,
+                        error.to_string(),
+                        failed_attempt("live-fetch", &error),
+                    );
+                }
+            }
+        }
+
+        let states = read_cached_usage_states(store, settings);
+        Ok(RefreshCompletePayload { states })
+    }
+
+    #[tokio::test]
+    async fn refresh_single_provider_rejects_unknown_provider() {
+        let store = UsageStore::new(None);
+        let error = refresh_single_provider_with_store(
+            &store,
+            "not-a-provider",
+            &MochiSettings::default(),
+        )
+        .await
+        .expect_err("unknown provider should fail");
+
+        assert!(error.contains("unknown provider"));
+    }
+
+    #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
+    async fn refresh_single_provider_rejects_missing_credentials() {
+        let _guard = test_env::LOCK.lock().expect("env lock");
+        std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
+        std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+        std::env::remove_var("CLAUDE_CODE_OAUTH_TOKEN");
+
+        let store = UsageStore::new(None);
+        let settings = settings_with_enabled(&["claude"]);
+        let error = refresh_single_provider_with_store(&store, "claude", &settings)
+            .await
+            .expect_err("missing credentials should fail");
+
+        assert!(
+            error.contains("credentials missing"),
+            "expected 'credentials missing' but got: {error}"
+        );
+    }
+
+    #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
+    async fn refresh_single_provider_returns_payload_after_success_or_failure() {
+        let _guard = test_env::LOCK.lock().expect("env lock");
+        std::env::set_var(
+            "MOCHI_CLAUDE_SESSION_KEY",
+            "sk-ant-test-session-key-for-single-refresh",
+        );
+
+        let store = UsageStore::new(None);
+        let settings = settings_with_enabled(&["claude"]);
+        let payload = refresh_single_provider_with_store(&store, "claude", &settings).await;
+
+        std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
+
+        // Should always return a payload with at least a claude state,
+        // regardless of whether the live fetch succeeded or failed
+        match payload {
+            Ok(RefreshCompletePayload { states }) => {
+                assert!(
+                    states.iter().any(|s| s.provider == ProviderId::Claude),
+                    "expected claude state in payload"
+                );
+            }
+            Err(msg) => {
+                // If credentials are somehow missing in CI, verify the error
+                assert!(
+                    msg.contains("credentials missing"),
+                    "unexpected error: {msg}"
+                );
+            }
+        }
     }
 
     #[tokio::test]

@@ -8,7 +8,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
-import { reconcileSettingsSaveSuccess } from "./use-tray-events";
+import { handleUsageRefreshComplete, reconcileSettingsSaveSuccess } from "./use-tray-events";
 
 vi.mock("@/lib/tauri/commands", () => ({
   getSettings: vi.fn<() => Promise<MochiSettings>>(() => Promise.resolve(DEFAULT_MOCHI_SETTINGS)),
@@ -25,7 +25,7 @@ beforeEach(() => {
   useTrayUiStore.getState().setSelectedTab("overview");
 });
 
-describe("tray event refresh policy", () => {
+describe("settings save reconciliation", () => {
   it("invalidates cached usage and syncs tray usage after settings save", async () => {
     const calls: string[] = [];
     const queryClient = {
@@ -59,7 +59,7 @@ describe("tray event refresh policy", () => {
     ]);
   });
 
-  it("settings save syncs the selected provider from the store", async () => {
+  it("syncs the selected provider from the store", async () => {
     useTrayUiStore.getState().setSelectedTab("codex");
     const queryClient = {
       setQueryData: () => undefined,
@@ -74,5 +74,51 @@ describe("tray event refresh policy", () => {
     );
 
     expect(syncTrayUsage).toHaveBeenCalledWith("codex");
+  });
+});
+
+describe("usage refresh complete handler", () => {
+  it("sets query data and reads cached settings", async () => {
+    const calls: string[] = [];
+
+    handleUsageRefreshComplete(
+      [
+        {
+          provider: "codex" as const,
+          kind: "fresh" as const,
+          snapshot: null,
+          health: "ok" as const,
+          updated_at: "2026-06-13T12:00:00Z",
+        },
+      ],
+      (_key, _data) => {
+        calls.push("set-data");
+      },
+      () => {
+        calls.push("get-settings");
+        return undefined;
+      },
+    );
+
+    expect(calls).toContain("set-data");
+    expect(calls).toContain("get-settings");
+  });
+
+  it("does not crash when settings are cached", async () => {
+    const calls: string[] = [];
+
+    handleUsageRefreshComplete(
+      [],
+      (_key, _data) => {
+        calls.push("set-data");
+      },
+      () => {
+        calls.push("get-settings");
+        return { enabled_providers: ["claude"] };
+      },
+    );
+
+    expect(calls).toContain("set-data");
+    expect(calls).toContain("get-settings");
   });
 });

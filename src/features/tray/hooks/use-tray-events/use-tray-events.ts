@@ -43,11 +43,12 @@ export function useTrayEvents() {
         void navigate({ to: event.payload });
       }),
       listen<{ states: ProviderUsageState[] }>("usage-refresh-complete", (event) => {
-        queryClient.setQueryData(queryKeys.usageSnapshots, event.payload.states);
-        const settings = queryClient.getQueryData<MochiSettings>(queryKeys.settings);
-        if (settings) {
-          void syncCurrentTrayUsage(settings);
-        }
+        handleUsageRefreshComplete(
+          event.payload.states,
+          (key, data) => queryClient.setQueryData(key, data),
+          () =>
+            queryClient.getQueryData<Pick<MochiSettings, "enabled_providers">>(queryKeys.settings),
+        );
       }),
       listen<UpdateChannel>("tray-set-channel", (event) => {
         const current = queryClient.getQueryData<MochiSettings>(queryKeys.settings);
@@ -82,6 +83,20 @@ export function useTrayEvents() {
       });
     };
   }, [navigate, queryClient]);
+}
+
+export function handleUsageRefreshComplete(
+  states: ProviderUsageState[],
+  setQueryData: (queryKey: readonly unknown[], data: ProviderUsageState[]) => unknown,
+  getSettings: () => Pick<MochiSettings, "enabled_providers"> | undefined,
+): void {
+  setQueryData(queryKeys.usageSnapshots, states);
+  const settings = getSettings();
+  if (settings) {
+    void syncCurrentTrayUsage(settings).catch(() => {
+      // Tray icon sync failure is non-fatal; cache is already updated
+    });
+  }
 }
 
 export async function reconcileSettingsSaveSuccess(

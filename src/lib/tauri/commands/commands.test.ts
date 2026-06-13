@@ -8,7 +8,15 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { DEFAULT_MOCHI_SETTINGS } from "@/lib/schemas/settings";
 
-import { getSettings, installUpdate, refreshEnabledProviders, setWidgetHeight } from "./commands";
+import type { ProviderId } from "@/lib/schemas/usage";
+import {
+  getSettings,
+  installUpdate,
+  refreshAllProviders,
+  refreshEnabledProviders,
+  refreshSingleProvider,
+  setWidgetHeight,
+} from "./commands";
 
 describe("getSettings", () => {
   beforeEach(() => {
@@ -18,6 +26,58 @@ describe("getSettings", () => {
   it("returns defaults without calling Tauri when the runtime is unavailable", async () => {
     await expect(getSettings()).resolves.toEqual(DEFAULT_MOCHI_SETTINGS);
     expect(invoke).not.toHaveBeenCalled();
+  });
+});
+
+describe("refreshAllProviders", () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset();
+  });
+
+  it("invokes the all-providers refresh command and validates usage states", async () => {
+    vi.mocked(invoke).mockResolvedValue({
+      states: [
+        {
+          provider: "codex",
+          kind: "fresh",
+          snapshot: null,
+          health: "ok",
+          updated_at: "2026-05-31T12:00:00Z",
+        },
+      ],
+    });
+
+    const states = await refreshAllProviders();
+
+    expect(invoke).toHaveBeenCalledWith("refresh_all_providers");
+    expect(states).toHaveLength(1);
+    expect(states[0]?.provider).toBe("codex");
+  });
+});
+
+describe("refreshSingleProvider", () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset();
+  });
+
+  it("invokes the single-provider refresh command and validates usage states", async () => {
+    vi.mocked(invoke).mockResolvedValue({
+      states: [
+        {
+          provider: "claude",
+          kind: "fresh",
+          snapshot: null,
+          health: "ok",
+          updated_at: "2026-05-31T12:00:00Z",
+        },
+      ],
+    });
+
+    const states = await refreshSingleProvider("claude" as ProviderId);
+
+    expect(invoke).toHaveBeenCalledWith("refresh_single_provider", { provider: "claude" });
+    expect(states).toHaveLength(1);
+    expect(states[0]?.provider).toBe("claude");
   });
 });
 

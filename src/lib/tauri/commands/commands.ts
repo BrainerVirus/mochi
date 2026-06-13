@@ -18,13 +18,11 @@ import {
 import {
   ProviderUsageStatesSchema,
   UpdateInfoSchema,
-  UsageSnapshotSchema,
   UsageSnapshotsSchema,
   parseProviderUsageStates,
   type ProviderId,
   type ProviderUsageStates,
   type UpdateInfo,
-  type UsageSnapshot,
   type UsageSnapshots,
 } from "@/lib/schemas/usage";
 import { isTauriRuntime } from "@/lib/tauri/runtime";
@@ -59,11 +57,6 @@ export async function getUsageSnapshots(): Promise<UsageSnapshots> {
 export async function getUsageStates(): Promise<ProviderUsageStates> {
   const result = await invoke<unknown>("get_usage_snapshots");
   return parseProviderUsageStates(result);
-}
-
-export async function refreshProvider(provider: ProviderId): Promise<UsageSnapshot> {
-  const result = await invoke<unknown>("refresh_provider", { provider });
-  return UsageSnapshotSchema.parse(result);
 }
 
 export async function refreshEnabledProviders(): Promise<UsageSnapshots> {

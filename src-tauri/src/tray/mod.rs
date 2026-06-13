@@ -19,6 +19,7 @@ use crate::core::usage_store::UsageStore;
 use crate::settings::{SettingsState, UpdateChannel};
 use crate::status::read_cached_snapshots;
 
+
 pub use panel::{
     maybe_show_main_for_dev, open_app_window, open_tray_panel, record_tray_icon_event,
     set_tray_panel_height, setup_app_windows, setup_main_panel, show_main_panel, show_tray_panel,
@@ -245,6 +246,14 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                                         .await
                                         .map(|payload| {
                                             let _ = app.emit("usage-refresh-complete", &payload);
+                                            // Update tray icon directly regardless of webview state
+                                            let snapshots =
+                                                read_cached_snapshots(&store, &settings);
+                                            let _ = apply_tray_usage(
+                                                &app,
+                                                &snapshots,
+                                                TraySelection::Overview,
+                                            );
                                         });
                             }
                         }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useSettings } from "@/features/tray/hooks/use-tray-events";
 import { useTrayPanelRefresh } from "@/features/tray/hooks/use-tray-panel-refresh";
@@ -18,6 +18,7 @@ export function useTrayPanelState() {
   const selectedTab = useTrayUiStore((state) => state.selectedTab);
   const setSelectedTab = useTrayUiStore((state) => state.setSelectedTab);
   const [refreshingProvider, setRefreshingProvider] = useState<ProviderId | null>(null);
+  const pendingRefreshes = useRef(0);
 
   const enabledProviders = useMemo(
     () => settings?.enabled_providers ?? [],
@@ -46,13 +47,17 @@ export function useTrayPanelState() {
   }
 
   function handleRefreshProvider(provider: ProviderId) {
+    pendingRefreshes.current++;
     setRefreshingProvider(provider);
     void refreshSingleProvider(provider)
       .catch(() => {
         // Errors are already recorded on Rust side
       })
       .finally(() => {
-        setRefreshingProvider(null);
+        pendingRefreshes.current--;
+        if (pendingRefreshes.current === 0) {
+          setRefreshingProvider(null);
+        }
       });
   }
 
