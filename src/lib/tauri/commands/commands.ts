@@ -76,9 +76,7 @@ export async function refreshAllProviders(): Promise<ProviderUsageStates> {
   return ProviderUsageStatesSchema.parse(result.states);
 }
 
-export async function refreshSingleProvider(
-  provider: ProviderId,
-): Promise<ProviderUsageStates> {
+export async function refreshSingleProvider(provider: ProviderId): Promise<ProviderUsageStates> {
   const result = await invoke<{ states: unknown }>("refresh_single_provider", { provider });
   return ProviderUsageStatesSchema.parse(result.states);
 }

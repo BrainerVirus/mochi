@@ -110,5 +110,3 @@ interface SettingsSaveSuccessQueryClient {
   setQueryData: (queryKey: readonly unknown[], settings: MochiSettings) => unknown;
   invalidateQueries: (options: { queryKey: readonly unknown[] }) => Promise<unknown>;
 }
-
-
