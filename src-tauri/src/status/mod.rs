@@ -335,7 +335,9 @@ pub async fn refresh_all_providers(
     let settings = settings_state.current()?;
     let payload = refresh_all_providers_inner(&store, &settings)
         .await
-        .map_err(|e| e.to_string())?;
+        .unwrap_or_else(|_| RefreshCompletePayload {
+            states: read_cached_usage_states(&store, &settings),
+        });
     let _ = app.emit("usage-refresh-complete", &payload);
     Ok(payload)
 }
@@ -357,34 +359,29 @@ pub async fn refresh_single_provider_inner(
             "credentials missing",
             failed_attempt("live-fetch", &ProviderError::NotConfigured),
         );
-        return Err("credentials missing".to_string());
-    }
-
-    let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
-        return Err(format!("refresh already in progress for {provider_id:?}"));
-    };
-
-    match fetch_provider_snapshot(provider_id, &ctx).await {
-        Ok(Some(snapshot)) => {
-            store.record_success(snapshot);
-        }
-        Ok(None) => {
-            store.record_error(
-                provider_id,
-                "provider returned no snapshot",
-                failed_attempt("live-fetch", &ProviderError::NotConfigured),
-            );
-        }
-        Err(error) => {
-            if store
-                .record_failure(provider_id, &error, failed_attempt("live-fetch", &error))
-                .is_none()
-            {
+    } else if let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) {
+        match fetch_provider_snapshot(provider_id, &ctx).await {
+            Ok(Some(snapshot)) => {
+                store.record_success(snapshot);
+            }
+            Ok(None) => {
                 store.record_error(
                     provider_id,
-                    error.to_string(),
-                    failed_attempt("live-fetch", &error),
+                    "provider returned no snapshot",
+                    failed_attempt("live-fetch", &ProviderError::NotConfigured),
                 );
+            }
+            Err(error) => {
+                if store
+                    .record_failure(provider_id, &error, failed_attempt("live-fetch", &error))
+                    .is_none()
+                {
+                    store.record_error(
+                        provider_id,
+                        error.to_string(),
+                        failed_attempt("live-fetch", &error),
+                    );
+                }
             }
         }
     }
@@ -699,13 +696,13 @@ mod tests {
 
         let store = UsageStore::new(None);
         let settings = settings_with_enabled(&["claude"]);
-        let error = refresh_single_provider_with_store(&store, "claude", &settings)
+        let payload = refresh_single_provider_with_store(&store, "claude", &settings)
             .await
-            .expect_err("missing credentials should fail");
+            .expect("missing credentials should return Ok with a payload");
 
         assert!(
-            error.contains("credentials missing"),
-            "expected 'credentials missing' but got: {error}"
+            payload.states.iter().any(|s| s.provider == ProviderId::Claude),
+            "expected claude state in payload after missing credentials"
         );
     }
 
