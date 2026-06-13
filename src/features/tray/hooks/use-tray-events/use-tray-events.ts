@@ -5,7 +5,6 @@ import { useEffect } from "react";
 
 import { syncCurrentTrayUsage } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
-import { refreshProviderMutationOptions } from "@/lib/query/refresh-provider";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import { type MochiSettings, type UpdateChannel } from "@/lib/schemas/settings";
 import type { ProviderUsageState } from "@/lib/schemas/usage";
@@ -30,17 +29,6 @@ export function useSaveSettings() {
   });
 }
 
-export function useRefreshProvider() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    ...refreshProviderMutationOptions(),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
-    },
-  });
-}
-
 export function useTrayEvents() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,6 +44,10 @@ export function useTrayEvents() {
       }),
       listen<{ states: ProviderUsageState[] }>("usage-refresh-complete", (event) => {
         queryClient.setQueryData(queryKeys.usageSnapshots, event.payload.states);
+        const settings = queryClient.getQueryData<MochiSettings>(queryKeys.settings);
+        if (settings) {
+          void syncCurrentTrayUsage(settings);
+        }
       }),
       listen<UpdateChannel>("tray-set-channel", (event) => {
         const current = queryClient.getQueryData<MochiSettings>(queryKeys.settings);
