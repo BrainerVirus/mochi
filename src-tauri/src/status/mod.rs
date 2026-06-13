@@ -10,8 +10,9 @@ use crate::providers::built_in_providers;
 use crate::providers::credential_probe::provider_has_credentials;
 use crate::settings::{MochiSettings, SettingsState};
 use refresh_controller::RefreshController;
+use serde::Serialize;
 use std::sync::OnceLock;
-use tauri::State;
+use tauri::{AppHandle, Emitter, State};
 
 #[tauri::command]
 pub async fn get_usage_snapshots(
@@ -352,6 +353,37 @@ fn find_provider(provider_id: ProviderId) -> Option<std::sync::Arc<dyn Provider>
     built_in_providers()
         .into_iter()
         .find(|provider| provider.metadata().id == provider_id)
+}
+
+#[derive(Serialize)]
+pub struct RefreshCompletePayload {
+    pub states: Vec<ProviderUsageState>,
+}
+
+/// Refresh all enabled providers to completion, then return updated states.
+/// Called from the tray handler; does NOT emit events — caller decides.
+pub async fn refresh_all_providers_inner(
+    _app: &AppHandle,
+    store: &UsageStore,
+    settings: &MochiSettings,
+) -> Result<RefreshCompletePayload, ProviderError> {
+    refresh_enabled_snapshots(store, settings).await?;
+    let states = read_cached_usage_states(store, settings);
+    Ok(RefreshCompletePayload { states })
+}
+
+#[tauri::command]
+pub async fn refresh_all_providers(
+    app: AppHandle,
+    store: State<'_, UsageStore>,
+    settings_state: State<'_, SettingsState>,
+) -> Result<RefreshCompletePayload, String> {
+    let settings = settings_state.current()?;
+    let payload = refresh_all_providers_inner(&app, &store, &settings)
+        .await
+        .map_err(|e| e.to_string())?;
+    let _ = app.emit("usage-refresh-complete", &payload);
+    Ok(payload)
 }
 
 #[cfg(test)]
