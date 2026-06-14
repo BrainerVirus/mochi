@@ -8,16 +8,11 @@ import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
-import {
-  reconcileSettingsSaveSuccess,
-  runTrayRefreshEventSequence,
-  shouldRunProviderRefreshForTrayEvent,
-} from "./use-tray-events";
+import { handleUsageRefreshComplete, reconcileSettingsSaveSuccess } from "./use-tray-events";
 
 vi.mock("@/lib/tauri/commands", () => ({
   getSettings: vi.fn<() => Promise<MochiSettings>>(() => Promise.resolve(DEFAULT_MOCHI_SETTINGS)),
   openAppWindow: vi.fn<() => Promise<void>>(() => Promise.resolve()),
-  refreshEnabledProviders: vi.fn<() => Promise<void>>(() => Promise.resolve()),
   saveSettings: vi.fn<(settings: MochiSettings) => Promise<MochiSettings>>((settings) =>
     Promise.resolve(settings),
   ),
@@ -30,11 +25,7 @@ beforeEach(() => {
   useTrayUiStore.getState().setSelectedTab("overview");
 });
 
-describe("tray event refresh policy", () => {
-  it("runs a real provider refresh before resyncing tray usage", () => {
-    expect(shouldRunProviderRefreshForTrayEvent("tray-refresh")).toBe(true);
-  });
-
+describe("settings save reconciliation", () => {
   it("invalidates cached usage and syncs tray usage after settings save", async () => {
     const calls: string[] = [];
     const queryClient = {
@@ -68,23 +59,7 @@ describe("tray event refresh policy", () => {
     ]);
   });
 
-  it("native tray refresh syncs the selected provider from the store", async () => {
-    useTrayUiStore.getState().setSelectedTab("codex");
-    const queryClient = {
-      invalidateQueries: () => Promise.resolve(),
-    };
-
-    await runTrayRefreshEventSequence(
-      queryClient,
-      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: ["codex"] },
-      () => Promise.resolve(),
-      syncCurrentTrayUsage,
-    );
-
-    expect(syncTrayUsage).toHaveBeenCalledWith("codex");
-  });
-
-  it("settings save syncs the selected provider from the store", async () => {
+  it("syncs the selected provider from the store", async () => {
     useTrayUiStore.getState().setSelectedTab("codex");
     const queryClient = {
       setQueryData: () => undefined,
@@ -99,5 +74,53 @@ describe("tray event refresh policy", () => {
     );
 
     expect(syncTrayUsage).toHaveBeenCalledWith("codex");
+  });
+});
+
+describe("usage refresh complete handler", () => {
+  it("sets query data and does not sync tray when no settings cached", async () => {
+    const calls: string[] = [];
+
+    handleUsageRefreshComplete(
+      [
+        {
+          provider: "codex" as const,
+          kind: "fresh" as const,
+          snapshot: null,
+          health: "ok" as const,
+          updated_at: "2026-06-13T12:00:00Z",
+        },
+      ],
+      (_key, _data) => {
+        calls.push("set-data");
+      },
+      () => {
+        calls.push("get-settings");
+        return undefined;
+      },
+    );
+
+    expect(calls).toContain("set-data");
+    expect(calls).toContain("get-settings");
+    expect(syncTrayUsage).not.toHaveBeenCalled();
+  });
+
+  it("sets query data and syncs tray usage when settings are cached", async () => {
+    const calls: string[] = [];
+
+    handleUsageRefreshComplete(
+      [],
+      (_key, _data) => {
+        calls.push("set-data");
+      },
+      () => {
+        calls.push("get-settings");
+        return { enabled_providers: ["claude"] };
+      },
+    );
+
+    expect(calls).toContain("set-data");
+    expect(calls).toContain("get-settings");
+    expect(syncTrayUsage).toHaveBeenCalledWith("overview");
   });
 });

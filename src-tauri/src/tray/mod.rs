@@ -17,7 +17,7 @@ use tauri::{
 use crate::core::models::UsageSnapshot;
 use crate::core::usage_store::UsageStore;
 use crate::settings::{SettingsState, UpdateChannel};
-use crate::status::read_cached_snapshots;
+use crate::status::{read_cached_snapshots, RefreshCompletePayload};
 
 pub use panel::{
     maybe_show_main_for_dev, open_app_window, open_tray_panel, record_tray_icon_event,
@@ -233,7 +233,28 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "refresh" => {
-                let _ = app.emit("tray-refresh", ());
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Some(store) = app.try_state::<crate::core::usage_store::UsageStore>() {
+                        if let Some(settings_state) =
+                            app.try_state::<crate::settings::SettingsState>()
+                        {
+                            if let Ok(settings) = settings_state.current() {
+                                let payload =
+                                    crate::status::refresh_all_providers_inner(&store, &settings)
+                                        .await
+                                        .unwrap_or_else(|_| RefreshCompletePayload {
+                                            states: crate::status::read_cached_usage_states(
+                                                &store, &settings,
+                                            ),
+                                        });
+                                let _ = app.emit("usage-refresh-complete", &payload);
+                                let snapshots = read_cached_snapshots(&store, &settings);
+                                let _ = apply_tray_usage(&app, &snapshots, TraySelection::Overview);
+                            }
+                        }
+                    }
+                });
             }
             "widget" => {
                 let _ = crate::widget::show_widget(app.clone());

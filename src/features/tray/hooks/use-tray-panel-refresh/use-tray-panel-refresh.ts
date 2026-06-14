@@ -1,45 +1,28 @@
+import { useCallback, useRef, useState } from "react";
+
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
 
-import type { TraySelectedTab } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
-import type { ProviderId } from "@/lib/schemas/usage";
-import { refreshEnabledProviders, syncTrayUsage } from "@/lib/tauri/commands";
+import { refreshAllProviders } from "@/lib/tauri/commands";
 
-interface UseTrayPanelRefreshOptions {
-  enabledProviders: ProviderId[];
-  refetch: () => Promise<unknown>;
-  selectedTab: TraySelectedTab;
-}
-
-export function useTrayPanelRefresh({
-  enabledProviders,
-  refetch,
-  selectedTab,
-}: UseTrayPanelRefreshOptions) {
+export function useTrayPanelRefresh() {
   const queryClient = useQueryClient();
   const [isRefreshingAll, setIsRefreshingAll] = useState(false);
+  const isRefreshingRef = useRef(false);
 
   const refreshAll = useCallback(async () => {
-    if (isRefreshingAll) {
-      return;
-    }
-
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
     setIsRefreshingAll(true);
     try {
-      if (enabledProviders.length > 0) {
-        await refreshEnabledProviders();
-      }
-      await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
-      await syncTrayUsage(selectedTab);
-      await refetch();
+      await refreshAllProviders();
+    } catch {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }).catch(() => {});
     } finally {
+      isRefreshingRef.current = false;
       setIsRefreshingAll(false);
     }
-  }, [enabledProviders, isRefreshingAll, queryClient, refetch, selectedTab]);
+  }, [queryClient]);
 
-  return {
-    refreshAll,
-    isRefreshingAll,
-  };
+  return { refreshAll, isRefreshingAll };
 }

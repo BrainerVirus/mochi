@@ -19,7 +19,6 @@ export function WidgetWindow() {
     isFetching,
     refreshAll,
     isRefreshingAll,
-    refreshProviderMutation,
     selectedTab,
     refreshingProvider,
     states,
@@ -66,7 +65,7 @@ export function WidgetWindow() {
           />
           <TrayPanelDivider inset data-tray-panel-separator />
           <TrayPanelFooter
-            isRefreshing={isFetching || refreshProviderMutation.isPending || isRefreshingAll}
+            isRefreshing={isFetching || refreshingProvider !== null || isRefreshingAll}
             onRefresh={() => {
               void refreshAll();
             }}

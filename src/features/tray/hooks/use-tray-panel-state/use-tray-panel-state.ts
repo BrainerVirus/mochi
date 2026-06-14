@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useRefreshProvider, useSettings } from "@/features/tray/hooks/use-tray-events";
+import { useSettings } from "@/features/tray/hooks/use-tray-events";
 import { useTrayPanelRefresh } from "@/features/tray/hooks/use-tray-panel-refresh";
 import { useTrayUiStore } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
+import { queryKeys } from "@/lib/query/keys";
 import type { ProviderId } from "@/lib/schemas/usage";
-import { syncTrayUsage } from "@/lib/tauri/commands";
+import { refreshSingleProvider, syncTrayUsage } from "@/lib/tauri/commands";
 import {
   buildTrayPanelTabsFromStates,
   filterUsageStatesForTrayPanel,
@@ -14,21 +16,19 @@ import { parseTrayTabChange } from "@/lib/utils/tray-tab-selection";
 
 export function useTrayPanelState() {
   const { data: settings } = useSettings();
-  const { data, error, isError, isPending, isSuccess, refetch, isFetching } = useUsageData();
-  const refreshProviderMutation = useRefreshProvider();
+  const { data, error, isError, isPending, isSuccess, isFetching } = useUsageData();
   const selectedTab = useTrayUiStore((state) => state.selectedTab);
   const setSelectedTab = useTrayUiStore((state) => state.setSelectedTab);
   const [refreshingProvider, setRefreshingProvider] = useState<ProviderId | null>(null);
+  const pendingRefreshes = useRef(0);
+
+  const queryClient = useQueryClient();
 
   const enabledProviders = useMemo(
     () => settings?.enabled_providers ?? [],
     [settings?.enabled_providers],
   );
-  const { refreshAll, isRefreshingAll } = useTrayPanelRefresh({
-    enabledProviders,
-    refetch: () => refetch(),
-    selectedTab,
-  });
+  const { refreshAll, isRefreshingAll } = useTrayPanelRefresh();
 
   const states = filterUsageStatesForTrayPanel(data ?? [], enabledProviders);
   const tabs = buildTrayPanelTabsFromStates(data ?? [], enabledProviders);
@@ -51,13 +51,18 @@ export function useTrayPanelState() {
   }
 
   function handleRefreshProvider(provider: ProviderId) {
+    pendingRefreshes.current++;
     setRefreshingProvider(provider);
-    refreshProviderMutation.mutate(provider, {
-      onSettled: () => {
-        setRefreshingProvider(null);
-        void syncTrayUsage(selectedTab);
-      },
-    });
+    void refreshSingleProvider(provider)
+      .catch(() => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }).catch(() => {});
+      })
+      .finally(() => {
+        pendingRefreshes.current--;
+        if (pendingRefreshes.current === 0) {
+          setRefreshingProvider(null);
+        }
+      });
   }
 
   return {
@@ -70,7 +75,6 @@ export function useTrayPanelState() {
     isFetching,
     refreshAll,
     isRefreshingAll,
-    refreshProviderMutation,
     selectedTab,
     refreshingProvider,
     states,

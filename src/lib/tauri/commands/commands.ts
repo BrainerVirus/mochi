@@ -16,14 +16,13 @@ import {
   type UpdateChannel,
 } from "@/lib/schemas/settings";
 import {
+  ProviderUsageStatesSchema,
   UpdateInfoSchema,
-  UsageSnapshotSchema,
   UsageSnapshotsSchema,
   parseProviderUsageStates,
   type ProviderId,
   type ProviderUsageStates,
   type UpdateInfo,
-  type UsageSnapshot,
   type UsageSnapshots,
 } from "@/lib/schemas/usage";
 import { isTauriRuntime } from "@/lib/tauri/runtime";
@@ -50,24 +49,24 @@ export function installUpdate(channel: string): Promise<void> {
   return invoke<void>("install_update", { channel });
 }
 
-export async function getUsageSnapshots(): Promise<UsageSnapshots> {
-  const result = await invoke<unknown>("get_usage_snapshots");
-  return UsageSnapshotsSchema.parse(result);
-}
-
 export async function getUsageStates(): Promise<ProviderUsageStates> {
   const result = await invoke<unknown>("get_usage_snapshots");
   return parseProviderUsageStates(result);
 }
 
-export async function refreshProvider(provider: ProviderId): Promise<UsageSnapshot> {
-  const result = await invoke<unknown>("refresh_provider", { provider });
-  return UsageSnapshotSchema.parse(result);
-}
-
 export async function refreshEnabledProviders(): Promise<UsageSnapshots> {
   const result = await invoke<unknown>("refresh_enabled_providers");
   return UsageSnapshotsSchema.parse(result);
+}
+
+export async function refreshAllProviders(): Promise<ProviderUsageStates> {
+  const result = await invoke<{ states: unknown }>("refresh_all_providers");
+  return ProviderUsageStatesSchema.parse(result.states);
+}
+
+export async function refreshSingleProvider(provider: ProviderId): Promise<ProviderUsageStates> {
+  const result = await invoke<{ states: unknown }>("refresh_single_provider", { provider });
+  return ProviderUsageStatesSchema.parse(result.states);
 }
 
 export async function getSettings(): Promise<MochiSettings> {
