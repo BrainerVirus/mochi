@@ -43,9 +43,10 @@ export function useTrayEvents() {
         void navigate({ to: event.payload });
       }),
       listen<{ states: ProviderUsageState[] }>("usage-refresh-complete", (event) => {
-        const states = ProviderUsageStatesSchema.parse(event.payload.states);
+        const result = ProviderUsageStatesSchema.safeParse(event.payload.states);
+        if (!result.success) return;
         handleUsageRefreshComplete(
-          states,
+          result.data,
           (key, data) => queryClient.setQueryData(key, data),
           () =>
             queryClient.getQueryData<Pick<MochiSettings, "enabled_providers">>(queryKeys.settings),

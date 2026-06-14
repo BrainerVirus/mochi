@@ -49,11 +49,6 @@ export function installUpdate(channel: string): Promise<void> {
   return invoke<void>("install_update", { channel });
 }
 
-export async function getUsageSnapshots(): Promise<UsageSnapshots> {
-  const result = await invoke<unknown>("get_usage_snapshots");
-  return UsageSnapshotsSchema.parse(result);
-}
-
 export async function getUsageStates(): Promise<ProviderUsageStates> {
   const result = await invoke<unknown>("get_usage_snapshots");
   return parseProviderUsageStates(result);

@@ -692,7 +692,7 @@ mod tests {
 
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
-    async fn refresh_single_provider_rejects_missing_credentials() {
+    async fn refresh_single_provider_returns_payload_when_missing_credentials() {
         let _guard = test_env::LOCK.lock().expect("env lock");
         std::env::remove_var("MOCHI_CLAUDE_SESSION_KEY");
         std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
