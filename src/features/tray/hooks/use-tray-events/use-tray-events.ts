@@ -91,7 +91,6 @@ export function handleUsageRefreshComplete(
   setQueryData: (queryKey: readonly unknown[], data: ProviderUsageState[]) => unknown,
   getSettings: () => Pick<MochiSettings, "enabled_providers"> | undefined,
 ): void {
-  if (!Array.isArray(states)) return;
   setQueryData(queryKeys.usageSnapshots, states);
   const settings = getSettings();
   if (settings) {

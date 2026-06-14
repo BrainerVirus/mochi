@@ -17,7 +17,7 @@ export function useTrayPanelRefresh() {
     try {
       await refreshAllProviders();
     } catch {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }).catch(() => {});
     } finally {
       isRefreshingRef.current = false;
       setIsRefreshingAll(false);
