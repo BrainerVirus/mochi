@@ -240,22 +240,17 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                             app.try_state::<crate::settings::SettingsState>()
                         {
                             if let Ok(settings) = settings_state.current() {
-                                let payload = crate::status::refresh_all_providers_inner(
-                                    &store, &settings,
-                                )
-                                .await
-                                .unwrap_or_else(|_| RefreshCompletePayload {
-                                    states: crate::status::read_cached_usage_states(
-                                        &store, &settings,
-                                    ),
-                                });
+                                let payload =
+                                    crate::status::refresh_all_providers_inner(&store, &settings)
+                                        .await
+                                        .unwrap_or_else(|_| RefreshCompletePayload {
+                                            states: crate::status::read_cached_usage_states(
+                                                &store, &settings,
+                                            ),
+                                        });
                                 let _ = app.emit("usage-refresh-complete", &payload);
                                 let snapshots = read_cached_snapshots(&store, &settings);
-                                let _ = apply_tray_usage(
-                                    &app,
-                                    &snapshots,
-                                    TraySelection::Overview,
-                                );
+                                let _ = apply_tray_usage(&app, &snapshots, TraySelection::Overview);
                             }
                         }
                     }

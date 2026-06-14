@@ -398,7 +398,11 @@ pub async fn refresh_single_provider(
     provider: String,
 ) -> Result<RefreshCompletePayload, String> {
     let settings = settings_state.current()?;
-    let payload = refresh_single_provider_inner(&store, &settings, &provider).await?;
+    let payload = refresh_single_provider_inner(&store, &settings, &provider)
+        .await
+        .unwrap_or_else(|_| RefreshCompletePayload {
+            states: read_cached_usage_states(&store, &settings),
+        });
     let _ = app.emit("usage-refresh-complete", &payload);
     Ok(payload)
 }
@@ -659,7 +663,10 @@ mod tests {
 
         // After refresh, there should be at least a claude state (fresh, fetching, or error)
         assert!(
-            payload.states.iter().any(|s| s.provider == ProviderId::Claude),
+            payload
+                .states
+                .iter()
+                .any(|s| s.provider == ProviderId::Claude),
             "expected claude state in payload after refresh"
         );
     }
@@ -675,13 +682,10 @@ mod tests {
     #[tokio::test]
     async fn refresh_single_provider_rejects_unknown_provider() {
         let store = UsageStore::new(None);
-        let error = refresh_single_provider_with_store(
-            &store,
-            "not-a-provider",
-            &MochiSettings::default(),
-        )
-        .await
-        .expect_err("unknown provider should fail");
+        let error =
+            refresh_single_provider_with_store(&store, "not-a-provider", &MochiSettings::default())
+                .await
+                .expect_err("unknown provider should fail");
 
         assert!(error.contains("unknown provider"));
     }
@@ -701,7 +705,10 @@ mod tests {
             .expect("missing credentials should return Ok with a payload");
 
         assert!(
-            payload.states.iter().any(|s| s.provider == ProviderId::Claude),
+            payload
+                .states
+                .iter()
+                .any(|s| s.provider == ProviderId::Claude),
             "expected claude state in payload after missing credentials"
         );
     }
@@ -739,5 +746,4 @@ mod tests {
             }
         }
     }
-
 }

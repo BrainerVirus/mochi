@@ -7,7 +7,7 @@ import { syncCurrentTrayUsage } from "@/features/tray/lib/stores/tray-ui-store/t
 import { queryKeys } from "@/lib/query/keys";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import { type MochiSettings, type UpdateChannel } from "@/lib/schemas/settings";
-import type { ProviderUsageState } from "@/lib/schemas/usage";
+import { ProviderUsageStatesSchema, type ProviderUsageState } from "@/lib/schemas/usage";
 import { openAppWindow, saveSettings, syncTrayUpdateChannel } from "@/lib/tauri/commands";
 import {
   shouldHandleAppNavigateEvent,
@@ -43,8 +43,9 @@ export function useTrayEvents() {
         void navigate({ to: event.payload });
       }),
       listen<{ states: ProviderUsageState[] }>("usage-refresh-complete", (event) => {
+        const states = ProviderUsageStatesSchema.parse(event.payload.states);
         handleUsageRefreshComplete(
-          event.payload.states,
+          states,
           (key, data) => queryClient.setQueryData(key, data),
           () =>
             queryClient.getQueryData<Pick<MochiSettings, "enabled_providers">>(queryKeys.settings),
