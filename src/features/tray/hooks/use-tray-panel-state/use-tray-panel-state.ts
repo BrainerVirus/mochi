@@ -53,7 +53,7 @@ export function useTrayPanelState() {
     setRefreshingProvider(provider);
     void refreshSingleProvider(provider)
       .catch(() => {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }).catch(() => {});
       })
       .finally(() => {
         setRefreshingProvider((current) => (current === provider ? null : current));
