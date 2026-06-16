@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Manager, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 use crate::diagnostics::DiagnosticsState;
 use crate::frontend::app_shell_url;
@@ -119,6 +119,17 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 #[tauri::command]
 pub fn show_widget(app: AppHandle) -> Result<(), String> {
     let window = ensure_widget_window(&app)?;
+
+    // Emit current selected tab before showing (only for reused windows).
+    // First creation handles this via initialization_script.
+    if let Some(state) = app.try_state::<SettingsState>() {
+        if let Ok(settings) = state.current() {
+            if let Some(tab) = &settings.selected_tab {
+                let _ = app.emit_to(WIDGET_LABEL, "set-tab", tab);
+            }
+        }
+    }
+
     let policy = crate::window_policy::active_decorated_window_policy();
     let creation = policy.creation_label();
     let initial_visibility = policy.initial_visibility_label();
