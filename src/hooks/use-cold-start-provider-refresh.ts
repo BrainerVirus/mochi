@@ -19,7 +19,23 @@ export function shouldRefreshEnabledProvidersOnBoot(
   }
 
   const enabled = new Set(settings.enabled_providers);
-  return states.some((state) => enabled.has(state.provider) && state.kind === "fetching");
+  const refreshIntervalSeconds = settings.refresh_interval_seconds;
+
+  return states.some((state) => {
+    if (!enabled.has(state.provider)) return false;
+
+    if (state.kind === "fetching") return true;
+    if (state.kind === "stale_error") return true;
+    if (state.kind === "error") return true;
+
+    if (state.kind === "fresh" && state.updated_at) {
+      const ageMs = Date.now() - new Date(state.updated_at).getTime();
+      const thresholdMs = refreshIntervalSeconds * 1000;
+      return ageMs > thresholdMs;
+    }
+
+    return false;
+  });
 }
 
 export async function runColdStartProviderRefreshSequence(

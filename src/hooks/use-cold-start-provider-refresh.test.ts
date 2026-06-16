@@ -46,6 +46,7 @@ function settings(enabledProviders: MochiSettings["enabled_providers"]): MochiSe
 function state(
   provider: ProviderUsageState["provider"],
   kind: ProviderUsageState["kind"] = "fetching",
+  updatedAt?: string,
 ) {
   return {
     provider,
@@ -53,7 +54,7 @@ function state(
     snapshot: null,
     health: kind === "fresh" ? "ok" : "stale",
     message: kind === "fetching" ? "fetching usage" : null,
-    updated_at: "2026-05-31T12:00:00Z",
+    updated_at: updatedAt ?? "2026-05-31T12:00:00Z",
   } satisfies ProviderUsageState;
 }
 
@@ -62,14 +63,60 @@ describe("shouldRefreshEnabledProvidersOnBoot", () => {
     expect(shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [state("codex")])).toBe(true);
   });
 
-  it("does not refresh when enabled providers already have fresh state", () => {
+  it("refreshes when an enabled provider has stale_error", () => {
     expect(
-      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [state("codex", "fresh")]),
-    ).toBe(false);
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [state("codex", "stale_error")]),
+    ).toBe(true);
+  });
+
+  it("refreshes when an enabled provider has error", () => {
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [state("codex", "error")]),
+    ).toBe(true);
   });
 
   it("does not refresh when no providers are enabled", () => {
     expect(shouldRefreshEnabledProvidersOnBoot(settings([]), [state("codex")])).toBe(false);
+  });
+
+  it("does not refresh when all enabled providers have fresh data within refresh interval", () => {
+    const recent = new Date().toISOString();
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [state("codex", "fresh", recent)]),
+    ).toBe(false);
+  });
+
+  it("refreshes when fresh data is older than refresh interval", () => {
+    const oldDate = new Date(Date.now() - 301_000).toISOString();
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [state("codex", "fresh", oldDate)]),
+    ).toBe(true);
+  });
+
+  it("does not refresh for missing credentials", () => {
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [
+        state("codex", "missing_credentials"),
+      ]),
+    ).toBe(false);
+  });
+
+  it("does not refresh for credentials_need_refresh", () => {
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [
+        state("codex", "credentials_need_refresh"),
+      ]),
+    ).toBe(false);
+  });
+
+  it("refreshes if ANY enabled provider needs refresh, even if others are fresh", () => {
+    const recent = new Date().toISOString();
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex", "cursor"]), [
+        state("codex", "stale_error"),
+        state("cursor", "fresh", recent),
+      ]),
+    ).toBe(true);
   });
 
   it("cold start refresh syncs the selected provider from the store after invalidating cache", async () => {
