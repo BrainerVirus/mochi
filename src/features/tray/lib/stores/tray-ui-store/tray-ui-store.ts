@@ -6,7 +6,7 @@ import { syncTrayUsage } from "@/lib/tauri/commands";
 
 export type TraySelectedTab = "overview" | ProviderId;
 
-function readStoredTab(): TraySelectedTab {
+export function readStoredTab(): TraySelectedTab {
   if (typeof window === "undefined") {
     return "overview";
   }

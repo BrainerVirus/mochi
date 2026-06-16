@@ -8,7 +8,11 @@ import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
-import { handleUsageRefreshComplete, reconcileSettingsSaveSuccess } from "./use-tray-events";
+import {
+  handleSetTabEvent,
+  handleUsageRefreshComplete,
+  reconcileSettingsSaveSuccess,
+} from "./use-tray-events";
 
 vi.mock("@/lib/tauri/commands", () => ({
   getSettings: vi.fn<() => Promise<MochiSettings>>(() => Promise.resolve(DEFAULT_MOCHI_SETTINGS)),
@@ -74,6 +78,26 @@ describe("settings save reconciliation", () => {
     );
 
     expect(syncTrayUsage).toHaveBeenCalledWith("codex");
+  });
+});
+
+describe("handleSetTabEvent", () => {
+  it("updates the store tab from a provider id payload", () => {
+    useTrayUiStore.getState().setSelectedTab("overview");
+    handleSetTabEvent("codex");
+    expect(useTrayUiStore.getState().selectedTab).toBe("codex");
+  });
+
+  it("updates the store tab from an overview payload", () => {
+    useTrayUiStore.getState().setSelectedTab("codex");
+    handleSetTabEvent("overview");
+    expect(useTrayUiStore.getState().selectedTab).toBe("overview");
+  });
+
+  it("falls back to overview on invalid payload", () => {
+    useTrayUiStore.getState().setSelectedTab("codex");
+    handleSetTabEvent("nonexistent-provider");
+    expect(useTrayUiStore.getState().selectedTab).toBe("overview");
   });
 });
 

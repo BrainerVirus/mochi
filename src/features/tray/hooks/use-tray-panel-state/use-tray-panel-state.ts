@@ -52,9 +52,13 @@ export function useTrayPanelState() {
     // Persist to shared settings (both windows read same settings.json)
     if (settings) {
       const updated = { ...settings, selected_tab: nextTab };
-      void saveSettings(updated).then(() => {
-        queryClient.setQueryData(queryKeys.settings, updated);
-      });
+      void saveSettings(updated)
+        .then(() => {
+          queryClient.setQueryData(queryKeys.settings, updated);
+        })
+        .catch(() => {
+          queryClient.setQueryData(queryKeys.settings, settings);
+        });
     }
   }
 

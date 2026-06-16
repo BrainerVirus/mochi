@@ -73,8 +73,7 @@ export function useTrayEvents() {
         void openAppWindow("/update");
       }),
       listen<string>("set-tab", (event) => {
-        const tab = parseTrayTabChange(event.payload);
-        useTrayUiStore.getState().setSelectedTab(tab);
+        handleSetTabEvent(event.payload);
       }),
       listen<string>("app-navigate", (event) => {
         if (!shouldHandleAppNavigateEvent()) {
@@ -107,6 +106,11 @@ export function handleUsageRefreshComplete(
       // Tray icon sync failure is non-fatal; cache is already updated
     });
   }
+}
+
+export function handleSetTabEvent(payload: string): void {
+  const tab = parseTrayTabChange(payload);
+  useTrayUiStore.getState().setSelectedTab(tab);
 }
 
 export async function reconcileSettingsSaveSuccess(

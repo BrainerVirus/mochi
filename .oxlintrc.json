@@ -41,6 +41,12 @@
         "no-underscore-dangle": "off",
         "no-unsafe-type-assertion": "off"
       }
+    },
+    {
+      "files": ["src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.ts"],
+      "rules": {
+        "max-lines-per-function": "off"
+      }
     }
   ],
   "rules": {

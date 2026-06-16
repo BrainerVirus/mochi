@@ -82,7 +82,10 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
     let init_script = if selected_tab.is_empty() {
         String::new()
     } else {
-        format!("window.__MOCHI_SELECTED_TAB__ = '{}';", selected_tab)
+        format!(
+            "window.__MOCHI_SELECTED_TAB__ = '{}';",
+            selected_tab.replace('\'', "\\'")
+        )
     };
 
     let mut builder = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
@@ -118,14 +121,19 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 
 #[tauri::command]
 pub fn show_widget(app: AppHandle) -> Result<(), String> {
+    let already_existed = app.get_webview_window(WIDGET_LABEL).is_some();
     let window = ensure_widget_window(&app)?;
 
     // Emit current selected tab before showing (only for reused windows).
-    // First creation handles this via initialization_script.
-    if let Some(state) = app.try_state::<SettingsState>() {
-        if let Ok(settings) = state.current() {
-            if let Some(tab) = &settings.selected_tab {
-                let _ = app.emit_to(WIDGET_LABEL, "set-tab", tab);
+    // First creation handles this via initialization_script which runs before any
+    // page JS. The emit_to would be lost on first creation since the webview hasn't
+    // loaded the page — the already_existed guard prevents a wasted event.
+    if already_existed {
+        if let Some(state) = app.try_state::<SettingsState>() {
+            if let Ok(settings) = state.current() {
+                if let Some(tab) = &settings.selected_tab {
+                    let _ = app.emit_to(WIDGET_LABEL, "set-tab", tab);
+                }
             }
         }
     }
