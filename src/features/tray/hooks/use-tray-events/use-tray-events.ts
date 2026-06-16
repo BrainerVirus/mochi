@@ -3,9 +3,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect } from "react";
 
-import { syncCurrentTrayUsage, useTrayUiStore } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
+import {
+  syncCurrentTrayUsage,
+  useTrayUiStore,
+} from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
-import { parseTrayTabChange } from "@/lib/utils/tray-tab-selection";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import { type MochiSettings, type UpdateChannel } from "@/lib/schemas/settings";
 import { ProviderUsageStatesSchema, type ProviderUsageState } from "@/lib/schemas/usage";
@@ -14,6 +16,7 @@ import {
   shouldHandleAppNavigateEvent,
   shouldHandleTrayNavigateEvent,
 } from "@/lib/tauri/window-events";
+import { parseTrayTabChange } from "@/lib/utils/tray-tab-selection";
 
 export function useSettings() {
   return useQuery(settingsQueryOptions);
