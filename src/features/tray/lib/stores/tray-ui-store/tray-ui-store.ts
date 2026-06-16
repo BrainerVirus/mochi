@@ -6,40 +6,21 @@ import { syncTrayUsage } from "@/lib/tauri/commands";
 
 export type TraySelectedTab = "overview" | ProviderId;
 
-const STORAGE_KEY = "mochi-tray-selected-tab";
-
 function readStoredTab(): TraySelectedTab {
   if (typeof window === "undefined") {
     return "overview";
   }
 
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === "overview") {
-      return "overview";
-    }
-
-    const parsed = ProviderIdSchema.safeParse(raw);
-    if (parsed.success) {
-      return parsed.data;
-    }
-  } catch {
-    // localStorage unavailable (private browsing, etc.)
+  // Read from Rust-injected initialization script (synchronous, no IPC)
+  const globalWindow = window as unknown as Record<string, string | undefined>;
+  const initialTab = globalWindow.__MOCHI_SELECTED_TAB__;
+  if (typeof initialTab === "string") {
+    if (initialTab === "overview") return "overview";
+    const parsed = ProviderIdSchema.safeParse(initialTab);
+    if (parsed.success) return parsed.data;
   }
 
   return "overview";
-}
-
-function persistTab(tab: TraySelectedTab) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    localStorage.setItem(STORAGE_KEY, tab);
-  } catch {
-    // ignore quota / privacy mode errors
-  }
 }
 
 interface TrayUiStore {
@@ -50,7 +31,6 @@ interface TrayUiStore {
 export const useTrayUiStore = create<TrayUiStore>((set) => ({
   selectedTab: readStoredTab(),
   setSelectedTab: (tab) => {
-    persistTab(tab);
     set({ selectedTab: tab });
   },
 }));
