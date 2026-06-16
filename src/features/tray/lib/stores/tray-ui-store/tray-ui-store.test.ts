@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
@@ -19,7 +19,26 @@ beforeEach(() => {
 });
 
 describe("readStoredTab", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("falls back to overview when window is undefined (SSR / Node test env)", () => {
+    expect(readStoredTab()).toBe("overview");
+  });
+
+  it("returns the stored tab when window.__MOCHI_SELECTED_TAB__ is a valid provider", () => {
+    vi.stubGlobal("window", { __MOCHI_SELECTED_TAB__: "codex" });
+    expect(readStoredTab()).toBe("codex");
+  });
+
+  it("returns overview when window.__MOCHI_SELECTED_TAB__ is overview", () => {
+    vi.stubGlobal("window", { __MOCHI_SELECTED_TAB__: "overview" });
+    expect(readStoredTab()).toBe("overview");
+  });
+
+  it("falls back to overview when window.__MOCHI_SELECTED_TAB__ is an invalid string", () => {
+    vi.stubGlobal("window", { __MOCHI_SELECTED_TAB__: "invalid-provider" });
     expect(readStoredTab()).toBe("overview");
   });
 });

@@ -1,8 +1,9 @@
 import { create } from "zustand";
 
 import type { MochiSettings } from "@/lib/schemas/settings";
-import { ProviderIdSchema, type ProviderId } from "@/lib/schemas/usage";
+import { type ProviderId } from "@/lib/schemas/usage";
 import { syncTrayUsage } from "@/lib/tauri/commands";
+import { parseTrayTabChange } from "@/lib/utils/tray-tab-selection";
 
 export type TraySelectedTab = "overview" | ProviderId;
 
@@ -15,9 +16,7 @@ export function readStoredTab(): TraySelectedTab {
   const globalWindow = window as unknown as Record<string, string | undefined>;
   const initialTab = globalWindow.__MOCHI_SELECTED_TAB__;
   if (typeof initialTab === "string") {
-    if (initialTab === "overview") return "overview";
-    const parsed = ProviderIdSchema.safeParse(initialTab);
-    if (parsed.success) return parsed.data;
+    return parseTrayTabChange(initialTab);
   }
 
   return "overview";

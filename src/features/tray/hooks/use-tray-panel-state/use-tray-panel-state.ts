@@ -3,9 +3,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useSettings } from "@/features/tray/hooks/use-tray-events";
 import { useTrayPanelRefresh } from "@/features/tray/hooks/use-tray-panel-refresh";
-import { useTrayUiStore } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
+import {
+  type TraySelectedTab,
+  useTrayUiStore,
+} from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
 import { queryKeys } from "@/lib/query/keys";
+import type { MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderId } from "@/lib/schemas/usage";
 import { refreshSingleProvider, saveSettings, syncTrayUsage } from "@/lib/tauri/commands";
 import {
@@ -13,6 +17,38 @@ import {
   filterUsageStatesForTrayPanel,
 } from "@/lib/utils/tray-panel-tabs";
 import { parseTrayTabChange } from "@/lib/utils/tray-tab-selection";
+
+export function persistTabChangeSettings(
+  queryClient: { setQueryData: (queryKey: readonly unknown[], data: unknown) => unknown },
+  settings: MochiSettings,
+  nextTab: TraySelectedTab,
+  pendingTabRef?: React.MutableRefObject<TraySelectedTab | null>,
+  lastKnownGoodRef?: React.MutableRefObject<MochiSettings | null>,
+): Promise<void> {
+  if (pendingTabRef) {
+    pendingTabRef.current = nextTab;
+  }
+  const updated = { ...settings, selected_tab: nextTab };
+  return saveSettings(updated)
+    .then(() => {
+      if (pendingTabRef && pendingTabRef.current !== nextTab) {
+        return;
+      }
+      queryClient.setQueryData(queryKeys.settings, updated);
+      if (lastKnownGoodRef) {
+        lastKnownGoodRef.current = updated;
+      }
+    })
+    .catch(() => {
+      if (pendingTabRef && pendingTabRef.current !== nextTab) {
+        return;
+      }
+      queryClient.setQueryData(
+        queryKeys.settings,
+        lastKnownGoodRef?.current ?? settings,
+      );
+    });
+}
 
 export function useTrayPanelState() {
   const { data: settings } = useSettings();
@@ -23,6 +59,8 @@ export function useTrayPanelState() {
   const pendingRefreshes = useRef(0);
 
   const queryClient = useQueryClient();
+  const pendingTabRef = useRef<TraySelectedTab | null>(null);
+  const lastKnownGoodRef = useRef<MochiSettings | null>(null);
 
   const enabledProviders = useMemo(
     () => settings?.enabled_providers ?? [],
@@ -38,7 +76,10 @@ export function useTrayPanelState() {
       return;
     }
     setSelectedTab("overview");
-  }, [selectedTab, setSelectedTab, tabs]);
+    if (settings) {
+      void persistTabChangeSettings(queryClient, settings, "overview", pendingTabRef, lastKnownGoodRef);
+    }
+  }, [selectedTab, setSelectedTab, tabs, settings, queryClient]);
 
   useEffect(() => {
     void syncTrayUsage(selectedTab);
@@ -47,18 +88,10 @@ export function useTrayPanelState() {
   function handleTabChange(value: string) {
     const nextTab = parseTrayTabChange(value);
     setSelectedTab(nextTab);
-    void syncTrayUsage(nextTab);
 
     // Persist to shared settings (both windows read same settings.json)
     if (settings) {
-      const updated = { ...settings, selected_tab: nextTab };
-      void saveSettings(updated)
-        .then(() => {
-          queryClient.setQueryData(queryKeys.settings, updated);
-        })
-        .catch(() => {
-          queryClient.setQueryData(queryKeys.settings, settings);
-        });
+      void persistTabChangeSettings(queryClient, settings, nextTab, pendingTabRef, lastKnownGoodRef);
     }
   }
 
