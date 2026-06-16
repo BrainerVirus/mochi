@@ -3,8 +3,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect } from "react";
 
-import { syncCurrentTrayUsage } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
+import { syncCurrentTrayUsage, useTrayUiStore } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
+import { parseTrayTabChange } from "@/lib/utils/tray-tab-selection";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import { type MochiSettings, type UpdateChannel } from "@/lib/schemas/settings";
 import { ProviderUsageStatesSchema, type ProviderUsageState } from "@/lib/schemas/usage";
@@ -67,6 +68,10 @@ export function useTrayEvents() {
       }),
       listen("tray-check-update", () => {
         void openAppWindow("/update");
+      }),
+      listen<string>("set-tab", (event) => {
+        const tab = parseTrayTabChange(event.payload);
+        useTrayUiStore.getState().setSelectedTab(tab);
       }),
       listen<string>("app-navigate", (event) => {
         if (!shouldHandleAppNavigateEvent()) {
