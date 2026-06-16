@@ -1,7 +1,8 @@
-use tauri::{AppHandle, Manager, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 use crate::diagnostics::DiagnosticsState;
 use crate::frontend::app_shell_url;
+use crate::settings::SettingsState;
 
 use super::{WIDGET_LABEL, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH, WIDGET_WIDTH};
 
@@ -72,7 +73,22 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
-    let window = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
+    let selected_tab = app
+        .try_state::<SettingsState>()
+        .and_then(|state| state.current().ok())
+        .and_then(|s| s.selected_tab.clone())
+        .unwrap_or_default();
+
+    let init_script = if selected_tab.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "window.__MOCHI_SELECTED_TAB__ = '{}';",
+            selected_tab.replace('\'', "\\'")
+        )
+    };
+
+    let mut builder = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
         .title("Mochi Widget")
         .inner_size(WIDGET_WIDTH, 420.0)
         .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
@@ -81,10 +97,13 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
         .visible(matches!(
             crate::window_policy::decorated_window_initial_visibility(),
             crate::window_policy::DecoratedWindowInitialVisibility::Visible
-        ))
-        .build()?;
+        ));
 
-    Ok(window)
+    if !init_script.is_empty() {
+        builder = builder.initialization_script(&init_script);
+    }
+
+    builder.build()
 }
 
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -102,7 +121,23 @@ fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 
 #[tauri::command]
 pub fn show_widget(app: AppHandle) -> Result<(), String> {
+    let already_existed = app.get_webview_window(WIDGET_LABEL).is_some();
     let window = ensure_widget_window(&app)?;
+
+    // Emit current selected tab before showing (only for reused windows).
+    // First creation handles this via initialization_script which runs before any
+    // page JS. The emit_to would be lost on first creation since the webview hasn't
+    // loaded the page — the already_existed guard prevents a wasted event.
+    if already_existed {
+        if let Some(state) = app.try_state::<SettingsState>() {
+            if let Ok(settings) = state.current() {
+                if let Some(tab) = &settings.selected_tab {
+                    let _ = app.emit_to(WIDGET_LABEL, "set-tab", tab);
+                }
+            }
+        }
+    }
+
     let policy = crate::window_policy::active_decorated_window_policy();
     let creation = policy.creation_label();
     let initial_visibility = policy.initial_visibility_label();

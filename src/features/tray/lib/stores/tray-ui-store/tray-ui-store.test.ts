@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { syncTrayUsage } from "@/lib/tauri/commands";
 
-import { resolveValidTraySelection, syncCurrentTrayUsage, useTrayUiStore } from "./tray-ui-store";
+import {
+  readStoredTab,
+  resolveValidTraySelection,
+  syncCurrentTrayUsage,
+  useTrayUiStore,
+} from "./tray-ui-store";
 
 vi.mock("@/lib/tauri/commands", () => ({
   syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
@@ -11,6 +16,12 @@ vi.mock("@/lib/tauri/commands", () => ({
 beforeEach(() => {
   vi.mocked(syncTrayUsage).mockClear();
   useTrayUiStore.getState().setSelectedTab("overview");
+});
+
+describe("readStoredTab", () => {
+  it("falls back to overview when window is undefined (SSR / Node test env)", () => {
+    expect(readStoredTab()).toBe("overview");
+  });
 });
 
 describe("resolveValidTraySelection", () => {

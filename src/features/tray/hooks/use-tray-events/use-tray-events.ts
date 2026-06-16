@@ -3,7 +3,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect } from "react";
 
-import { syncCurrentTrayUsage } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
+import {
+  syncCurrentTrayUsage,
+  useTrayUiStore,
+} from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
 import { type MochiSettings, type UpdateChannel } from "@/lib/schemas/settings";
@@ -13,6 +16,7 @@ import {
   shouldHandleAppNavigateEvent,
   shouldHandleTrayNavigateEvent,
 } from "@/lib/tauri/window-events";
+import { parseTrayTabChange } from "@/lib/utils/tray-tab-selection";
 
 export function useSettings() {
   return useQuery(settingsQueryOptions);
@@ -68,6 +72,9 @@ export function useTrayEvents() {
       listen("tray-check-update", () => {
         void openAppWindow("/update");
       }),
+      listen<string>("set-tab", (event) => {
+        handleSetTabEvent(event.payload);
+      }),
       listen<string>("app-navigate", (event) => {
         if (!shouldHandleAppNavigateEvent()) {
           return;
@@ -99,6 +106,11 @@ export function handleUsageRefreshComplete(
       // Tray icon sync failure is non-fatal; cache is already updated
     });
   }
+}
+
+export function handleSetTabEvent(payload: string): void {
+  const tab = parseTrayTabChange(payload);
+  useTrayUiStore.getState().setSelectedTab(tab);
 }
 
 export async function reconcileSettingsSaveSuccess(

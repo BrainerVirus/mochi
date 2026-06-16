@@ -133,6 +133,9 @@ pub struct MochiSettings {
     pub show_notifications: bool,
     #[serde(default)]
     pub provider_configs: HashMap<String, ProviderConfig>,
+    /// Tray panel / widget selected tab, persisted across windows.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected_tab: Option<String>,
 }
 
 impl Default for MochiSettings {
@@ -143,6 +146,7 @@ impl Default for MochiSettings {
             enabled_providers: Vec::new(),
             show_notifications: true,
             provider_configs: HashMap::new(),
+            selected_tab: None,
         }
     }
 }

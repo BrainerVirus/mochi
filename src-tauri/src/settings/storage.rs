@@ -58,6 +58,7 @@ mod tests {
             enabled_providers: vec!["claude".into(), "cursor".into()],
             show_notifications: false,
             provider_configs: Default::default(),
+            selected_tab: None,
         };
 
         save_settings(&path, &settings).expect("settings should save");

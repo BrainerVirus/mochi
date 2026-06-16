@@ -7,7 +7,7 @@ import { useTrayUiStore } from "@/features/tray/lib/stores/tray-ui-store/tray-ui
 import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
 import { queryKeys } from "@/lib/query/keys";
 import type { ProviderId } from "@/lib/schemas/usage";
-import { refreshSingleProvider, syncTrayUsage } from "@/lib/tauri/commands";
+import { refreshSingleProvider, saveSettings, syncTrayUsage } from "@/lib/tauri/commands";
 import {
   buildTrayPanelTabsFromStates,
   filterUsageStatesForTrayPanel,
@@ -48,6 +48,18 @@ export function useTrayPanelState() {
     const nextTab = parseTrayTabChange(value);
     setSelectedTab(nextTab);
     void syncTrayUsage(nextTab);
+
+    // Persist to shared settings (both windows read same settings.json)
+    if (settings) {
+      const updated = { ...settings, selected_tab: nextTab };
+      void saveSettings(updated)
+        .then(() => {
+          queryClient.setQueryData(queryKeys.settings, updated);
+        })
+        .catch(() => {
+          queryClient.setQueryData(queryKeys.settings, settings);
+        });
+    }
   }
 
   function handleRefreshProvider(provider: ProviderId) {

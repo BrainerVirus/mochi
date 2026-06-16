@@ -48,6 +48,7 @@ export const MochiSettingsSchema = z.object({
     .pipe(z.array(ProviderIdSchema)),
   show_notifications: z.boolean(),
   provider_configs: z.record(z.string(), ProviderConfigSchema).default({}),
+  selected_tab: z.string().optional(),
 });
 
 export type MochiSettings = z.infer<typeof MochiSettingsSchema>;
@@ -76,4 +77,5 @@ export const DEFAULT_MOCHI_SETTINGS = MochiSettingsSchema.parse({
   enabled_providers: [],
   show_notifications: true,
   provider_configs: {},
+  selected_tab: undefined,
 });
