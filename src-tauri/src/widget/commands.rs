@@ -2,6 +2,7 @@ use tauri::{AppHandle, Manager, WebviewWindow};
 
 use crate::diagnostics::DiagnosticsState;
 use crate::frontend::app_shell_url;
+use crate::settings::SettingsState;
 
 use super::{WIDGET_LABEL, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH, WIDGET_WIDTH};
 
@@ -72,7 +73,19 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
-    let window = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
+    let selected_tab = app
+        .try_state::<SettingsState>()
+        .and_then(|state| state.current().ok())
+        .and_then(|s| s.selected_tab.clone())
+        .unwrap_or_default();
+
+    let init_script = if selected_tab.is_empty() {
+        String::new()
+    } else {
+        format!("window.__MOCHI_SELECTED_TAB__ = '{}';", selected_tab)
+    };
+
+    let mut builder = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
         .title("Mochi Widget")
         .inner_size(WIDGET_WIDTH, 420.0)
         .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
@@ -81,10 +94,13 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
         .visible(matches!(
             crate::window_policy::decorated_window_initial_visibility(),
             crate::window_policy::DecoratedWindowInitialVisibility::Visible
-        ))
-        .build()?;
+        ));
 
-    Ok(window)
+    if !init_script.is_empty() {
+        builder = builder.initialization_script(&init_script);
+    }
+
+    builder.build()
 }
 
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
