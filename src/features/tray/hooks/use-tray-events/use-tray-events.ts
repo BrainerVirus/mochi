@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 import {
   syncCurrentTrayUsage,
-  useTrayUiStore as trayUiStore,
+  useTrayUiStore,
 } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
@@ -110,7 +110,7 @@ export function handleUsageRefreshComplete(
 
 export function handleSetTabEvent(payload: string): void {
   const tab = parseTrayTabChange(payload);
-  trayUiStore.getState().setSelectedTab(tab);
+  useTrayUiStore.getState().setSelectedTab(tab);
 }
 
 export async function reconcileSettingsSaveSuccess(

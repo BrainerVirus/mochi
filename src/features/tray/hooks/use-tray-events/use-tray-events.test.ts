@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   syncCurrentTrayUsage,
-  useTrayUiStore as trayUiStore,
+  useTrayUiStore,
 } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
@@ -26,7 +26,7 @@ vi.mock("@/lib/tauri/commands", () => ({
 
 beforeEach(() => {
   vi.mocked(syncTrayUsage).mockClear();
-  trayUiStore.getState().setSelectedTab("overview");
+  useTrayUiStore.getState().setSelectedTab("overview");
 });
 
 describe("settings save reconciliation", () => {
@@ -64,7 +64,7 @@ describe("settings save reconciliation", () => {
   });
 
   it("syncs the selected provider from the store", async () => {
-    trayUiStore.getState().setSelectedTab("codex");
+    useTrayUiStore.getState().setSelectedTab("codex");
     const queryClient = {
       setQueryData: () => undefined,
       invalidateQueries: () => Promise.resolve(),
@@ -83,21 +83,21 @@ describe("settings save reconciliation", () => {
 
 describe("handleSetTabEvent", () => {
   it("updates the store tab from a provider id payload", () => {
-    trayUiStore.getState().setSelectedTab("overview");
+    useTrayUiStore.getState().setSelectedTab("overview");
     handleSetTabEvent("codex");
-    expect(trayUiStore.getState().selectedTab).toBe("codex");
+    expect(useTrayUiStore.getState().selectedTab).toBe("codex");
   });
 
   it("updates the store tab from an overview payload", () => {
-    trayUiStore.getState().setSelectedTab("codex");
+    useTrayUiStore.getState().setSelectedTab("codex");
     handleSetTabEvent("overview");
-    expect(trayUiStore.getState().selectedTab).toBe("overview");
+    expect(useTrayUiStore.getState().selectedTab).toBe("overview");
   });
 
   it("falls back to overview on invalid payload", () => {
-    trayUiStore.getState().setSelectedTab("codex");
+    useTrayUiStore.getState().setSelectedTab("codex");
     handleSetTabEvent("nonexistent-provider");
-    expect(trayUiStore.getState().selectedTab).toBe("overview");
+    expect(useTrayUiStore.getState().selectedTab).toBe("overview");
   });
 });
 
