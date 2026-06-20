@@ -11,7 +11,7 @@ import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-da
 import { queryKeys } from "@/lib/query/keys";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderId } from "@/lib/schemas/usage";
-import { refreshSingleProvider, saveSettings, syncTrayUsage } from "@/lib/tauri/commands";
+import { refreshSingleProvider, saveSelectedTab, syncTrayUsage } from "@/lib/tauri/commands";
 import {
   buildTrayPanelTabsFromStates,
   filterUsageStatesForTrayPanel,
@@ -28,9 +28,8 @@ export function persistTabChangeSettings(
   if (pendingTabRef) {
     pendingTabRef.current = nextTab;
   }
-  const updated = { ...settings, selected_tab: nextTab };
-  return saveSettings(updated)
-    .then(() => {
+  return saveSelectedTab(nextTab)
+    .then((updated) => {
       if (pendingTabRef && pendingTabRef.current !== nextTab) {
         return;
       }
@@ -43,10 +42,7 @@ export function persistTabChangeSettings(
       if (pendingTabRef && pendingTabRef.current !== nextTab) {
         return;
       }
-      queryClient.setQueryData(
-        queryKeys.settings,
-        lastKnownGoodRef?.current ?? settings,
-      );
+      queryClient.setQueryData(queryKeys.settings, lastKnownGoodRef?.current ?? settings);
     });
 }
 
@@ -77,7 +73,13 @@ export function useTrayPanelState() {
     }
     setSelectedTab("overview");
     if (settings) {
-      void persistTabChangeSettings(queryClient, settings, "overview", pendingTabRef, lastKnownGoodRef);
+      void persistTabChangeSettings(
+        queryClient,
+        settings,
+        "overview",
+        pendingTabRef,
+        lastKnownGoodRef,
+      );
     }
   }, [selectedTab, setSelectedTab, tabs, settings, queryClient]);
 
@@ -91,7 +93,13 @@ export function useTrayPanelState() {
 
     // Persist to shared settings (both windows read same settings.json)
     if (settings) {
-      void persistTabChangeSettings(queryClient, settings, nextTab, pendingTabRef, lastKnownGoodRef);
+      void persistTabChangeSettings(
+        queryClient,
+        settings,
+        nextTab,
+        pendingTabRef,
+        lastKnownGoodRef,
+      );
     }
   }
 
