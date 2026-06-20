@@ -179,7 +179,7 @@ git commit -m "fix(state): memoize handleTabChange and remove duplicate syncTray
 
 ## Issue 2: Replace Chevron GSAP with CSS Transitions
 
-### Task 3: Write failing test for CSS transition classes on horizontal chevron
+### Task 3: Write failing tests for chevron motion and hidden-state safety
 
 **Files:**
 
@@ -231,13 +231,15 @@ describe("TrayTabChevron", () => {
 });
 ```
 
+Also cover the interaction contract that opacity alone cannot provide: while hidden, the button is disabled, has `tabIndex={-1}`, is pointer-gated, and is excluded from the accessibility tree; when a focused visible button becomes hidden, focus is released and pointer or keyboard activation does not call `onCycle`. Keep a visible-state callback case to prove the gating does not suppress normal activation. Apply the same cases to the vertical chevrons in `scroll-fade-overlays.test.ts`.
+
 - [ ] **Step 4: Run the test to see it fail**
 
 ```bash
 pnpm test -- src/features/tray/components/tray-tab-chevron/tray-tab-chevron.test.ts
 ```
 
-Expected: the new tests fail because the component still uses GSAP (no CSS transition classes).
+Expected: the new tests fail because the component still uses GSAP (no CSS transition classes) and does not yet implement the complete hidden-state focus and activation contract.
 
 - [ ] **Step 5: Commit**
 
@@ -265,9 +267,17 @@ import gsap from "gsap";
 
 Delete the entire import from `@/features/tray/components/use-gsap-overflow-visibility` (after this change, none of `SCROLL_OVERFLOW_FADE_DURATION_S`, `SCROLL_OVERFLOW_FADE_EASE`, or `SCROLL_OVERFLOW_SLIDE_PX` are referenced in this file).
 
-- [ ] **Step 2: Remove `useRef` import for `columnRef`**
+- [ ] **Step 2: Retarget `useRef` from animation to focus cleanup**
 
-Delete the line `import { useRef } from "react";` from the file. (After Step 4, `useRef` is no longer used in this file — the only `useRef` call was for `columnRef`.)
+Remove the animation-only `columnRef`, but keep `useRef` for a `buttonRef`. Add `useEffect` so a button that already owns focus is blurred when `visible` becomes false:
+
+```typescript
+const buttonRef = useRef<HTMLButtonElement>(null);
+
+useEffect(() => {
+  if (!visible) buttonRef.current?.blur();
+}, [visible]);
+```
 
 - [ ] **Step 3: Remove the `gsap.registerPlugin` call**
 
@@ -275,7 +285,7 @@ Delete the line `gsap.registerPlugin(useGSAP);` near the top of the file.
 
 - [ ] **Step 4: Remove the `useGSAP` block and the `columnRef`**
 
-Delete the `const columnRef = useRef<HTMLDivElement>(null);` line, the `const isStart = side === "start";` line (move the `isStart` declaration inside the function body if it's not already there), the `const hiddenX = isStart ? -SCROLL_OVERFLOW_SLIDE_PX : SCROLL_OVERFLOW_SLIDE_PX;` line, and the entire `useGSAP(...)` block.
+Delete the `const columnRef = useRef<HTMLDivElement>(null);` line, the `const hiddenX = isStart ? -SCROLL_OVERFLOW_SLIDE_PX : SCROLL_OVERFLOW_SLIDE_PX;` line, and the entire `useGSAP(...)` block. Keep `const isStart = side === "start";` for the CSS state classes and labels. The only remaining ref is the button-scoped focus-cleanup ref from Step 2.
 
 - [ ] **Step 5: Replace the column `<div>` with the CSS-transition version**
 
@@ -287,12 +297,32 @@ Replace the existing column `<div>` (which has `ref={columnRef}` and the `invisi
     "pointer-events-none absolute inset-y-0 z-30 flex w-8 items-center justify-center",
     "transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none",
     isStart ? "left-0" : "right-0",
-    !visible ? "opacity-0" : "opacity-100",
+    visible ? "opacity-100" : "opacity-0",
     !visible && (isStart ? "-translate-x-1" : "translate-x-1"),
   )}
   aria-hidden={!visible}
 >
 ```
+
+Update the button inside the wrapper to prevent an opacity-hidden control from retaining focus or accepting activation:
+
+```tsx
+<Button
+  ref={buttonRef}
+  type="button"
+  disabled={!visible}
+  variant="ghost"
+  size="icon-xs"
+  tabIndex={visible ? 0 : -1}
+  aria-label={isStart ? "Show previous tabs" : "Show more tabs"}
+  onClick={onCycle}
+  className={getTrayTabChevronButtonClassName(visible)}
+>
+  {isStart ? <ChevronLeftIcon aria-hidden /> : <ChevronRightIcon aria-hidden />}
+</Button>
+```
+
+The wrapper retains `aria-hidden={!visible}` so the hidden control is excluded from the accessibility tree, while the class-name helper pointer-gates the button. CSS handles only opacity and translation; the disabled state and blur effect handle interaction and retained focus.
 
 - [ ] **Step 6: Remove the `TrayTabChevronSide` type export if it's no longer used**
 
@@ -345,7 +375,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 ```
 
-Delete the `animateOverflowVisibility` and `SCROLL_OVERFLOW_SLIDE_PX` imports from `@/features/tray/components/use-gsap-overflow-visibility`. Keep the `useRef` import — the vertical chevron still needs `useRef` for `buttonRef` if any ref is used, or remove it if not. (The new `ScrollFadeVerticalChevron` in Step 3 does not use a ref, so delete the `useRef` import as well.)
+Delete the `animateOverflowVisibility` and `SCROLL_OVERFLOW_SLIDE_PX` imports from `@/features/tray/components/use-gsap-overflow-visibility`. Keep `useRef` for a button-scoped `buttonRef`, and add `useEffect` for blur-on-hide focus cleanup.
 
 Delete the `gsap.registerPlugin(useGSAP);` line.
 
@@ -364,21 +394,30 @@ function ScrollFadeVerticalChevron({
   onCycle: () => void;
 }) {
   const isStart = side === "start";
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!visible) buttonRef.current?.blur();
+  }, [visible]);
 
   return (
     <Button
+      ref={buttonRef}
       type="button"
+      disabled={!visible}
       variant="ghost"
       size="icon-xs"
       tabIndex={visible ? 0 : -1}
+      aria-hidden={!visible}
       aria-label={isStart ? "Scroll up for more" : "Scroll down for more"}
       onClick={onCycle}
       className={cn(
         "pointer-events-auto absolute inset-x-0 z-20 mx-auto shrink-0 cursor-pointer rounded-full",
-        "bg-background/35 text-muted-foreground shadow-none ring-0 backdrop-blur-[2px] hover:bg-background/50 hover:text-foreground",
+        "bg-background/35 text-muted-foreground shadow-none ring-0 backdrop-blur-[2px]",
+        "hover:bg-background/50 hover:text-foreground",
         "transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none",
         isStart ? "top-0 mt-0.5" : "bottom-0 mb-0.5",
-        !visible ? "pointer-events-none opacity-0" : "opacity-100",
+        visible ? "opacity-100" : "pointer-events-none opacity-0 disabled:opacity-0",
         !visible && (isStart ? "-translate-y-1" : "translate-y-1"),
       )}
     >
@@ -388,7 +427,7 @@ function ScrollFadeVerticalChevron({
 }
 ```
 
-Note: the vertical chevron puts the transition directly on the `<Button>` (not on a wrapping column) because the original implementation also had the animation on the button itself.
+The vertical chevron puts the transition directly on the `<Button>` rather than a wrapper. As with the horizontal chevron, CSS handles motion only; `disabled`, `tabIndex`, `aria-hidden`, pointer gating, and blur-on-hide handle hidden-state interaction and focus. The ref remains solely for that focus cleanup.
 
 - [ ] **Step 4: Run the test suite**
 

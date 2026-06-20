@@ -244,7 +244,7 @@ The chevron animation is a 0.2s opacity + 4px translateX (or translateY for vert
 - `motion-reduce:transition-none` (Tailwind) handles the reduced-motion media query at the CSS layer.
 - No `mm` context reconstruction or allocation per visibility update.
 
-Interaction gating: the column always has `pointer-events-none` (so clicks pass through to the underlying button). The button uses `getTrayTabChevronButtonClassName(visible)` which already returns `pointer-events-none` when `!visible`, plus `tabIndex={visible ? 0 : -1}`. The `invisible` Tailwind class (`visibility: hidden`) is dropped from the column — `opacity-0` plus the button's `pointer-events-none` is sufficient to keep the chevron non-interactive while hidden. `aria-hidden={!visible}` remains for assistive tech.
+CSS owns only the motion. Hidden chevrons are explicitly gated with `disabled={!visible}`, `tabIndex={visible ? 0 : -1}`, `aria-hidden={!visible}`, and `pointer-events-none`, so they cannot receive pointer or keyboard activation and are removed from the tab order and accessibility tree. Because a button can already hold focus when `visible` changes, each chevron keeps a ref scoped to its button and blurs that button in an effect when it becomes hidden. The horizontal wrapper still has `pointer-events-none`; its button class restores pointer events only while visible.
 
 #### 2a. `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.tsx`
 
@@ -260,7 +260,7 @@ import {
 } from "@/features/tray/components/use-gsap-overflow-visibility";
 ```
 
-Remove the `gsap.registerPlugin(useGSAP)` call. Remove the `useGSAP(...)` block and the `columnRef` (no longer needed; the column's animation is CSS-driven). Remove the `hiddenX` calculation and the `TrayTabChevronSide` import (the translate direction is now a className condition).
+Remove the `gsap.registerPlugin(useGSAP)` call. Remove the `useGSAP(...)` block and the animation-only `columnRef`. Remove the `hiddenX` calculation and the `TrayTabChevronSide` import (the translate direction is now a className condition). Keep `useRef` for a `buttonRef`, and keep `useEffect` to blur that button when `visible` becomes false.
 
 Replace the column `<div>` with:
 
@@ -270,14 +270,14 @@ Replace the column `<div>` with:
     "pointer-events-none absolute inset-y-0 z-30 flex w-8 items-center justify-center",
     "transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none",
     isStart ? "left-0" : "right-0",
-    !visible ? "opacity-0" : "opacity-100",
+    visible ? "opacity-100" : "opacity-0",
     !visible && (isStart ? "-translate-x-1" : "translate-x-1"),
   )}
   aria-hidden={!visible}
 >
 ```
 
-The button inside is unchanged.
+The button receives `ref={buttonRef}`, `disabled={!visible}`, and `tabIndex={visible ? 0 : -1}`. The wrapper retains `aria-hidden={!visible}`, and `getTrayTabChevronButtonClassName(visible)` pointer-gates the hidden button. On a visible-to-hidden transition, the effect calls `buttonRef.current?.blur()` so an already-focused control cannot remain invisibly focused.
 
 #### 2b. `src/features/tray/components/scroll-fade-overlays/scroll-fade-overlays.tsx`
 
@@ -286,9 +286,9 @@ Same treatment for `ScrollFadeVerticalChevron`:
 - Drop `useGSAP` and `animateOverflowVisibility` imports.
 - Drop `gsap.registerPlugin(useGSAP)`.
 - Drop `SCROLL_OVERFLOW_SLIDE_PX` import.
-- Replace the column classes with `transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none`.
+- Replace the button's animation classes with `transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none`.
 - Toggle `opacity-0` and `translate-y-1` (or `-translate-y-1` for start side) based on `visible`.
-- The button is unchanged.
+- Keep a button-scoped ref and blur it when the chevron becomes hidden. Set `disabled={!visible}`, `tabIndex={visible ? 0 : -1}`, and `aria-hidden={!visible}`, and add `pointer-events-none` to the hidden classes.
 
 #### 2c. `src/features/tray/components/use-gsap-overflow-visibility/`
 
@@ -344,9 +344,9 @@ Same file. The synchronous `void syncTrayUsage(nextTab)` inside `handleTabChange
 | `src/features/settings/components/settings-tab-segmented-control/settings-tab-segmented-control.test.tsx`  | **New.** Smoke test that the control renders with the settings layout.                                                                                                    |
 | `src/features/settings/components/settings-form/settings-form.tsx`                                         | Update the import path of `SettingsTabSegmentedControl` from the tray feature to the new settings feature location.                                                       |
 | `src/features/tray/components/tray-segmented-control-config/`                                              | **Trim.** Remove `SETTINGS_PAGE_TAB_DEFAULTS` (moved to settings). Keep `TRAY_SEGMENT_ROW_HEIGHT` and `TRAY_PAGE_TAB_DEFAULTS` (still used by `tray-panel-tab-list.tsx`). |
-| `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.tsx`                                       | Replace `useGSAP` + `gsap.matchMedia()` with CSS transitions. Drop `use-gsap-overflow-visibility` imports. Remove `columnRef` and the `useGSAP` block.                    |
-| `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.test.ts`                                   | **Extend.** Assert CSS transition utility classes are present; no `useGSAP` / `gsap` / `@gsap/react` imports remain; reduced-motion class is present.                     |
-| `src/features/tray/components/scroll-fade-overlays/scroll-fade-overlays.tsx`                               | Same treatment for the vertical chevron. Drop `use-gsap-overflow-visibility` imports.                                                                                     |
+| `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.tsx`                                       | Replace `useGSAP` + `gsap.matchMedia()` with CSS transitions. Drop `use-gsap-overflow-visibility` imports and the animation ref; retain a button ref for focus cleanup.   |
+| `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.test.ts`                                   | **Extend.** Assert CSS transition utilities, reduced-motion behavior, disabled hidden state, focus release, and blocked hidden activation.                                |
+| `src/features/tray/components/scroll-fade-overlays/scroll-fade-overlays.tsx`                               | Same treatment for the vertical chevron. Drop `use-gsap-overflow-visibility` imports; retain a button ref for focus cleanup and gate the hidden button.                   |
 | `src/features/tray/components/use-gsap-overflow-visibility/`                                               | **Delete.** No remaining importers after 2a/2b.                                                                                                                           |
 | `src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.ts`                                     | Memoize `handleTabChange` with `useCallback`. Remove synchronous `syncTrayUsage` from `handleTabChange` (the effect at lines 62-64 already covers it).                    |
 | `src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.test.ts`                                | **Extend.** Assert `handleTabChange` is referentially stable across renders with the same settings, and that it does not call `syncTrayUsage` directly.                   |
@@ -435,7 +435,7 @@ Per the TDD skill: for each issue, **write the failing test first**, then the im
 
 - **M3 refactor surface**: `useAppSegmentControlState`'s return type becomes part of the public API of `app-segmented-control-view.tsx`. Future changes to the hook must keep the type stable, or update the view and its test.
 - **CSS easing**: `ease-out` is close to GSAP's `power2.out` but not identical. For a 0.2s chevron fade, the difference is imperceptible. If pixel-perfect matching matters, we revisit.
-- **A11y behavior change**: dropping `invisible` (`visibility: hidden`) means screen readers may announce the button if focus reaches it before opacity hits 0. `aria-hidden={!visible}` on the column and the button's `tabIndex={-1}` when hidden mitigate this. Verify with a screen reader if a11y is a concern.
+- **Hidden-control state**: opacity does not change focus or interaction semantics. Hidden buttons are therefore disabled, removed from the tab order and accessibility tree, pointer-gated, and explicitly blurred if they retained focus from the visible state.
 - **`use-gsap-overflow-visibility` deletion**: verified by grep that only the two chevron files import it. If a future caller needs it, restore from git history.
 - **`SettingsTabSegmentedControl` move**: verified by grep that only `settings-form.tsx` imports it. The move is a straight rename of the import path.
 - **`pillReady` state ownership**: when `useAppSegmentControlState` is created at the parent (`TrayPanelTabList`) instead of inside the segmented control, `pillReady` lives in the parent. The view's `blockInteractionUntilPlaced` gate reads the same state value, so behavior is identical. The only difference is that the state now survives if the parent re-renders for an unrelated reason — which is the same as before because the parent (`TrayPanelTabList`) is the only consumer.
