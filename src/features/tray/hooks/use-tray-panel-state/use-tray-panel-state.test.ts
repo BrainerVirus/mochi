@@ -28,7 +28,7 @@ vi.mock("@/lib/tauri/commands", () => ({
 }));
 
 vi.mock("@/features/tray/hooks/use-tray-events", () => ({
-  useSettings: () => ({ data: { ...DEFAULT_MOCHI_SETTINGS } }),
+  useSettings: () => ({ data: DEFAULT_MOCHI_SETTINGS }),
 }));
 
 vi.mock("@/features/tray/hooks/use-tray-panel-refresh", () => ({
@@ -124,10 +124,10 @@ describe("useTrayPanelState", () => {
 
   it("does not call syncTrayUsage directly from handleTabChange", () => {
     const syncTrayUsageMock = vi.mocked(syncTrayUsage);
-    syncTrayUsageMock.mockClear();
     const { result } = renderHook(() => useTrayPanelState(), {
       wrapper: makeWrapper(),
     });
+    syncTrayUsageMock.mockClear();
     result.current.handleTabChange("codex");
     expect(syncTrayUsageMock).not.toHaveBeenCalled();
   });
