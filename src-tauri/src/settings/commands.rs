@@ -47,9 +47,21 @@ impl SettingsState {
             .map_err(|error| error.to_string())
     }
 
-    pub fn update(&self, next: MochiSettings) -> Result<MochiSettings, String> {
-        persist_settings(&self.path, &next)?;
+    pub fn update(&self, mut next: MochiSettings) -> Result<MochiSettings, String> {
         let mut settings = self.settings.lock().map_err(|error| error.to_string())?;
+        next.selected_tab = settings.selected_tab.clone();
+        next.normalize_provider_ids();
+        persist_settings(&self.path, &next)?;
+        *settings = next.clone();
+        Ok(next)
+    }
+
+    pub fn update_selected_tab(&self, selected_tab: String) -> Result<MochiSettings, String> {
+        let mut settings = self.settings.lock().map_err(|error| error.to_string())?;
+        let mut next = settings.clone();
+        next.selected_tab = Some(selected_tab);
+        next.normalize_provider_ids();
+        persist_settings(&self.path, &next)?;
         *settings = next.clone();
         Ok(next)
     }
@@ -130,6 +142,14 @@ pub fn save_settings(
     }
 
     Ok(next)
+}
+
+#[tauri::command]
+pub fn save_selected_tab(
+    selected_tab: String,
+    state: State<'_, SettingsState>,
+) -> Result<MochiSettings, String> {
+    state.update_selected_tab(selected_tab)
 }
 
 #[tauri::command]
@@ -297,5 +317,73 @@ mod tests {
         let disabled = disabled_provider_ids(&previous, &next);
 
         assert_eq!(disabled, vec![crate::core::models::ProviderId::Cursor]);
+    }
+
+    #[test]
+    fn settings_update_preserves_current_selected_tab() {
+        let dir = std::env::temp_dir().join(format!(
+            "mochi-settings-update-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let state = SettingsState {
+            path: settings_file_path(&dir),
+            settings: Mutex::new(MochiSettings {
+                selected_tab: Some("codex".into()),
+                ..MochiSettings::default()
+            }),
+        };
+
+        let updated = state
+            .update(MochiSettings {
+                show_notifications: false,
+                selected_tab: Some("cursor".into()),
+                ..MochiSettings::default()
+            })
+            .expect("settings should update");
+
+        assert_eq!(
+            updated,
+            MochiSettings {
+                show_notifications: false,
+                selected_tab: Some("codex".into()),
+                ..MochiSettings::default()
+            }
+        );
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn selected_tab_update_preserves_unrelated_settings() {
+        let dir = std::env::temp_dir().join(format!(
+            "mochi-selected-tab-update-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let state = SettingsState {
+            path: settings_file_path(&dir),
+            settings: Mutex::new(MochiSettings {
+                show_notifications: false,
+                ..MochiSettings::default()
+            }),
+        };
+
+        let updated = state
+            .update_selected_tab("opencodego".into())
+            .expect("selected tab should update");
+
+        assert_eq!(
+            updated,
+            MochiSettings {
+                show_notifications: false,
+                selected_tab: Some("opencode-go".into()),
+                ..MochiSettings::default()
+            }
+        );
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

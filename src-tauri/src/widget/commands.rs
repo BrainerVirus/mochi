@@ -72,23 +72,23 @@ pub fn setup_widget(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
+fn selected_tab_initialization_script(
+    selected_tab: Option<&str>,
+) -> Result<String, serde_json::Error> {
+    let value = serde_json::to_string(&selected_tab)?
+        .replace('\u{2028}', "\\u2028")
+        .replace('\u{2029}', "\\u2029");
+    Ok(format!("window.__MOCHI_SELECTED_TAB__ = {value};"))
+}
+
+fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, Box<dyn std::error::Error>> {
     let selected_tab = app
         .try_state::<SettingsState>()
         .and_then(|state| state.current().ok())
-        .and_then(|s| s.selected_tab.clone())
-        .unwrap_or_default();
+        .and_then(|settings| settings.selected_tab.clone());
+    let init_script = selected_tab_initialization_script(selected_tab.as_deref())?;
 
-    let init_script = if selected_tab.is_empty() {
-        String::new()
-    } else {
-        format!(
-            "window.__MOCHI_SELECTED_TAB__ = '{}';",
-            selected_tab.replace('\'', "\\'")
-        )
-    };
-
-    let mut builder = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
+    tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
         .title("Mochi Widget")
         .inner_size(WIDGET_WIDTH, 420.0)
         .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
@@ -97,13 +97,10 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, tauri::Error> {
         .visible(matches!(
             crate::window_policy::decorated_window_initial_visibility(),
             crate::window_policy::DecoratedWindowInitialVisibility::Visible
-        ));
-
-    if !init_script.is_empty() {
-        builder = builder.initialization_script(&init_script);
-    }
-
-    builder.build()
+        ))
+        .initialization_script(&init_script)
+        .build()
+        .map_err(Into::into)
 }
 
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -272,4 +269,22 @@ fn widget_logical_width(window: &WebviewWindow) -> f64 {
         .map(|size| f64::from(size.width) / scale_factor)
         .unwrap_or(WIDGET_WIDTH);
     width.max(WIDGET_MIN_WIDTH)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn selected_tab_initialization_script_serializes_untrusted_text() {
+        let selected_tab = "codex\\'\n\u{2028}\u{2029}\";globalThis.pwned=true;//";
+
+        let script = selected_tab_initialization_script(Some(selected_tab))
+            .expect("selected tab should serialize");
+
+        assert_eq!(
+            script,
+            "window.__MOCHI_SELECTED_TAB__ = \"codex\\\\'\\n\\u2028\\u2029\\\";globalThis.pwned=true;//\";"
+        );
+    }
 }
