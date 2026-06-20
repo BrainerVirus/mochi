@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Fix two defects in the Mochi tray page-tab strip: (1) rapid chevron clicks crash the app, and (2) the active pill doesn't animate when navigating via chevron. The first is fixed by replacing the chevron's GSAP animation with CSS transitions and removing a duplicated IPC call. The second is fixed by lifting the segmented control's state machine to the tab list parent so both click paths share the same machine handler.
+**Goal:** Repair two defects in the Mochi tray page-tab strip: (1) rapid chevron clicks were observed to crash the app, and (2) the active pill doesn't animate when navigating via chevron. For the first, replace the chevron's GSAP animation with CSS transitions to remove repeated visibility reconstruction and remove a duplicated IPC call; the exact crash mechanism is not established. For the second, lift the segmented control's state machine to the tab list parent so both click paths share the same machine handler.
 
-**Architecture:** Three independent issues shipped in one PR. Issue 3 (memoize + remove duplicate IPC) is the smallest, no-behavior-risk change. Issue 2 (CSS transitions) removes the OOM source. Issue 1 (M3 refactor) lifts the state machine.
+**Architecture:** Three independent issues shipped in one PR. Issue 3 (memoize + remove duplicate IPC) is the smallest, no-behavior-risk change. Issue 2 (CSS transitions) removes repeated GSAP visibility reconstruction; the observed crash mechanism is not established. Issue 1 (M3 refactor) lifts the state machine.
 
 **Tech Stack:** TypeScript, React 19, Tailwind CSS 4, GSAP (removal), Vitest.
 
@@ -42,7 +42,9 @@ import { renderHook } from "@testing-library/react";
 The existing mock already covers `saveSettings`. Ensure it returns a `MochiSettings` (or a casted object) so the `persistTabChangeSettings` helper can consume it without a type error. If the existing mock returns `Promise.resolve({})`, change it to:
 
 ```typescript
-vi.mocked(saveSettings).mockResolvedValue(DEFAULT_MOCHI_SETTINGS as Awaited<ReturnType<typeof saveSettings>>);
+vi.mocked(saveSettings).mockResolvedValue(
+  DEFAULT_MOCHI_SETTINGS as Awaited<ReturnType<typeof saveSettings>>,
+);
 ```
 
 (or, in the `vi.mock` factory, return a proper `DEFAULT_MOCHI_SETTINGS`).
@@ -931,12 +933,11 @@ export function TrayPanelTabList({ tabs, value, onValueChange }: TrayPanelTabLis
     [tabs],
   );
 
-  const tabControlState = useAppSegmentControlState(
-    value,
-    items.length,
-    onValueChange,
-    { enabled: true, showHover: true, contentReady: true },
-  );
+  const tabControlState = useAppSegmentControlState(value, items.length, onValueChange, {
+    enabled: true,
+    showHover: true,
+    contentReady: true,
+  });
 
   const handleCycleForward = useCallback(
     (scrollEl: HTMLDivElement) => {
@@ -1059,7 +1060,11 @@ describe("useAppSegmentControlState", () => {
   it("returns a handleValueChange that wraps handleSegmentValueChange when indicators are enabled", () => {
     const onValueChange = vi.fn();
     const { result } = renderHook(() =>
-      useAppSegmentControlState("a", 2, onValueChange, { enabled: true, showHover: true, contentReady: true }),
+      useAppSegmentControlState("a", 2, onValueChange, {
+        enabled: true,
+        showHover: true,
+        contentReady: true,
+      }),
     );
     expect(result.current.handleValueChange).toBeDefined();
     result.current.handleValueChange("b");
@@ -1071,7 +1076,11 @@ describe("useAppSegmentControlState", () => {
   it("returns a handleValueChange that calls onValueChange directly when indicators are disabled", () => {
     const onValueChange = vi.fn();
     const { result } = renderHook(() =>
-      useAppSegmentControlState("a", 2, onValueChange, { enabled: false, showHover: false, contentReady: true }),
+      useAppSegmentControlState("a", 2, onValueChange, {
+        enabled: false,
+        showHover: false,
+        contentReady: true,
+      }),
     );
     result.current.handleValueChange("b");
     expect(onValueChange).toHaveBeenCalledWith("b");
@@ -1080,7 +1089,11 @@ describe("useAppSegmentControlState", () => {
   it("ignores empty string values", () => {
     const onValueChange = vi.fn();
     const { result } = renderHook(() =>
-      useAppSegmentControlState("a", 2, onValueChange, { enabled: true, showHover: true, contentReady: true }),
+      useAppSegmentControlState("a", 2, onValueChange, {
+        enabled: true,
+        showHover: true,
+        contentReady: true,
+      }),
     );
     result.current.handleValueChange("");
     expect(onValueChange).not.toHaveBeenCalled();
@@ -1454,6 +1467,7 @@ Expected: all clean.
 - [ ] **Step 5: Manual smoke test (macOS / Windows / Linux)**
 
 Open the tray panel. Click the right chevron rapidly 20 times. Confirm:
+
 - The window stays open.
 - The pill animates to each tab.
 - The final selected tab matches the last click.

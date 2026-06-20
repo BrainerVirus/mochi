@@ -7,12 +7,12 @@
 
 Two related defects affect the Mochi tray page-tab strip (used by the tray panel and the widget window):
 
-| #   | Issue                                                                                    | Root Cause                                                                                                                                                                                                                                                                                                                                                          |
-| --- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Rapid clicks on the tray tab chevron controls crash the app (window closes, no recovery) | The chevron's `useGSAP` with `gsap.matchMedia()` + `revertOnUpdate: true` allocates a new `mm` context on every `visible` toggle; the asynchronous revert leaves contexts to stack. Combined with an unmemoized `handleTabChange` and a duplicated `syncTrayUsage` IPC call, a few clicks per second is enough to OOM the webview renderer and force the Tauri host to close it. |
-| 2   | The active tab pill does not animate when the user cycles tabs via the chevron           | The chevron path in `cycleTrayPanelTabs` calls the parent's `onValueChange` directly, bypassing the segmented control's `handleValueChange` which is the only path that dispatches the machine's `SELECT` → `moveActive` command. Tray page tabs are machine-driven (the layout-effect path is intentionally disabled for tray to preserve hover handoff).       |
+| #   | Issue                                                                                    | Established behavior                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Rapid clicks on the tray tab chevron controls crash the app (window closes, no recovery) | Rapid `visible` toggles repeatedly reconstruct the chevron's `useGSAP` and `gsap.matchMedia()` visibility setup. A renderer crash was observed during rapid interaction, while an unmemoized `handleTabChange` and duplicated `syncTrayUsage` IPC call were also present. The available evidence does not establish the crash's exact mechanism. CSS transitions remove the unnecessary GSAP reconstruction and allocation path. |
+| 2   | The active tab pill does not animate when the user cycles tabs via the chevron           | The chevron path in `cycleTrayPanelTabs` calls the parent's `onValueChange` directly, bypassing the segmented control's `handleValueChange` which is the only path that dispatches the machine's `SELECT` → `moveActive` command. Tray page tabs are machine-driven (the layout-effect path is intentionally disabled for tray to preserve hover handoff).                                                                       |
 
-Both issues are fixed by lifting the segmented control's state machine to the tab list parent (so both click paths go through the same handler), replacing the chevron's GSAP animation with CSS transitions, and removing the IPC duplication.
+The repair lifts the segmented control's state machine to the tab list parent (so both click paths go through the same handler), replaces the chevron's GSAP animation with CSS transitions, and removes the IPC duplication. These changes remove repeated visibility reconstruction and redundant work from the interaction path without asserting an unproven crash mechanism.
 
 ---
 
@@ -205,7 +205,7 @@ The new per-unit folder layout follows the convention from `docs/tech-stack.md`:
 
 ---
 
-## Issue 2: Replace Chevron GSAP with CSS Transitions (Fixes the Crash)
+## Issue 2: Replace Chevron GSAP with CSS Transitions
 
 ### Problem
 
@@ -217,15 +217,21 @@ useGSAP(
     const column = columnRef.current;
     if (!column) return undefined;
     const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: reduce)", () => { /* ... */ });
-    mm.add("(prefers-reduced-motion: no-preference)", () => { /* ... */ });
-    return () => { mm.revert(); };
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      /* ... */
+    });
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      /* ... */
+    });
+    return () => {
+      mm.revert();
+    };
   },
   { dependencies: [hiddenX, visible], scope: columnRef, revertOnUpdate: true },
 );
 ```
 
-Every `visible` toggle allocates a new `gsap.matchMedia()` context. The `mm.revert()` in the cleanup is not synchronous with GSAP's ticker, so the contexts stack up. The crash is a renderer OOM triggered by sustained allocation, not a thrown error.
+Every `visible` toggle reconstructs the `gsap.matchMedia()` visibility setup and reverts the previous setup during cleanup. A renderer crash was observed during rapid toggles, but the available evidence does not establish asynchronous cleanup, stacked contexts, a memory leak, or an out-of-memory failure as the cause.
 
 The vertical chevron in `scroll-fade-overlays.tsx` shares the same pattern via `use-gsap-overflow-visibility.ts` and is equally affected.
 
@@ -236,7 +242,7 @@ The chevron animation is a 0.2s opacity + 4px translateX (or translateY for vert
 - `transition: opacity 0.2s ease-out, transform 0.2s ease-out` matches the GSAP `power2.out` easing closely enough for a chevron.
 - The browser handles interruption (a new value mid-transition starts a new tween from the current value) — equivalent to GSAP's `overwrite: "auto"`.
 - `motion-reduce:transition-none` (Tailwind) handles the reduced-motion media query at the CSS layer.
-- No `mm` context allocation per update. No memory leak path.
+- No `mm` context reconstruction or allocation per visibility update.
 
 Interaction gating: the column always has `pointer-events-none` (so clicks pass through to the underlying button). The button uses `getTrayTabChevronButtonClassName(visible)` which already returns `pointer-events-none` when `!visible`, plus `tabIndex={visible ? 0 : -1}`. The `invisible` Tailwind class (`visibility: hidden`) is dropped from the column — `opacity-0` plus the button's `pointer-events-none` is sufficient to keep the chevron non-interactive while hidden. `aria-hidden={!visible}` remains for assistive tech.
 
@@ -290,9 +296,9 @@ After 2a and 2b, this folder has no remaining importers (verified by grep — th
 
 ---
 
-## Issue 3: Stability Fixes (Reduces Crash Likelihood)
+## Issue 3: Stability Fixes (Reduces Rapid-Click Work)
 
-These are independent of Issues 1 and 2 but contribute to the rapid-click instability and should ship in the same change.
+These are independent stability improvements that reduce work performed by the rapid-click path and should ship in the same change.
 
 ### 3a. Memoize `handleTabChange`
 
@@ -322,30 +328,30 @@ Same file. The synchronous `void syncTrayUsage(nextTab)` inside `handleTabChange
 
 ## Files Changed
 
-| File                                                                                  | Change                                                                                                                                                                                                                          |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/components/ui/app-segmented-control-view.tsx`                                    | **New.** Pure presentational, takes `state` as a prop.                                                                                                                                                                          |
-| `src/components/ui/app-segmented-control.tsx`                                         | Slim down: call `useAppSegmentControlState`, render `AppSegmentedControlView`. Backward compatible.                                                                                                                            |
-| `src/components/ui/app-segmented-control-view.test.tsx`                               | **New.** Assert refs/handlers wire to the right DOM nodes with a mock state.                                                                                                                                                    |
-| `src/components/ui/use-app-segment-control-state.test.ts`                             | **New.** Assert `handleValueChange` wraps the machine when `enabled` and skips it otherwise.                                                                                                                                    |
-| `src/components/ui/app-segmented-control.test.ts`                                    | **Unaffected.** Existing tests cover utility functions in `app-segmented-control-utils.ts`, not the component. No change needed.                                                                                                |
-| `src/features/tray/components/tray-panel-tab-list/tray-panel-tab-list.tsx`            | Lift `useAppSegmentControlState`; render `AppSegmentedControlView`; pass `tabControlState.handleValueChange` to `cycleTrayPanelTabs`.                                                                                            |
-| `src/features/tray/components/tray-panel-tab-list/tray-panel-tab-list.test.tsx`        | **New.** Assert the chevron's `onCycle` invokes `state.handleValueChange`; rapid clicks don't throw.                                                                                                                            |
-| `src/features/tray/components/tray-panel-tab-cycle/tray-panel-tab-cycle.test.ts`      | **New.** Branches: `currentIndex === -1` early return; `nextIndex === currentIndex` scroll-only; rapid sequential calls; stale `currentValue`.                                                                                  |
-| `src/features/tray/components/tray-segmented-control/tray-segmented-control.tsx`      | **Delete.** All exports (`TraySegmentedControl`, `PageTabSegmentedControl`) are removed; `SettingsTabSegmentedControl` moves to the settings feature (see below).                                                              |
-| `src/features/settings/components/settings-tab-segmented-control/settings-tab-segmented-control.tsx` | **New.** Contains `SettingsTabSegmentedControl`, wrapping `AppSegmentedControl` with `SETTINGS_PAGE_TAB_DEFAULTS`.                                                                                                              |
-| `src/features/settings/components/settings-tab-segmented-control/settings-tab-segmented-control-config.ts` | **New.** Contains `SETTINGS_PAGE_TAB_DEFAULTS` (and any settings-specific radius/track constants that were co-located in `tray-segmented-control-config.ts`).                                                                       |
-| `src/features/settings/components/settings-tab-segmented-control/settings-tab-segmented-control.test.tsx` | **New.** Smoke test that the control renders with the settings layout.                                                                                                                                                          |
-| `src/features/settings/components/settings-form/settings-form.tsx`                   | Update the import path of `SettingsTabSegmentedControl` from the tray feature to the new settings feature location.                                                                                                              |
-| `src/features/tray/components/tray-segmented-control-config/`                        | **Trim.** Remove `SETTINGS_PAGE_TAB_DEFAULTS` (moved to settings). Keep `TRAY_SEGMENT_ROW_HEIGHT` and `TRAY_PAGE_TAB_DEFAULTS` (still used by `tray-panel-tab-list.tsx`).                                                       |
-| `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.tsx`                  | Replace `useGSAP` + `gsap.matchMedia()` with CSS transitions. Drop `use-gsap-overflow-visibility` imports. Remove `columnRef` and the `useGSAP` block.                                                                         |
-| `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.test.ts`              | **Extend.** Assert CSS transition utility classes are present; no `useGSAP` / `gsap` / `@gsap/react` imports remain; reduced-motion class is present.                                                                          |
-| `src/features/tray/components/scroll-fade-overlays/scroll-fade-overlays.tsx`          | Same treatment for the vertical chevron. Drop `use-gsap-overflow-visibility` imports.                                                                                                                                          |
-| `src/features/tray/components/use-gsap-overflow-visibility/`                         | **Delete.** No remaining importers after 2a/2b.                                                                                                                                                                                  |
-| `src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.ts`                | Memoize `handleTabChange` with `useCallback`. Remove synchronous `syncTrayUsage` from `handleTabChange` (the effect at lines 62-64 already covers it).                                                                          |
-| `src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.test.ts`           | **Extend.** Assert `handleTabChange` is referentially stable across renders with the same settings, and that it does not call `syncTrayUsage` directly.                                                                          |
-| `src/features/tray/components/tray-segment-indicator/tray-segment-indicator.test.ts`  | **Extend.** Assert `moveActive` is dispatched on every value change regardless of which path triggered it.                                                                                                                      |
-| `src/features/tray/components/tray-segment-indicator-machine/tray-segment-indicator-machine.test.ts` | **Extend.** Same — assert machine `SELECT` emits `moveActive` (regression guard for the M3 wiring).                                                                                                                              |
+| File                                                                                                       | Change                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/ui/app-segmented-control-view.tsx`                                                         | **New.** Pure presentational, takes `state` as a prop.                                                                                                                    |
+| `src/components/ui/app-segmented-control.tsx`                                                              | Slim down: call `useAppSegmentControlState`, render `AppSegmentedControlView`. Backward compatible.                                                                       |
+| `src/components/ui/app-segmented-control-view.test.tsx`                                                    | **New.** Assert refs/handlers wire to the right DOM nodes with a mock state.                                                                                              |
+| `src/components/ui/use-app-segment-control-state.test.ts`                                                  | **New.** Assert `handleValueChange` wraps the machine when `enabled` and skips it otherwise.                                                                              |
+| `src/components/ui/app-segmented-control.test.ts`                                                          | **Unaffected.** Existing tests cover utility functions in `app-segmented-control-utils.ts`, not the component. No change needed.                                          |
+| `src/features/tray/components/tray-panel-tab-list/tray-panel-tab-list.tsx`                                 | Lift `useAppSegmentControlState`; render `AppSegmentedControlView`; pass `tabControlState.handleValueChange` to `cycleTrayPanelTabs`.                                     |
+| `src/features/tray/components/tray-panel-tab-list/tray-panel-tab-list.test.tsx`                            | **New.** Assert the chevron's `onCycle` invokes `state.handleValueChange`; rapid clicks don't throw.                                                                      |
+| `src/features/tray/components/tray-panel-tab-cycle/tray-panel-tab-cycle.test.ts`                           | **New.** Branches: `currentIndex === -1` early return; `nextIndex === currentIndex` scroll-only; rapid sequential calls; stale `currentValue`.                            |
+| `src/features/tray/components/tray-segmented-control/tray-segmented-control.tsx`                           | **Delete.** All exports (`TraySegmentedControl`, `PageTabSegmentedControl`) are removed; `SettingsTabSegmentedControl` moves to the settings feature (see below).         |
+| `src/features/settings/components/settings-tab-segmented-control/settings-tab-segmented-control.tsx`       | **New.** Contains `SettingsTabSegmentedControl`, wrapping `AppSegmentedControl` with `SETTINGS_PAGE_TAB_DEFAULTS`.                                                        |
+| `src/features/settings/components/settings-tab-segmented-control/settings-tab-segmented-control-config.ts` | **New.** Contains `SETTINGS_PAGE_TAB_DEFAULTS` (and any settings-specific radius/track constants that were co-located in `tray-segmented-control-config.ts`).             |
+| `src/features/settings/components/settings-tab-segmented-control/settings-tab-segmented-control.test.tsx`  | **New.** Smoke test that the control renders with the settings layout.                                                                                                    |
+| `src/features/settings/components/settings-form/settings-form.tsx`                                         | Update the import path of `SettingsTabSegmentedControl` from the tray feature to the new settings feature location.                                                       |
+| `src/features/tray/components/tray-segmented-control-config/`                                              | **Trim.** Remove `SETTINGS_PAGE_TAB_DEFAULTS` (moved to settings). Keep `TRAY_SEGMENT_ROW_HEIGHT` and `TRAY_PAGE_TAB_DEFAULTS` (still used by `tray-panel-tab-list.tsx`). |
+| `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.tsx`                                       | Replace `useGSAP` + `gsap.matchMedia()` with CSS transitions. Drop `use-gsap-overflow-visibility` imports. Remove `columnRef` and the `useGSAP` block.                    |
+| `src/features/tray/components/tray-tab-chevron/tray-tab-chevron.test.ts`                                   | **Extend.** Assert CSS transition utility classes are present; no `useGSAP` / `gsap` / `@gsap/react` imports remain; reduced-motion class is present.                     |
+| `src/features/tray/components/scroll-fade-overlays/scroll-fade-overlays.tsx`                               | Same treatment for the vertical chevron. Drop `use-gsap-overflow-visibility` imports.                                                                                     |
+| `src/features/tray/components/use-gsap-overflow-visibility/`                                               | **Delete.** No remaining importers after 2a/2b.                                                                                                                           |
+| `src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.ts`                                     | Memoize `handleTabChange` with `useCallback`. Remove synchronous `syncTrayUsage` from `handleTabChange` (the effect at lines 62-64 already covers it).                    |
+| `src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.test.ts`                                | **Extend.** Assert `handleTabChange` is referentially stable across renders with the same settings, and that it does not call `syncTrayUsage` directly.                   |
+| `src/features/tray/components/tray-segment-indicator/tray-segment-indicator.test.ts`                       | **Extend.** Assert `moveActive` is dispatched on every value change regardless of which path triggered it.                                                                |
+| `src/features/tray/components/tray-segment-indicator-machine/tray-segment-indicator-machine.test.ts`       | **Extend.** Same — assert machine `SELECT` emits `moveActive` (regression guard for the M3 wiring).                                                                       |
 
 ### Test Coverage
 
@@ -408,7 +414,7 @@ The new files (`AppSegmentedControlView`, `settings-tab-segmented-control`, the 
 - Do not change the chevron's visual design (icon, color, size, position).
 - Do not change the active pill's visual design.
 - Do not change the segmented control for inline or settings usage beyond what's required to make `AppSegmentedControl` a thin wrapper.
-- Do not introduce a time-based click debounce on the chevron. The CSS transition fix removes the underlying memory pressure; no UX trade-off is needed.
+- Do not introduce a time-based click debounce on the chevron. CSS transitions remove the unnecessary GSAP reconstruction path without adding a UX trade-off.
 - Do not change the cycle math (which tab to advance to, when to scroll vs change tab).
 - Do not migrate `useTrayUiStore` or `useTrayPanelState` to a different state management library.
 - Do not change the Rust commands or IPC protocol.
@@ -420,8 +426,8 @@ The new files (`AppSegmentedControlView`, `settings-tab-segmented-control`, the 
 Per the TDD skill: for each issue, **write the failing test first**, then the implementation, then verify the test passes. The order of issues is:
 
 1. **Issue 3 first** (memoize `handleTabChange` + remove duplicate IPC). Smallest diff, validates that the test suite can detect the change. No behavior risk.
-2. **Issue 2 second** (CSS transitions for chevrons). Pure visual change, easy to roll back if needed. Removes the OOM risk before doing the larger refactor.
-3. **Issue 1 third** (M3 — lift the state machine + move `SettingsTabSegmentedControl` to settings feature). Largest refactor. Built on a stable, non-leaking chevron and a memoized parent callback.
+2. **Issue 2 second** (CSS transitions for chevrons). Pure visual change, easy to roll back if needed. Removes repeated GSAP reconstruction before doing the larger refactor.
+3. **Issue 1 third** (M3 — lift the state machine + move `SettingsTabSegmentedControl` to settings feature). Largest refactor. Built on a CSS-driven chevron and a memoized parent callback.
 
 ---
 
