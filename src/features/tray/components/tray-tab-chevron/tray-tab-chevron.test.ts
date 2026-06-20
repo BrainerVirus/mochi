@@ -31,6 +31,20 @@ describe("getTrayTabChevronButtonClassName", () => {
   });
 });
 
+describe("TrayTabChevron disabled opacity", () => {
+  it("keeps the button opacity constant while disabled", () => {
+    const { getByRole } = render(
+      createElement(TrayTabChevron, {
+        side: "end",
+        visible: false,
+        onCycle: vi.fn<() => void>(),
+      }),
+    );
+
+    expect(getByRole("button", { hidden: true }).className).toContain("disabled:opacity-100");
+  });
+});
+
 describe("TrayTabChevron", () => {
   it.each([
     ["start", "-translate-x-1"],

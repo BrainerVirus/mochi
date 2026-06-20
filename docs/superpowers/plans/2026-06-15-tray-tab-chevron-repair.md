@@ -460,6 +460,7 @@ git commit -m "refactor(chevron): replace GSAP with CSS transitions on vertical 
 **Files:**
 
 - Delete: `src/features/tray/components/use-gsap-overflow-visibility/`
+- Modify: `tsconfig.json`
 
 - [ ] **Step 1: Verify no remaining importers**
 
@@ -475,7 +476,12 @@ Expected: no results. (Tasks 4 and 5 removed the only consumers.)
 rm -rf src/features/tray/components/use-gsap-overflow-visibility
 ```
 
-- [ ] **Step 3: Run the test suite**
+- [ ] **Step 3: Regenerate explicit TypeScript paths**
+
+Regenerate the `paths` object with `node scripts/generate-tsconfig-paths.mjs` and update
+`tsconfig.json`, removing the deleted helper's explicit alias.
+
+- [ ] **Step 4: Run the test suite**
 
 ```bash
 pnpm test
@@ -484,10 +490,10 @@ pnpm build
 
 Expected: builds and tests pass.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add -u src/features/tray/components/use-gsap-overflow-visibility
+git add -u src/features/tray/components/use-gsap-overflow-visibility tsconfig.json
 git commit -m "chore(chevron): remove unused use-gsap-overflow-visibility hook"
 ```
 
