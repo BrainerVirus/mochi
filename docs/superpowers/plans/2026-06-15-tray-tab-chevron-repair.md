@@ -214,7 +214,7 @@ describe("TrayTabChevron", () => {
       <TrayTabChevron side="end" visible={true} onCycle={() => {}} />,
     );
     const column = container.firstChild as HTMLElement;
-    expect(column.className).toContain("transition-[opacity,transform]");
+    expect(column.className).toContain("transition-[opacity,translate]");
     expect(column.className).toContain("duration-200");
     expect(column.className).toContain("ease-out");
     expect(column.className).toContain("motion-reduce:transition-none");
@@ -285,7 +285,7 @@ Replace the existing column `<div>` (which has `ref={columnRef}` and the `invisi
 <div
   className={cn(
     "pointer-events-none absolute inset-y-0 z-30 flex w-8 items-center justify-center",
-    "transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
+    "transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none",
     isStart ? "left-0" : "right-0",
     !visible ? "opacity-0" : "opacity-100",
     !visible && (isStart ? "-translate-x-1" : "translate-x-1"),
@@ -376,7 +376,7 @@ function ScrollFadeVerticalChevron({
       className={cn(
         "pointer-events-auto absolute inset-x-0 z-20 mx-auto shrink-0 cursor-pointer rounded-full",
         "bg-background/35 text-muted-foreground shadow-none ring-0 backdrop-blur-[2px] hover:bg-background/50 hover:text-foreground",
-        "transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
+        "transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none",
         isStart ? "top-0 mt-0.5" : "bottom-0 mb-0.5",
         !visible ? "pointer-events-none opacity-0" : "opacity-100",
         !visible && (isStart ? "-translate-y-1" : "translate-y-1"),

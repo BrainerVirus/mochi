@@ -22,7 +22,6 @@
       "@/lib/providers/dashboard-urls": ["./src/lib/providers/dashboard-urls/dashboard-urls.ts"],
       "@/lib/query/client": ["./src/lib/query/client/client.ts"],
       "@/lib/query/keys": ["./src/lib/query/keys/keys.ts"],
-      "@/lib/query/refresh-provider": ["./src/lib/query/refresh-provider/refresh-provider.ts"],
       "@/lib/query/settings": ["./src/lib/query/settings/settings.ts"],
       "@/lib/query/update-check": ["./src/lib/query/update-check/update-check.ts"],
       "@/lib/query/usage-refetch-interval": [
@@ -57,6 +56,9 @@
       ],
       "@/lib/updates/settings-update-status": [
         "./src/lib/updates/settings-update-status/settings-update-status.ts"
+      ],
+      "@/lib/updates/tray-update-footer-items": [
+        "./src/lib/updates/tray-update-footer-items/tray-update-footer-items.tsx"
       ],
       "@/lib/utils/aggregate-used-percent": [
         "./src/lib/utils/aggregate-used-percent/aggregate-used-percent.ts"
@@ -106,9 +108,6 @@
         "./src/lib/utils/usage-snapshots-empty-message/usage-snapshots-empty-message.ts"
       ],
       "@/lib/utils/widget-density": ["./src/lib/utils/widget-density/widget-density.ts"],
-      "@/lib/updates/tray-update-footer-items": [
-        "./src/lib/updates/tray-update-footer-items/tray-update-footer-items.tsx"
-      ],
       "@/components/mascot/mochi-chibi": [
         "./src/shared/components/mascot/mochi-chibi/mochi-chibi.tsx"
       ],
@@ -186,9 +185,6 @@
       ],
       "@/features/tray/components/tray-tab-chevron-class-name": [
         "./src/features/tray/components/tray-tab-chevron-class-name/tray-tab-chevron-class-name.ts"
-      ],
-      "@/features/tray/components/use-gsap-overflow-visibility": [
-        "./src/features/tray/components/use-gsap-overflow-visibility/use-gsap-overflow-visibility.ts"
       ],
       "@/features/tray/components/use-scroll-overflow": [
         "./src/features/tray/components/use-scroll-overflow/use-scroll-overflow.ts"

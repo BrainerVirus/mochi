@@ -239,7 +239,7 @@ The vertical chevron in `scroll-fade-overlays.tsx` shares the same pattern via `
 
 The chevron animation is a 0.2s opacity + 4px translateX (or translateY for vertical) fade. CSS `transition` does the same thing natively:
 
-- `transition: opacity 0.2s ease-out, transform 0.2s ease-out` matches the GSAP `power2.out` easing closely enough for a chevron.
+- `transition: opacity 0.2s ease-out, translate 0.2s ease-out` matches the GSAP `power2.out` easing closely enough for a chevron. Tailwind 4 translate utilities emit the individual `translate` property rather than `transform`.
 - The browser handles interruption (a new value mid-transition starts a new tween from the current value) — equivalent to GSAP's `overwrite: "auto"`.
 - `motion-reduce:transition-none` (Tailwind) handles the reduced-motion media query at the CSS layer.
 - No `mm` context reconstruction or allocation per visibility update.
@@ -268,7 +268,7 @@ Replace the column `<div>` with:
 <div
   className={cn(
     "pointer-events-none absolute inset-y-0 z-30 flex w-8 items-center justify-center",
-    "transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
+    "transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none",
     isStart ? "left-0" : "right-0",
     !visible ? "opacity-0" : "opacity-100",
     !visible && (isStart ? "-translate-x-1" : "translate-x-1"),
@@ -286,7 +286,7 @@ Same treatment for `ScrollFadeVerticalChevron`:
 - Drop `useGSAP` and `animateOverflowVisibility` imports.
 - Drop `gsap.registerPlugin(useGSAP)`.
 - Drop `SCROLL_OVERFLOW_SLIDE_PX` import.
-- Replace the column classes with `transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none`.
+- Replace the column classes with `transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none`.
 - Toggle `opacity-0` and `translate-y-1` (or `-translate-y-1` for start side) based on `visible`.
 - The button is unchanged.
 

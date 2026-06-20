@@ -51,11 +51,12 @@ describe("TrayTabChevron", () => {
     expect(column.getAttribute("aria-hidden")).toBe("true");
     expect(column.className).toContain("opacity-0");
     expect(column.className).toContain(hiddenTranslation);
-    expect(column.className).toContain("transition-[opacity,transform]");
+    expect(column.className).toContain("transition-[opacity,translate]");
     expect(column.className).toContain("duration-200");
     expect(column.className).toContain("ease-out");
     expect(column.className).toContain("motion-reduce:transition-none");
     expect(button.tabIndex).toBe(-1);
+    expect(button.disabled).toBe(true);
     expect(button.className).toContain("pointer-events-none");
 
     rerender(createElement(TrayTabChevron, { side, visible: true, onCycle: vi.fn<() => void>() }));
@@ -64,6 +65,27 @@ describe("TrayTabChevron", () => {
     expect(column.className).toContain("opacity-100");
     expect(column.className).not.toContain(hiddenTranslation);
     expect(button.tabIndex).toBe(0);
+    expect(button.disabled).toBe(false);
+  });
+
+  it("releases focus and blocks activation when a visible chevron becomes hidden", () => {
+    const onCycle = vi.fn<() => void>();
+    const props = { side: "end" as const, onCycle };
+    const { getByRole, rerender } = render(
+      createElement(TrayTabChevron, { ...props, visible: true }),
+    );
+    const button = getByRole("button", { name: "Show more tabs" });
+
+    button.focus();
+    expect(document.activeElement).toBe(button);
+
+    rerender(createElement(TrayTabChevron, { ...props, visible: false }));
+
+    expect(document.activeElement).not.toBe(button);
+    fireEvent.keyDown(button, { key: "Enter" });
+    fireEvent.keyUp(button, { key: "Enter" });
+    fireEvent.click(button);
+    expect(onCycle).not.toHaveBeenCalled();
   });
 
   it("keeps the visible chevron callback behavior", () => {
