@@ -121,6 +121,7 @@ function createFakeCurl() {
   const curlPath = path.join(dir, "curl");
   const commonSh = path.join(root, "scripts/install/lib/common.sh");
   const homebrewSh = path.join(root, "scripts/install/lib/homebrew-tap.sh");
+  const macosCliSh = path.join(root, "scripts/install/lib/macos-cli.sh");
   const setupShLocal = path.join(root, "scripts/install/setup-macos-brew-tap.sh");
 
   writeFileSync(
@@ -148,6 +149,9 @@ case "$url" in
     ;;
   *scripts/install/lib/homebrew-tap.sh)
     cat "${homebrewSh}" > "$out"
+    ;;
+  *scripts/install/lib/macos-cli.sh)
+    cat "${macosCliSh}" > "$out"
     ;;
   *scripts/install/setup-macos-brew-tap.sh)
     cat "${setupShLocal}"

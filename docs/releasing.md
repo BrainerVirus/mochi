@@ -38,47 +38,21 @@ Stable users receive only stable updates. Unstable users receive builds from `ma
 
 ## Required Secrets
 
-### All releases
-
 - `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 - `MOCHI_UPDATER_PUBLIC_KEY`
-
-### Stable macOS (Developer ID signing + notarization)
-
-Stable macOS builds fail until these GitHub Actions secrets are configured. Unstable builds stay ad-hoc signed.
-
-**Certificate import (required):**
-
-- `APPLE_CERTIFICATE` — base64-encoded `.p12` export of your **Developer ID Application** certificate (include the private key). Generate with `openssl base64 -A -in certificate.p12 -out certificate-base64.txt`.
-- `APPLE_CERTIFICATE_PASSWORD` — password used when exporting the `.p12`.
-- `KEYCHAIN_PASSWORD` — arbitrary password for the temporary CI keychain.
-
-**Notarization (choose one method):**
-
-_Apple ID (simplest to start):_
-
-- `APPLE_ID` — Apple ID email.
-- `APPLE_PASSWORD` — [app-specific password](https://support.apple.com/en-us/HT204397).
-- `APPLE_TEAM_ID` — Team ID from [Membership Details](https://developer.apple.com/account#MembershipDetailsCard).
-
-_App Store Connect API key (recommended for CI):_
-
-- `APPLE_API_KEY` — Key ID from App Store Connect → Users and Access → Integrations → Keys.
-- `APPLE_API_ISSUER` — Issuer ID shown above the keys table.
-- `APPLE_API_KEY_PRIVATE` — base64-encoded contents of the downloaded `.p8` private key (`openssl base64 -A -in AuthKey_XXXX.p8 -out key-base64.txt`).
-
-**Optional:**
-
-- `APPLE_SIGNING_IDENTITY` — overrides auto-detected identity (usually `Developer ID Application: Your Name (TEAMID)`).
-
-### Windows (when available)
-
-- Windows code signing secrets for stable releases
-
-### GitHub Pages
-
+- Windows code signing secrets for stable releases when available
 - GitHub Pages publication token if `GITHUB_TOKEN` cannot write the Pages source branch
+
+## macOS distribution (no Apple Developer account)
+
+macOS builds are **ad-hoc signed** in CI (`APPLE_SIGNING_IDENTITY=-`). They are not notarized.
+
+Homebrew and direct `.dmg` installers remove the download quarantine flag so Gatekeeper does not show the misleading “damaged” dialog. If a manual install still fails to open, run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Mochi.app
+```
 
 ## Updater Feed
 

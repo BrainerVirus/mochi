@@ -35,6 +35,7 @@ fi
 unset _mochi_common_loaded _tmp
 
 mochi_source_install_lib "homebrew-tap.sh"
+mochi_source_install_lib "macos-cli.sh"
 
 MOCHI_INSTALL_SCRIPT_NAME="install-macos-brew.sh"
 mochi_parse_install_args "$@"
@@ -52,24 +53,16 @@ CASK_REF="$(mochi_homebrew_install_cask_ref "${CHANNEL}")"
 mochi_run_install_script "setup-macos-brew-tap.sh"
 
 echo "Installing Homebrew cask ${CASK_REF} (${CHANNEL})"
-# ponytail: --no-quarantine avoids Gatekeeper friction for Homebrew downloads; notarization is handled in stable CI.
+# ponytail: ad-hoc signed builds need quarantine cleared; no paid Apple Developer account.
 brew install --cask "${CASK_REF}" --force --no-quarantine
-
-mochi_clear_macos_app_quarantine() {
-  local app_path="${1:-/Applications/Mochi.app}"
-  [[ -d "${app_path}" ]] || return 0
-  if xattr -p com.apple.quarantine "${app_path}" >/dev/null 2>&1; then
-    xattr -dr com.apple.quarantine "${app_path}"
-    echo "Removed macOS quarantine from ${app_path}"
-  fi
-}
 
 mochi_clear_macos_app_quarantine "/Applications/Mochi.app"
 
 cat <<EOF
 Installed Mochi (${CHANNEL}) with Homebrew.
 
-If macOS still says Mochi is damaged, remove quarantine manually:
+Mochi is ad-hoc signed (no Apple Developer notarization). If macOS says the app
+is damaged, clear download quarantine:
   xattr -dr com.apple.quarantine /Applications/Mochi.app
 
 Upgrade later:

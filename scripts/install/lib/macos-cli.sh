@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
-# macOS CLI symlink helper for install-macos.sh
+# macOS install helpers shared by install-macos.sh and install-macos-brew.sh
 set -euo pipefail
+
+mochi_clear_macos_app_quarantine() {
+  local app_path="${1:-/Applications/Mochi.app}"
+  [[ -d "${app_path}" ]] || return 0
+  if xattr -p com.apple.quarantine "${app_path}" >/dev/null 2>&1; then
+    xattr -dr com.apple.quarantine "${app_path}"
+    echo "Removed macOS quarantine from ${app_path}"
+  fi
+}
 
 mochi_install_cli_link() {
   local app_path="$1"
