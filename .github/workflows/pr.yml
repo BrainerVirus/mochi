@@ -65,6 +65,12 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install PowerShell for install script tests
+        run: |
+          if ! command -v pwsh >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y powershell
+          fi
       - name: Run frontend tests
         run: pnpm test
 
@@ -83,6 +89,12 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install PowerShell for install script tests
+        run: |
+          if ! command -v pwsh >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y powershell
+          fi
       - name: Run tests with coverage gate
         run: pnpm test:coverage
       - name: Upload coverage report

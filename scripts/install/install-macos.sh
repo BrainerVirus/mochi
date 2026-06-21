@@ -33,6 +33,19 @@ if [[ "${_mochi_common_loaded}" -eq 0 ]]; then
 fi
 unset _mochi_common_loaded _tmp
 
+for _i in "${!BASH_SOURCE[@]}"; do
+  _src="${BASH_SOURCE[_i]}"
+  if [[ "${_src}" == *.sh ]] && [[ -f "${_src}" ]]; then
+    _dir="$(cd "$(dirname "${_src}")" && pwd)"
+    if [[ -f "${_dir}/lib/macos-cli.sh" ]]; then
+      # shellcheck source=lib/macos-cli.sh
+      source "${_dir}/lib/macos-cli.sh"
+      break
+    fi
+  fi
+done
+unset _i _src _dir
+
 MOCHI_INSTALL_SCRIPT_NAME="install-macos.sh"
 mochi_parse_install_args "$@"
 
@@ -83,27 +96,6 @@ fi
 mkdir -p "${INSTALL_DIR}"
 echo "Installing ${APP_NAME} to ${INSTALL_DIR}"
 ditto "${APP_SRC}" "${DEST}"
-
-mochi_install_cli_link() {
-  local app_path="$1"
-  local link_path="${MOCHI_CLI_LINK:-/usr/local/bin/mochi}"
-  local target="${app_path}/Contents/MacOS/mochi"
-  local link_dir
-  link_dir="$(dirname "${link_path}")"
-
-  if [[ ! -x "${target}" ]]; then
-    echo "Skipping CLI link: ${target} is not executable"
-    return 0
-  fi
-
-  if mkdir -p "${link_dir}" 2>/dev/null && ln -sf "${target}" "${link_path}" 2>/dev/null; then
-    echo "Installed CLI command to ${link_path}"
-    return 0
-  fi
-
-  echo "Could not write ${link_path}. To enable the CLI, run:"
-  echo "sudo ln -sf ${target} ${link_path}"
-}
 
 mochi_install_cli_link "${DEST}"
 

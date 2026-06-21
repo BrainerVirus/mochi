@@ -166,3 +166,36 @@ mochi_sha256() {
     mochi_die "need sha256sum or shasum to verify downloads"
   fi
 }
+
+# Linux package format: appimage, deb, or rpm. MOCHI_TEST_LINUX_FAMILY overrides auto-detect in tests.
+mochi_linux_package_kind() {
+  local requested="${MOCHI_PACKAGE:-auto}"
+  if [[ "${requested}" != "auto" ]]; then
+    echo "${requested}"
+    return
+  fi
+
+  case "${MOCHI_TEST_LINUX_FAMILY:-}" in
+    debian) echo "deb"; return ;;
+    fedora) echo "rpm"; return ;;
+    generic) echo "appimage"; return ;;
+  esac
+
+  if command -v dpkg >/dev/null 2>&1 && [[ -f /etc/debian_version || -f /etc/os-release ]]; then
+    echo "deb"
+  elif command -v rpm >/dev/null 2>&1 && [[ -f /etc/redhat-release || -f /etc/fedora-release ]]; then
+    echo "rpm"
+  else
+    echo "appimage"
+  fi
+}
+
+mochi_linux_asset_patterns() {
+  local pkg_kind="$1"
+  case "${pkg_kind}" in
+    appimage) printf '%s\n' '\.AppImage$' 'appimage' ;;
+    deb) printf '%s\n' '\.deb$' '_amd64\.deb$' ;;
+    rpm) printf '%s\n' '\.rpm$' 'x86_64\.rpm$' ;;
+    *) mochi_die "unsupported MOCHI_PACKAGE=${pkg_kind} (use appimage, deb, or rpm)" ;;
+  esac
+}
