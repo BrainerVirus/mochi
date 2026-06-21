@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { createElement, useRef, type ReactNode } from "react";
+import { createElement, useCallback, useRef, useState, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAppSegmentControlState } from "@/components/ui/use-app-segment-control-state";
@@ -96,6 +96,7 @@ vi.mock("@/features/tray/components/scroll-fade-region", () => ({
 const tabs = [
   { id: "overview", label: "Overview" },
   { id: "codex", label: "Codex" },
+  { id: "cursor", label: "Cursor" },
 ] satisfies TrayPanelTab[];
 
 afterEach(cleanup);
@@ -109,6 +110,24 @@ function expectMoveActive(tabId: string) {
   expect(indicatorMocks.executeCommand).toHaveBeenCalledWith(
     { type: "moveActive", tabId },
     expect.any(Object),
+  );
+}
+
+function ControlledTabList({ onValueChange }: { onValueChange: (value: string) => void }) {
+  const [value, setValue] = useState("overview");
+  const handleValueChange = useCallback(
+    (next: string) => {
+      onValueChange(next);
+      setValue(next);
+    },
+    [onValueChange],
+  );
+
+  return createElement(
+    "div",
+    null,
+    createElement("output", { "aria-label": "Selected tab" }, value),
+    createElement(TrayPanelTabList, { tabs, value, onValueChange: handleValueChange }),
   );
 }
 
@@ -142,18 +161,35 @@ describe("TrayPanelTabList selection", () => {
     expect(onValueChange).toHaveBeenCalledWith(next);
   });
 
-  it("handles rapid repeated chevron selections without throwing", () => {
-    const onValueChange = renderTabList("overview");
+  it("advances controlled state during rapid chevron selections", () => {
+    const onValueChange = vi.fn<(value: string) => void>();
+    render(createElement(ControlledTabList, { onValueChange }));
     const cycleForward = screen.getByLabelText("Cycle forward");
+    const cycleBackward = screen.getByLabelText("Cycle backward");
 
     expect(() => {
       fireEvent.click(cycleForward);
       fireEvent.click(cycleForward);
       fireEvent.click(cycleForward);
+      fireEvent.click(cycleBackward);
+      fireEvent.click(cycleBackward);
+      fireEvent.click(cycleBackward);
     }).not.toThrow();
 
-    expect(indicatorMocks.executeCommand).toHaveBeenCalledTimes(3);
-    expect(onValueChange).toHaveBeenCalledTimes(3);
+    const movedTabs = indicatorMocks.executeCommand.mock.calls
+      .map(([command]) => command)
+      .filter(
+        (command): command is { type: "moveActive"; tabId: string } =>
+          typeof command === "object" &&
+          command !== null &&
+          "type" in command &&
+          command.type === "moveActive",
+      )
+      .map((command) => command.tabId);
+
+    expect(movedTabs).toEqual(["codex", "cursor", "codex", "overview"]);
+    expect(onValueChange.mock.calls.map(([value]) => value)).toEqual(movedTabs);
+    expect(screen.getByRole("status", { name: "Selected tab" }).textContent).toBe("overview");
   });
 
   it("preserves the tab group and accessible tab labels", () => {
