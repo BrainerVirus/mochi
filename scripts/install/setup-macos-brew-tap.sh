@@ -1,55 +1,48 @@
 #!/usr/bin/env bash
 # Ensure the GitHub-backed Homebrew tap for Mochi is installed.
-# macOS /bin/bash is 3.2 — avoid bash 4+ syntax such as ${var,,}.
 set -euo pipefail
 
-: "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"
-
-TAP_USER="${MOCHI_GITHUB_REPO%%/*}"
-TAP="${TAP_USER}/mochi"
-URL="https://github.com/${MOCHI_GITHUB_REPO}"
-
-mochi_lower() {
-  printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
-}
-
-mochi_tap_listed() {
-  local needle="$1"
-  local line
-  while IFS= read -r line; do
-    [ "$(mochi_lower "${line}")" = "$(mochi_lower "${needle}")" ] && return 0
-  done
-  return 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/homebrew-tap.sh
+source "${SCRIPT_DIR}/lib/homebrew-tap.sh"
 
 if ! command -v brew >/dev/null 2>&1; then
   echo "error: Homebrew is required (https://brew.sh/)" >&2
   exit 1
 fi
 
-# Remove stale local/dev taps that break `brew update` or shadow the GitHub tap.
-for stale_tap in test/mochi-tap "${TAP_USER}/mochi-install"; do
-  if mochi_tap_listed "${stale_tap}"; then
-    echo "Removing stale tap ${stale_tap}"
-    brew untap --force "${stale_tap}" 2>/dev/null || brew untap "${stale_tap}" 2>/dev/null || true
-  fi
-done
+TAP="$(mochi_homebrew_tap_name)"
+URL="$(mochi_homebrew_tap_url)"
+TAP_LIST="$(brew tap 2>/dev/null || true)"
+PLAN="$(mochi_homebrew_tap_plan "${TAP_LIST}")"
+READY=0
 
-if mochi_tap_listed "${TAP}"; then
-  tap_repo="$(brew --repo "${TAP}" 2>/dev/null || true)"
-  current_url=""
-  if [ -n "${tap_repo}" ] && [ -d "${tap_repo}/.git" ]; then
-    current_url="$(git -C "${tap_repo}" config --get remote.origin.url 2>/dev/null || true)"
-  fi
-
-  if [ "${current_url}" = "${URL}" ]; then
-    echo "Tap ${TAP} already points to ${URL}"
-    exit 0
-  fi
-
-  echo "Replacing tap ${TAP} (${current_url:-unknown} -> ${URL})"
-  brew untap --force "${TAP}"
-fi
-
-brew tap "${TAP}" "${URL}"
-echo "Tapped ${TAP} -> ${URL}"
+while IFS= read -r line; do
+  [ -z "${line}" ] && continue
+  action="${line%%$'\t'*}"
+  case "${action}" in
+    remove-stale)
+      IFS=$'\t' read -r _action stale_tap <<<"${line}"
+      echo "Removing stale tap ${stale_tap}"
+      mochi_homebrew_apply_tap_plan_line "${action}" "${stale_tap}"
+      ;;
+    replace)
+      IFS=$'\t' read -r _action tap_name current_url target_url <<<"${line}"
+      echo "Replacing tap ${tap_name} (${current_url} -> ${target_url})"
+      mochi_homebrew_apply_tap_plan_line "${action}" "${tap_name}" "${current_url}" "${target_url}"
+      echo "Tapped ${tap_name} -> ${target_url}"
+      ;;
+    install)
+      IFS=$'\t' read -r _action tap_name target_url <<<"${line}"
+      mochi_homebrew_apply_tap_plan_line "${action}" "${tap_name}" "${target_url}"
+      echo "Tapped ${tap_name} -> ${target_url}"
+      ;;
+    ready)
+      IFS=$'\t' read -r _action tap_name target_url <<<"${line}"
+      echo "Tap ${tap_name} already points to ${target_url}"
+      READY=1
+      ;;
+  esac
+done <<EOF
+${PLAN}
+EOF
