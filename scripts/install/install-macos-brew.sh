@@ -8,8 +8,9 @@ set -euo pipefail
 : "${MOCHI_STABLE_CASK:=mochi-desktop}"
 : "${MOCHI_UNSTABLE_CASK:=mochi-unstable}"
 
-TAP_USER="${MOCHI_GITHUB_REPO%%/*}"
-TAP="${TAP_USER}/mochi"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/homebrew-tap.sh
+source "${SCRIPT_DIR}/lib/homebrew-tap.sh"
 
 _mochi_common_loaded=0
 for _i in "${!BASH_SOURCE[@]}"; do
@@ -43,28 +44,22 @@ mochi_parse_install_args "$@"
 mochi_need_cmd brew
 
 if [[ "${MOCHI_INSTALL_UNSTABLE}" == "1" ]]; then
-  CASK_ID="${MOCHI_UNSTABLE_CASK}"
   CHANNEL="unstable"
 else
-  CASK_ID="${MOCHI_STABLE_CASK}"
   CHANNEL="stable"
 fi
 
-if [[ -n "${_dir:-}" ]] && [[ -f "${_dir}/setup-macos-brew-tap.sh" ]]; then
-  bash "${_dir}/setup-macos-brew-tap.sh"
-else
-  curl -fsSL \
-    "https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/setup-macos-brew-tap.sh" \
-    | bash
-fi
+CASK_REF="$(mochi_homebrew_install_cask_ref "${CHANNEL}")"
 
-echo "Installing Homebrew cask ${TAP}/${CASK_ID} (${CHANNEL})"
-brew install --cask "${TAP}/${CASK_ID}" --force
+bash "${SCRIPT_DIR}/setup-macos-brew-tap.sh"
+
+echo "Installing Homebrew cask ${CASK_REF} (${CHANNEL})"
+brew install --cask "${CASK_REF}" --force
 
 cat <<EOF
 Installed Mochi (${CHANNEL}) with Homebrew.
 
 Upgrade later:
   curl -fsSL https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/setup-macos-brew-tap.sh | bash
-  brew upgrade --cask ${TAP}/${CASK_ID}
+  brew upgrade --cask ${CASK_REF}
 EOF
