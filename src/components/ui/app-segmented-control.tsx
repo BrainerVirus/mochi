@@ -33,17 +33,23 @@ interface AppSegmentedControlProps {
   contentReady?: boolean;
 }
 
-export function AppSegmentedControl({
+interface AppSegmentedControlViewProps extends Omit<
+  AppSegmentedControlProps,
+  "onValueChange" | "contentReady"
+> {
+  state: ReturnType<typeof useAppSegmentControlState>;
+}
+
+export function AppSegmentedControlView({
   items,
   value,
-  onValueChange,
   className,
   rowHeight = "h-9",
   stretchItems = true,
   variant = "page-tabs",
   layout = "tray",
-  contentReady = true,
-}: AppSegmentedControlProps) {
+  state,
+}: AppSegmentedControlViewProps) {
   const isPageTabs = usesPageTabIndicators(variant);
   const showHover = usesSegmentHoverIndicator(variant);
   const usesIndicators = usesSegmentActiveIndicator(variant);
@@ -51,11 +57,6 @@ export function AppSegmentedControl({
   const indicatorRadiusClass = isPageTabs
     ? pageTabRadius.indicator
     : INLINE_SEGMENT_INDICATOR_RADIUS_CLASS;
-  const state = useAppSegmentControlState(value, items.length, onValueChange, {
-    enabled: usesIndicators,
-    showHover,
-    contentReady,
-  });
   const trackClassName = isPageTabs
     ? "bg-[var(--app-segment-track)]"
     : "bg-[var(--app-segment-inline-track)]";
@@ -106,5 +107,32 @@ export function AppSegmentedControl({
         />
       </ToggleGroup>
     </div>
+  );
+}
+
+export function AppSegmentedControl({
+  items,
+  value,
+  onValueChange,
+  variant = "page-tabs",
+  layout = "tray",
+  contentReady = true,
+  ...viewProps
+}: AppSegmentedControlProps) {
+  const state = useAppSegmentControlState(value, items.length, onValueChange, {
+    enabled: usesSegmentActiveIndicator(variant),
+    showHover: usesSegmentHoverIndicator(variant),
+    contentReady,
+  });
+
+  return (
+    <AppSegmentedControlView
+      {...viewProps}
+      items={items}
+      value={value}
+      variant={variant}
+      layout={layout}
+      state={state}
+    />
   );
 }

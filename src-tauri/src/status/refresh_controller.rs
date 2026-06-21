@@ -1,39 +1,26 @@
-use std::collections::HashSet;
-use std::sync::Mutex;
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use tokio::sync::{Mutex, OwnedMutexGuard};
 
 use crate::core::models::ProviderId;
 
 #[derive(Default)]
 pub struct RefreshController {
-    active: Mutex<HashSet<ProviderId>>,
-}
-
-pub struct ProviderRefreshGuard<'a> {
-    controller: &'a RefreshController,
-    provider: ProviderId,
+    providers: Mutex<HashMap<ProviderId, Arc<Mutex<()>>>>,
 }
 
 impl RefreshController {
-    pub fn try_begin_provider_refresh(
-        &self,
-        provider: ProviderId,
-    ) -> Option<ProviderRefreshGuard<'_>> {
-        let mut active = self.active.lock().ok()?;
-        if !active.insert(provider) {
-            return None;
-        }
-        Some(ProviderRefreshGuard {
-            controller: self,
-            provider,
-        })
-    }
-}
-
-impl Drop for ProviderRefreshGuard<'_> {
-    fn drop(&mut self) {
-        if let Ok(mut active) = self.controller.active.lock() {
-            active.remove(&self.provider);
-        }
+    pub async fn begin_provider_refresh(&self, provider: ProviderId) -> OwnedMutexGuard<()> {
+        let provider_lock = {
+            let mut providers = self.providers.lock().await;
+            Arc::clone(
+                providers
+                    .entry(provider)
+                    .or_insert_with(|| Arc::new(Mutex::new(()))),
+            )
+        };
+        provider_lock.lock_owned().await
     }
 }
 
@@ -43,17 +30,31 @@ mod tests {
     use crate::core::models::ProviderId;
 
     #[tokio::test]
-    async fn provider_lock_allows_one_active_refresh() {
+    async fn same_provider_refresh_waits_for_active_refresh() {
         let controller = RefreshController::default();
+        let first = controller.begin_provider_refresh(ProviderId::Claude).await;
+        let mut second = Box::pin(controller.begin_provider_refresh(ProviderId::Claude));
 
-        let first = controller.try_begin_provider_refresh(ProviderId::Claude);
-        let second = controller.try_begin_provider_refresh(ProviderId::Claude);
+        tokio::select! {
+            biased;
+            _ = &mut second => panic!("same-provider refresh must wait"),
+            () = std::future::ready(()) => {}
+        }
 
-        assert!(first.is_some());
-        assert!(second.is_none());
         drop(first);
-        assert!(controller
-            .try_begin_provider_refresh(ProviderId::Claude)
-            .is_some());
+        let _second = second.await;
+    }
+
+    #[tokio::test]
+    async fn different_provider_refreshes_remain_independent() {
+        let controller = RefreshController::default();
+        let _claude = controller.begin_provider_refresh(ProviderId::Claude).await;
+        let mut cursor = Box::pin(controller.begin_provider_refresh(ProviderId::Cursor));
+
+        tokio::select! {
+            biased;
+            _cursor = &mut cursor => {}
+            () = std::future::ready(()) => panic!("different providers must not block each other"),
+        }
     }
 }

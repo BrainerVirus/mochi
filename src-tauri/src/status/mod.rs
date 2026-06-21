@@ -196,9 +196,9 @@ pub async fn refresh_enabled_snapshots(
             continue;
         }
 
-        let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) else {
-            continue;
-        };
+        let _guard = refresh_controller()
+            .begin_provider_refresh(provider_id)
+            .await;
 
         match fetch_provider_snapshot(provider_id, &ctx).await {
             Ok(Some(snapshot)) => {
@@ -359,7 +359,10 @@ pub async fn refresh_single_provider_inner(
             "credentials missing",
             failed_attempt("live-fetch", &ProviderError::NotConfigured),
         );
-    } else if let Some(_guard) = refresh_controller().try_begin_provider_refresh(provider_id) {
+    } else {
+        let _guard = refresh_controller()
+            .begin_provider_refresh(provider_id)
+            .await;
         match fetch_provider_snapshot(provider_id, &ctx).await {
             Ok(Some(snapshot)) => {
                 store.record_success(snapshot);

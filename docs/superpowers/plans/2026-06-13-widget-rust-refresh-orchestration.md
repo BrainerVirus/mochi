@@ -10,6 +10,93 @@
 
 ---
 
+## 2026-06-20 Follow-up: Serialize overlapping provider refreshes
+
+The original push-model tasks below were completed by PRs #86–#88 and are retained only as
+historical context. They must not be replayed. One race remains: the nonblocking provider guard
+lets an overlapping Rust entry point skip active work and immediately emit a stale completion
+payload.
+
+### Task 1: Wait for active work on the same provider
+
+**Files:**
+
+- Modify: `src-tauri/src/status/refresh_controller.rs`
+- Modify: `src-tauri/src/status/mod.rs`
+
+- [x] **Step 1: Write deterministic concurrency tests**
+
+Replace the try-lock test with tests that poll acquisition directly: a second acquisition for the
+same provider must remain pending, while another provider must acquire immediately.
+
+```rust
+let first = controller
+    .begin_provider_refresh(ProviderId::Claude)
+    .await;
+let mut second = Box::pin(controller.begin_provider_refresh(ProviderId::Claude));
+
+tokio::select! {
+    biased;
+    _ = &mut second => panic!("same-provider refresh must wait"),
+    () = std::future::ready(()) => {}
+}
+
+drop(first);
+let _second = second.await;
+```
+
+- [x] **Step 2: Run the focused test and verify RED**
+
+Run:
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml refresh_controller
+```
+
+Expected: compilation fails because `begin_provider_refresh` does not exist.
+
+- [x] **Step 3: Replace the nonblocking set with per-provider async mutexes**
+
+```rust
+#[derive(Default)]
+pub struct RefreshController {
+    providers: Mutex<HashMap<ProviderId, Arc<Mutex<()>>>>,
+}
+
+impl RefreshController {
+    pub async fn begin_provider_refresh(&self, provider: ProviderId) -> OwnedMutexGuard<()> {
+        let provider_lock = {
+            let mut providers = self.providers.lock().await;
+            Arc::clone(
+                providers
+                    .entry(provider)
+                    .or_insert_with(|| Arc::new(Mutex::new(()))),
+            )
+        };
+        provider_lock.lock_owned().await
+    }
+}
+```
+
+Await this guard in both `refresh_enabled_snapshots` and `refresh_single_provider_inner`. This
+serializes only overlapping work for the same provider; different providers remain independent.
+
+- [x] **Step 4: Run focused and status tests and verify GREEN**
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml refresh_controller
+cargo test --manifest-path src-tauri/Cargo.toml status::tests
+```
+
+Expected: all selected tests pass without network-dependent assertions.
+
+- [x] **Step 5: Run repository validation, commit, push, and open a PR**
+
+Use the required commands from `AGENTS.md`, commit with a conventional message, push
+`fix/serialize-refresh-completions`, and open a PR without merging it.
+
+---
+
 ### Task 1: Add `RefreshCompletePayload` and `refresh_all_providers` command (Rust)
 
 **Files:**

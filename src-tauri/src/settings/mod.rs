@@ -9,8 +9,8 @@ mod commands;
 mod storage;
 
 pub use commands::{
-    get_provider_catalog, get_provider_credential_status, get_settings, save_settings,
-    SettingsState,
+    get_provider_catalog, get_provider_credential_status, get_settings, save_selected_tab,
+    save_settings, SettingsState,
 };
 pub use storage::{load_settings, save_settings as persist_settings, settings_file_path};
 
@@ -182,6 +182,13 @@ impl MochiSettings {
             }
         }
         self.provider_configs = normalized_configs;
+
+        self.selected_tab = self.selected_tab.as_deref().and_then(|tab| {
+            if tab == "overview" {
+                return Some(tab.to_string());
+            }
+            ProviderId::parse(tab).map(|provider| provider.as_str().to_string())
+        });
     }
 }
 
@@ -227,6 +234,30 @@ mod tests {
             vec!["opencode-go".to_string(), "opencode".to_string()]
         );
         assert!(settings.provider_config(ProviderId::OpenCodeGo).is_some());
+    }
+
+    #[test]
+    fn normalize_provider_ids_canonicalizes_selected_tab_alias() {
+        let mut settings = MochiSettings {
+            selected_tab: Some("opencodego".into()),
+            ..MochiSettings::default()
+        };
+
+        settings.normalize_provider_ids();
+
+        assert_eq!(settings.selected_tab.as_deref(), Some("opencode-go"));
+    }
+
+    #[test]
+    fn normalize_provider_ids_clears_invalid_selected_tab() {
+        let mut settings = MochiSettings {
+            selected_tab: Some("';globalThis.pwned=true;//".into()),
+            ..MochiSettings::default()
+        };
+
+        settings.normalize_provider_ids();
+
+        assert_eq!(settings.selected_tab, None);
     }
 
     #[test]

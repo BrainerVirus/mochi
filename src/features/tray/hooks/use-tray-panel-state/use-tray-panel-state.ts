@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useSettings } from "@/features/tray/hooks/use-tray-events";
 import { useTrayPanelRefresh } from "@/features/tray/hooks/use-tray-panel-refresh";
@@ -11,7 +11,7 @@ import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-da
 import { queryKeys } from "@/lib/query/keys";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderId } from "@/lib/schemas/usage";
-import { refreshSingleProvider, saveSettings, syncTrayUsage } from "@/lib/tauri/commands";
+import { refreshSingleProvider, saveSelectedTab, syncTrayUsage } from "@/lib/tauri/commands";
 import {
   buildTrayPanelTabsFromStates,
   filterUsageStatesForTrayPanel,
@@ -28,9 +28,8 @@ export function persistTabChangeSettings(
   if (pendingTabRef) {
     pendingTabRef.current = nextTab;
   }
-  const updated = { ...settings, selected_tab: nextTab };
-  return saveSettings(updated)
-    .then(() => {
+  return saveSelectedTab(nextTab)
+    .then((updated) => {
       if (pendingTabRef && pendingTabRef.current !== nextTab) {
         return;
       }
@@ -43,10 +42,7 @@ export function persistTabChangeSettings(
       if (pendingTabRef && pendingTabRef.current !== nextTab) {
         return;
       }
-      queryClient.setQueryData(
-        queryKeys.settings,
-        lastKnownGoodRef?.current ?? settings,
-      );
+      queryClient.setQueryData(queryKeys.settings, lastKnownGoodRef?.current ?? settings);
     });
 }
 
@@ -77,7 +73,13 @@ export function useTrayPanelState() {
     }
     setSelectedTab("overview");
     if (settings) {
-      void persistTabChangeSettings(queryClient, settings, "overview", pendingTabRef, lastKnownGoodRef);
+      void persistTabChangeSettings(
+        queryClient,
+        settings,
+        "overview",
+        pendingTabRef,
+        lastKnownGoodRef,
+      );
     }
   }, [selectedTab, setSelectedTab, tabs, settings, queryClient]);
 
@@ -85,15 +87,24 @@ export function useTrayPanelState() {
     void syncTrayUsage(selectedTab);
   }, [selectedTab]);
 
-  function handleTabChange(value: string) {
-    const nextTab = parseTrayTabChange(value);
-    setSelectedTab(nextTab);
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const nextTab = parseTrayTabChange(value);
+      setSelectedTab(nextTab);
 
-    // Persist to shared settings (both windows read same settings.json)
-    if (settings) {
-      void persistTabChangeSettings(queryClient, settings, nextTab, pendingTabRef, lastKnownGoodRef);
-    }
-  }
+      // Persist to shared settings (both windows read same settings.json)
+      if (settings) {
+        void persistTabChangeSettings(
+          queryClient,
+          settings,
+          nextTab,
+          pendingTabRef,
+          lastKnownGoodRef,
+        );
+      }
+    },
+    [queryClient, setSelectedTab, settings],
+  );
 
   function handleRefreshProvider(provider: ProviderId) {
     pendingRefreshes.current++;
