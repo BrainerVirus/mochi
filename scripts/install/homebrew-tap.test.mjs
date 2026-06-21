@@ -50,6 +50,10 @@ mochi_homebrew_tap_plan "$tap_list"`,
   ).trim();
 }
 
+function isolatedToolPath(dir) {
+  return `${dir}:/usr/bin:/bin`;
+}
+
 function createFakeBrew({ taps = [], remotes = {} } = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "mochi-brew-test-"));
   const logFile = path.join(dir, "brew.log");
@@ -105,10 +109,60 @@ esac
   return {
     dir,
     logFile,
-    pathPrefix: `${dir}:${process.env.PATH ?? ""}`,
+    pathPrefix: isolatedToolPath(dir),
     readLog() {
       return existsSync(logFile) ? readFileSync(logFile, "utf8").trim() : "";
     },
+  };
+}
+
+function createFakeCurl() {
+  const dir = mkdtempSync(path.join(tmpdir(), "mochi-curl-test-"));
+  const curlPath = path.join(dir, "curl");
+  const commonSh = path.join(root, "scripts/install/lib/common.sh");
+  const homebrewSh = path.join(root, "scripts/install/lib/homebrew-tap.sh");
+  const setupShLocal = path.join(root, "scripts/install/setup-macos-brew-tap.sh");
+
+  writeFileSync(
+    curlPath,
+    `#!/usr/bin/env bash
+set -euo pipefail
+url=""
+out=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -fsSL) shift ;;
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    *)
+      url="$1"
+      shift
+      ;;
+  esac
+done
+case "$url" in
+  *scripts/install/lib/common.sh)
+    cat "${commonSh}" > "$out"
+    ;;
+  *scripts/install/lib/homebrew-tap.sh)
+    cat "${homebrewSh}" > "$out"
+    ;;
+  *scripts/install/setup-macos-brew-tap.sh)
+    cat "${setupShLocal}"
+    ;;
+  *)
+    echo "unexpected curl: $url" >&2
+    exit 1
+    ;;
+esac
+`,
+  );
+  chmodSync(curlPath, 0o755);
+
+  return {
+    pathPrefix: isolatedToolPath(dir),
   };
 }
 
@@ -247,5 +301,29 @@ describe("install-macos-brew.sh", () => {
     expect(fakeBrew.readLog()).toContain(
       "install --cask BrainerVirus/mochi/mochi-unstable --force",
     );
+  });
+
+  it("works when piped to bash from an unrelated working directory", () => {
+    const fakeBrew = createFakeBrew({ taps: [] });
+    const fakeCurl = createFakeCurl();
+    const pipedEnv = {
+      HOME: process.env.HOME ?? tmpdir(),
+      PATH: `${fakeCurl.pathPrefix}:${fakeBrew.pathPrefix}`,
+      TMPDIR: process.env.TMPDIR ?? tmpdir(),
+      MOCHI_GITHUB_REPO: "BrainerVirus/mochi",
+      MOCHI_INSTALL_REF: "main",
+    };
+    const wrongCwd = mkdtempSync(path.join(tmpdir(), "mochi-piped-install-"));
+
+    execFileSync("/bin/bash", ["-s"], {
+      input: readFileSync(installSh),
+      cwd: wrongCwd,
+      encoding: "utf8",
+      env: pipedEnv,
+    });
+
+    const log = fakeBrew.readLog();
+    expect(log).toContain("tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi");
+    expect(log).toContain("install --cask BrainerVirus/mochi/mochi-desktop --force");
   });
 });

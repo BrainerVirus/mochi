@@ -2,9 +2,34 @@
 # Ensure the GitHub-backed Homebrew tap for Mochi is installed.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/homebrew-tap.sh
-source "${SCRIPT_DIR}/lib/homebrew-tap.sh"
+: "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"
+: "${MOCHI_INSTALL_REF:=main}"
+
+_mochi_homebrew_loaded=0
+for _i in "${!BASH_SOURCE[@]}"; do
+  _src="${BASH_SOURCE[_i]:-}"
+  if [[ -n "${_src}" && "${_src}" == *.sh && -f "${_src}" ]]; then
+    _dir="$(cd "$(dirname "${_src}")" && pwd)"
+    if [[ -f "${_dir}/lib/homebrew-tap.sh" ]]; then
+      # shellcheck source=lib/homebrew-tap.sh
+      source "${_dir}/lib/homebrew-tap.sh"
+      _mochi_homebrew_loaded=1
+      break
+    fi
+  fi
+done
+unset _i _src _dir
+
+if [[ "${_mochi_homebrew_loaded}" -eq 0 ]]; then
+  _tmp="$(mktemp)"
+  curl -fsSL \
+    "https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/lib/homebrew-tap.sh" \
+    -o "${_tmp}"
+  # shellcheck source=/dev/null
+  source "${_tmp}"
+  rm -f "${_tmp}"
+fi
+unset _mochi_homebrew_loaded _tmp
 
 if ! command -v brew >/dev/null 2>&1; then
   echo "error: Homebrew is required (https://brew.sh/)" >&2

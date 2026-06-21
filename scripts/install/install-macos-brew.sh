@@ -8,14 +8,10 @@ set -euo pipefail
 : "${MOCHI_STABLE_CASK:=mochi-desktop}"
 : "${MOCHI_UNSTABLE_CASK:=mochi-unstable}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/homebrew-tap.sh
-source "${SCRIPT_DIR}/lib/homebrew-tap.sh"
-
 _mochi_common_loaded=0
 for _i in "${!BASH_SOURCE[@]}"; do
-  _src="${BASH_SOURCE[_i]}"
-  if [[ "${_src}" == *.sh ]] && [[ -f "${_src}" ]]; then
+  _src="${BASH_SOURCE[_i]:-}"
+  if [[ -n "${_src}" && "${_src}" == *.sh && -f "${_src}" ]]; then
     _dir="$(cd "$(dirname "${_src}")" && pwd)"
     if [[ -f "${_dir}/lib/common.sh" ]]; then
       # shellcheck source=lib/common.sh
@@ -25,7 +21,7 @@ for _i in "${!BASH_SOURCE[@]}"; do
     fi
   fi
 done
-unset _i _src
+unset _i _src _dir
 
 if [[ "${_mochi_common_loaded}" -eq 0 ]]; then
   _tmp="$(mktemp)"
@@ -37,6 +33,8 @@ if [[ "${_mochi_common_loaded}" -eq 0 ]]; then
   rm -f "${_tmp}"
 fi
 unset _mochi_common_loaded _tmp
+
+mochi_source_install_lib "homebrew-tap.sh"
 
 MOCHI_INSTALL_SCRIPT_NAME="install-macos-brew.sh"
 mochi_parse_install_args "$@"
@@ -51,7 +49,7 @@ fi
 
 CASK_REF="$(mochi_homebrew_install_cask_ref "${CHANNEL}")"
 
-bash "${SCRIPT_DIR}/setup-macos-brew-tap.sh"
+mochi_run_install_script "setup-macos-brew-tap.sh"
 
 echo "Installing Homebrew cask ${CASK_REF} (${CHANNEL})"
 brew install --cask "${CASK_REF}" --force

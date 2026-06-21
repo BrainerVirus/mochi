@@ -1,12 +1,10 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { describe, expect, it } from "vitest";
-
-import { sourceCommon } from "./test-helpers.mjs";
+import { root, sourceCommon } from "./test-helpers.mjs";
 
 function withReleaseFixture(releases, fn, env = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "mochi-install-test-"));
@@ -136,5 +134,36 @@ describe("install common.sh", () => {
   it("maps linux package kinds to asset patterns", () => {
     const patterns = sourceCommon(`mochi_linux_asset_patterns deb`);
     expect(patterns.split("\n")).toEqual(["\\.deb$", "_amd64\\.deb$"]);
+  });
+
+  it("loads install libs from curl when the script is piped to bash", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "mochi-install-lib-test-"));
+    const curlPath = path.join(dir, "curl");
+    const libPath = path.join(root, "scripts/install/lib/homebrew-tap.sh");
+    writeFileSync(
+      curlPath,
+      `#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -fsSL) shift ;;
+    -o) out="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+cat "${libPath}" > "$out"
+`,
+    );
+    chmodSync(curlPath, 0o755);
+
+    const output = sourceCommon(
+      `mochi_source_install_lib "homebrew-tap.sh"; mochi_homebrew_tap_name`,
+      {
+        PATH: `${dir}:/usr/bin:/bin`,
+      },
+    );
+
+    expect(output).toBe("BrainerVirus/mochi");
   });
 });
