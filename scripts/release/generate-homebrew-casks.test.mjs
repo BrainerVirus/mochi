@@ -45,7 +45,7 @@ describe("pickMacDmgAssets", () => {
 describe("renderCask", () => {
   it("renders a multi-arch stable cask", () => {
     const body = renderCask({
-      id: "mochi",
+      id: "mochi-desktop",
       name: "Mochi",
       desc: "Cross-platform desktop companion for AI coding tool usage",
       version: "0.2.4",
@@ -60,7 +60,7 @@ describe("renderCask", () => {
       },
     });
 
-    expect(body).toContain('cask "mochi" do');
+    expect(body).toContain('cask "mochi-desktop" do');
     expect(body).toContain('version "0.2.4"');
     expect(body).toContain('sha256 "arm-sha"');
     expect(body).toContain('sha256 "x64-sha"');

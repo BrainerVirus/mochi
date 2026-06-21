@@ -150,12 +150,12 @@ jobs:
       - name: Generate stable Homebrew cask
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/release/generate-homebrew-casks.mjs --tag "${{ github.ref_name }}" --cask mochi --out-dir Casks
+        run: node scripts/release/generate-homebrew-casks.mjs --tag "${{ github.ref_name }}" --cask mochi-desktop --out-dir Casks
       - name: Commit Homebrew cask update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Casks/mochi.rb
+          git add Casks/mochi-desktop.rb
           if git diff --staged --quiet; then
             echo "No cask changes to commit."
             exit 0
