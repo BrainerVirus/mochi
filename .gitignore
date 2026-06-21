@@ -13,3 +13,4 @@ src-tauri/gen/schemas
 .pnpm-store/
 
 coverage/
+scripts/release/.homebrew-cache/

@@ -202,6 +202,34 @@ jobs:
             public/updates/windows/x86_64/0.1.7/unstable.json \
             public/updates/windows/x86_64/0.2.0/unstable.json
 
+  update-homebrew-cask:
+    name: Update Unstable Homebrew Cask
+    needs: [metadata, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Generate unstable Homebrew cask
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/release/generate-homebrew-casks.mjs --tag "${{ needs.metadata.outputs.tag }}" --cask mochi-unstable --out-dir Casks
+      - name: Commit Homebrew cask update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/mochi-unstable.rb
+          if git diff --staged --quiet; then
+            echo "No cask changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(homebrew): update unstable cask for ${{ needs.metadata.outputs.tag }}"
+          git push
+
   release-notes:
     name: Publish Unstable Release Notes
     needs: [metadata, build]
