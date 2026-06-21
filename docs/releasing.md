@@ -41,9 +41,18 @@ Stable users receive only stable updates. Unstable users receive builds from `ma
 - `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 - `MOCHI_UPDATER_PUBLIC_KEY`
-- macOS signing and notarization secrets for stable releases
-- Windows signing secrets for stable releases when available
+- Windows code signing secrets for stable releases when available
 - GitHub Pages publication token if `GITHUB_TOKEN` cannot write the Pages source branch
+
+## macOS distribution (no Apple Developer account)
+
+macOS builds are **ad-hoc signed** in CI (`APPLE_SIGNING_IDENTITY=-`). They are not notarized.
+
+Homebrew and direct `.dmg` installers remove the download quarantine flag so Gatekeeper does not show the misleading “damaged” dialog. If a manual install still fails to open, run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Mochi.app
+```
 
 ## Updater Feed
 

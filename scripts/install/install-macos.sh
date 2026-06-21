@@ -98,5 +98,10 @@ echo "Installing ${APP_NAME} to ${INSTALL_DIR}"
 ditto "${APP_SRC}" "${DEST}"
 
 mochi_install_cli_link "${DEST}"
+mochi_clear_macos_app_quarantine "${DEST}"
 
 echo "Installed Mochi ${TAG} (${CHANNEL}, ${ARCH}) to ${DEST}"
+echo
+echo "Mochi is ad-hoc signed (no Apple Developer notarization). If macOS says the app"
+echo "is damaged, clear download quarantine:"
+echo "  xattr -dr com.apple.quarantine ${DEST}"

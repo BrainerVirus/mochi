@@ -86,7 +86,8 @@ jobs:
           MOCHI_UPDATE_CHANNEL: stable
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # macOS ad-hoc signing (same as unstable) until valid APPLE_* secrets are configured.
+          # ponytail: ad-hoc signing — no paid Apple Developer account; installers strip quarantine.
+          APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.platform, 'macos-') && '-' || '' }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Mochi ${{ github.ref_name }}

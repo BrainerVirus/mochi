@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { chmodSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -55,6 +56,24 @@ describe("macOS CLI link helper", () => {
 
     const output = sourceMacosCli(`mochi_install_cli_link "${app}"`);
     expect(output).toContain("Skipping CLI link");
+  });
+
+  it("no-ops when the app bundle is missing", () => {
+    expect(() =>
+      sourceMacosCli('mochi_clear_macos_app_quarantine "/no/such/Mochi.app"'),
+    ).not.toThrow();
+  });
+
+  it.skipIf(process.platform !== "darwin")("removes quarantine from an app bundle", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "mochi-macos-quarantine-"));
+    const app = path.join(root, "Mochi.app");
+    mkdirSync(app, { recursive: true });
+    execFileSync("xattr", ["-w", "com.apple.quarantine", "0081;00000000;Safari;", app]);
+
+    const output = sourceMacosCli(`mochi_clear_macos_app_quarantine "${app}"`);
+    expect(output).toContain(`Removed macOS quarantine from ${app}`);
+
+    expect(() => execFileSync("xattr", ["-p", "com.apple.quarantine", app])).toThrow();
   });
 });
 

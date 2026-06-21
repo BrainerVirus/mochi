@@ -35,6 +35,7 @@ fi
 unset _mochi_common_loaded _tmp
 
 mochi_source_install_lib "homebrew-tap.sh"
+mochi_source_install_lib "macos-cli.sh"
 
 MOCHI_INSTALL_SCRIPT_NAME="install-macos-brew.sh"
 mochi_parse_install_args "$@"
@@ -52,10 +53,17 @@ CASK_REF="$(mochi_homebrew_install_cask_ref "${CHANNEL}")"
 mochi_run_install_script "setup-macos-brew-tap.sh"
 
 echo "Installing Homebrew cask ${CASK_REF} (${CHANNEL})"
-brew install --cask "${CASK_REF}" --force
+# ponytail: ad-hoc signed builds need quarantine cleared; no paid Apple Developer account.
+brew install --cask "${CASK_REF}" --force --no-quarantine
+
+mochi_clear_macos_app_quarantine "/Applications/Mochi.app"
 
 cat <<EOF
 Installed Mochi (${CHANNEL}) with Homebrew.
+
+Mochi is ad-hoc signed (no Apple Developer notarization). If macOS says the app
+is damaged, clear download quarantine:
+  xattr -dr com.apple.quarantine /Applications/Mochi.app
 
 Upgrade later:
   curl -fsSL https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/setup-macos-brew-tap.sh | bash
