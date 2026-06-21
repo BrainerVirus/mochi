@@ -56,13 +56,13 @@ Stable macOS builds fail until these GitHub Actions secrets are configured. Unst
 
 **Notarization (choose one method):**
 
-*Apple ID (simplest to start):*
+_Apple ID (simplest to start):_
 
 - `APPLE_ID` — Apple ID email.
 - `APPLE_PASSWORD` — [app-specific password](https://support.apple.com/en-us/HT204397).
 - `APPLE_TEAM_ID` — Team ID from [Membership Details](https://developer.apple.com/account#MembershipDetailsCard).
 
-*App Store Connect API key (recommended for CI):*
+_App Store Connect API key (recommended for CI):_
 
 - `APPLE_API_KEY` — Key ID from App Store Connect → Users and Access → Integrations → Keys.
 - `APPLE_API_ISSUER` — Issuer ID shown above the keys table.

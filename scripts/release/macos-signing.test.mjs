@@ -87,10 +87,7 @@ describe("macOS signing scripts", () => {
 });
 
 describe(".github/workflows/release-stable.yml macOS signing", () => {
-  const source = readFileSync(
-    path.join(root, ".github/workflows/release-stable.yml"),
-    "utf8",
-  );
+  const source = readFileSync(path.join(root, ".github/workflows/release-stable.yml"), "utf8");
 
   it("verifies and imports macOS signing credentials before stable builds", () => {
     expect(source).toContain("scripts/release/verify-macos-signing-env.sh");
