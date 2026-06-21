@@ -1,11 +1,18 @@
+// @vitest-environment happy-dom
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { TraySelectedTab } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
+import {
+  useTrayUiStore,
+  type TraySelectedTab,
+} from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
-import { saveSelectedTab } from "@/lib/tauri/commands";
+import { saveSelectedTab, syncTrayUsage } from "@/lib/tauri/commands";
 
-import { persistTabChangeSettings } from "./use-tray-panel-state";
+import { persistTabChangeSettings, useTrayPanelState } from "./use-tray-panel-state";
 
 vi.mock("@/lib/tauri/commands", () => ({
   getSettings: vi.fn<() => Promise<MochiSettings>>(() => Promise.resolve(DEFAULT_MOCHI_SETTINGS)),
@@ -17,10 +24,31 @@ vi.mock("@/lib/tauri/commands", () => ({
     Promise.resolve({ ...DEFAULT_MOCHI_SETTINGS, selected_tab: selectedTab }),
   ),
   syncTrayUpdateChannel: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+  syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+}));
+
+vi.mock("@/features/tray/hooks/use-tray-events", () => ({
+  useSettings: () => ({ data: DEFAULT_MOCHI_SETTINGS }),
+}));
+
+vi.mock("@/features/tray/hooks/use-tray-panel-refresh", () => ({
+  useTrayPanelRefresh: () => ({ refreshAll: vi.fn<() => Promise<void>>(), isRefreshingAll: false }),
+}));
+
+vi.mock("@/features/usage/hooks/use-usage-data/use-usage-data", () => ({
+  useUsageData: () => ({
+    data: [],
+    error: null,
+    isError: false,
+    isPending: false,
+    isSuccess: true,
+    isFetching: false,
+  }),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  useTrayUiStore.getState().setSelectedTab("overview");
 });
 
 describe("persistTabChangeSettings", () => {
@@ -72,5 +100,35 @@ describe("persistTabChangeSettings", () => {
     await promise;
 
     expect(queryClient.setQueryData).not.toHaveBeenCalled();
+  });
+});
+
+function makeWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: queryClient }, children);
+}
+
+describe("useTrayPanelState", () => {
+  it("returns a referentially stable handleTabChange across renders with the same settings", () => {
+    const { result, rerender } = renderHook(() => useTrayPanelState(), {
+      wrapper: makeWrapper(),
+    });
+    const first = result.current.handleTabChange;
+    rerender();
+    const second = result.current.handleTabChange;
+    expect(second).toBe(first);
+  });
+
+  it("does not call syncTrayUsage directly from handleTabChange", () => {
+    const syncTrayUsageMock = vi.mocked(syncTrayUsage);
+    const { result } = renderHook(() => useTrayPanelState(), {
+      wrapper: makeWrapper(),
+    });
+    syncTrayUsageMock.mockClear();
+    result.current.handleTabChange("codex");
+    expect(syncTrayUsageMock).not.toHaveBeenCalled();
   });
 });

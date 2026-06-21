@@ -83,11 +83,20 @@ function useIndicatorMachineHandlers(
     },
     [executeCommands],
   );
+  const handleHover = useCallback(
+    (tabId: string) => transition({ type: "ITEM_ENTER", tabId }),
+    [transition],
+  );
+  const handleRailLeave = useCallback(() => transition({ type: "RAIL_LEAVE" }), [transition]);
+  const handleSelect = useCallback(
+    (tabId: string) => transition({ type: "SELECT", tabId }),
+    [transition],
+  );
 
   return {
-    handleHover: (tabId: string) => transition({ type: "ITEM_ENTER", tabId }),
-    handleRailLeave: () => transition({ type: "RAIL_LEAVE" }),
-    handleSelect: (tabId: string) => transition({ type: "SELECT", tabId }),
+    handleHover,
+    handleRailLeave,
+    handleSelect,
   };
 }
 

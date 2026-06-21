@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useSettings } from "@/features/tray/hooks/use-tray-events";
 import { useTrayPanelRefresh } from "@/features/tray/hooks/use-tray-panel-refresh";
@@ -87,21 +87,24 @@ export function useTrayPanelState() {
     void syncTrayUsage(selectedTab);
   }, [selectedTab]);
 
-  function handleTabChange(value: string) {
-    const nextTab = parseTrayTabChange(value);
-    setSelectedTab(nextTab);
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const nextTab = parseTrayTabChange(value);
+      setSelectedTab(nextTab);
 
-    // Persist to shared settings (both windows read same settings.json)
-    if (settings) {
-      void persistTabChangeSettings(
-        queryClient,
-        settings,
-        nextTab,
-        pendingTabRef,
-        lastKnownGoodRef,
-      );
-    }
-  }
+      // Persist to shared settings (both windows read same settings.json)
+      if (settings) {
+        void persistTabChangeSettings(
+          queryClient,
+          settings,
+          nextTab,
+          pendingTabRef,
+          lastKnownGoodRef,
+        );
+      }
+    },
+    [queryClient, setSelectedTab, settings],
+  );
 
   function handleRefreshProvider(provider: ProviderId) {
     pendingRefreshes.current++;

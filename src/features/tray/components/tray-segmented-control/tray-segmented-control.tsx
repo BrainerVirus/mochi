@@ -4,8 +4,12 @@ import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
 import { LayoutGridIcon } from "lucide-react";
 import { ProviderIcon } from "@/components/providers/provider-icon";
-import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
+import {
+  AppSegmentedControl,
+  AppSegmentedControlView,
+} from "@/components/ui/app-segmented-control";
 import type { AppSegmentItem } from "@/components/ui/app-segmented-control-utils";
+import type { useAppSegmentControlState } from "@/components/ui/use-app-segment-control-state";
 import {
   SETTINGS_PAGE_TAB_DEFAULTS,
   TRAY_PAGE_TAB_DEFAULTS,
@@ -63,13 +67,38 @@ interface TraySegmentedControlProps {
   onValueChange: (value: string) => void;
 }
 
-export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegmentedControlProps) {
-  const items = tabs.map((tab) => ({
+function traySegmentItems(tabs: TrayPanelTab[]): AppSegmentItem[] {
+  return tabs.map((tab) => ({
     id: tab.id,
     label: tab.label,
     icon:
       tab.id === "overview" ? <LayoutGridIcon aria-hidden /> : <ProviderIcon provider={tab.id} />,
   }));
+}
 
-  return <PageTabSegmentedControl items={items} value={value} onValueChange={onValueChange} />;
+export function TraySegmentedControl({ tabs, value, onValueChange }: TraySegmentedControlProps) {
+  return (
+    <PageTabSegmentedControl
+      items={traySegmentItems(tabs)}
+      value={value}
+      onValueChange={onValueChange}
+    />
+  );
+}
+
+export function TraySegmentedControlView({
+  tabs,
+  value,
+  state,
+}: Omit<TraySegmentedControlProps, "onValueChange"> & {
+  state: ReturnType<typeof useAppSegmentControlState>;
+}) {
+  return (
+    <AppSegmentedControlView
+      items={traySegmentItems(tabs)}
+      value={value}
+      state={state}
+      {...TRAY_PAGE_TAB_DEFAULTS}
+    />
+  );
 }

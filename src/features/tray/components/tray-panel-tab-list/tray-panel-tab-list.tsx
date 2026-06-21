@@ -1,10 +1,11 @@
 import { useCallback } from "react";
 
+import { useAppSegmentControlState } from "@/components/ui/use-app-segment-control-state";
 import type { TrayPanelTab } from "@/lib/utils/tray-panel-tabs";
 
 import { ScrollFadeRegion } from "@/features/tray/components/scroll-fade-region";
 import { cycleTrayPanelTabs } from "@/features/tray/components/tray-panel-tab-cycle";
-import { TraySegmentedControl } from "@/features/tray/components/tray-segmented-control";
+import { TraySegmentedControlView } from "@/features/tray/components/tray-segmented-control";
 import { TRAY_SEGMENT_ROW_HEIGHT } from "@/features/tray/components/tray-segmented-control-config";
 
 const TAB_FADE_INSET = 40;
@@ -16,18 +17,24 @@ interface TrayPanelTabListProps {
 }
 
 export function TrayPanelTabList({ tabs, value, onValueChange }: TrayPanelTabListProps) {
+  const segmentState = useAppSegmentControlState(value, tabs.length, onValueChange, {
+    enabled: true,
+    showHover: true,
+    contentReady: true,
+  });
+  const handleValueChange = segmentState.handleValueChange;
   const handleCycleForward = useCallback(
     (scrollEl: HTMLDivElement) => {
-      cycleTrayPanelTabs(scrollEl, tabs, value, "forward", onValueChange, TAB_FADE_INSET);
+      cycleTrayPanelTabs(scrollEl, tabs, value, "forward", handleValueChange, TAB_FADE_INSET);
     },
-    [onValueChange, tabs, value],
+    [handleValueChange, tabs, value],
   );
 
   const handleCycleBackward = useCallback(
     (scrollEl: HTMLDivElement) => {
-      cycleTrayPanelTabs(scrollEl, tabs, value, "backward", onValueChange, TAB_FADE_INSET);
+      cycleTrayPanelTabs(scrollEl, tabs, value, "backward", handleValueChange, TAB_FADE_INSET);
     },
-    [onValueChange, tabs, value],
+    [handleValueChange, tabs, value],
   );
 
   return (
@@ -44,7 +51,7 @@ export function TrayPanelTabList({ tabs, value, onValueChange }: TrayPanelTabLis
         onCycleForward={handleCycleForward}
         onCycleBackward={handleCycleBackward}
       >
-        <TraySegmentedControl tabs={tabs} value={value} onValueChange={onValueChange} />
+        <TraySegmentedControlView tabs={tabs} value={value} state={segmentState} />
       </ScrollFadeRegion>
     </div>
   );
