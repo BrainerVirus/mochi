@@ -8,11 +8,9 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: release-pages
+  group: stable-release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -92,9 +90,6 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Mochi ${{ github.ref_name }}
-          # Re-runs of this workflow should skip the build job and only run the
-          # Pages updater-feed job; the build and release assets are immutable
-          # once published.
           releaseBody: |
             ## Mochi ${{ github.ref_name }}
 
@@ -127,102 +122,18 @@ jobs:
           path: src-tauri/target/**/release/bundle/**
           if-no-files-found: error
 
-  updater-feed:
+  publish-updater-pages:
     name: Publish Stable Updater Feed
     needs: build
-    runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: https://brainervirus.github.io/mochi/
-    env:
-      GITHUB_SHA: ${{ github.ref_name }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-      - name: Download updater bundle artifacts
-        uses: actions/download-artifact@v8
-        with:
-          pattern: updater-bundle-*
-          path: updater-bundles
-          merge-multiple: true
-      - name: Build updater artifact manifest
-        shell: bash
-        env:
-          CHANNEL: stable
-          CHANNELS: stable,unstable
-          UPDATER_FEED_BASE_URL: https://mochi-app.github.io/mochi/updates
-          TAG_NAME: ${{ github.ref_name }}
-          RELEASE_BASE_URL: https://github.com/BrainerVirus/mochi/releases/download/${{ github.ref_name }}
-        run: |
-          cat > release-notes.md <<'EOF'
-          ### What's changed
-          - See the GitHub release notes for this version.
-          EOF
-          node scripts/release/collect-updater-artifacts.mjs \
-            --artifactRoot=updater-bundles \
-            --channel="${CHANNEL}" \
-            --tagName="${TAG_NAME}" \
-            --releaseBaseUrl="${RELEASE_BASE_URL}" \
-            --releaseNotesPath=release-notes.md \
-            --outputPath=updater-feed.json \
-            --pubDate="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
-          node -e '
-            const fs = require("fs");
-            const manifest = JSON.parse(fs.readFileSync("updater-feed.json", "utf8"));
-            manifest.channels = process.env.CHANNELS.split(",").map((value) => value.trim()).filter(Boolean);
-            fs.writeFileSync("updater-feed.json", `${JSON.stringify(manifest, null, 2)}\n`);
-          '
-      - name: Build updater feeds
-        run: node scripts/release/build-updater-feed.mjs --manifest=updater-feed.json --out=public
-      - name: Validate updater feeds
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          node scripts/release/validate-updater-feed.mjs \
-            public/updates/darwin/aarch64/0.1.7/stable.json \
-            public/updates/darwin/aarch64/0.2.0/stable.json \
-            "public/updates/darwin/aarch64/${VERSION}/stable.json" \
-            public/updates/darwin/x86_64/0.1.7/stable.json \
-            public/updates/darwin/x86_64/0.2.0/stable.json \
-            "public/updates/darwin/x86_64/${VERSION}/stable.json" \
-            public/updates/linux/x86_64/0.1.7/stable.json \
-            public/updates/linux/x86_64/0.2.0/stable.json \
-            "public/updates/linux/x86_64/${VERSION}/stable.json" \
-            public/updates/windows/x86_64/0.1.7/stable.json \
-            public/updates/windows/x86_64/0.2.0/stable.json \
-            "public/updates/windows/x86_64/${VERSION}/stable.json"
-      - name: Upload updater Pages artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: public
-      - name: Deploy updater feed to GitHub Pages
-        uses: actions/deploy-pages@v5
-        id: pages-deploy
-      - name: Validate published updater endpoints
-        shell: bash
-        run: |
-          sleep 30
-          VERSION="${GITHUB_REF_NAME#v}"
-          for path in \
-            updates/darwin/aarch64/0.1.7/stable.json \
-            updates/darwin/aarch64/0.2.0/stable.json \
-            updates/darwin/aarch64/${VERSION}/stable.json \
-            updates/darwin/x86_64/0.1.7/stable.json \
-            updates/darwin/x86_64/0.2.0/stable.json \
-            updates/darwin/x86_64/${VERSION}/stable.json \
-            updates/linux/x86_64/0.1.7/stable.json \
-            updates/linux/x86_64/0.2.0/stable.json \
-            updates/linux/x86_64/${VERSION}/stable.json \
-            updates/windows/x86_64/0.1.7/stable.json \
-            updates/windows/x86_64/0.2.0/stable.json \
-            updates/windows/x86_64/${VERSION}/stable.json
-          do
-            url="https://brainervirus.github.io/mochi/${path}"
-            curl --fail --silent --show-error --location "${url}" --output feed.json
-            node scripts/release/validate-updater-feed.mjs feed.json
-          done
+    # Always use publish logic from main so feed deploy fixes do not require a new tag.
+    uses: BrainerVirus/mochi/.github/workflows/publish-updater-pages.yml@main
+    with:
+      release_tag: ${{ github.ref_name }}
+    permissions:
+      pages: write
+      id-token: write
+      actions: read
+      contents: read
 
   release-notes:
     name: Publish Stable Release Notes

@@ -2,23 +2,17 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 for (const workflow of [
-  ".github/workflows/release-stable.yml",
   ".github/workflows/release-unstable.yml",
+  ".github/workflows/publish-updater-pages.yml",
+  ".github/workflows/republish-updater-pages.yml",
 ]) {
   describe(workflow, () => {
     const source = readFileSync(workflow, "utf8");
-
-    it("requires updater signing secrets before building", () => {
-      expect(source).toContain("TAURI_SIGNING_PRIVATE_KEY");
-      expect(source).toContain("TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
-      expect(source).toContain("MOCHI_UPDATER_PUBLIC_KEY");
-    });
 
     it("builds and validates updater feeds", () => {
       expect(source).toContain("scripts/release/collect-updater-artifacts.mjs");
       expect(source).toContain("scripts/release/build-updater-feed.mjs");
       expect(source).toContain("scripts/release/validate-updater-feed.mjs");
-      expect(source).toContain("https://mochi-app.github.io/mochi/updates");
     });
   });
 }
@@ -26,18 +20,42 @@ for (const workflow of [
 describe(".github/workflows/release-stable.yml", () => {
   const source = readFileSync(".github/workflows/release-stable.yml", "utf8");
 
-  it("publishes stable feeds to GitHub Pages", () => {
-    expect(source).toContain("actions/deploy-pages@v5");
-    expect(source).toContain("curl --fail");
+  it("requires updater signing secrets before building", () => {
+    expect(source).toContain("TAURI_SIGNING_PRIVATE_KEY");
+    expect(source).toContain("TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
+    expect(source).toContain("MOCHI_UPDATER_PUBLIC_KEY");
+  });
+
+  it("delegates Pages publish to reusable workflow on main", () => {
+    expect(source).toContain("publish-updater-pages.yml@main");
+    expect(source).not.toContain("actions/deploy-pages@v5");
+    expect(source).not.toContain("environment:");
   });
 });
 
 describe(".github/workflows/release-unstable.yml", () => {
   const source = readFileSync(".github/workflows/release-unstable.yml", "utf8");
 
+  it("requires updater signing secrets before building", () => {
+    expect(source).toContain("TAURI_SIGNING_PRIVATE_KEY");
+    expect(source).toContain("TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
+    expect(source).toContain("MOCHI_UPDATER_PUBLIC_KEY");
+  });
+
   it("does not deploy to GitHub Pages", () => {
     expect(source).not.toContain("actions/deploy-pages@v5");
     expect(source).not.toContain("actions/upload-pages-artifact@v5");
+    expect(source).not.toContain("pages: write");
+    expect(source).not.toContain("release-pages");
+  });
+});
+
+describe(".github/workflows/publish-updater-pages.yml", () => {
+  const source = readFileSync(".github/workflows/publish-updater-pages.yml", "utf8");
+
+  it("retries live feed validation after deploy", () => {
+    expect(source).toContain("validate-published-feeds.mjs");
+    expect(source).toContain("release-pages");
   });
 });
 
