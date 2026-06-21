@@ -43,6 +43,7 @@
     "test": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "test:release": "vitest run scripts/release/*.test.mjs",
+    "test:scripts": "vitest run --config vitest.config.ts scripts/",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {

@@ -171,12 +171,13 @@ mochi_ensure_arch_deps() {
 }
 
 mochi_detect_linux_family() {
-  if [[ ! -f /etc/os-release ]]; then
+  local os_release="${MOCHI_TEST_OS_RELEASE:-/etc/os-release}"
+  if [[ ! -f "${os_release}" ]]; then
     echo "unknown"
     return
   fi
   # shellcheck disable=SC1091
-  source /etc/os-release
+  source "${os_release}"
   local id_like="${ID_LIKE:-}"
   local id="${ID:-}"
   case "${id} ${id_like}" in

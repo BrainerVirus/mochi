@@ -30,57 +30,11 @@ param(
 $ErrorActionPreference = 'Stop'
 $Repo = if ($env:MOCHI_GITHUB_REPO) { $env:MOCHI_GITHUB_REPO } else { 'BrainerVirus/mochi' }
 $ApiBase = "https://api.github.com/repos/$Repo"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $ScriptDir 'lib/windows-install.ps1')
 
 if (-not $Unstable -and $env:MOCHI_UNSTABLE -eq '1') {
   $Unstable = $true
-}
-
-function Get-GitHubJson {
-  param([string]$Url)
-  $headers = @{ Accept = 'application/vnd.github+json' }
-  if ($env:GITHUB_TOKEN) {
-    $headers.Authorization = "Bearer $($env:GITHUB_TOKEN)"
-  }
-  return Invoke-RestMethod -Uri $Url -Headers $headers
-}
-
-function Resolve-ReleaseTag {
-  if ($ReleaseTag) { return $ReleaseTag }
-
-  $releases = Get-GitHubJson "$ApiBase/releases?per_page=30"
-
-  if ($Unstable) {
-    $unstableTag = $releases |
-      Where-Object { $_.prerelease -and -not $_.draft -and $_.tag_name -match '^unstable-[0-9]{8}\.[0-9]{6}$' } |
-      Sort-Object { [datetime]$(if ($_.published_at) { $_.published_at } else { $_.created_at }) } -Descending |
-      Select-Object -First 1
-    if ($unstableTag) { return $unstableTag.tag_name }
-
-    $unstableTag = $releases | Where-Object { $_.tag_name -eq 'unstable' -and -not $_.draft } | Select-Object -First 1
-    if ($unstableTag) { return $unstableTag.tag_name }
-
-    throw "No unstable GitHub release found for $Repo. Set MOCHI_VERSION=unstable or pass -ReleaseTag."
-  }
-
-  $stable = $releases | Where-Object { -not $_.prerelease -and -not $_.draft } | Select-Object -First 1
-  if ($stable) { return $stable.tag_name }
-
-  throw "No stable GitHub release found for $Repo. Use -Unstable for prereleases or set MOCHI_VERSION."
-}
-
-function Select-Asset {
-  param(
-    [object]$Release,
-    [string[]]$Patterns
-  )
-  foreach ($pattern in $Patterns) {
-    $asset = $Release.assets |
-      Where-Object { $_.name -match $pattern } |
-      Sort-Object { [datetime]$_.updated_at } -Descending |
-      Select-Object -First 1
-    if ($asset) { return $asset }
-  }
-  return $null
 }
 
 function Test-WebView2Installed {
@@ -132,22 +86,13 @@ function Ensure-MochiRuntimeDependencies {
 }
 
 $channel = if ($Unstable) { 'unstable' } else { 'stable' }
-$tag = Resolve-ReleaseTag
+$tag = Resolve-MochiReleaseTag -ReleaseTag $ReleaseTag -Unstable:$Unstable -ApiBase $ApiBase
 Write-Host "Installing Mochi ($channel channel, release $tag)"
 Ensure-MochiRuntimeDependencies
-$release = Get-GitHubJson "$ApiBase/releases/tags/$tag"
+$release = Get-MochiGitHubJson "$ApiBase/releases/tags/$tag"
 
-$pkg = $Package
-if ($pkg -eq 'auto') { $pkg = 'msi' }
-
-$asset = $null
-if ($pkg -eq 'msi') {
-  $asset = Select-Asset -Release $release -Patterns @('\.msi$', 'x64.*\.msi$')
-  if (-not $asset) { $pkg = 'exe' }
-}
-if ($pkg -eq 'exe') {
-  $asset = Select-Asset -Release $release -Patterns @('-setup\.exe$', 'x64.*\.exe$')
-}
+$resolved = Resolve-MochiWindowsAsset -Release $release -Package $Package
+$asset = $resolved.Asset
 
 if (-not $asset) {
   throw "No Windows installer asset found in release $tag"

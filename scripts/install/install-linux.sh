@@ -72,28 +72,8 @@ echo "Installing Mochi (${CHANNEL} channel, release ${TAG})"
 
 RELEASE_JSON="$(mochi_release_json "${TAG}")"
 
-detect_package_kind() {
-  local requested="${MOCHI_PACKAGE:-auto}"
-  if [[ "${requested}" != "auto" ]]; then
-    echo "${requested}"
-    return
-  fi
-  if command -v dpkg >/dev/null 2>&1 && [[ -f /etc/debian_version || -f /etc/os-release ]]; then
-    echo "deb"
-  elif command -v rpm >/dev/null 2>&1 && [[ -f /etc/redhat-release || -f /etc/fedora-release ]]; then
-    echo "rpm"
-  else
-    echo "appimage"
-  fi
-}
-
-PKG_KIND="$(detect_package_kind)"
-case "${PKG_KIND}" in
-  appimage) ASSET_PATTERNS=('\.AppImage$' 'appimage') ;;
-  deb) ASSET_PATTERNS=('\.deb$' '_amd64\.deb$') ;;
-  rpm) ASSET_PATTERNS=('\.rpm$' 'x86_64\.rpm$') ;;
-  *) mochi_die "unsupported MOCHI_PACKAGE=${PKG_KIND} (use appimage, deb, or rpm)" ;;
-esac
+PKG_KIND="$(mochi_linux_package_kind)"
+mapfile -t ASSET_PATTERNS < <(mochi_linux_asset_patterns "${PKG_KIND}")
 
 ASSET_URL="$(mochi_pick_asset_url "${RELEASE_JSON}" "${ASSET_PATTERNS[@]}")" \
   || mochi_die "no Linux ${PKG_KIND} asset in release ${TAG}"
