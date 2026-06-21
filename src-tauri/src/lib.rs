@@ -33,7 +33,7 @@ use lifecycle::{should_prevent_exit_request, AppLifecycle};
 use providers::credential_probe::detected_provider_ids;
 use settings::{
     get_provider_catalog, get_provider_credential_status, get_settings, load_settings,
-    save_settings, settings_file_path, SettingsState,
+    save_selected_tab, save_settings, settings_file_path, SettingsState,
 };
 use tray::{
     maybe_show_main_for_dev, open_app_window, set_tray_panel_height, setup_app_windows,
@@ -113,6 +113,7 @@ pub fn run() -> anyhow::Result<()> {
             quit_app,
             get_settings,
             save_settings,
+            save_selected_tab,
             get_provider_catalog,
             get_provider_credential_status,
             status::get_usage_snapshots,

@@ -10,7 +10,7 @@ import {
 } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
-import { saveSettings, syncTrayUsage } from "@/lib/tauri/commands";
+import { saveSelectedTab, syncTrayUsage } from "@/lib/tauri/commands";
 
 import { persistTabChangeSettings, useTrayPanelState } from "./use-tray-panel-state";
 
@@ -20,8 +20,8 @@ vi.mock("@/lib/tauri/commands", () => ({
   openAppWindow: vi.fn<() => Promise<void>>(() => Promise.resolve()),
   refreshAllProviders: vi.fn<() => Promise<void>>(() => Promise.resolve()),
   refreshSingleProvider: vi.fn<() => Promise<void>>(() => Promise.resolve()),
-  saveSettings: vi.fn<(settings: MochiSettings) => Promise<MochiSettings>>((settings) =>
-    Promise.resolve(settings),
+  saveSelectedTab: vi.fn<(selectedTab: TraySelectedTab) => Promise<MochiSettings>>((selectedTab) =>
+    Promise.resolve({ ...DEFAULT_MOCHI_SETTINGS, selected_tab: selectedTab }),
   ),
   syncTrayUpdateChannel: vi.fn<() => Promise<void>>(() => Promise.resolve()),
   syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
@@ -58,18 +58,18 @@ describe("persistTabChangeSettings", () => {
 
   const baseSettings = { ...DEFAULT_MOCHI_SETTINGS };
 
-  it("calls saveSettings with updated settings and updates cache on success", async () => {
+  it("saves only the selected tab and caches the returned settings", async () => {
     const nextTab = "codex" as const;
 
     await persistTabChangeSettings(queryClient, baseSettings, nextTab);
 
     const expected = { ...baseSettings, selected_tab: nextTab };
-    expect(saveSettings).toHaveBeenCalledWith(expected);
+    expect(saveSelectedTab).toHaveBeenCalledWith(nextTab);
     expect(queryClient.setQueryData).toHaveBeenCalledWith(queryKeys.settings, expected);
   });
 
-  it("restores original settings in cache on saveSettings rejection", async () => {
-    vi.mocked(saveSettings).mockRejectedValueOnce(new Error("save failed"));
+  it("restores original settings in cache on saveSelectedTab rejection", async () => {
+    vi.mocked(saveSelectedTab).mockRejectedValueOnce(new Error("save failed"));
 
     await persistTabChangeSettings(queryClient, baseSettings, "codex");
 
@@ -93,7 +93,7 @@ describe("persistTabChangeSettings", () => {
 
   it("skips rollback when pendingTabRef has advanced past the failing save", async () => {
     const ref = { current: null as TraySelectedTab | null };
-    vi.mocked(saveSettings).mockRejectedValueOnce(new Error("save failed"));
+    vi.mocked(saveSelectedTab).mockRejectedValueOnce(new Error("save failed"));
 
     const promise = persistTabChangeSettings(queryClient, baseSettings, "codex", ref);
     ref.current = "cursor";
