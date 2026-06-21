@@ -35,11 +35,15 @@ describe("macOS CLI link helper", () => {
     writeFileSync(binary, "#!/bin/sh\nexit 0\n");
     chmodSync(binary, 0o755);
 
+    const blockedParent = path.join(root, "blocked-parent");
+    writeFileSync(blockedParent, "not a directory");
+    const linkPath = path.join(blockedParent, "mochi");
+
     const output = sourceMacosCli(`mochi_install_cli_link "${app}"`, {
-      MOCHI_CLI_LINK: "/usr/local/bin/mochi-test-not-writable",
+      MOCHI_CLI_LINK: linkPath,
     });
 
-    expect(output).toContain("Could not write /usr/local/bin/mochi-test-not-writable");
+    expect(output).toContain(`Could not write ${linkPath}`);
     expect(output).toContain("sudo ln -sf");
     expect(output).toContain("Contents/MacOS/mochi");
   });
