@@ -118,12 +118,13 @@ jobs:
           releaseBody: |
             ## Mochi Unstable
 
-            Latest `main` build with refined Linux window controls and improved release infrastructure.
+            Latest `main` build with more reliable refreshes, widget tab persistence, tray navigation fixes, and permanent Linux on-demand windows.
 
             ### What's changed
-            - **Refined Linux window controls** — simplified geometry calculations and removed redundant tray panel logic for cleaner, more reliable window controls on Linux.
-            - **Improved widget commands** — consolidated widget command handlers and added native window control test coverage.
-            - **Reliable release pipeline** — corrected updater feed validation, version paths, and Pages deployment to ensure stable and unstable channels update without conflicts.
+            - **Reliable provider refreshes** — Rust-orchestrated tray refresh, serialized status updates, expanded cold-start triggers, and invalid timestamp handling keep usage data current.
+            - **Widget tab persistence** — selected tab persists through shared settings with secure initialization on startup.
+            - **Tray navigation** — chevron tab navigation works again in the tray panel.
+            - **Linux on-demand windows** — on-demand visible window policy is now the permanent Linux default for cleaner widget and settings behavior.
 
             ### Install unstable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
@@ -243,12 +244,13 @@ jobs:
             const body = [
               `## Mochi ${tag}`,
               "",
-              "Latest `main` build with refined Linux window controls and improved release infrastructure.",
+              "Latest `main` build with more reliable refreshes, widget tab persistence, tray navigation fixes, and permanent Linux on-demand windows.",
               "",
               "### What's changed",
-              "- **Refined Linux window controls** — simplified geometry calculations and removed redundant tray panel logic for cleaner, more reliable window controls on Linux.",
-              "- **Improved widget commands** — consolidated widget command handlers and added native window control test coverage.",
-              "- **Reliable release pipeline** — corrected updater feed validation, version paths, and Pages deployment to ensure stable and unstable channels update without conflicts.",
+              "- **Reliable provider refreshes** — Rust-orchestrated tray refresh, serialized status updates, expanded cold-start triggers, and invalid timestamp handling keep usage data current.",
+              "- **Widget tab persistence** — selected tab persists through shared settings with secure initialization on startup.",
+              "- **Tray navigation** — chevron tab navigation works again in the tray panel.",
+              "- **Linux on-demand windows** — on-demand visible window policy is now the permanent Linux default for cleaner widget and settings behavior.",
               "",
               "### Install unstable",
               "- macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`",
