@@ -29,9 +29,9 @@ export function shouldRefreshEnabledProvidersOnBoot(
     if (state.kind === "error") return true;
 
     if (state.kind === "fresh" && state.updated_at) {
-      const ageMs = Date.now() - new Date(state.updated_at).getTime();
+      const ageMs = Date.now() - Date.parse(state.updated_at);
       const thresholdMs = refreshIntervalSeconds * 1000;
-      return ageMs > thresholdMs;
+      return !Number.isFinite(ageMs) || ageMs < 0 || ageMs > thresholdMs;
     }
 
     return false;

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   syncCurrentTrayUsage,
@@ -29,8 +29,14 @@ vi.mock("@/lib/tauri/commands", () => ({
 }));
 
 beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime("2026-06-20T12:00:00Z");
   vi.mocked(syncTrayUsage).mockClear();
   useTrayUiStore.getState().setSelectedTab("overview");
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 function settings(enabledProviders: MochiSettings["enabled_providers"]): MochiSettings {
@@ -78,7 +84,9 @@ describe("shouldRefreshEnabledProvidersOnBoot", () => {
   it("does not refresh when no providers are enabled", () => {
     expect(shouldRefreshEnabledProvidersOnBoot(settings([]), [state("codex")])).toBe(false);
   });
+});
 
+describe("shouldRefreshEnabledProvidersOnBoot fresh timestamps", () => {
   it("does not refresh when all enabled providers have fresh data within refresh interval", () => {
     const recent = new Date().toISOString();
     expect(
@@ -93,6 +101,34 @@ describe("shouldRefreshEnabledProvidersOnBoot", () => {
     ).toBe(true);
   });
 
+  it("does not refresh when fresh data is exactly as old as the refresh interval", () => {
+    const thresholdDate = new Date(Date.now() - 300_000).toISOString();
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [
+        state("codex", "fresh", thresholdDate),
+      ]),
+    ).toBe(false);
+  });
+
+  it("refreshes when a fresh timestamp is malformed", () => {
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [
+        state("codex", "fresh", "not-a-timestamp"),
+      ]),
+    ).toBe(true);
+  });
+
+  it("refreshes when a fresh timestamp is in the future", () => {
+    const futureDate = new Date(Date.now() + 60_000).toISOString();
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [
+        state("codex", "fresh", futureDate),
+      ]),
+    ).toBe(true);
+  });
+});
+
+describe("shouldRefreshEnabledProvidersOnBoot exclusions", () => {
   it("does not refresh for missing credentials", () => {
     expect(
       shouldRefreshEnabledProvidersOnBoot(settings(["codex"]), [
@@ -118,7 +154,9 @@ describe("shouldRefreshEnabledProvidersOnBoot", () => {
       ]),
     ).toBe(true);
   });
+});
 
+describe("runColdStartProviderRefreshSequence", () => {
   it("cold start refresh syncs the selected provider from the store after invalidating cache", async () => {
     useTrayUiStore.getState().setSelectedTab("codex");
 
