@@ -2,10 +2,10 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join, sep } from "node:path";
 
 const REQUIRED_ARTIFACTS = {
-  "darwin-aarch64": [/aarch64.*macos.*Mochi\.app\.tar\.gz$/],
-  "darwin-x86_64": [/x86_64.*macos.*Mochi\.app\.tar\.gz$/],
-  "linux-x86_64": [/appimage.*amd64\.AppImage$/],
-  "windows-x86_64": [/nsis.*x64-setup\.exe$/],
+  "darwin-aarch64": [/aarch64.*macos.*Mochi\.app\.tar\.gz$/i, /Mochi_aarch64\.app\.tar\.gz$/i],
+  "darwin-x86_64": [/x86_64.*macos.*Mochi\.app\.tar\.gz$/i, /Mochi_x64\.app\.tar\.gz$/i],
+  "linux-x86_64": [/appimage.*amd64\.AppImage$/i, /Mochi_.*amd64\.AppImage$/i],
+  "windows-x86_64": [/nsis.*x64-setup\.exe$/i, /Mochi_.*x64-setup\.exe$/i],
 };
 
 async function listFiles(root) {

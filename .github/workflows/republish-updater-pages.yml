@@ -42,7 +42,7 @@ jobs:
           gh release download "${RELEASE_TAG}" \
             --repo "${GITHUB_REPOSITORY}" \
             --dir release-assets \
-            --pattern '*Mochi.app.tar.gz*' \
+            --pattern '*.app.tar.gz' \
             --pattern '*.AppImage' \
             --pattern '*setup.exe' \
             --pattern '*.sig'
