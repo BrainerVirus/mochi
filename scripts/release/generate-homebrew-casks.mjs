@@ -116,7 +116,7 @@ async function hashRemoteAsset(asset, cacheDir) {
 }
 
 const CASK_DEFINITIONS = {
-  mochi: {
+  "mochi-desktop": {
     name: "Mochi",
     desc: "Cross-platform desktop companion for AI coding tool usage",
   },
@@ -206,7 +206,7 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || !args.tag || !args.caskId) {
-    console.log(`Usage: node scripts/release/generate-homebrew-casks.mjs --tag <tag> --cask <mochi|mochi-unstable> [--out-dir Casks]
+    console.log(`Usage: node scripts/release/generate-homebrew-casks.mjs --tag <tag> --cask <mochi-desktop|mochi-unstable> [--out-dir Casks]
 
 Generates a Homebrew cask for macOS arm64 and x64 DMGs from a GitHub release tag.
 `);

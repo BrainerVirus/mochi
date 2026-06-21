@@ -62,27 +62,26 @@ curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/ins
 **Homebrew** (requires [Homebrew](https://brew.sh/)):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/setup-macos-brew-tap.sh | bash
-brew install --cask BrainerVirus/mochi/mochi
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash
 ```
 
 Unstable:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/setup-macos-brew-tap.sh | bash
-brew install --cask BrainerVirus/mochi/mochi-unstable
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash -s -- -i
 ```
 
-Upgrade later:
+Upgrade later (always use the fully qualified cask name — `mochi` alone is a different app in Homebrew):
 
 ```bash
-brew update && brew upgrade --cask mochi
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/setup-macos-brew-tap.sh | bash
+brew upgrade --cask BrainerVirus/mochi/mochi-desktop
 ```
 
 Unstable upgrade:
 
 ```bash
-brew update && brew upgrade --cask mochi-unstable
+brew upgrade --cask BrainerVirus/mochi/mochi-unstable
 ```
 
 ### Linux
