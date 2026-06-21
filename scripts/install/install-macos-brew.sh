@@ -121,9 +121,4 @@ Installed Mochi ${TAG} (${CHANNEL}) with Homebrew.
 Upgrade later:
   brew upgrade --cask ${CASK_ID}
   # or re-run this installer to refresh the local tap cask
-
-Install or upgrade from the GitHub tap instead:
-  brew tap ${MOCHI_GITHUB_REPO%%/*}/mochi https://github.com/${MOCHI_GITHUB_REPO}
-  brew install --cask ${MOCHI_GITHUB_REPO%%/*}/mochi/${CASK_ID}
-  brew upgrade --cask ${CASK_ID}
 EOF
