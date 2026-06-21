@@ -59,7 +59,7 @@ Unstable:
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i
 ```
 
-**Homebrew** (optional local cask from the selected release; requires [Homebrew](https://brew.sh/)):
+**Homebrew** (requires [Homebrew](https://brew.sh/)):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash
@@ -71,9 +71,20 @@ Unstable:
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash -s -- -i
 ```
 
-_Advanced:_ the direct script accepts `MOCHI_INSTALL_DIR` (default `/Applications`) if you need a non-system location.\_
+Or tap the repository casks directly:
 
-The Homebrew script does not require a Brew account. It generates a temporary local cask from the GitHub release asset and installs that cask. A normal `brew install --cask brainervirus/tap/mochi` flow would require publishing a Homebrew tap repository or submitting a cask PR upstream; until then, prefer the direct installer if the local cask path fails on your machine.
+```bash
+brew tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi
+brew install --cask BrainerVirus/mochi/mochi
+brew upgrade --cask mochi
+```
+
+Unstable cask:
+
+```bash
+brew install --cask BrainerVirus/mochi/mochi-unstable
+brew upgrade --cask mochi-unstable
+```
 
 ### Linux
 
