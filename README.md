@@ -74,9 +74,16 @@ curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/ins
 Or tap the repository casks directly:
 
 ```bash
-brew tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/setup-macos-brew-tap.sh | bash
 brew install --cask BrainerVirus/mochi/mochi
 brew upgrade --cask mochi
+```
+
+If you previously tapped a local checkout and see `remote mismatch`, run the setup script above (it replaces the old tap) or manually:
+
+```bash
+brew untap brainervirus/mochi
+brew tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi
 ```
 
 Unstable cask:
