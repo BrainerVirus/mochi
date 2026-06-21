@@ -1,10 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-for (const workflow of [
-  ".github/workflows/release-stable.yml",
-  ".github/workflows/release-unstable.yml",
-]) {
+for (const workflow of [".github/workflows/release-stable.yml", ".github/workflows/release-unstable.yml"]) {
   describe(workflow, () => {
     const source = readFileSync(workflow, "utf8");
 
@@ -19,10 +16,27 @@ for (const workflow of [
       expect(source).toContain("scripts/release/build-updater-feed.mjs");
       expect(source).toContain("scripts/release/validate-updater-feed.mjs");
       expect(source).toContain("https://mochi-app.github.io/mochi/updates");
-      expect(source).toContain("curl --fail");
     });
   });
 }
+
+describe(".github/workflows/release-stable.yml", () => {
+  const source = readFileSync(".github/workflows/release-stable.yml", "utf8");
+
+  it("publishes stable feeds to GitHub Pages", () => {
+    expect(source).toContain("actions/deploy-pages@v5");
+    expect(source).toContain("curl --fail");
+  });
+});
+
+describe(".github/workflows/release-unstable.yml", () => {
+  const source = readFileSync(".github/workflows/release-unstable.yml", "utf8");
+
+  it("does not deploy to GitHub Pages", () => {
+    expect(source).not.toContain("actions/deploy-pages@v5");
+    expect(source).not.toContain("actions/upload-pages-artifact@v5");
+  });
+});
 
 describe("linux window experiment cleanup", () => {
   it("does not publish temporary linux window experiment controls", () => {
