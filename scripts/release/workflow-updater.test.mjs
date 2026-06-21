@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-for (const workflow of [".github/workflows/release-stable.yml", ".github/workflows/release-unstable.yml"]) {
+for (const workflow of [
+  ".github/workflows/release-stable.yml",
+  ".github/workflows/release-unstable.yml",
+]) {
   describe(workflow, () => {
     const source = readFileSync(workflow, "utf8");
 
