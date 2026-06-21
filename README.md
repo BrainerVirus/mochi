@@ -62,35 +62,27 @@ curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/ins
 **Homebrew** (requires [Homebrew](https://brew.sh/)):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/setup-macos-brew-tap.sh | bash
+brew install --cask BrainerVirus/mochi/mochi
 ```
 
 Unstable:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash -s -- -i
-```
-
-Or tap the repository casks directly:
-
-```bash
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/setup-macos-brew-tap.sh | bash
-brew install --cask BrainerVirus/mochi/mochi
-brew upgrade --cask mochi
-```
-
-If you previously tapped a local checkout and see `remote mismatch`, run the setup script above (it replaces the old tap) or manually:
-
-```bash
-brew untap brainervirus/mochi
-brew tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi
-```
-
-Unstable cask:
-
-```bash
 brew install --cask BrainerVirus/mochi/mochi-unstable
-brew upgrade --cask mochi-unstable
+```
+
+Upgrade later:
+
+```bash
+brew update && brew upgrade --cask mochi
+```
+
+Unstable upgrade:
+
+```bash
+brew update && brew upgrade --cask mochi-unstable
 ```
 
 ### Linux
