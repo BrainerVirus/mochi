@@ -3,10 +3,59 @@
 set -euo pipefail
 
 : "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"
+: "${MOCHI_INSTALL_REF:=main}"
 : "${MOCHI_GITHUB_API:=https://api.github.com/repos/${MOCHI_GITHUB_REPO}}"
 
 MOCHI_INSTALL_UNSTABLE="${MOCHI_INSTALL_UNSTABLE:-0}"
 MOCHI_REQUESTED_TAG=""
+MOCHI_INSTALL_SCRIPT_DIR=""
+
+# Resolve scripts/install when executed from a checkout; empty when piped via curl | bash.
+mochi_install_script_dir() {
+  local i src dir
+  for i in "${!BASH_SOURCE[@]}"; do
+    src="${BASH_SOURCE[$i]:-}"
+    [[ -n "${src}" && "${src}" == *.sh && -f "${src}" ]] || continue
+    dir="$(cd "$(dirname "${src}")" && pwd)"
+    if [[ -f "${dir}/lib/common.sh" ]]; then
+      printf '%s' "${dir}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+mochi_source_install_lib() {
+  local lib_name="$1"
+  local dir tmp
+  if dir="$(mochi_install_script_dir)" && [[ -f "${dir}/lib/${lib_name}" ]]; then
+    MOCHI_INSTALL_SCRIPT_DIR="${dir}"
+    # shellcheck disable=SC1090
+    source "${dir}/lib/${lib_name}"
+    return 0
+  fi
+  tmp="$(mktemp)"
+  curl -fsSL \
+    "https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/lib/${lib_name}" \
+    -o "${tmp}"
+  # shellcheck source=/dev/null
+  source "${tmp}"
+  rm -f "${tmp}"
+  MOCHI_INSTALL_SCRIPT_DIR=""
+}
+
+mochi_run_install_script() {
+  local script_name="$1"
+  shift || true
+  local dir
+  if dir="$(mochi_install_script_dir)" && [[ -f "${dir}/${script_name}" ]]; then
+    bash "${dir}/${script_name}" "$@"
+    return
+  fi
+  curl -fsSL \
+    "https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/${script_name}" \
+    | bash -s -- "$@"
+}
 
 mochi_die() {
   echo "error: $*" >&2
