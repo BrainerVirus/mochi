@@ -30,6 +30,8 @@ const TESTED_BY = new Map([
   ["scripts/install/lib/windows-install.ps1", "scripts/install/install-windows.test.mjs"],
   ["scripts/install/install-macos-brew.sh", "scripts/install/homebrew-tap.test.mjs"],
   ["scripts/install/setup-macos-brew-tap.sh", "scripts/install/homebrew-tap.test.mjs"],
+  ["scripts/release/import-macos-signing-cert.sh", "scripts/release/macos-signing.test.mjs"],
+  ["scripts/release/verify-macos-signing-env.sh", "scripts/release/macos-signing.test.mjs"],
   ["scripts/tsconfig-folder-resolver.cts", "scripts/vite-folder-resolver.test.ts"],
 ]);
 

@@ -283,7 +283,7 @@ describe("install-macos-brew.sh", () => {
 
     const log = fakeBrew.readLog();
     expect(log).toContain("tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi");
-    expect(log).toContain("install --cask BrainerVirus/mochi/mochi-desktop --force");
+    expect(log).toContain("install --cask BrainerVirus/mochi/mochi-desktop --force --no-quarantine");
     expect(log).not.toMatch(/\binstall --cask mochi\b/);
   });
 
@@ -299,7 +299,7 @@ describe("install-macos-brew.sh", () => {
     });
 
     expect(fakeBrew.readLog()).toContain(
-      "install --cask BrainerVirus/mochi/mochi-unstable --force",
+      "install --cask BrainerVirus/mochi/mochi-unstable --force --no-quarantine",
     );
   });
 
@@ -324,6 +324,6 @@ describe("install-macos-brew.sh", () => {
 
     const log = fakeBrew.readLog();
     expect(log).toContain("tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi");
-    expect(log).toContain("install --cask BrainerVirus/mochi/mochi-desktop --force");
+    expect(log).toContain("install --cask BrainerVirus/mochi/mochi-desktop --force --no-quarantine");
   });
 });

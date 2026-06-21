@@ -26,6 +26,14 @@ describe(".github/workflows/release-stable.yml", () => {
     expect(source).toContain("MOCHI_UPDATER_PUBLIC_KEY");
   });
 
+  it("requires macOS code signing secrets for stable releases", () => {
+    expect(source).toContain("scripts/release/verify-macos-signing-env.sh");
+    expect(source).toContain("scripts/release/import-macos-signing-cert.sh");
+    expect(source).toContain("APPLE_CERTIFICATE");
+    expect(source).toContain("KEYCHAIN_PASSWORD");
+    expect(source).not.toContain("ad-hoc signing");
+  });
+
   it("delegates Pages publish to reusable workflow on main", () => {
     expect(source).toContain("publish-updater-pages.yml@main");
     expect(source).not.toContain("actions/deploy-pages@v5");

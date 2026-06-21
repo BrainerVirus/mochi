@@ -52,10 +52,25 @@ CASK_REF="$(mochi_homebrew_install_cask_ref "${CHANNEL}")"
 mochi_run_install_script "setup-macos-brew-tap.sh"
 
 echo "Installing Homebrew cask ${CASK_REF} (${CHANNEL})"
-brew install --cask "${CASK_REF}" --force
+# ponytail: --no-quarantine avoids Gatekeeper friction for Homebrew downloads; notarization is handled in stable CI.
+brew install --cask "${CASK_REF}" --force --no-quarantine
+
+mochi_clear_macos_app_quarantine() {
+  local app_path="${1:-/Applications/Mochi.app}"
+  [[ -d "${app_path}" ]] || return 0
+  if xattr -p com.apple.quarantine "${app_path}" >/dev/null 2>&1; then
+    xattr -dr com.apple.quarantine "${app_path}"
+    echo "Removed macOS quarantine from ${app_path}"
+  fi
+}
+
+mochi_clear_macos_app_quarantine "/Applications/Mochi.app"
 
 cat <<EOF
 Installed Mochi (${CHANNEL}) with Homebrew.
+
+If macOS still says Mochi is damaged, remove quarantine manually:
+  xattr -dr com.apple.quarantine /Applications/Mochi.app
 
 Upgrade later:
   curl -fsSL https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/setup-macos-brew-tap.sh | bash
