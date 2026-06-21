@@ -4,7 +4,7 @@ Mochi uses GitHub Flow.
 
 ## Unstable
 
-Every successful merge to `main` publishes unstable artifacts, a GitHub **prerelease** tagged `unstable`, and updates the unstable feed.
+Every successful merge to `main` publishes unstable artifacts and a GitHub **prerelease** tagged `unstable-*`. The unstable workflow validates updater feed JSON locally but **does not deploy to GitHub Pages**.
 
 Install the latest unstable build with the `-i` flag — see [Install](../README.md#install) in the README.
 
@@ -15,6 +15,22 @@ Stable releases are created by tagging a commit on `main` with a semver tag such
 Install scripts default to the latest stable release — see [Install](../README.md#install) in the README.
 
 Release notes should describe only the tag being published. Put upgrade warnings in docs or issues, not in the body for unrelated future releases.
+
+## GitHub Pages Publish Rules
+
+GitHub Pages deploys are **full-site replacements**: whatever artifact is uploaded becomes the entire site. Two workflows publishing different subsets of updater JSON will clobber each other.
+
+Rules:
+
+1. **Only the stable release pipeline deploys to GitHub Pages.** Unstable builds must never call `deploy-pages`.
+2. **Stable publishes both channels.** The stable Pages artifact includes `stable.json` and `unstable.json` for every supported recovery version so older installs can recover.
+3. **Publish logic lives in `.github/workflows/publish-updater-pages.yml` on `main`.** Stable release calls that reusable workflow at `@main` so feed deploy fixes can ship without cutting a new tag.
+4. **Do not gate Pages deploy on a protected `github-pages` environment** unless tag refs and `workflow_dispatch` are explicitly allowed. Otherwise stable tag releases fail after binaries are already published.
+5. **`GITHUB_SHA` cannot be overridden in Actions.** `deploy-pages` keys deployments by commit SHA. Unstable must not deploy Pages on the same commit as a stable tag, or the stable deploy can be skipped while the live site still serves the wrong feed set.
+
+### Republish feeds for an existing stable tag
+
+If binaries for `vX.Y.Z` are already on GitHub Releases but Pages deploy failed, run **Republish Updater Pages** (`republish-updater-pages.yml`) via `workflow_dispatch` with `release_tag=vX.Y.Z`. That workflow downloads the published release assets, rebuilds feeds, deploys Pages, and retries live validation. No new tag or version bump is required.
 
 ## Update Channels
 
@@ -42,7 +58,7 @@ Required secrets:
 
 The feed is backfilled for supported installed versions, currently `0.1.7` and `0.2.0`, so older installed apps can recover through in-app update. Every supported recovery version must have both `stable.json` and `unstable.json` for macOS arm64/x64, Linux x64, and Windows x64.
 
-The first stable repair release publishes both `stable.json` and `unstable.json` from tags like `v0.2.1` so installed unstable-channel apps recover from missing feeds. Later unstable releases publish `unstable.json` from tags like `unstable-20260606.123456` using a feed version such as `0.2.1-unstable.20260606.123456`, where `0.2.1` is the explicit `MOCHI_UNSTABLE_BASE_VERSION`. Workflows must fail when any required updater bundle or `.sig` file is missing.
+The first stable repair release publishes both `stable.json` and `unstable.json` from tags like `v0.2.1` so installed unstable-channel apps recover from missing feeds. Unstable prereleases on `main` continue to publish GitHub Release assets, but **Pages feeds for both channels are updated only by stable release or Republish Updater Pages**. Workflows must fail when any required updater bundle or `.sig` file is missing.
 
 Validate representative endpoints after publication:
 

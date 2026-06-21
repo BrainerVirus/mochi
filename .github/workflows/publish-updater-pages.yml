@@ -1,0 +1,113 @@
+name: Publish Updater Pages
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Stable tag being published (for example v0.2.4)
+        required: true
+        type: string
+      pages_base_url:
+        description: GitHub Pages base URL for updater feeds
+        required: false
+        type: string
+        default: https://brainervirus.github.io/mochi
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: release-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Updater Pages (${{ inputs.release_tag }})
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Download updater bundle artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: updater-bundle-*
+          path: updater-bundles
+          merge-multiple: true
+      - name: Build updater artifact manifest
+        shell: bash
+        env:
+          CHANNEL: stable
+          CHANNELS: stable,unstable
+          UPDATER_FEED_BASE_URL: https://mochi-app.github.io/mochi/updates
+          TAG_NAME: ${{ inputs.release_tag }}
+          RELEASE_BASE_URL: https://github.com/BrainerVirus/mochi/releases/download/${{ inputs.release_tag }}
+        run: |
+          cat > release-notes.md <<'EOF'
+          ### What's changed
+          - See the GitHub release notes for this version.
+          EOF
+          node scripts/release/collect-updater-artifacts.mjs \
+            --artifactRoot=updater-bundles \
+            --channel="${CHANNEL}" \
+            --tagName="${TAG_NAME}" \
+            --releaseBaseUrl="${RELEASE_BASE_URL}" \
+            --releaseNotesPath=release-notes.md \
+            --outputPath=updater-feed.json \
+            --pubDate="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+          node -e '
+            const fs = require("fs");
+            const manifest = JSON.parse(fs.readFileSync("updater-feed.json", "utf8"));
+            manifest.channels = process.env.CHANNELS.split(",").map((value) => value.trim()).filter(Boolean);
+            fs.writeFileSync("updater-feed.json", `${JSON.stringify(manifest, null, 2)}\n`);
+          '
+      - name: Build updater feeds
+        run: node scripts/release/build-updater-feed.mjs --manifest=updater-feed.json --out=public
+      - name: Validate updater feeds
+        shell: bash
+        run: |
+          VERSION="${{ inputs.release_tag }}"
+          VERSION="${VERSION#v}"
+          node scripts/release/validate-updater-feed.mjs \
+            public/updates/darwin/aarch64/0.1.7/stable.json \
+            public/updates/darwin/aarch64/0.2.0/stable.json \
+            "public/updates/darwin/aarch64/${VERSION}/stable.json" \
+            public/updates/darwin/x86_64/0.1.7/stable.json \
+            public/updates/darwin/x86_64/0.2.0/stable.json \
+            "public/updates/darwin/x86_64/${VERSION}/stable.json" \
+            public/updates/linux/x86_64/0.1.7/stable.json \
+            public/updates/linux/x86_64/0.2.0/stable.json \
+            "public/updates/linux/x86_64/${VERSION}/stable.json" \
+            public/updates/windows/x86_64/0.1.7/stable.json \
+            public/updates/windows/x86_64/0.2.0/stable.json \
+            "public/updates/windows/x86_64/${VERSION}/stable.json"
+      - name: Upload updater Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: public
+      - name: Deploy updater feed to GitHub Pages
+        uses: actions/deploy-pages@v5
+        id: pages-deploy
+      - name: Validate published updater endpoints
+        shell: bash
+        run: |
+          VERSION="${{ inputs.release_tag }}"
+          VERSION="${VERSION#v}"
+          node scripts/release/validate-published-feeds.mjs \
+            --baseUrl="${{ inputs.pages_base_url }}" \
+            --attempts=6 \
+            --delaySeconds=10 \
+            updates/darwin/aarch64/0.1.7/stable.json \
+            updates/darwin/aarch64/0.2.0/stable.json \
+            updates/darwin/aarch64/${VERSION}/stable.json \
+            updates/darwin/x86_64/0.1.7/stable.json \
+            updates/darwin/x86_64/0.2.0/stable.json \
+            updates/darwin/x86_64/${VERSION}/stable.json \
+            updates/linux/x86_64/0.1.7/stable.json \
+            updates/linux/x86_64/0.2.0/stable.json \
+            updates/linux/x86_64/${VERSION}/stable.json \
+            updates/windows/x86_64/0.1.7/stable.json \
+            updates/windows/x86_64/0.2.0/stable.json \
+            updates/windows/x86_64/${VERSION}/stable.json
