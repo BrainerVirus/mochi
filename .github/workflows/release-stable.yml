@@ -131,6 +131,11 @@ jobs:
     name: Publish Stable Updater Feed
     needs: build
     runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: https://brainervirus.github.io/mochi/
+    env:
+      GITHUB_SHA: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -194,8 +199,7 @@ jobs:
           path: public
       - name: Deploy updater feed to GitHub Pages
         uses: actions/deploy-pages@v5
-        env:
-          GITHUB_SHA: ${{ github.sha }}-stable
+        id: pages-deploy
       - name: Validate published updater endpoints
         shell: bash
         run: |

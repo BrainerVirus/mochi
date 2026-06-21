@@ -203,32 +203,6 @@ jobs:
             public/updates/linux/x86_64/0.2.0/unstable.json \
             public/updates/windows/x86_64/0.1.7/unstable.json \
             public/updates/windows/x86_64/0.2.0/unstable.json
-      - name: Upload updater Pages artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: public
-      - name: Deploy updater feed to GitHub Pages
-        uses: actions/deploy-pages@v5
-        env:
-          GITHUB_SHA: ${{ github.sha }}-unstable
-      - name: Validate published updater endpoints
-        shell: bash
-        run: |
-          sleep 30
-          for path in \
-            updates/darwin/aarch64/0.1.7/unstable.json \
-            updates/darwin/aarch64/0.2.0/unstable.json \
-            updates/darwin/x86_64/0.1.7/unstable.json \
-            updates/darwin/x86_64/0.2.0/unstable.json \
-            updates/linux/x86_64/0.1.7/unstable.json \
-            updates/linux/x86_64/0.2.0/unstable.json \
-            updates/windows/x86_64/0.1.7/unstable.json \
-            updates/windows/x86_64/0.2.0/unstable.json
-          do
-            url="https://brainervirus.github.io/mochi/${path}"
-            curl --fail --silent --show-error --location "${url}" --output feed.json
-            node scripts/release/validate-updater-feed.mjs feed.json
-          done
 
   release-notes:
     name: Publish Unstable Release Notes
