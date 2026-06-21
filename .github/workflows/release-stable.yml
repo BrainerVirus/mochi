@@ -131,9 +131,6 @@ jobs:
     name: Publish Stable Updater Feed
     needs: build
     runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: https://brainervirus.github.io/mochi/
     env:
       GITHUB_SHA: ${{ github.ref_name }}
     steps:
