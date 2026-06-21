@@ -1,77 +1,42 @@
 "use client";
 
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { getTrayTabChevronButtonClassName } from "@/features/tray/components/tray-tab-chevron-class-name";
-import {
-  SCROLL_OVERFLOW_FADE_DURATION_S,
-  SCROLL_OVERFLOW_FADE_EASE,
-  SCROLL_OVERFLOW_SLIDE_PX,
-} from "@/features/tray/components/use-gsap-overflow-visibility";
 import { cn } from "@/lib/utils";
 
-gsap.registerPlugin(useGSAP);
-
-export type TrayTabChevronSide = "start" | "end";
-
 interface TrayTabChevronProps {
-  side: TrayTabChevronSide;
+  side: "start" | "end";
   visible: boolean;
   onCycle: () => void;
 }
 
 /** Full-height overlay column; icon centered on the tab strip, not the scroll viewport baseline. */
 export function TrayTabChevron({ side, visible, onCycle }: TrayTabChevronProps) {
-  const columnRef = useRef<HTMLDivElement>(null);
   const isStart = side === "start";
-  const hiddenX = isStart ? -SCROLL_OVERFLOW_SLIDE_PX : SCROLL_OVERFLOW_SLIDE_PX;
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
-  useGSAP(
-    () => {
-      const column = columnRef.current;
-      if (!column) {
-        return undefined;
-      }
-
-      const mm = gsap.matchMedia();
-
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        gsap.set(column, { autoAlpha: visible ? 1 : 0, x: 0 });
-      });
-
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.to(column, {
-          autoAlpha: visible ? 1 : 0,
-          x: visible ? 0 : hiddenX,
-          duration: SCROLL_OVERFLOW_FADE_DURATION_S,
-          ease: SCROLL_OVERFLOW_FADE_EASE,
-          overwrite: "auto",
-        });
-      });
-
-      return () => {
-        mm.revert();
-      };
-    },
-    { dependencies: [hiddenX, visible], scope: columnRef, revertOnUpdate: true },
-  );
+  useEffect(() => {
+    if (!visible) buttonRef.current?.blur();
+  }, [visible]);
 
   return (
     <div
-      ref={columnRef}
       className={cn(
         "pointer-events-none absolute inset-y-0 z-30 flex w-8 items-center justify-center",
+        "transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none",
         isStart ? "left-0" : "right-0",
-        !visible && "invisible opacity-0",
+        visible ? "opacity-100" : "opacity-0",
+        !visible && (isStart ? "-translate-x-1" : "translate-x-1"),
       )}
       aria-hidden={!visible}
     >
       <Button
+        ref={buttonRef}
         type="button"
+        disabled={!visible}
         variant="ghost"
         size="icon-xs"
         tabIndex={visible ? 0 : -1}

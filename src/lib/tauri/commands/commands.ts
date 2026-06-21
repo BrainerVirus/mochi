@@ -83,6 +83,11 @@ export async function saveSettings(settings: MochiSettings): Promise<MochiSettin
   return MochiSettingsSchema.parse(result);
 }
 
+export async function saveSelectedTab(selectedTab: TraySelectedTab): Promise<MochiSettings> {
+  const result = await invoke<unknown>("save_selected_tab", { selectedTab });
+  return MochiSettingsSchema.parse(result);
+}
+
 export function showWidget(): Promise<void> {
   return invoke<void>("show_widget");
 }

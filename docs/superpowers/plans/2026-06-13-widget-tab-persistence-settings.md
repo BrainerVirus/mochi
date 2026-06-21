@@ -10,6 +10,97 @@
 
 ---
 
+## 2026-06-20 Security and Concurrency Repair
+
+PR #88 implemented the original plan. The follow-up below supersedes the unsafe
+string interpolation in Task 2 and the whole-settings tab write in Task 5.
+
+### Task A: Serialize and normalize the selected tab
+
+**Files:**
+
+- Modify: `src-tauri/src/widget/commands.rs`
+- Modify: `src-tauri/src/settings/mod.rs`
+- Modify: `src-tauri/src/settings/commands.rs`
+
+- [ ] **Step 1: Add failing Rust regression tests**
+
+Test that the initialization script serializes quotes, backslashes, newlines,
+U+2028, and U+2029 without producing executable JavaScript outside the assigned
+string. Test that settings normalization keeps `overview`, canonicalizes provider
+aliases, and clears invalid tabs.
+
+- [ ] **Step 2: Verify the tests fail for the expected reasons**
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml selected_tab
+```
+
+Expected: the script-serialization and normalization regressions fail.
+
+- [ ] **Step 3: Implement the minimum fix**
+
+Serialize the tab with `serde_json::to_string`, escape literal U+2028/U+2029 in
+the serialized JSON, and embed that JSON value directly in the assignment.
+Extend `MochiSettings::normalize_provider_ids` to normalize `selected_tab`, and
+normalize settings before every persisted Rust update.
+
+- [ ] **Step 4: Verify the focused tests pass**
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml selected_tab
+```
+
+Expected: all selected-tab Rust tests pass.
+
+### Task B: Persist only the selected tab
+
+**Files:**
+
+- Modify: `src-tauri/src/settings/commands.rs`
+- Modify: `src-tauri/src/settings/mod.rs`
+- Modify: `src-tauri/src/lib.rs`
+- Modify: `src/lib/tauri/commands/commands.ts`
+- Modify: `src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.ts`
+- Modify: `src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.test.ts`
+
+- [ ] **Step 1: Add failing Rust and frontend regression tests**
+
+The Rust test must prove a selected-tab update preserves unrelated settings that
+changed after a window loaded its snapshot. The frontend test must prove tab
+persistence sends only the new tab rather than a stale `MochiSettings` object.
+
+- [ ] **Step 2: Verify the tests fail for the expected reasons**
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml selected_tab
+pnpm test -- src/features/tray/hooks/use-tray-panel-state/use-tray-panel-state.test.ts
+```
+
+Expected: the missing tab-only command causes both regressions to fail.
+
+- [ ] **Step 3: Implement the minimum fix**
+
+Add a `save_selected_tab` command that locks the current Rust settings, changes
+only `selected_tab`, normalizes it, persists the result, and returns the current
+settings. Register the command and call it from `persistTabChangeSettings`.
+
+- [ ] **Step 4: Verify focused and full validation**
+
+```bash
+pnpm lint
+pnpm format:check
+pnpm test
+pnpm build
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --all-targets
+```
+
+Expected: all commands exit successfully.
+
+---
+
 ### Task 1: Add `selected_tab` to `MochiSettings` (Rust)
 
 **Files:**

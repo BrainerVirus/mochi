@@ -201,6 +201,8 @@ mod tests {
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
 
+    const FIXTURE_NOW: &str = "2026-05-21T00:00:00Z";
+
     fn temp_sessions_dir() -> PathBuf {
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -220,7 +222,7 @@ mod tests {
         )
         .expect("write session fixture");
 
-        let summary = scan_session_cost_at_root(&root, 30).expect("scan");
+        let summary = scan_session_cost_at_root(&root, 30, fixture_now()).expect("scan");
 
         assert_eq!(summary.input_tokens, 160);
         assert_eq!(summary.cached_input_tokens, 40);
@@ -233,24 +235,31 @@ mod tests {
     #[test]
     fn scan_session_cost_returns_zero_when_sessions_missing() {
         let root = temp_sessions_dir();
-        let summary = scan_session_cost_at_root(&root, 7).expect("scan");
+        let summary = scan_session_cost_at_root(&root, 7, fixture_now()).expect("scan");
         assert_eq!(summary.session_files_scanned, 0);
         assert_eq!(summary.input_tokens, 0);
+    }
+
+    fn fixture_now() -> OffsetDateTime {
+        parse_timestamp(FIXTURE_NOW).expect("fixture reference timestamp")
     }
 
     fn scan_session_cost_at_root(
         root: &Path,
         window_days: u32,
+        now: OffsetDateTime,
     ) -> ProviderResult<SessionCostSummary> {
         if !root.exists() {
             return Ok(empty_summary(window_days));
         }
 
-        let cutoff = OffsetDateTime::now_utc() - Duration::days(i64::from(window_days));
+        let cutoff = now - Duration::days(i64::from(window_days));
         let mut totals = TokenTotals::default();
         let mut files_scanned = 0u32;
+        let mut files = Vec::new();
+        collect_jsonl_files(root, &mut files);
 
-        for file in discover_jsonl_files(root) {
+        for file in files {
             if !should_scan_file(&file, cutoff) {
                 continue;
             }
