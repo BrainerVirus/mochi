@@ -53,13 +53,7 @@ CASK_REF="$(mochi_homebrew_install_cask_ref "${CHANNEL}")"
 mochi_run_install_script "setup-macos-brew-tap.sh"
 
 echo "Installing Homebrew cask ${CASK_REF} (${CHANNEL})"
-# ponytail: ad-hoc signed builds need quarantine cleared post-install; --no-quarantine removed in newer Homebrew.
-_brew_install_args=(install --cask "${CASK_REF}" --force)
-if brew install --help 2>&1 | grep -q -- '--no-quarantine'; then
-  _brew_install_args+=(--no-quarantine)
-fi
-brew "${_brew_install_args[@]}"
-unset _brew_install_args
+mochi_brew_install_cask "${CASK_REF}"
 
 mochi_clear_macos_app_quarantine "/Applications/Mochi.app"
 

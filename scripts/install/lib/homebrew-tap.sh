@@ -181,3 +181,10 @@ mochi_homebrew_install_cask_ref() {
 
   printf '%s/%s' "${tap}" "${cask_id}"
 }
+
+# Install a tap cask without deprecated Homebrew quarantine flags.
+# ponytail: Homebrew 6 dropped the cask quarantine install flag; clear quarantine with xattr after install.
+mochi_brew_install_cask() {
+  local cask_ref="$1"
+  HOMEBREW_CASK_OPTS= brew install --cask "${cask_ref}" --force
+}

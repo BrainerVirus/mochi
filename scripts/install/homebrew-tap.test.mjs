@@ -54,7 +54,7 @@ function isolatedToolPath(dir) {
   return `${dir}:/usr/bin:/bin`;
 }
 
-function createFakeBrew({ taps = [], remotes = {} } = {}) {
+function createFakeBrew({ taps = [], remotes = {}, helpMentionsNoQuarantine = false } = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "mochi-brew-test-"));
   const logFile = path.join(dir, "brew.log");
   const tapsFile = path.join(dir, "taps.txt");
@@ -65,6 +65,10 @@ function createFakeBrew({ taps = [], remotes = {} } = {}) {
   for (const [tap, url] of Object.entries(remotes)) {
     writeFileSync(path.join(remotesDir, tap.replace(/\//g, "_").replace(/-/g, "_")), url);
   }
+
+  const helpExtra = helpMentionsNoQuarantine
+    ? '      echo "  --no-quarantine    deprecated; use xattr after install instead."'
+    : "";
 
   const brewPath = path.join(dir, "brew");
   writeFileSync(
@@ -99,6 +103,16 @@ case "$1" in
     rm -f "${remotesDir}/$key"
     ;;
   install)
+    if [ "$2" = "--help" ] || [ "$2" = "-h" ]; then
+${helpExtra}
+      exit 0
+    fi
+    for arg in "$@"; do
+      if [ "$arg" = "--no-quarantine" ]; then
+        echo "Error: invalid option: --no-quarantine" >&2
+        exit 1
+      fi
+    done
     exit 0
     ;;
 esac
@@ -229,6 +243,40 @@ describe("homebrew install cask ref", () => {
   });
 });
 
+describe("mochi_brew_install_cask", () => {
+  it("never passes --no-quarantine to brew install", () => {
+    const fakeBrew = createFakeBrew({ helpMentionsNoQuarantine: true });
+    runBash(`source "$LIB" && mochi_brew_install_cask BrainerVirus/mochi/mochi-desktop`, {
+      PATH: fakeBrew.pathPrefix,
+    });
+
+    const log = fakeBrew.readLog();
+    expect(log).toBe("install --cask BrainerVirus/mochi/mochi-desktop --force");
+    expect(log).not.toContain("--no-quarantine");
+  });
+
+  it("ignores HOMEBREW_CASK_OPTS=--no-quarantine", () => {
+    const fakeBrew = createFakeBrew();
+    runBash(`source "$LIB" && mochi_brew_install_cask BrainerVirus/mochi/mochi-desktop`, {
+      PATH: fakeBrew.pathPrefix,
+      HOMEBREW_CASK_OPTS: "--no-quarantine",
+    });
+
+    expect(fakeBrew.readLog()).not.toContain("--no-quarantine");
+  });
+});
+
+describe("install script quarantine policy", () => {
+  it("does not reference --no-quarantine in install shell scripts", () => {
+    for (const rel of [
+      "scripts/install/install-macos-brew.sh",
+      "scripts/install/lib/homebrew-tap.sh",
+    ]) {
+      expect(readFileSync(path.join(root, rel), "utf8")).not.toContain("--no-quarantine");
+    }
+  });
+});
+
 describe("packaged Homebrew casks", () => {
   it("ships mochi-desktop instead of colliding with homebrew/cask/mochi", () => {
     expect(existsSync(path.join(root, "Casks/mochi.rb"))).toBe(false);
@@ -275,7 +323,7 @@ describe("install-macos-brew.sh", () => {
   });
 
   it("installs the fully qualified stable cask after tapping GitHub", () => {
-    const fakeBrew = createFakeBrew({ taps: [] });
+    const fakeBrew = createFakeBrew({ taps: [], helpMentionsNoQuarantine: true });
     execFileSync("/bin/bash", [installSh], {
       cwd: path.dirname(installSh),
       encoding: "utf8",
@@ -288,6 +336,7 @@ describe("install-macos-brew.sh", () => {
     const log = fakeBrew.readLog();
     expect(log).toContain("tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi");
     expect(log).toContain("install --cask BrainerVirus/mochi/mochi-desktop --force");
+    expect(log).not.toContain("--no-quarantine");
     expect(log).not.toMatch(/\binstall --cask mochi\b/);
   });
 
@@ -308,7 +357,7 @@ describe("install-macos-brew.sh", () => {
   });
 
   it("works when piped to bash from an unrelated working directory", () => {
-    const fakeBrew = createFakeBrew({ taps: [] });
+    const fakeBrew = createFakeBrew({ taps: [], helpMentionsNoQuarantine: true });
     const fakeCurl = createFakeCurl();
     const pipedEnv = {
       HOME: process.env.HOME ?? tmpdir(),
@@ -316,6 +365,7 @@ describe("install-macos-brew.sh", () => {
       TMPDIR: process.env.TMPDIR ?? tmpdir(),
       MOCHI_GITHUB_REPO: "BrainerVirus/mochi",
       MOCHI_INSTALL_REF: "main",
+      HOMEBREW_CASK_OPTS: "--no-quarantine",
     };
     const wrongCwd = mkdtempSync(path.join(tmpdir(), "mochi-piped-install-"));
 
@@ -329,5 +379,6 @@ describe("install-macos-brew.sh", () => {
     const log = fakeBrew.readLog();
     expect(log).toContain("tap BrainerVirus/mochi https://github.com/BrainerVirus/mochi");
     expect(log).toContain("install --cask BrainerVirus/mochi/mochi-desktop --force");
+    expect(log).not.toContain("--no-quarantine");
   });
 });
