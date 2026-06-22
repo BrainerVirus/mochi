@@ -117,13 +117,12 @@ jobs:
           releaseBody: |
             ## Mochi Unstable
 
-            Latest `main` build with more reliable refreshes, widget tab persistence, tray navigation fixes, and permanent Linux on-demand windows.
+            Latest `main` build with instant tray updates when you change providers in Settings, safer re-enable with invalid credentials, and reliable settings sync across all windows.
 
             ### What's changed
-            - **Reliable provider refreshes** — Rust-orchestrated tray refresh, serialized status updates, expanded cold-start triggers, and invalid timestamp handling keep usage data current.
-            - **Widget tab persistence** — selected tab persists through shared settings with secure initialization on startup.
-            - **Tray navigation** — chevron tab navigation works again in the tray panel.
-            - **Linux on-demand windows** — on-demand visible window policy is now the permanent Linux default for cleaner widget and settings behavior.
+            - **Instant tray updates** — disabling or enabling a provider in Settings updates the tray panel immediately without a manual refresh.
+            - **Safer provider re-enable** — re-enabling a provider with invalid credentials shows an auth error instead of crashing the app.
+            - **Cross-window settings sync** — settings changes broadcast to the tray, widget, and settings windows so every view stays in sync.
 
             ### Install unstable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
@@ -245,13 +244,12 @@ jobs:
             const body = [
               `## Mochi ${tag}`,
               "",
-              "Latest `main` build with more reliable refreshes, widget tab persistence, tray navigation fixes, and permanent Linux on-demand windows.",
+              "Latest `main` build with instant tray updates when you change providers in Settings, safer re-enable with invalid credentials, and reliable settings sync across all windows.",
               "",
               "### What's changed",
-              "- **Reliable provider refreshes** — Rust-orchestrated tray refresh, serialized status updates, expanded cold-start triggers, and invalid timestamp handling keep usage data current.",
-              "- **Widget tab persistence** — selected tab persists through shared settings with secure initialization on startup.",
-              "- **Tray navigation** — chevron tab navigation works again in the tray panel.",
-              "- **Linux on-demand windows** — on-demand visible window policy is now the permanent Linux default for cleaner widget and settings behavior.",
+              "- **Instant tray updates** — disabling or enabling a provider in Settings updates the tray panel immediately without a manual refresh.",
+              "- **Safer provider re-enable** — re-enabling a provider with invalid credentials shows an auth error instead of crashing the app.",
+              "- **Cross-window settings sync** — settings changes broadcast to the tray, widget, and settings windows so every view stays in sync.",
               "",
               "### Install unstable",
               "- macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`",
