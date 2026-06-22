@@ -135,11 +135,7 @@ pub fn save_settings(
     Ok(next)
 }
 
-fn spawn_refresh_for_newly_enabled(
-    app: AppHandle,
-    previous: &MochiSettings,
-    next: &MochiSettings,
-) {
+fn spawn_refresh_for_newly_enabled(app: AppHandle, previous: &MochiSettings, next: &MochiSettings) {
     let ctx = FetchContext::from_settings(next);
     let providers: Vec<ProviderId> = newly_enabled_provider_ids(previous, next)
         .into_iter()
@@ -162,12 +158,9 @@ fn spawn_refresh_for_newly_enabled(
         };
 
         for provider in providers {
-            let _ = crate::status::refresh_single_provider_inner(
-                &store,
-                &settings,
-                provider.as_str(),
-            )
-            .await;
+            let _ =
+                crate::status::refresh_single_provider_inner(&store, &settings, provider.as_str())
+                    .await;
         }
 
         let Ok(settings) = settings_state.current() else {
@@ -530,7 +523,9 @@ mod tests {
         reconcile_usage_store_for_settings_change(&previous, &next, &store)
             .expect("usage store should reconcile");
 
-        assert!(store.get_states(&["cursor".into(), "gemini".into()]).is_empty());
+        assert!(store
+            .get_states(&["cursor".into(), "gemini".into()])
+            .is_empty());
     }
 
     #[test]

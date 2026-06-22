@@ -161,7 +161,7 @@ function providerConfigsMatch(
   }
 
   return leftKeys.every(
-    (key, index) =>
+    (key: string, index: number) =>
       key === rightKeys[index] && JSON.stringify(left[key]) === JSON.stringify(right[key]),
   );
 }
