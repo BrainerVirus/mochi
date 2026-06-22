@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use serde::Serialize;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::core::models::ProviderId;
 use crate::core::provider::FetchContext;
@@ -120,6 +120,7 @@ pub fn get_settings(state: State<'_, SettingsState>) -> Result<MochiSettings, St
 
 #[tauri::command]
 pub fn save_settings(
+    app: AppHandle,
     settings: MochiSettings,
     state: State<'_, SettingsState>,
     usage_store: State<'_, UsageStore>,
@@ -127,12 +128,62 @@ pub fn save_settings(
     let previous = state.current()?;
     let next = state.update(settings)?;
 
-    for provider in disabled_provider_ids(&previous, &next) {
+    reconcile_usage_store_for_settings_change(&previous, &next, &usage_store)?;
+    broadcast_settings_changed(&app, &next);
+    spawn_refresh_for_newly_enabled(app, &previous, &next);
+
+    Ok(next)
+}
+
+fn spawn_refresh_for_newly_enabled(app: AppHandle, previous: &MochiSettings, next: &MochiSettings) {
+    let ctx = FetchContext::from_settings(next);
+    let providers: Vec<ProviderId> = newly_enabled_provider_ids(previous, next)
+        .into_iter()
+        .filter(|provider| provider_has_credentials(*provider, &ctx))
+        .collect();
+
+    if providers.is_empty() {
+        return;
+    }
+
+    tauri::async_runtime::spawn(async move {
+        let Some(store) = app.try_state::<UsageStore>() else {
+            return;
+        };
+        let Some(settings_state) = app.try_state::<SettingsState>() else {
+            return;
+        };
+        let Ok(settings) = settings_state.current() else {
+            return;
+        };
+
+        for provider in providers {
+            let _ =
+                crate::status::refresh_single_provider_inner(&store, &settings, provider.as_str())
+                    .await;
+        }
+
+        let Ok(settings) = settings_state.current() else {
+            return;
+        };
+        let payload = crate::status::RefreshCompletePayload {
+            states: crate::status::read_cached_usage_states(&store, &settings),
+        };
+        let _ = app.emit("usage-refresh-complete", &payload);
+    });
+}
+
+fn reconcile_usage_store_for_settings_change(
+    previous: &MochiSettings,
+    next: &MochiSettings,
+    usage_store: &UsageStore,
+) -> Result<(), String> {
+    for provider in disabled_provider_ids(previous, next) {
         usage_store.delete_provider(provider)?;
     }
 
-    let ctx = FetchContext::from_settings(&next);
-    for provider in newly_enabled_provider_ids(&previous, &next) {
+    let ctx = FetchContext::from_settings(next);
+    for provider in newly_enabled_provider_ids(previous, next) {
         let state = if provider_has_credentials(provider, &ctx) {
             ProviderUsageState::fetching(provider, current_timestamp())
         } else {
@@ -141,7 +192,28 @@ pub fn save_settings(
         usage_store.put_state(state)?;
     }
 
-    Ok(next)
+    Ok(())
+}
+
+fn broadcast_settings_changed(app: &AppHandle, settings: &MochiSettings) {
+    if emit_settings_changed(app, settings).is_ok() {
+        return;
+    }
+
+    crate::diagnostics::log_line("settings", "settings-changed emit failed; retrying once");
+    if let Err(retry_error) = emit_settings_changed(app, settings) {
+        crate::diagnostics::log_line(
+            "settings",
+            &format!("settings-changed emit retry failed: {retry_error}"),
+        );
+    }
+}
+
+const SETTINGS_CHANGED_EVENT: &str = "settings-changed";
+
+fn emit_settings_changed(app: &AppHandle, settings: &MochiSettings) -> Result<(), String> {
+    app.emit(SETTINGS_CHANGED_EVENT, settings)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -277,6 +349,61 @@ fn newly_enabled_provider_ids(previous: &MochiSettings, next: &MochiSettings) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::usage_state::ProviderUsageStateKind;
+    use crate::status::refresh_single_provider_inner;
+
+    #[tokio::test]
+    async fn refresh_single_provider_gemini_invalid_token_records_error_without_panicking() {
+        let dir = std::env::temp_dir().join(format!(
+            "mochi-gemini-invalid-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let creds_path = dir.join("oauth_creds.json");
+        std::fs::write(
+            &creds_path,
+            r#"{"refresh_token":"invalid-token","access_token":""}"#,
+        )
+        .expect("write creds");
+
+        std::env::set_var("MOCHI_GEMINI_CREDENTIALS_FILE", &creds_path);
+        std::env::set_var("MOCHI_GEMINI_OAUTH_CLIENT_ID", "test-client-id");
+        std::env::set_var("MOCHI_GEMINI_OAUTH_CLIENT_SECRET", "test-client-secret");
+
+        let store = UsageStore::new(None);
+        let settings = MochiSettings {
+            enabled_providers: vec!["gemini".into()],
+            ..MochiSettings::default()
+        };
+
+        let payload = refresh_single_provider_inner(&store, &settings, "gemini")
+            .await
+            .expect("invalid gemini credentials should return usage payload, not crash");
+
+        let gemini_state = payload
+            .states
+            .iter()
+            .find(|state| state.provider == ProviderId::Gemini)
+            .expect("gemini state");
+        assert!(
+            matches!(
+                gemini_state.kind,
+                ProviderUsageStateKind::Error
+                    | ProviderUsageStateKind::StaleError
+                    | ProviderUsageStateKind::CredentialsNeedRefresh
+            ),
+            "expected auth failure state, got {:?}",
+            gemini_state.kind
+        );
+
+        std::env::remove_var("MOCHI_GEMINI_CREDENTIALS_FILE");
+        std::env::remove_var("MOCHI_GEMINI_OAUTH_CLIENT_ID");
+        std::env::remove_var("MOCHI_GEMINI_OAUTH_CLIENT_SECRET");
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     #[test]
     fn initializes_missing_settings_with_detected_providers_only() {
@@ -317,6 +444,88 @@ mod tests {
         let disabled = disabled_provider_ids(&previous, &next);
 
         assert_eq!(disabled, vec![crate::core::models::ProviderId::Cursor]);
+    }
+
+    #[test]
+    fn settings_changed_event_name_matches_frontend_listener() {
+        assert_eq!(SETTINGS_CHANGED_EVENT, "settings-changed");
+    }
+
+    #[test]
+    fn reconcile_usage_store_removes_disabled_and_seeds_newly_enabled() {
+        let store = UsageStore::new(None);
+        store
+            .put_state(ProviderUsageState::fetching(
+                ProviderId::Cursor,
+                current_timestamp(),
+            ))
+            .expect("cursor state");
+        store
+            .put_state(ProviderUsageState::fetching(
+                ProviderId::Gemini,
+                current_timestamp(),
+            ))
+            .expect("gemini state");
+
+        let previous = MochiSettings {
+            enabled_providers: vec!["cursor".into(), "gemini".into()],
+            ..MochiSettings::default()
+        };
+        let next = MochiSettings {
+            enabled_providers: vec!["cursor".into(), "codex".into()],
+            ..MochiSettings::default()
+        };
+
+        reconcile_usage_store_for_settings_change(&previous, &next, &store)
+            .expect("usage store should reconcile");
+
+        assert!(store.get_states(&["gemini".into()]).is_empty());
+        assert_eq!(store.get_states(&["cursor".into()]).len(), 1);
+
+        let codex_state = store
+            .get_states(&["codex".into()])
+            .into_iter()
+            .next()
+            .expect("codex state");
+        assert_eq!(codex_state.provider, ProviderId::Codex);
+        assert!(matches!(
+            codex_state.kind,
+            crate::core::usage_state::ProviderUsageStateKind::MissingCredentials
+                | crate::core::usage_state::ProviderUsageStateKind::Fetching
+        ));
+    }
+
+    #[test]
+    fn reconcile_usage_store_clears_all_disabled_providers() {
+        let store = UsageStore::new(None);
+        store
+            .put_state(ProviderUsageState::fetching(
+                ProviderId::Cursor,
+                current_timestamp(),
+            ))
+            .expect("cursor state");
+        store
+            .put_state(ProviderUsageState::fetching(
+                ProviderId::Gemini,
+                current_timestamp(),
+            ))
+            .expect("gemini state");
+
+        let previous = MochiSettings {
+            enabled_providers: vec!["cursor".into(), "gemini".into()],
+            ..MochiSettings::default()
+        };
+        let next = MochiSettings {
+            enabled_providers: vec![],
+            ..MochiSettings::default()
+        };
+
+        reconcile_usage_store_for_settings_change(&previous, &next, &store)
+            .expect("usage store should reconcile");
+
+        assert!(store
+            .get_states(&["cursor".into(), "gemini".into()])
+            .is_empty());
     }
 
     #[test]

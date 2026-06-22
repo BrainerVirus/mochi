@@ -52,27 +52,27 @@ export async function runColdStartProviderRefreshSequence(
 export function useColdStartProviderRefresh() {
   const queryClient = useQueryClient();
   const { data: settings } = useSettings();
-  const { data: states = [] } = useUsageData();
-  const didRefreshRef = useRef(false);
+  const { data: states = [], isSuccess: usageLoaded } = useUsageData();
+  const bootRefreshCheckedRef = useRef(false);
 
   useEffect(() => {
-    if (
-      didRefreshRef.current ||
-      !isTauriRuntime() ||
-      !settings ||
-      !shouldRefreshEnabledProvidersOnBoot(settings, states)
-    ) {
+    if (bootRefreshCheckedRef.current || !isTauriRuntime() || !settings || !usageLoaded) {
       return;
     }
 
-    didRefreshRef.current = true;
+    bootRefreshCheckedRef.current = true;
+
+    if (!shouldRefreshEnabledProvidersOnBoot(settings, states)) {
+      return;
+    }
+
     void runColdStartProviderRefreshSequence(
       settings,
       refreshEnabledProviders,
       () => queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots }),
       syncCurrentTrayUsage,
     ).catch(() => {
-      didRefreshRef.current = false;
+      bootRefreshCheckedRef.current = false;
     });
-  }, [queryClient, settings, states]);
+  }, [queryClient, settings, states, usageLoaded]);
 }

@@ -23,6 +23,7 @@ export function useTrayUsageSync() {
       return;
     }
 
+    // Runs after settings-changed reconcile updates the settings/usage caches.
     void syncCurrentTrayUsage(settings);
   }, [data, isSuccess, selectedTab, settings]);
 }
