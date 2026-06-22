@@ -49,20 +49,28 @@ else
 fi
 
 CASK_REF="$(mochi_homebrew_install_cask_ref "${CHANNEL}")"
+CASK_TOKEN="$(mochi_homebrew_cask_token "${CASK_REF}")"
 
 mochi_run_install_script "setup-macos-brew-tap.sh"
 
 echo "Installing Homebrew cask ${CASK_REF} (${CHANNEL})"
 mochi_brew_install_cask "${CASK_REF}"
 
-mochi_clear_macos_app_quarantine "/Applications/Mochi.app"
+MOCHI_APP_PATH="$(mochi_homebrew_cask_app_path "${CASK_TOKEN}" || true)"
+if [[ -z "${MOCHI_APP_PATH}" || ! -d "${MOCHI_APP_PATH}" ]]; then
+  echo "error: Mochi.app was not found after Homebrew install." >&2
+  echo "Try: brew reinstall --cask --force ${CASK_REF}" >&2
+  exit 1
+fi
+
+mochi_clear_macos_app_quarantine "${MOCHI_APP_PATH}"
 
 cat <<EOF
-Installed Mochi (${CHANNEL}) with Homebrew.
+Installed Mochi (${CHANNEL}) with Homebrew at ${MOCHI_APP_PATH}.
 
 Mochi is ad-hoc signed (no Apple Developer notarization). If macOS says the app
 is damaged, clear download quarantine:
-  xattr -dr com.apple.quarantine /Applications/Mochi.app
+  xattr -dr com.apple.quarantine ${MOCHI_APP_PATH}
 
 Upgrade later:
   curl -fsSL https://raw.githubusercontent.com/${MOCHI_GITHUB_REPO}/${MOCHI_INSTALL_REF}/scripts/install/setup-macos-brew-tap.sh | bash

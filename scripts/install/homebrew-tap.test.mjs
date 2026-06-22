@@ -54,14 +54,26 @@ function isolatedToolPath(dir) {
   return `${dir}:/usr/bin:/bin`;
 }
 
-function createFakeBrew({ taps = [], remotes = {}, helpMentionsNoQuarantine = false } = {}) {
+function createFakeBrew({
+  taps = [],
+  remotes = {},
+  helpMentionsNoQuarantine = false,
+  installedCasks = [],
+} = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "mochi-brew-test-"));
   const logFile = path.join(dir, "brew.log");
   const tapsFile = path.join(dir, "taps.txt");
   const remotesDir = path.join(dir, "remotes");
+  const installedCasksFile = path.join(dir, "installed-casks.txt");
+  const prefixDir = path.join(dir, "prefix");
   mkdirSync(remotesDir);
+  mkdirSync(prefixDir, { recursive: true });
 
   writeFileSync(tapsFile, `${taps.join("\n")}\n`);
+  writeFileSync(
+    installedCasksFile,
+    `${installedCasks.join("\n")}${installedCasks.length ? "\n" : ""}`,
+  );
   for (const [tap, url] of Object.entries(remotes)) {
     writeFileSync(path.join(remotesDir, tap.replace(/\//g, "_").replace(/-/g, "_")), url);
   }
@@ -76,7 +88,48 @@ function createFakeBrew({ taps = [], remotes = {}, helpMentionsNoQuarantine = fa
     `#!/usr/bin/env bash
 set -euo pipefail
 echo "$*" >> "${logFile}"
+
+mochi_fake_brew_create_app() {
+  local app_name="Mochi.app"
+  local cask_token="mochi-desktop"
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      */*)
+        cask_token="\${arg##*/}"
+        ;;
+    esac
+  done
+  if [ -n "\${MOCHI_APP_INSTALL_DIR:-}" ]; then
+    mkdir -p "\${MOCHI_APP_INSTALL_DIR}/\${app_name}/Contents"
+    touch "\${MOCHI_APP_INSTALL_DIR}/\${app_name}/Contents/Info.plist"
+    return 0
+  fi
+  local dest="${prefixDir}/Caskroom/\${cask_token}/0.0.0/\${app_name}/Contents"
+  mkdir -p "\$dest"
+  touch "\$dest/Info.plist"
+}
+
+mochi_fake_brew_reject_no_quarantine() {
+  for arg in "$@"; do
+    if [ "$arg" = "--no-quarantine" ]; then
+      echo "Error: invalid option: --no-quarantine" >&2
+      exit 1
+    fi
+  done
+}
+
 case "$1" in
+  --prefix)
+    echo "${prefixDir}"
+    exit 0
+    ;;
+  list)
+    if [ "$2" = "--cask" ] && grep -Fxq "$3" "${installedCasksFile}" 2>/dev/null; then
+      exit 0
+    fi
+    exit 1
+    ;;
   tap)
     if [ "$#" -eq 1 ]; then
       cat "${tapsFile}" 2>/dev/null || true
@@ -102,17 +155,13 @@ case "$1" in
     mv "$tmp" "${tapsFile}"
     rm -f "${remotesDir}/$key"
     ;;
-  install)
+  install|reinstall)
     if [ "$2" = "--help" ] || [ "$2" = "-h" ]; then
 ${helpExtra}
       exit 0
     fi
-    for arg in "$@"; do
-      if [ "$arg" = "--no-quarantine" ]; then
-        echo "Error: invalid option: --no-quarantine" >&2
-        exit 1
-      fi
-    done
+    mochi_fake_brew_reject_no_quarantine "$@"
+    mochi_fake_brew_create_app "$@"
     exit 0
     ;;
 esac
@@ -251,7 +300,7 @@ describe("mochi_brew_install_cask", () => {
     });
 
     const log = fakeBrew.readLog();
-    expect(log).toBe("install --cask BrainerVirus/mochi/mochi-desktop --force");
+    expect(log).toContain("install --cask BrainerVirus/mochi/mochi-desktop --force");
     expect(log).not.toContain("--no-quarantine");
   });
 
@@ -263,6 +312,48 @@ describe("mochi_brew_install_cask", () => {
     });
 
     expect(fakeBrew.readLog()).not.toContain("--no-quarantine");
+  });
+
+  it("reinstalls when Homebrew lists the cask but the app bundle is missing", () => {
+    const fakeBrew = createFakeBrew({ installedCasks: ["mochi-desktop"] });
+    const appDir = mkdtempSync(path.join(tmpdir(), "mochi-missing-app-"));
+
+    runBash(`source "$LIB" && mochi_brew_install_cask BrainerVirus/mochi/mochi-desktop`, {
+      PATH: fakeBrew.pathPrefix,
+      MOCHI_APP_INSTALL_DIR: appDir,
+    });
+
+    expect(fakeBrew.readLog()).toContain(
+      "reinstall --cask BrainerVirus/mochi/mochi-desktop --force",
+    );
+    expect(existsSync(path.join(appDir, "Mochi.app", "Contents", "Info.plist"))).toBe(true);
+  });
+});
+
+describe("mochi_homebrew_cask_app_path", () => {
+  it("prefers the app bundle under MOCHI_APP_INSTALL_DIR", () => {
+    const appDir = mkdtempSync(path.join(tmpdir(), "mochi-appdir-"));
+    const appPath = path.join(appDir, "Mochi.app");
+    mkdirSync(path.join(appPath, "Contents"), { recursive: true });
+
+    const resolved = runBash(`source "$LIB" && mochi_homebrew_cask_app_path mochi-desktop`, {
+      MOCHI_APP_INSTALL_DIR: appDir,
+    }).trim();
+
+    expect(resolved).toBe(appPath);
+  });
+
+  it("falls back to the Homebrew caskroom when Applications is empty", () => {
+    const fakeBrew = createFakeBrew();
+    const appPath = path.join(fakeBrew.dir, "prefix/Caskroom/mochi-desktop/0.2.4/Mochi.app");
+    mkdirSync(path.join(appPath, "Contents"), { recursive: true });
+
+    const resolved = runBash(`source "$LIB" && mochi_homebrew_cask_app_path mochi-desktop`, {
+      PATH: fakeBrew.pathPrefix,
+      MOCHI_APP_INSTALL_DIR: path.join(fakeBrew.dir, "empty-applications"),
+    }).trim();
+
+    expect(resolved).toBe(appPath);
   });
 });
 
@@ -357,7 +448,7 @@ describe("install-macos-brew.sh", () => {
   });
 
   it("works when piped to bash from an unrelated working directory", () => {
-    const fakeBrew = createFakeBrew({ taps: [], helpMentionsNoQuarantine: true });
+    const fakeBrew = createFakeBrew({ taps: [] });
     const fakeCurl = createFakeCurl();
     const pipedEnv = {
       HOME: process.env.HOME ?? tmpdir(),

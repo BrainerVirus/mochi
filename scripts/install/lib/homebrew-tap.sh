@@ -182,9 +182,61 @@ mochi_homebrew_install_cask_ref() {
   printf '%s/%s' "${tap}" "${cask_id}"
 }
 
+mochi_homebrew_cask_token() {
+  local cask_ref="$1"
+  printf '%s' "${cask_ref##*/}"
+}
+
+mochi_homebrew_cask_app_path() {
+  local cask_token="$1"
+  local app_name="${MOCHI_APP_NAME:-Mochi.app}"
+  local install_dir="${MOCHI_APP_INSTALL_DIR:-/Applications}"
+  local candidate="${install_dir}/${app_name}"
+  local prefix
+  local caskroom
+  local version_dir
+  local match=""
+
+  if [ -d "${candidate}" ]; then
+    printf '%s' "${candidate}"
+    return 0
+  fi
+
+  prefix="$(brew --prefix 2>/dev/null || true)"
+  if [ -z "${prefix}" ]; then
+    return 1
+  fi
+
+  caskroom="${prefix}/Caskroom/${cask_token}"
+  if [ ! -d "${caskroom}" ]; then
+    return 1
+  fi
+
+  for version_dir in "${caskroom}"/*; do
+    [ -d "${version_dir}/${app_name}" ] || continue
+    match="${version_dir}/${app_name}"
+  done
+
+  if [ -z "${match}" ]; then
+    return 1
+  fi
+
+  printf '%s' "${match}"
+}
+
 # Install a tap cask without deprecated Homebrew quarantine flags.
 # ponytail: Homebrew 6 dropped the cask quarantine install flag; clear quarantine with xattr after install.
 mochi_brew_install_cask() {
   local cask_ref="$1"
+  local cask_token
+  cask_token="$(mochi_homebrew_cask_token "${cask_ref}")"
+
+  if brew list --cask "${cask_token}" >/dev/null 2>&1; then
+    if ! mochi_homebrew_cask_app_path "${cask_token}" >/dev/null 2>&1; then
+      HOMEBREW_CASK_OPTS= brew reinstall --cask "${cask_ref}" --force
+      return 0
+    fi
+  fi
+
   HOMEBREW_CASK_OPTS= brew install --cask "${cask_ref}" --force
 }
