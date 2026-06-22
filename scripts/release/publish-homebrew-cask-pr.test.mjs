@@ -14,8 +14,6 @@ describe("publish-homebrew-cask-pr.sh", () => {
 
   it("requires GITHUB_TOKEN and script arguments", () => {
     const bash = bashBin();
-    expect(() =>
-      execFileSync(bash, [script], { encoding: "utf8", stdio: "pipe" }),
-    ).toThrow();
+    expect(() => execFileSync(bash, [script], { encoding: "utf8", stdio: "pipe" })).toThrow();
   });
 });
