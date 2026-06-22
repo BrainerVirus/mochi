@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: unstable-release-${{ github.ref }}
@@ -211,6 +212,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
@@ -218,17 +220,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/release/generate-homebrew-casks.mjs --tag "${{ needs.metadata.outputs.tag }}" --cask mochi-unstable --out-dir Casks
-      - name: Commit Homebrew cask update
+      - name: Open Homebrew cask PR and merge after CI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Casks/mochi-unstable.rb
-          if git diff --staged --quiet; then
-            echo "No cask changes to commit."
-            exit 0
-          fi
-          git commit -m "chore(homebrew): update unstable cask for ${{ needs.metadata.outputs.tag }}"
-          git push
+          bash scripts/release/publish-homebrew-cask-pr.sh \
+            Casks/mochi-unstable.rb \
+            "chore(homebrew): update unstable cask for ${{ needs.metadata.outputs.tag }}" \
+            "chore/homebrew-unstable-${{ needs.metadata.outputs.tag }}" \
+            "chore(homebrew): update unstable cask for ${{ needs.metadata.outputs.tag }}"
 
   release-notes:
     name: Publish Unstable Release Notes

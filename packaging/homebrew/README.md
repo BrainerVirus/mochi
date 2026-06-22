@@ -7,4 +7,4 @@ node scripts/release/generate-homebrew-casks.mjs --tag v0.2.4 --cask mochi-deskt
 node scripts/release/generate-homebrew-casks.mjs --tag unstable-YYYYMMDD.HHMMSS --cask mochi-unstable --out-dir Casks
 ```
 
-Release workflows update these files automatically after stable and unstable publishes.
+Release workflows regenerate these files after stable and unstable publishes, then open a PR into `main` and squash-merge once required checks pass (protected-branch flow).
