@@ -64,6 +64,7 @@ if [[ -z "${MOCHI_APP_PATH}" || ! -d "${MOCHI_APP_PATH}" ]]; then
 fi
 
 mochi_clear_macos_app_quarantine "${MOCHI_APP_PATH}"
+mochi_install_cli_link "${MOCHI_APP_PATH}"
 
 cat <<EOF
 Installed Mochi (${CHANNEL}) with Homebrew at ${MOCHI_APP_PATH}.
