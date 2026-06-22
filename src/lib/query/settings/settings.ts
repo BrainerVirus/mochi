@@ -14,8 +14,5 @@ export const settingsQueryOptions = queryOptions({
 export function saveSettingsMutationOptions() {
   return mutationOptions({
     mutationFn: (settings: MochiSettings) => saveSettings(settings),
-    meta: {
-      invalidates: queryKeys.settings,
-    },
   });
 }

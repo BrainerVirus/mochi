@@ -156,6 +156,14 @@ describe("shouldRefreshEnabledProvidersOnBoot exclusions", () => {
   });
 });
 
+describe("useColdStartProviderRefresh boot guard", () => {
+  it("still detects fetching providers during the initial boot check", () => {
+    expect(
+      shouldRefreshEnabledProvidersOnBoot(settings(["codex", "gemini"]), [state("gemini")]),
+    ).toBe(true);
+  });
+});
+
 describe("runColdStartProviderRefreshSequence", () => {
   it("cold start refresh syncs the selected provider from the store after invalidating cache", async () => {
     useTrayUiStore.getState().setSelectedTab("codex");

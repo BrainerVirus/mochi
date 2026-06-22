@@ -74,6 +74,14 @@ export async function reportFrontendBoot(): Promise<void> {
   }
 }
 
+export function logFrontendDebug(scope: string, message: string): void {
+  if (import.meta.env.DEV) {
+    // ponytail: dev-only trace; production relies on reportFrontendError debug sources
+    // oxlint-disable-next-line no-console -- intentional dev-only diagnostics trace
+    console.debug(`[${scope}] ${message}`);
+  }
+}
+
 export async function reportFrontendError(
   message: string,
   source?: string,
