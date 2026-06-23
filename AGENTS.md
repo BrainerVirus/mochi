@@ -109,7 +109,7 @@ Two GitHub Actions workflows handle releases. Both are triggered automatically b
 ### How to Cut a Stable Release
 
 1. Ensure all changes are merged to `main` via PRs (never push directly).
-2. Bump `version` in `src-tauri/tauri.conf.json` to match the new tag (without `v` prefix).
+2. Bump `version` in `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` to match the new tag (without `v` prefix).
 3. Commit the version bump on a `chore/release-*` branch, PR it into `main`.
 4. After the PR merges, pull `main`, then create and push the tag:
    ```bash
