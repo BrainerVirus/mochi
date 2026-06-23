@@ -118,12 +118,11 @@ jobs:
           releaseBody: |
             ## Mochi Unstable
 
-            Latest `main` build with instant tray updates when you change providers in Settings, safer re-enable with invalid credentials, and reliable settings sync across all windows.
+            Latest `main` build that keeps your selected tray provider through usage refreshes and reports the installed version consistently in CLI diagnostics.
 
             ### What's changed
-            - **Instant tray updates** — disabling or enabling a provider in Settings updates the tray panel immediately without a manual refresh.
-            - **Safer provider re-enable** — re-enabling a provider with invalid credentials shows an auth error instead of crashing the app.
-            - **Cross-window settings sync** — settings changes broadcast to the tray, widget, and settings windows so every view stays in sync.
+            - **Tray selection stays put** — refreshing usage no longer replaces the selected provider icon with Overview.
+            - **Consistent version diagnostics** — the CLI now reports the same version as the installed Mochi app.
 
             ### Install unstable
             - macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`
@@ -244,12 +243,11 @@ jobs:
             const body = [
               `## Mochi ${tag}`,
               "",
-              "Latest `main` build with instant tray updates when you change providers in Settings, safer re-enable with invalid credentials, and reliable settings sync across all windows.",
+              "Latest `main` build that keeps your selected tray provider through usage refreshes and reports the installed version consistently in CLI diagnostics.",
               "",
               "### What's changed",
-              "- **Instant tray updates** — disabling or enabling a provider in Settings updates the tray panel immediately without a manual refresh.",
-              "- **Safer provider re-enable** — re-enabling a provider with invalid credentials shows an auth error instead of crashing the app.",
-              "- **Cross-window settings sync** — settings changes broadcast to the tray, widget, and settings windows so every view stays in sync.",
+              "- **Tray selection stays put** — refreshing usage no longer replaces the selected provider icon with Overview.",
+              "- **Consistent version diagnostics** — the CLI now reports the same version as the installed Mochi app.",
               "",
               "### Install unstable",
               "- macOS: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i`",
