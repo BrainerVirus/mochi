@@ -16,7 +16,7 @@ use tauri::{
 
 use crate::core::models::UsageSnapshot;
 use crate::core::usage_store::UsageStore;
-use crate::settings::{SettingsState, UpdateChannel};
+use crate::settings::{MochiSettings, SettingsState, UpdateChannel};
 use crate::status::{read_cached_snapshots, RefreshCompletePayload};
 
 pub use panel::{
@@ -142,6 +142,10 @@ pub fn apply_tray_usage(
     Ok(())
 }
 
+fn refresh_tray_selection(settings: &MochiSettings) -> TraySelection {
+    TraySelection::parse(settings.selected_tab.as_deref())
+}
+
 #[tauri::command]
 pub async fn sync_tray_usage(
     app: AppHandle,
@@ -250,7 +254,8 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                                         });
                                 let _ = app.emit("usage-refresh-complete", &payload);
                                 let snapshots = read_cached_snapshots(&store, &settings);
-                                let _ = apply_tray_usage(&app, &snapshots, TraySelection::Overview);
+                                let selection = refresh_tray_selection(&settings);
+                                let _ = apply_tray_usage(&app, &snapshots, selection);
                             }
                         }
                     }
@@ -303,6 +308,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 mod tests {
     use super::*;
     use crate::core::models::{ProviderId, UsageSnapshot, UsageWindow};
+    use crate::settings::MochiSettings;
 
     fn snapshot(used_percent: f32) -> UsageSnapshot {
         UsageSnapshot::new(
@@ -320,6 +326,19 @@ mod tests {
         let presentation = resolve_tray_presentation(&snapshots, TraySelection::Overview);
         assert_eq!(presentation.remaining_percent, 50);
         assert!(presentation.tooltip.contains("50% left"));
+    }
+
+    #[test]
+    fn refresh_tray_selection_preserves_the_saved_provider() {
+        let settings = MochiSettings {
+            selected_tab: Some("codex".into()),
+            ..MochiSettings::default()
+        };
+
+        assert_eq!(
+            refresh_tray_selection(&settings),
+            TraySelection::Provider(ProviderId::Codex)
+        );
     }
 
     #[test]
