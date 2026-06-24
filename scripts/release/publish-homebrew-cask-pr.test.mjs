@@ -78,6 +78,8 @@ elif [[ "\${1:-} \${2:-}" == "pr create" ]]; then
   echo 'https://github.com/BrainerVirus/mochi/pull/42'
 elif [[ "\${1:-} \${2:-}" == "pr view" ]]; then
   echo '42'
+elif [[ "\${1:-} \${2:-}" == "pr checks" && " $* " == *" --json "* ]]; then
+  echo '9'
 elif [[ "\${1:-} \${2:-}" == "run list" ]]; then
   echo '9001'
 fi
@@ -148,10 +150,8 @@ describe("publish-homebrew-cask-pr.sh", () => {
     expect(log).toContain(
       "gh\tpr\tview\thttps://github.com/BrainerVirus/mochi/pull/42\t--json\tnumber\t--jq\t.number",
     );
-    expect(log).toContain(
-      "gh\tworkflow\trun\tpr.yml\t--ref\tchore/homebrew-test\t-f\tvalidation_id=123-2-abc123",
-    );
-    expect(log).toContain("gh\trun\twatch\t9001\t--compact\t--exit-status\t--interval\t15");
+    expect(log).toContain("gh\tpr\tchecks\t42\t--json\tname\t--jq\tlength");
+    expect(log).toContain("gh\tpr\tchecks\t42\t--watch\t--interval\t15\t--fail-fast");
     expect(log).toContain(
       "gh\tpr\tmerge\t42\t--squash\t--delete-branch\t--match-head-commit\tabc123",
     );
@@ -170,11 +170,11 @@ describe("publish-homebrew-cask-pr.sh", () => {
     expect(log).toContain("gh\tpr\tmerge\t17");
   });
 
-  it("explains how to enable GitHub Actions PR creation", () => {
+  it("explains the required Homebrew PR token permissions", () => {
     const fixture = createFixture({ createPrFailure: true });
 
     expect(() => publish(fixture)).toThrowError(
-      /Enable "Allow GitHub Actions to create and approve pull requests"/,
+      /HOMEBREW_PR_TOKEN needs Actions read, Contents write, and Pull requests write/,
     );
   });
 

@@ -139,17 +139,14 @@ jobs:
     name: Update Stable Homebrew Cask
     needs: build
     permissions:
-      actions: write
-      checks: read
-      contents: write
-      pull-requests: write
+      contents: read
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout main
         uses: actions/checkout@v6
         with:
           ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.HOMEBREW_PR_TOKEN }}
       - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
@@ -159,7 +156,7 @@ jobs:
         run: node scripts/release/generate-homebrew-casks.mjs --tag "${{ github.ref_name }}" --cask mochi-desktop --out-dir Casks
       - name: Open Homebrew cask PR and merge after CI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_PR_TOKEN }}
         run: |
           bash scripts/release/publish-homebrew-cask-pr.sh \
             Casks/mochi-desktop.rb \
