@@ -3,6 +3,8 @@ name: Unstable Release
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "Casks/**"
   workflow_dispatch:
 
 permissions:
@@ -205,6 +207,11 @@ jobs:
   update-homebrew-cask:
     name: Update Unstable Homebrew Cask
     needs: [metadata, build]
+    permissions:
+      actions: write
+      checks: read
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout main
