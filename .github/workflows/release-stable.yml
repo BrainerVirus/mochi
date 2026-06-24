@@ -138,6 +138,11 @@ jobs:
   update-homebrew-cask:
     name: Update Stable Homebrew Cask
     needs: build
+    permissions:
+      actions: write
+      checks: read
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout main
