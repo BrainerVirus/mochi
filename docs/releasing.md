@@ -18,11 +18,11 @@ Release notes should describe only the tag being published. Put upgrade warnings
 
 ## Homebrew Cask Publication
 
-Stable and unstable release jobs regenerate their cask on a deterministic `chore/homebrew-*` branch. The publisher creates or reuses the branch and PR, explicitly dispatches the protected-branch validation workflow for the exact branch commit, waits for it to pass, then squash-merges and deletes the branch. A retry updates the branch with an explicit force-with-lease; it reuses an open PR or reopens a closed, unmerged PR instead of creating duplicates.
+Stable and unstable release jobs regenerate their cask on a deterministic `chore/homebrew-*` branch. The publisher creates or reuses the branch and PR, waits for the normal protected-branch PR checks to pass, then squash-merges and deletes the branch. A retry updates the branch with an explicit force-with-lease; it reuses an open PR or reopens a closed, unmerged PR instead of creating duplicates.
 
-This flow uses the built-in `GITHUB_TOKEN`; no PAT or GitHub App secret is required. The repository setting **Settings → Actions → General → Workflow permissions → Allow GitHub Actions to create and approve pull requests** must remain enabled. The publisher reports this setting explicitly if GitHub rejects PR creation.
+This flow requires a fine-grained personal access token stored as the repository secret `HOMEBREW_PR_TOKEN`. Limit it to this repository with **Actions: read**, **Contents: read and write**, and **Pull requests: read and write** permissions. Rotate the secret before the token expires.
 
-Pull requests opened by `GITHUB_TOKEN` can leave `pull_request` runs waiting for approval, but GitHub documents `workflow_dispatch` as a recursion exception that always creates a run. Cask-only pull requests therefore skip the automatic PR trigger and are validated through the explicit dispatch. The release job has scoped `actions: write`, `checks: read`, `contents: write`, and `pull-requests: write` permissions for this operation.
+The dedicated token is necessary because `GITHUB_TOKEN`-created PR workflows require approval, while manually dispatched checks are not associated with the PR's required-check rollup. Branch pushes and PR creation both use `HOMEBREW_PR_TOKEN`, so opened and synchronized PRs trigger the normal validation workflow without approval. The built-in `GITHUB_TOKEN` remains read-only in the Homebrew job and is used only to read release assets during cask generation.
 
 The unstable workflow ignores cask-only pushes to `main`. This prevents the cask PR merge from publishing another unstable release and starting a self-release loop. Stable tag releases are unaffected because their trigger is the `v*` tag.
 
@@ -51,6 +51,7 @@ Stable users receive only stable updates. Unstable users receive builds from `ma
 - `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 - `MOCHI_UPDATER_PUBLIC_KEY`
+- `HOMEBREW_PR_TOKEN` (fine-grained token scoped to this repository; Actions read, Contents write, Pull requests write)
 - Windows code signing secrets for stable releases when available
 - GitHub Pages publication token if `GITHUB_TOKEN` cannot write the Pages source branch
 
