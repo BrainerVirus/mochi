@@ -44,11 +44,14 @@ else
     gh pr reopen "${PR_NUM}"
     echo "Reopened PR #${PR_NUM}."
   else
-    PR_URL="$(gh pr create \
+    if ! PR_URL="$(gh pr create \
       --base main \
       --head "${BRANCH_NAME}" \
       --title "${PR_TITLE}" \
-      --body "Automated Homebrew cask update from the release workflow. Squash-merges after required checks pass.")"
+      --body "Automated Homebrew cask update from the release workflow. Squash-merges after required checks pass.")"; then
+      echo 'Enable "Allow GitHub Actions to create and approve pull requests" in Settings > Actions > General > Workflow permissions.' >&2
+      exit 1
+    fi
     PR_NUM="$(gh pr view "${PR_URL}" --json number --jq .number)"
     echo "Created PR #${PR_NUM}."
   fi

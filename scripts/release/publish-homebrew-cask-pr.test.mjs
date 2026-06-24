@@ -15,7 +15,13 @@ function writeExecutable(file, source) {
   chmodSync(file, 0o755);
 }
 
-function createFixture({ closedPr = "", hasChanges = true, openPr = "", remoteSha = "" } = {}) {
+function createFixture({
+  closedPr = "",
+  createPrFailure = false,
+  hasChanges = true,
+  openPr = "",
+  remoteSha = "",
+} = {}) {
   const directory = mkdtempSync(path.join(tmpdir(), "mochi-homebrew-publish-"));
   const bin = path.join(directory, "bin");
   const commandLog = path.join(directory, "commands.log");
@@ -65,6 +71,10 @@ elif [[ "\${1:-} \${2:-}" == "pr create" ]]; then
     echo 'unknown flag: --json' >&2
     exit 1
   fi
+  if [[ "\${CREATE_PR_FAILURE}" == "1" ]]; then
+    echo 'GraphQL: GitHub Actions is not permitted to create or approve pull requests' >&2
+    exit 1
+  fi
   echo 'https://github.com/BrainerVirus/mochi/pull/42'
 elif [[ "\${1:-} \${2:-}" == "pr view" ]]; then
   echo '42'
@@ -80,6 +90,7 @@ fi
       ...process.env,
       CLOSED_PR: closedPr,
       COMMAND_LOG: commandLog,
+      CREATE_PR_FAILURE: createPrFailure ? "1" : "0",
       GITHUB_RUN_ATTEMPT: "2",
       GITHUB_RUN_ID: "123",
       GITHUB_TOKEN: "test-token",
@@ -157,6 +168,14 @@ describe("publish-homebrew-cask-pr.sh", () => {
     );
     expect(log).not.toContain("gh\tpr\tcreate");
     expect(log).toContain("gh\tpr\tmerge\t17");
+  });
+
+  it("explains how to enable GitHub Actions PR creation", () => {
+    const fixture = createFixture({ createPrFailure: true });
+
+    expect(() => publish(fixture)).toThrowError(
+      /Enable "Allow GitHub Actions to create and approve pull requests"/,
+    );
   });
 
   it("reopens a closed unmerged PR instead of creating a duplicate", () => {
