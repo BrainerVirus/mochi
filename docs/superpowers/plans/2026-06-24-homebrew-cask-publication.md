@@ -4,7 +4,7 @@
 
 **Goal:** Make stable and unstable Homebrew cask publication deterministic, idempotent, protected-branch compliant, and free of unstable self-release loops.
 
-**Architecture:** Release jobs keep using `GITHUB_TOKEN` to create a deterministic cask branch and PR. Because bot-created pull-request workflows require approval, the publisher explicitly dispatches the existing PR workflow on the cask branch, waits for the uniquely named run at the exact head SHA, and squash-merges with a head-SHA guard. Cask-only PR and main pushes are path-ignored by automatic workflows, preventing approval-gated duplicate CI and unstable release recursion.
+**Architecture:** Release jobs keep using `GITHUB_TOKEN` to create a deterministic cask branch and PR, with the repository's Actions PR-creation setting enabled. Because bot-created pull-request workflows require approval, the publisher explicitly dispatches the existing PR workflow on the cask branch, waits for the uniquely named run at the exact head SHA, and squash-merges with a head-SHA guard. Cask-only PR and main pushes are path-ignored by automatic workflows, preventing approval-gated duplicate CI and unstable release recursion.
 
 **Tech Stack:** Bash 3.2-compatible shell, GitHub CLI, GitHub Actions, Vitest
 
