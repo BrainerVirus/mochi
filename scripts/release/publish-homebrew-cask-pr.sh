@@ -49,7 +49,7 @@ else
       --head "${BRANCH_NAME}" \
       --title "${PR_TITLE}" \
       --body "Automated Homebrew cask update from the release workflow. Squash-merges after required checks pass.")"; then
-      echo 'Enable "Allow GitHub Actions to create and approve pull requests" in Settings > Actions > General > Workflow permissions.' >&2
+      echo "HOMEBREW_PR_TOKEN needs Actions read, Contents write, and Pull requests write access to this repository." >&2
       exit 1
     fi
     PR_NUM="$(gh pr view "${PR_URL}" --json number --jq .number)"
@@ -58,34 +58,23 @@ else
 fi
 
 HEAD_SHA="$(git rev-parse HEAD)"
-VALIDATION_ID="${GITHUB_RUN_ID:-manual}-${GITHUB_RUN_ATTEMPT:-1}-${HEAD_SHA}"
-RUN_TITLE="Pull Request (${VALIDATION_ID})"
-
-gh workflow run pr.yml --ref "${BRANCH_NAME}" -f "validation_id=${VALIDATION_ID}"
-
-RUN_ID=""
+CHECK_COUNT="0"
 ATTEMPT=0
-while [[ -z "${RUN_ID}" && "${ATTEMPT}" -lt 60 ]]; do
-  RUN_ID="$(gh run list \
-    --workflow pr.yml \
-    --branch "${BRANCH_NAME}" \
-    --commit "${HEAD_SHA}" \
-    --event workflow_dispatch \
-    --limit 20 \
-    --json databaseId,displayTitle \
-    --jq ".[] | select(.displayTitle == \"${RUN_TITLE}\") | .databaseId" | head -n 1)"
-  if [[ -z "${RUN_ID}" ]]; then
+while [[ "${CHECK_COUNT}" -eq 0 && "${ATTEMPT}" -lt 60 ]]; do
+  CHECK_COUNT="$(gh pr checks "${PR_NUM}" --json name --jq length 2>/dev/null || true)"
+  CHECK_COUNT="${CHECK_COUNT:-0}"
+  if [[ "${CHECK_COUNT}" -eq 0 ]]; then
     sleep 2
   fi
   ATTEMPT=$((ATTEMPT + 1))
 done
 
-if [[ -z "${RUN_ID}" ]]; then
-  echo "Timed out waiting for validation run ${RUN_TITLE}." >&2
+if [[ "${CHECK_COUNT}" -eq 0 ]]; then
+  echo "Timed out waiting for PR checks on #${PR_NUM}." >&2
   exit 1
 fi
 
-echo "Waiting for validation run ${RUN_ID}."
-gh run watch "${RUN_ID}" --compact --exit-status --interval 15
+echo "Waiting for PR checks on #${PR_NUM}."
+gh pr checks "${PR_NUM}" --watch --interval 15 --fail-fast
 gh pr merge "${PR_NUM}" --squash --delete-branch --match-head-commit "${HEAD_SHA}"
 echo "Merged PR #${PR_NUM}."

@@ -7,10 +7,9 @@ const stableWorkflow = readFileSync(".github/workflows/release-stable.yml", "utf
 const unstableWorkflow = readFileSync(".github/workflows/release-unstable.yml", "utf8");
 
 describe("Homebrew release workflow contracts", () => {
-  it("supports explicit PR validation without approval-gated duplicate runs", () => {
-    expect(prWorkflow).toContain("workflow_dispatch:");
-    expect(prWorkflow).toContain("validation_id:");
-    expect(prWorkflow).toMatch(/pull_request:[\s\S]*?paths-ignore:[\s\S]*?Casks\/\*\*/);
+  it("runs cask changes through normal pull request validation", () => {
+    expect(prWorkflow).not.toContain("workflow_dispatch:");
+    expect(prWorkflow).not.toMatch(/pull_request:[\s\S]*?paths-ignore:[\s\S]*?Casks\/\*\*/);
   });
 
   it("does not start an unstable release for cask-only main updates", () => {
@@ -20,8 +19,12 @@ describe("Homebrew release workflow contracts", () => {
   it.each([
     ["stable", stableWorkflow],
     ["unstable", unstableWorkflow],
-  ])("grants the %s Homebrew job permission to dispatch validation", (_channel, workflow) => {
-    expect(workflow).toMatch(/update-homebrew-cask:[\s\S]*?permissions:[\s\S]*?actions: write/);
-    expect(workflow).toMatch(/update-homebrew-cask:[\s\S]*?permissions:[\s\S]*?checks: read/);
+  ])("uses the dedicated PR token in the %s Homebrew job", (_channel, workflow) => {
+    expect(workflow).toMatch(
+      /update-homebrew-cask:[\s\S]*?token: \$\{\{ secrets\.HOMEBREW_PR_TOKEN \}\}/,
+    );
+    expect(workflow).toMatch(
+      /update-homebrew-cask:[\s\S]*?GITHUB_TOKEN: \$\{\{ secrets\.HOMEBREW_PR_TOKEN \}\}/,
+    );
   });
 });

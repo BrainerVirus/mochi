@@ -4,7 +4,7 @@
 
 **Goal:** Make stable and unstable Homebrew cask publication deterministic, idempotent, protected-branch compliant, and free of unstable self-release loops.
 
-**Architecture:** Release jobs keep using `GITHUB_TOKEN` to create a deterministic cask branch and PR, with the repository's Actions PR-creation setting enabled. Because bot-created pull-request workflows require approval, the publisher explicitly dispatches the existing PR workflow on the cask branch, waits for the uniquely named run at the exact head SHA, and squash-merges with a head-SHA guard. Cask-only PR and main pushes are path-ignored by automatic workflows, preventing approval-gated duplicate CI and unstable release recursion.
+**Architecture:** Release jobs use a repository-scoped fine-grained PAT to create a deterministic cask branch and PR, allowing normal protected-branch validation to run without approval. The publisher waits for the PR checks, then squash-merges with a head-SHA guard. Cask-only main pushes are path-ignored by the unstable workflow, preventing release recursion.
 
 **Tech Stack:** Bash 3.2-compatible shell, GitHub CLI, GitHub Actions, Vitest
 
@@ -24,8 +24,7 @@ Create fake `git` and `gh` executables in a temporary directory, execute the rea
 ```text
 gh pr create --base main --head chore/homebrew-test
 gh pr view <created-url> --json number --jq .number
-gh workflow run pr.yml --ref chore/homebrew-test -f validation_id=<unique-id>
-gh run watch <run-id> --exit-status
+gh pr checks <pr-number> --watch --interval 15 --fail-fast
 gh pr merge <pr-number> --squash --delete-branch --match-head-commit <sha>
 ```
 
@@ -40,9 +39,9 @@ Add cases proving that an existing remote branch is updated with an explicit for
 Assert that:
 
 ```text
-pr.yml supports workflow_dispatch and ignores Casks/** pull requests
+pr.yml validates Casks/** pull requests normally
 release-unstable.yml ignores Casks/** main pushes
-both Homebrew jobs grant actions: write
+both Homebrew jobs use HOMEBREW_PR_TOKEN for checkout and publication
 ```
 
 - [ ] **Step 4: Run the focused tests and verify RED**
@@ -53,7 +52,7 @@ Run:
 pnpm vitest run scripts/release/publish-homebrew-cask-pr.test.mjs scripts/release/workflow-homebrew.test.mjs
 ```
 
-Expected: failures caused by the unsupported `gh pr create --json` call and missing dispatch/loop-guard workflow configuration.
+Expected: failures caused by the unsupported `gh pr create --json` call and missing token/loop-guard workflow configuration.
 
 ### Task 2: Make the publisher deterministic and idempotent
 
@@ -73,12 +72,12 @@ git push --force-with-lease="refs/heads/${BRANCH_NAME}:${REMOTE_SHA}" -u origin 
 
 Prefer an open PR. If none exists, reopen the latest closed, unmerged PR for the branch. Otherwise create a new PR, capture the URL emitted by `gh pr create`, and resolve its number with `gh pr view --json number --jq .number`.
 
-- [ ] **Step 3: Dispatch and identify validation**
+- [ ] **Step 3: Wait for protected PR validation**
 
-Build a unique validation ID from `GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`, and the branch head SHA. Dispatch `pr.yml` at the cask branch, poll `gh run list` for the matching run title and commit, fail clearly if it never appears, then run:
+Poll until GitHub attaches checks to the PR, fail clearly if none appear, then wait for the normal PR validation:
 
 ```bash
-gh run watch "${RUN_ID}" --compact --exit-status --interval 15
+gh pr checks "${PR_NUM}" --watch --interval 15 --fail-fast
 ```
 
 - [ ] **Step 4: Merge safely and clean up**
@@ -93,7 +92,7 @@ gh pr merge "${PR_NUM}" --squash --delete-branch --match-head-commit "${HEAD_SHA
 
 Run the Task 1 focused Vitest command. Expected: all Homebrew publication tests pass.
 
-### Task 3: Wire explicit validation and loop prevention
+### Task 3: Wire the PR token and loop prevention
 
 **Files:**
 
@@ -102,20 +101,17 @@ Run the Task 1 focused Vitest command. Expected: all Homebrew publication tests 
 - Modify: `.github/workflows/release-unstable.yml`
 - Modify: `docs/releasing.md`
 
-- [ ] **Step 1: Make PR validation dispatchable**
+- [ ] **Step 1: Keep PR validation automatic**
 
-Add a `workflow_dispatch` input named `validation_id` and a run name that includes it. Ignore `Casks/**` only for automatic `pull_request` events so bot-created cask PRs do not leave approval-required duplicate runs.
+Keep `Casks/**` changes in the normal `pull_request` workflow so its check runs are associated with the PR and satisfy branch protection.
 
-- [ ] **Step 2: Grant scoped dispatch permission**
+- [ ] **Step 2: Use the dedicated PR token**
 
-Give each `update-homebrew-cask` job these explicit permissions:
+Use `HOMEBREW_PR_TOKEN` for the Homebrew checkout credential and publisher environment in both release workflows. Keep the built-in job token read-only:
 
 ```yaml
 permissions:
-  actions: write
-  checks: read
-  contents: write
-  pull-requests: write
+  contents: read
 ```
 
 - [ ] **Step 3: Prevent unstable recursion**
@@ -124,7 +120,7 @@ Add `paths-ignore: ["Casks/**"]` to the unstable workflow's `push` trigger. A ca
 
 - [ ] **Step 4: Document the token and retry model**
 
-Document that no PAT or GitHub App secret is required: `workflow_dispatch` is the supported `GITHUB_TOKEN` recursion exception. Explain deterministic branches, PR reuse/reopen behavior, exact-SHA validation, squash merge, branch deletion, and cask-only loop prevention.
+Document the required repository-scoped fine-grained PAT, its Actions read/Contents write/Pull requests write permissions, rotation expectations, deterministic branch and PR recovery behavior, guarded squash merge, branch deletion, and cask-only loop prevention.
 
 - [ ] **Step 5: Run focused tests**
 
