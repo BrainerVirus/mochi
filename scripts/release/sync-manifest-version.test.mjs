@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { setPackageVersion, setCargoVersion, setTauriVersion } from "./sync-manifest-version.mjs";
 
@@ -14,5 +15,16 @@ describe("sync-manifest-version", () => {
   it("sets tauri.conf.json version", () => {
     const src = '{\n  "version": "0.0.1",\n  "identifier": "app.mochi"\n}';
     expect(JSON.parse(setTauriVersion(src, "9.9.9")).version).toBe("9.9.9");
+  });
+  it("rejects non-semver --set values with exit code 2", () => {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/release/sync-manifest-version.mjs", "--set", "not-semver"],
+      {
+        encoding: "utf8",
+      },
+    );
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("usage");
   });
 });

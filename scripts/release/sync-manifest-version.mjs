@@ -20,6 +20,10 @@ export function setTauriVersion(src, version) {
 const args = process.argv.slice(2);
 if (args[0] === "--set" && args[1]) {
   const version = args[1];
+  if (!/^\d+\.\d+\.\d+$/.test(version)) {
+    console.error(`usage: sync-manifest-version.mjs --set <MAJOR.MINOR.PATCH> (got "${version}")`);
+    process.exit(2);
+  }
   writeFileSync("package.json", setPackageVersion(readFileSync("package.json", "utf8"), version));
   writeFileSync(
     "src-tauri/Cargo.toml",
