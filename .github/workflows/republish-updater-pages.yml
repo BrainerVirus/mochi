@@ -50,7 +50,7 @@ jobs:
         shell: bash
         env:
           CHANNEL: stable
-          CHANNELS: stable,unstable
+          CHANNELS: stable
           TAG_NAME: ${{ inputs.release_tag }}
           RELEASE_BASE_URL: https://github.com/BrainerVirus/mochi/releases/download/${{ inputs.release_tag }}
         run: |

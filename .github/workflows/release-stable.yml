@@ -61,6 +61,12 @@ jobs:
           workspaces: src-tauri -> target
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
+      - name: Inject tag version into manifests
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "bad version from tag ${GITHUB_REF_NAME}"; exit 1; }
+          node scripts/release/sync-manifest-version.mjs --set "${VERSION}"
       - name: Verify updater signing configuration
         shell: bash
         env:
@@ -106,7 +112,7 @@ jobs:
             - Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash`
             - Windows: `irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex`
 
-            Unstable: add `-i` / `-Unstable`. See [README#install](https://github.com/BrainerVirus/mochi#install) and [docs/linux.md](https://github.com/BrainerVirus/mochi/blob/main/docs/linux.md).
+            See [README#install](https://github.com/BrainerVirus/mochi#install) and [docs/linux.md](https://github.com/BrainerVirus/mochi/blob/main/docs/linux.md).
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
@@ -189,7 +195,7 @@ jobs:
               "- Linux: `curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash`",
               "- Windows: `irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex`",
               "",
-              "Unstable: add `-i` / `-Unstable`. See [README#install](https://github.com/BrainerVirus/mochi#install) and [docs/linux.md](https://github.com/BrainerVirus/mochi/blob/main/docs/linux.md).",
+              "See [README#install](https://github.com/BrainerVirus/mochi#install) and [docs/linux.md](https://github.com/BrainerVirus/mochi/blob/main/docs/linux.md).",
             ].join("\n");
             const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
             await github.rest.repos.updateRelease({
