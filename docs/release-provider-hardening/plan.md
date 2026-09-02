@@ -27,12 +27,14 @@
 ### Task 1: Dependency refresh baseline
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `pnpm-lock.yaml` (via pnpm)
 - Modify: `docs/tech-stack.md`
 - Modify: `src/**` imports only if a major migration requires (vitest 4, lucide 1.x)
 
 **Interfaces:**
+
 - Consumes: existing `package.json` scripts (`lint`, `format:check`, `test`, `build`).
 - Produces: lockfile + manifests on the new baseline; `zod@^4.5.4` importable as `import { z } from "zod"` unchanged; `docs/tech-stack.md` "Package Versions" section listing final versions.
 
@@ -56,7 +58,10 @@ describe("dependency floors", () => {
 Note: `toBeGreaterThanOrEqual` does not compare arrays element-wise in vitest — compare numerically instead:
 
 ```js
-const [maj, min] = pkg.dependencies.zod.match(/^[\^~]?(\d+)\.(\d+)/).slice(1).map(Number);
+const [maj, min] = pkg.dependencies.zod
+  .match(/^[\^~]?(\d+)\.(\d+)/)
+  .slice(1)
+  .map(Number);
 expect(maj * 100 + min).toBeGreaterThanOrEqual(405);
 ```
 
@@ -100,11 +105,13 @@ git commit -m "chore(deps): refresh packages, zod 4.5 floor"
 ### Task 2: Release gate script (semantic-release analyzeCommits)
 
 **Files:**
+
 - Create: `scripts/release/analyze-release-scope.mjs`
 - Test: `scripts/release/analyze-release-scope.test.mjs`
 - Modify: `package.json` (add `"test:release"` already exists — no change needed)
 
 **Interfaces:**
+
 - Consumes: git CLI; env `GITHUB_REF` not required (local invocation).
 - Produces: `node scripts/release/analyze-release-scope.mjs [<lastTag>]` prints `major|minor|patch` or nothing (exit 0). Commit-list input via `git log <lastTag>..HEAD --no-merges --pretty=format:%s`. Reads product paths from a module export `PRODUCT_PATHS`.
 
@@ -114,11 +121,7 @@ git commit -m "chore(deps): refresh packages, zod 4.5 floor"
 
 ```js
 import { describe, expect, it } from "vitest";
-import {
-  bumpFromSubjects,
-  changedProductPaths,
-  PRODUCT_PATHS,
-} from "./analyze-release-scope.mjs";
+import { bumpFromSubjects, changedProductPaths, PRODUCT_PATHS } from "./analyze-release-scope.mjs";
 
 describe("bumpFromSubjects", () => {
   it("returns major for breaking change", () => {
@@ -162,7 +165,14 @@ Expected: FAIL — module not found.
 // product changes exist since <lastTag>; prints nothing to skip the release.
 import { execFileSync } from "node:child_process";
 
-export const PRODUCT_PATHS = ["app/", "src/", "src-tauri/", "scripts/install/", "Casks/", "packaging/"];
+export const PRODUCT_PATHS = [
+  "app/",
+  "src/",
+  "src-tauri/",
+  "scripts/install/",
+  "Casks/",
+  "packaging/",
+];
 
 const BUMPS = [
   ["major", /^(\w+)(\(.+\))?!:/],
@@ -188,13 +198,18 @@ function git(...args) {
 
 export function collect(lastTag) {
   const range = lastTag ? `${lastTag}..HEAD` : "HEAD";
-  const subjects = git("log", range, "--no-merges", "--pretty=format:%s").split("\n").filter(Boolean);
+  const subjects = git("log", range, "--no-merges", "--pretty=format:%s")
+    .split("\n")
+    .filter(Boolean);
   const files = git("log", range, "--no-merges", "--pretty=format:", "--name-only")
-    .split("\n").map((f) => f.trim()).filter(Boolean);
+    .split("\n")
+    .map((f) => f.trim())
+    .filter(Boolean);
   return { subjects, files };
 }
 
-const lastTag = process.argv[2] || git("describe", "--tags", "--abbrev=0", "--match=v*").catch?.() || "";
+const lastTag =
+  process.argv[2] || git("describe", "--tags", "--abbrev=0", "--match=v*").catch?.() || "";
 const { subjects, files } = collect(lastTag || "");
 const bump = bumpFromSubjects(subjects);
 const productChanged = changedProductPaths(files).length > 0;
@@ -225,6 +240,7 @@ git commit -m "feat(release): add path-gated bump analyzer"
 ### Task 3: semantic-release workflow + tag-driven stable build
 
 **Files:**
+
 - Create: `.github/workflows/release.yml`
 - Create: `release.config.cjs`
 - Modify: `.github/workflows/release-stable.yml` (inject tag version into manifests; strip unstable references from release body)
@@ -233,6 +249,7 @@ git commit -m "feat(release): add path-gated bump analyzer"
 - Modify: `.github/workflows/pr.yml`, `package-smoke.yml`, `publish-updater-pages.yml`, `republish-updater-pages.yml` (unstable feed references)
 
 **Interfaces:**
+
 - Consumes: Task 2's `analyze-release-scope.mjs` via `analyzeCommitsCmd`.
 - Produces: `vX.Y.Z` tags trigger `release-stable.yml`; manifests injected at build time by `scripts/release/sync-manifest-version.mjs --from-tag`; post-release sync PR titled `chore(release): sync manifests to vX.Y.Z`.
 
@@ -277,9 +294,12 @@ module.exports = {
     // Must be first (workit AR-16: @semantic-release/exec v7 renamed
     // analyzeCmd -> analyzeCommitsCmd; old name is silently ignored).
     // Printing nothing skips the release entirely — no tag, no publish.
-    ["@semantic-release/exec", {
-      analyzeCommitsCmd: "node scripts/release/analyze-release-scope.mjs",
-    }],
+    [
+      "@semantic-release/exec",
+      {
+        analyzeCommitsCmd: "node scripts/release/analyze-release-scope.mjs",
+      },
+    ],
     "@semantic-release/release-notes-generator",
     "@semantic-release/github",
   ],
@@ -406,8 +426,14 @@ const args = process.argv.slice(2);
 if (args[0] === "--set" && args[1]) {
   const version = args[1];
   writeFileSync("package.json", setPackageVersion(readFileSync("package.json", "utf8"), version));
-  writeFileSync("src-tauri/Cargo.toml", setCargoVersion(readFileSync("src-tauri/Cargo.toml", "utf8"), version));
-  writeFileSync("src-tauri/tauri.conf.json", setTauriVersion(readFileSync("src-tauri/tauri.conf.json", "utf8"), version));
+  writeFileSync(
+    "src-tauri/Cargo.toml",
+    setCargoVersion(readFileSync("src-tauri/Cargo.toml", "utf8"), version),
+  );
+  writeFileSync(
+    "src-tauri/tauri.conf.json",
+    setTauriVersion(readFileSync("src-tauri/tauri.conf.json", "utf8"), version),
+  );
   console.log(`manifests set to ${version}`);
 }
 ```
@@ -419,13 +445,13 @@ Run: `pnpm vitest run scripts/release/sync-manifest-version.test.mjs` → FAIL �
 Insert after the `Install frontend dependencies` step and before `Verify updater signing configuration`:
 
 ```yaml
-      - name: Inject tag version into manifests
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "bad version from tag ${GITHUB_REF_NAME}"; exit 1; }
-          node scripts/release/sync-manifest-version.mjs --set "${VERSION}"
-          node scripts/release/version-consistency.test.mjs 2>/dev/null || true
+- name: Inject tag version into manifests
+  shell: bash
+  run: |
+    VERSION="${GITHUB_REF_NAME#v}"
+    [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "bad version from tag ${GITHUB_REF_NAME}"; exit 1; }
+    node scripts/release/sync-manifest-version.mjs --set "${VERSION}"
+    node scripts/release/version-consistency.test.mjs 2>/dev/null || true
 ```
 
 (Keep it simple: the version-consistency vitest is not a shell script; drop that last line. The build itself validates.) Replace the `releaseBody` unstable install line and the trailing "Unstable: add `-i`" paragraph with stable-only install instructions. Update the `release-notes` job body the same way (both places must match per repo convention).
@@ -451,6 +477,7 @@ git commit -m "feat(release): semantic-release stable-only pipeline"
 ### Task 4: Kill the unstable channel in app code
 
 **Files:**
+
 - Modify: `src-tauri/src/updater/mod.rs` (channel validation, endpoint tests)
 - Modify: `src-tauri/src/settings/mod.rs` (`update_channel` default/parse, test at line 213)
 - Modify: `src-tauri/src/tray/mod.rs` (channel menu items, lines 63-196)
@@ -461,6 +488,7 @@ git commit -m "feat(release): semantic-release stable-only pipeline"
 - Test: colocated `*.test.mjs` / inline `#[cfg(test)]`
 
 **Interfaces:**
+
 - Consumes: `MOCHI_UPDATE_CHANNEL` env (now always `stable`).
 - Produces: `update_channel` setting collapses to `"stable"`; tray has no channel submenu; install scripts reject `-i/--unstable` with usage error.
 
@@ -558,6 +586,7 @@ git commit -m "feat(release): remove unstable channel everywhere"
 ### Task 5: Command Code provider — parsing + client
 
 **Files:**
+
 - Create: `src-tauri/src/providers/commandcode/mod.rs`
 - Create: `src-tauri/src/providers/commandcode/usage_parse.rs`
 - Create: `src-tauri/src/providers/commandcode/client.rs`
@@ -567,6 +596,7 @@ git commit -m "feat(release): remove unstable channel everywhere"
 - Modify: `src-tauri/src/providers/mod.rs`
 
 **Interfaces:**
+
 - Consumes: `crate::core::provider::{FetchStrategy, FetchKind, ProviderError, ProviderResult, FetchContext}`; `crate::core::models::{ProviderId, UsageSnapshot, UsageWindow, ProviderCostSnapshot}`; `crate::browser::{import_cookies, CookieImportQuery}` (factory pattern).
 - Produces: `ProviderId::CommandCode` variant (Task 6); `parse_credits(json: &serde_json::Value) -> ProviderResult<CreditsResponse>`; `snapshot_from_commandcode(credits: &CreditsResponse, summary: &SummaryResponse, updated_at: &str, source: &str) -> ProviderResult<UsageSnapshot>`; `CommandCodeClient` trait with `fetch_credits(&self, cookie: &str) -> ProviderResult<serde_json::Value>` + `fetch_summary(&self, cookie: &str) -> ProviderResult<serde_json::Value>`; `resolve_session_cookie(config) -> ProviderResult<Option<String>>`.
 
@@ -769,6 +799,7 @@ git commit -m "feat(providers): add commandcode parse and client"
 ### Task 6: Command Code provider — registry + frontend
 
 **Files:**
+
 - Modify: `src-tauri/src/core/models.rs` (done in Task 5 for the enum; finish `ALL`, `from_str`, serde aliases)
 - Modify: `src-tauri/src/core/registry.rs`, `src-tauri/src/providers/mod.rs` (`built_in_providers`)
 - Modify: `src/lib/schemas/usage/usage.ts` (add `"commandcode"` to the provider union)
@@ -779,6 +810,7 @@ git commit -m "feat(providers): add commandcode parse and client"
 - Modify: `src-tauri/src/providers/mod.rs` test `includes_twelve_v1_providers` → thirteen
 
 **Interfaces:**
+
 - Consumes: Task 5's `CommandCodeProvider` struct implementing `Provider`.
 - Produces: provider selectable in tray/dashboard; `z.string()` provider schema accepts `"commandcode"`.
 
@@ -809,7 +841,12 @@ import { UsageSnapshotSchema } from "./usage";
 
 describe("usage provider union", () => {
   it("accepts commandcode", () => {
-    const base = { provider: "zai", primary: { label: "M", used_percent: 1, remaining_percent: 99, resets_at: null }, updated_at: "", source: "test" };
+    const base = {
+      provider: "zai",
+      primary: { label: "M", used_percent: 1, remaining_percent: 99, resets_at: null },
+      updated_at: "",
+      source: "test",
+    };
     expect(UsageSnapshotSchema.safeParse({ ...base, provider: "commandcode" }).success).toBe(true);
   });
 });
@@ -838,9 +875,11 @@ git commit -m "feat(providers): register commandcode provider"
 ### Task 7: Command Code live verification (manual, this machine)
 
 **Files:**
+
 - Modify: none (verification task; may fix parse bugs found)
 
 **Interfaces:**
+
 - Consumes: Tasks 5-6 provider; the captured session cookie from the user's browser profile on this machine (Firefox, per HAR user-agent).
 - Produces: evidence entry in `docs/qa/` confirming live snapshot (CA-06) or a punch-list of parse fixes.
 
@@ -866,11 +905,13 @@ Append a dated evidence block to `docs/qa/` (existing QA doc structure) with the
 ### Task 8: Linux discover-by-running pass
 
 **Files:**
+
 - Modify: `docs/qa/linux-ubuntu-evidence.md` (create; evidence log)
 - Modify: Linux-specific modules found faulty: `src-tauri/src/linux_webkit.rs`, `src-tauri/src/linux_window_controls.rs`, `src-tauri/src/window_policy.rs`, `src-tauri/src/tray/mod.rs` (appindicator paths), `src-tauri/src/diagnostics/**`, `src-tauri/src/cli/**`
 - Test: colocated Rust `#[cfg(test)]` for any fixed pure logic; manual evidence otherwise
 
 **Interfaces:**
+
 - Consumes: running app from Task 7.
 - Produces: evidence doc mapping each found issue → fix (or accepted quirk with reason); CA-08/CA-09 satisfied.
 
@@ -899,23 +940,27 @@ git commit -m "fix(linux): ubuntu hardening pass"
 ### Task 9: Final verification + docs
 
 **Files:**
+
 - Modify: `docs/tech-stack.md` (final versions, if Task 1 left TODOs)
 - Modify: `docs/qa/linux-ubuntu-evidence.md` (final state)
 - Modify: `README.md` (release process section: conventional commits + auto-release)
 
 **Interfaces:**
+
 - Consumes: all prior tasks.
 - Produces: green full suite; spec CA-01..CA-12 each addressed; README documents the new release contract.
 
 - [ ] **Step 1: Full local validation**
 
 Run:
+
 ```bash
 pnpm lint && pnpm format:check && pnpm test && pnpm build
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 ```
+
 Expected: all green — record the outputs as evidence.
 
 - [ ] **Step 2: CA sweep**

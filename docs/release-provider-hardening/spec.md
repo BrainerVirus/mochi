@@ -61,21 +61,21 @@ flowchart LR
 
 ## Data flow / contracts
 
-| Term | Meaning |
-| --- | --- |
-| Path gate | `analyzeCommitsCmd` script (workit AR-16 pattern): prints `major\|minor\|patch` only when commits since the last `v*` tag touch product paths (`app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, `packaging/`); empty output skips the release. |
-| Manifest sync | Post-release PR (workit AR-15 pattern) setting all 4 manifests to the released version; opened with `RELEASE_SYNC_TOKEN` PAT so CI runs; auto-merge squash. |
-| Tag-driven build | `release-stable.yml` reads version from the pushed `v*` tag and injects it into manifests at build time; the build never trusts manifest versions. |
-| Product paths | `app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, `packaging/` — paths whose changes justify a release. |
-| windowLimits | Command Code `GET /internal/billing/credits` field: 5-hour / weekly / monthly usage windows with used % and reset timestamps. |
-| Session credential | Cookie `__Secure-commandcode_prod_.session_token` captured through mochi's existing browser-session flow (claude/cursor pattern). |
+| Term               | Meaning                                                                                                                                                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Path gate          | `analyzeCommitsCmd` script (workit AR-16 pattern): prints `major\|minor\|patch` only when commits since the last `v*` tag touch product paths (`app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, `packaging/`); empty output skips the release. |
+| Manifest sync      | Post-release PR (workit AR-15 pattern) setting all 4 manifests to the released version; opened with `RELEASE_SYNC_TOKEN` PAT so CI runs; auto-merge squash.                                                                                               |
+| Tag-driven build   | `release-stable.yml` reads version from the pushed `v*` tag and injects it into manifests at build time; the build never trusts manifest versions.                                                                                                        |
+| Product paths      | `app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, `packaging/` — paths whose changes justify a release.                                                                                                                                         |
+| windowLimits       | Command Code `GET /internal/billing/credits` field: 5-hour / weekly / monthly usage windows with used % and reset timestamps.                                                                                                                             |
+| Session credential | Cookie `__Secure-commandcode_prod_.session_token` captured through mochi's existing browser-session flow (claude/cursor pattern).                                                                                                                         |
 
 ### Command Code endpoints (resolved from HAR capture + site constants bundle)
 
-| Endpoint | Returns | Use |
-| --- | --- | --- |
+| Endpoint                                                  | Returns                                                                            | Use                            |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------ |
 | `GET https://api.commandcode.ai/internal/billing/credits` | `credits.monthlyCredits`, `windowLimits` (fiveHour/weekly/monthly: pct + resetsAt) | Limit bars + credits remaining |
-| `GET https://api.commandcode.ai/internal/usage/summary` | `totalTokensIn/Out`, `totalCount`, `totalCost`, `successRate`, `periodBasis` | Totals row |
+| `GET https://api.commandcode.ai/internal/usage/summary`   | `totalTokensIn/Out`, `totalCount`, `totalCost`, `successRate`, `periodBasis`       | Totals row                     |
 
 Auth: `Cookie: __Secure-commandcode_prod_.session_token=...`, `credentials: include`. 401/expiry maps to mochi's standard credential re-auth prompt.
 

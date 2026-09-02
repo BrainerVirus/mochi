@@ -15,4 +15,12 @@ describe("release versions", () => {
       tauriVersion,
     ]);
   });
+
+  it("keeps zod on the 4.5.4 floor", () => {
+    const spec = JSON.parse(readFileSync("package.json", "utf8")).dependencies.zod;
+    const [major, minor, patch] = spec.replace(/^\^/, "").split(".").map(Number);
+    const computed = major * 10000 + minor * 100 + patch;
+
+    expect(computed).toBeGreaterThanOrEqual(4 * 10000 + 5 * 100 + 4);
+  });
 });
