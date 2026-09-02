@@ -54,6 +54,7 @@ jobs:
         if: success() && github.event.inputs.dry-run != 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          RELEASE_SYNC_TOKEN: ${{ secrets.RELEASE_SYNC_TOKEN }}
         run: |
           : "${RELEASE_SYNC_TOKEN:?RELEASE_SYNC_TOKEN secret is required for the sync PR to trigger CI}"
           TAG=$(git describe --tags --abbrev=0 --match="v*" 2>/dev/null) || { echo "no v* tag found; nothing to sync"; exit 0; }

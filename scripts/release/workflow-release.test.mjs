@@ -19,4 +19,10 @@ describe("semantic-release workflow", () => {
   it("stable build injects the tag version", () => {
     expect(stable()).toMatch(/sync-manifest-version\.mjs/);
   });
+  it("sync step env maps RELEASE_SYNC_TOKEN", () => {
+    const step = release().split("Sync release manifests to main")[1];
+    expect(step.slice(0, step.indexOf("run:"))).toContain(
+      "RELEASE_SYNC_TOKEN: ${{ secrets.RELEASE_SYNC_TOKEN }}",
+    );
+  });
 });
