@@ -33,6 +33,8 @@ Re-check exact patch versions with `npm view <package> version` immediately befo
 Pinned packages (do not bump without checking the reason):
 
 - `oxlint` pinned to exact `1.78.0`: versions 1.79+ enable React Compiler `react(refs)`/`react(preserve-manual-memoization)` errors on the existing GSAP indicator hooks (`use-tray-segment-indicators`, `use-tray-segment-indicator-sync`, `use-tab-fill-activation-key`); refactor those render-time ref reads before bumping.
+- `happy-dom` pinned `^16.8.1`: 17+ `blur()` no longer clears `activeElement` on disabled buttons, breaking tests.
+- `@babel/core@8` note: exceeds `babel-plugin-react-compiler`'s declared peer range (`@babel/types ^7.26.0`); works in practice, expect peer warnings.
 
 Use compatible major ranges anchored on these:
 
