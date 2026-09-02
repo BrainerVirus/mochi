@@ -52,7 +52,7 @@ Use compatible major ranges anchored on these:
 - `oxfmt@^0.66`
 - `gsap@^3`
 - `@gsap/react@^2`
-- `zod@^4.5.4` (release floor test: `scripts/release/version-consistency.test.mjs`)
+- `zod@^4.5.4`
 - `zustand@^5`
 
 ## Frontend
