@@ -28,9 +28,11 @@ $ApiBase = "https://api.github.com/repos/$Repo"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $ScriptDir 'lib/windows-install.ps1')
 
-# Legacy prerelease channel env/flag print usage-style notice and exit 2.
+# Legacy prerelease channel env print usage-style notice and exit 2.
+# Semantic matches bash: any non-empty value other than "0" counts as opted-in.
 $legacyChannelEnv = 'MOCHI_UNSTA' + 'BLE'
-if ([Environment]::GetEnvironmentVariable($legacyChannelEnv) -eq '1') {
+$legacyChannelValue = [Environment]::GetEnvironmentVariable($legacyChannelEnv)
+if ($legacyChannelValue -and $legacyChannelValue -ne '0') {
   Write-Host 'Only stable releases are published.'
   exit 2
 }

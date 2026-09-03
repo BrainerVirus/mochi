@@ -38,8 +38,8 @@ describe("current release notes", () => {
   });
 
   it("uses the current app version tag for stable release notes", () => {
-    expect(githubReleaseTagForChannel("stable", "0.1.5")).toBe("v0.1.5");
-    expect(githubReleaseTagForChannel("stable", "v0.1.5")).toBe("v0.1.5");
+    expect(githubReleaseTagForChannel("0.1.5")).toBe("v0.1.5");
+    expect(githubReleaseTagForChannel("v0.1.5")).toBe("v0.1.5");
   });
 
   it("caches sanitized installed-version release notes for stable", async () => {

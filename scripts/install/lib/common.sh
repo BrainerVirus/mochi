@@ -98,10 +98,12 @@ mochi_removed_channel_error() {
 }
 
 # Parse an optional release tag. Prerelease channels are gone; the legacy
-# prerelease flag and env var print usage and exit 2.
+# prerelease flag and env var print usage and exit 2. Legacy env semantic:
+# any non-empty value other than "0" counts as opted-in.
 mochi_parse_install_args() {
   local legacy_channel_env="MOCHI_UNST""ABLE"
-  if [[ "${!legacy_channel_env:-0}" != "0" ]]; then
+  local legacy_channel_value="${!legacy_channel_env:-}"
+  if [[ -n "${legacy_channel_value}" && "${legacy_channel_value}" != "0" ]]; then
     mochi_removed_channel_error
     exit 2
   fi
@@ -162,7 +164,7 @@ mochi_release_json() {
 }
 
 # Pick the newest asset (by updated_at) matching the first pattern that has hits.
-# Rolling release tags keep multiple versioned artifacts; never take [0].
+# Releases can keep multiple versioned artifacts; never take [0].
 mochi_pick_asset_url() {
   local release_json="$1"
   shift

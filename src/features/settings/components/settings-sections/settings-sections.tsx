@@ -149,17 +149,6 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
 
       <Separator />
 
-      <Field className="flex-col gap-2 py-2.5">
-        <FieldContent>
-          <FieldLabel className="text-sm font-medium">Update channel</FieldLabel>
-          <FieldDescription className="text-[11px]">
-            Mochi follows the stable release channel.
-          </FieldDescription>
-        </FieldContent>
-      </Field>
-
-      <Separator />
-
       <SettingsUpdateSection channel={settings.update_channel} />
 
       <Separator />

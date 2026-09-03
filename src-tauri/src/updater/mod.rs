@@ -141,14 +141,9 @@ mod tests {
     }
 
     #[test]
-    fn update_endpoint_rejects_removed_channels() {
-        assert!(update_endpoint_for_channel("nightly").is_err());
-        assert!(update_endpoint_for_channel("beta").is_err());
-        assert!(update_endpoint_for_channel("").is_err());
-    }
-
-    #[test]
     fn update_endpoint_rejects_unknown_channel() {
+        assert!(update_endpoint_for_channel("nightly").is_err());
+        assert!(update_endpoint_for_channel("").is_err());
         let error = update_endpoint_for_channel("beta").expect_err("beta rejected");
         assert!(error.contains("unsupported update channel: beta"));
     }

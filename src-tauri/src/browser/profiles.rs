@@ -205,7 +205,7 @@ fn linux_snap_names(browser: BrowserKind) -> &'static [&'static str] {
     match browser {
         BrowserKind::Chrome => &["google-chrome"],
         BrowserKind::ChromeBeta => &["google-chrome-beta"],
-        BrowserKind::ChromeCanary => &["google-chrome-canary"],
+        BrowserKind::ChromeCanary => &["google-chrome-unstable"],
         BrowserKind::Edge => &["microsoft-edge"],
         BrowserKind::EdgeBeta => &["microsoft-edge-beta"],
         BrowserKind::EdgeCanary => &["microsoft-edge-dev"],
@@ -325,7 +325,7 @@ fn linux_chromium_config_dir(browser: BrowserKind) -> &'static str {
     match browser {
         BrowserKind::Chrome => "google-chrome",
         BrowserKind::ChromeBeta => "google-chrome-beta",
-        BrowserKind::ChromeCanary => "google-chrome-canary",
+        BrowserKind::ChromeCanary => "google-chrome-unstable",
         BrowserKind::Edge => "microsoft-edge",
         BrowserKind::EdgeBeta => "microsoft-edge-beta",
         BrowserKind::EdgeCanary => "microsoft-edge-dev",
@@ -403,7 +403,7 @@ mod tests {
         );
         assert_eq!(
             chromium_user_data_root_for(home, BrowserKind::ChromeCanary),
-            PathBuf::from("/home/test/.config/google-chrome-canary")
+            PathBuf::from("/home/test/.config/google-chrome-unstable")
         );
     }
 

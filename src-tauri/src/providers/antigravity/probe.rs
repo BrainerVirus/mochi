@@ -137,7 +137,7 @@ fn list_ports_for_pid(pid: u32) -> ProviderResult<Vec<u16>> {
 
 #[cfg(unix)]
 fn list_listening_ports(mut ports: Vec<u16>) -> ProviderResult<Vec<u16>> {
-    ports.sort();
+    ports.sort_unstable();
     ports.dedup();
     if ports.is_empty() {
         Err(ProviderError::Fetch("no listening ports found".into()))

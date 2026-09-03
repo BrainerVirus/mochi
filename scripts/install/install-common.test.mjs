@@ -45,10 +45,7 @@ describe("install common.sh", () => {
   });
 
   it("rejects the legacy prerelease flag and env with usage and exit 2", () => {
-    const shortFlag = "-" + "i";
-    const longFlag = ["--unsta", "ble"].join("");
-    const legacyEnv = ["MOCHI_UNSTA", "BLE"].join("");
-    for (const args of [shortFlag, longFlag]) {
+    for (const args of ["-i", "--unstable"]) {
       let status = 0;
       let stderr = "";
       try {
@@ -66,7 +63,7 @@ describe("install common.sh", () => {
 
     let envStatus = 0;
     try {
-      sourceCommon(`mochi_parse_install_args`, { [legacyEnv]: "1" });
+      sourceCommon(`mochi_parse_install_args`, { MOCHI_UNSTABLE: "1" });
     } catch (error) {
       envStatus = error.status ?? 1;
     }

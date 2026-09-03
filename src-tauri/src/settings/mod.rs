@@ -14,10 +14,38 @@ pub use commands::{
 };
 pub use storage::{load_settings, save_settings as persist_settings, settings_file_path};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum UpdateChannel {
     #[default]
     Stable,
+}
+
+impl UpdateChannel {
+    fn deserialize_value<'de, D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Option::<String>::deserialize(deserializer)?;
+        Ok(match raw.as_deref() {
+            None | Some("stable") | Some("Stable") | Some("unstable") | Some("Unstable") => {
+                UpdateChannel::Stable
+            }
+            Some(other) => {
+                return Err(serde::de::Error::custom(format!(
+                    "unknown update channel: {other}"
+                )))
+            }
+        })
+    }
+}
+
+impl Serialize for UpdateChannel {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str("stable")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -126,7 +154,8 @@ impl ProviderConfig {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MochiSettings {
-    #[serde(default)]
+    /// Kebab-case on disk ("stable"); legacy "unstable" values map to stable.
+    #[serde(default, deserialize_with = "UpdateChannel::deserialize_value")]
     pub update_channel: UpdateChannel,
     pub refresh_interval_seconds: u64,
     pub enabled_providers: Vec<String>,
@@ -215,10 +244,42 @@ mod tests {
     }
 
     #[test]
-    fn update_channel_rejects_unknown_values() {
-        let result: Result<MochiSettings, _> =
-            serde_json::from_value(serde_json::json!({ "update_channel": "nightly" }));
-        assert!(result.is_err());
+    fn update_channel_round_trips_kebab_case() {
+        let settings: MochiSettings = serde_json::from_value(serde_json::json!({
+            "update_channel": "stable",
+            "refresh_interval_seconds": 300,
+            "enabled_providers": [],
+            "show_notifications": true,
+        }))
+        .expect("lowercase channel should parse");
+
+        let json = serde_json::to_string(&settings).expect("settings should serialize");
+        assert!(json.contains("\"update_channel\":\"stable\""));
+    }
+
+    #[test]
+    fn legacy_unstable_channel_maps_to_stable_and_rest_survives() {
+        let settings: MochiSettings = serde_json::from_value(serde_json::json!({
+            "update_channel": "unstable",
+            "refresh_interval_seconds": 120,
+            "enabled_providers": ["opencode"],
+            "show_notifications": false,
+            "provider_configs": {
+                "opencode": { "api_key": "sk-test" }
+            },
+        }))
+        .expect("legacy channel should not discard the whole settings file");
+
+        assert_eq!(settings.update_channel, UpdateChannel::Stable);
+        assert_eq!(settings.refresh_interval_seconds, 120);
+        assert_eq!(settings.enabled_providers, vec!["opencode".to_string()]);
+        assert!(!settings.show_notifications);
+        assert_eq!(
+            settings
+                .provider_config(ProviderId::OpenCode)
+                .and_then(|config| config.api_key_value()),
+            Some("sk-test")
+        );
     }
 
     #[test]

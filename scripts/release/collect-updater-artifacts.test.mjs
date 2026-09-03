@@ -65,7 +65,7 @@ describe("collectUpdaterArtifacts", () => {
 
   it("rejects removed or unknown channels", async () => {
     const root = await mkdtemp(join(tmpdir(), "mochi-updater-artifacts-"));
-    const legacyChannel = ["un", "stable"].join("");
+    const legacyChannel = "unstable";
     await expect(
       collectUpdaterArtifacts({
         artifactRoot: root,

@@ -12,9 +12,8 @@ describe("semantic-release workflow", () => {
     expect(cfg).toContain("analyze-release-scope.mjs");
   });
   it("does not reference the removed prerelease channel", () => {
-    const removedChannel = ["un", "stable"].join("");
     for (const f of [".github/workflows/release.yml", ".github/workflows/release-stable.yml"]) {
-      expect(readFileSync(f, "utf8").toLowerCase()).not.toContain(removedChannel);
+      expect(readFileSync(f, "utf8").toLowerCase()).not.toContain("unstable");
     }
   });
   it("stable build injects the tag version", () => {
