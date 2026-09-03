@@ -88,7 +88,7 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, Box<dyn std::er
         .and_then(|settings| settings.selected_tab.clone());
     let init_script = selected_tab_initialization_script(selected_tab.as_deref())?;
 
-    tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
+    let mut builder = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
         .title("Mochi Widget")
         .inner_size(WIDGET_WIDTH, 420.0)
         .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
@@ -98,9 +98,14 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, Box<dyn std::er
             crate::window_policy::decorated_window_initial_visibility(),
             crate::window_policy::DecoratedWindowInitialVisibility::Visible
         ))
-        .initialization_script(&init_script)
-        .build()
-        .map_err(Into::into)
+        .initialization_script(&init_script);
+
+    #[cfg(target_os = "linux")]
+    {
+        builder = crate::window_background::apply_shell_background(builder);
+    }
+
+    builder.build().map_err(Into::into)
 }
 
 fn prepare_widget_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {

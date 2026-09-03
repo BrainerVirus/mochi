@@ -33,10 +33,21 @@ pub struct FrontendErrorPayload {
 
 pub fn setup(app: &AppHandle) -> Result<(), String> {
     init(app)?;
+    install_panic_hook();
     log_line("diagnostics", "initialized");
     report::log_runtime_environment();
     app.manage(DiagnosticsState::new());
     Ok(())
+}
+
+/// Routes panics to stderr and the diagnostics log so crashes are visible in
+/// journalctl (`Mochi.desktop` / `mochi` units) without extra tooling.
+fn install_panic_hook() {
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        log_line("panic", &format!("{info}"));
+        default_hook(info);
+    }));
 }
 
 pub fn log_window_action_result<E: std::fmt::Display>(

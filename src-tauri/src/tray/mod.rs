@@ -34,6 +34,11 @@ use icon::tray_icon_for_presentation;
 
 type Runtime = tauri::Wry;
 
+/// Last successfully applied presentation; used to skip redundant tray
+/// icon writes (each write hits the filesystem on Linux).
+#[derive(Default)]
+pub struct TrayPresentationState(pub std::sync::Mutex<Option<TrayIconPresentation>>);
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum TrayMenuEntry {
     Item {
@@ -76,27 +81,93 @@ fn build_tray_menu_model() -> TrayMenuModel {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct TrayApplyResult {
+    pub icon_updated: bool,
+    pub failures: Vec<&'static str>,
+}
+
 pub fn apply_tray_usage(
     app: &AppHandle,
     snapshots: &[UsageSnapshot],
     selection: TraySelection,
 ) -> Result<(), String> {
+    apply_tray_usage_reported(app, snapshots, selection).map(|applied| {
+        if !applied.failures.is_empty() {
+            crate::diagnostics::log_line(
+                "tray.apply",
+                &format!("partial failures: {:?}", applied.failures),
+            );
+        }
+    })
+}
+
+/// Applies the resolved tray presentation. The GTK tray backend writes the
+/// icon PNG to disk on every `set_icon` call; redundant calls (tab clicks
+/// fire this command repeatedly) produce disk races with the shell and error
+/// bursts surfaced to the webview. Individual update steps are non-fatal:
+/// a failed icon write must not take down the whole command.
+pub fn apply_tray_usage_reported(
+    app: &AppHandle,
+    snapshots: &[UsageSnapshot],
+    selection: TraySelection,
+) -> Result<TrayApplyResult, String> {
     let presentation = resolve_tray_presentation(snapshots, selection);
     let tray = app
         .tray_by_id(TRAY_ID)
         .ok_or_else(|| format!("tray icon {TRAY_ID} not found"))?;
 
-    let icon = tray_icon_for_presentation(&presentation);
+    if !presentation.needs_update(&tray_presentation_cache(app)) {
+        return Ok(TrayApplyResult::default());
+    }
 
-    tray.set_tooltip(Some(presentation.tooltip.clone()))
-        .map_err(|error| error.to_string())?;
-    tray.set_icon(Some(icon))
-        .map_err(|error| error.to_string())?;
+    let mut failures = Vec::new();
+
+    if tray
+        .set_tooltip(Some(presentation.tooltip.clone()))
+        .is_err()
+    {
+        failures.push("set_tooltip");
+    }
+
+    let icon_updated = tray
+        .set_icon(Some(tray_icon_for_presentation(&presentation)))
+        .is_ok();
+    if !icon_updated {
+        failures.push("set_icon");
+    }
+
     // Crisp system font beside template icon (macOS); no percent baked into RGBA.
-    tray.set_title(presentation.title.as_deref())
-        .map_err(|error| error.to_string())?;
+    if tray.set_title(presentation.title.as_deref()).is_err() {
+        failures.push("set_title");
+    }
 
-    Ok(())
+    if failures.is_empty() {
+        tray_presentation_cache_set(app, presentation);
+    }
+
+    Ok(TrayApplyResult {
+        icon_updated,
+        failures,
+    })
+}
+
+fn tray_presentation_cache(app: &AppHandle) -> TrayIconPresentation {
+    app.try_state::<TrayPresentationState>()
+        .and_then(|state| state.0.lock().ok().and_then(|guard| guard.clone()))
+        .unwrap_or_else(resolve_empty_presentation)
+}
+
+fn tray_presentation_cache_set(app: &AppHandle, presentation: TrayIconPresentation) {
+    if let Some(state) = app.try_state::<TrayPresentationState>() {
+        if let Ok(mut guard) = state.0.lock() {
+            *guard = Some(presentation);
+        }
+    }
+}
+
+fn resolve_empty_presentation() -> TrayIconPresentation {
+    resolve_tray_presentation(&[], TraySelection::Overview)
 }
 
 fn refresh_tray_selection(settings: &MochiSettings) -> TraySelection {
@@ -140,6 +211,8 @@ fn build_menu_from_model(
 }
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    app.manage(TrayPresentationState::default());
+
     let model = build_tray_menu_model();
     let menu = build_menu_from_model(app, &model)?;
 

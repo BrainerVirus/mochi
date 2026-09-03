@@ -2566,6 +2566,7 @@ dependencies = [
  "base64 0.22.1",
  "cbc",
  "clap",
+ "gtk",
  "keyring",
  "objc2",
  "objc2-app-kit",

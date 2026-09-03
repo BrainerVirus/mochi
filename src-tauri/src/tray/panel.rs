@@ -110,6 +110,9 @@ fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
             crate::window_policy::DecoratedWindowInitialVisibility::Visible
         ));
 
+    #[cfg(target_os = "linux")]
+    let builder = crate::window_background::apply_shell_background(builder);
+
     #[cfg(target_os = "macos")]
     let builder = builder
         .title_bar_style(tauri::TitleBarStyle::Overlay)
@@ -154,6 +157,9 @@ fn ensure_main_panel_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         .transparent(window_uses_native_transparency())
         .shadow(false)
         .visible(false);
+
+    #[cfg(target_os = "linux")]
+    let builder = crate::window_background::apply_shell_background(builder);
 
     builder.build().map_err(|error| error.to_string())
 }
