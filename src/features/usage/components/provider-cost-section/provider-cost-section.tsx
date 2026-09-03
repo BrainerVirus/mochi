@@ -27,12 +27,32 @@ function formatCurrency(amount: number, currencyCode: string): string {
   }
 }
 
+/** Raw period ids ("billing-period") must never render as labels. */
+export function formatCostPeriodLabel(period: string | null | undefined): string {
+  if (!period) {
+    return "On-demand";
+  }
+
+  const [first, ...rest] = period.split("-").filter(Boolean);
+  if (rest.length === 0) {
+    return `${first[0].toUpperCase()}${first.slice(1)}`;
+  }
+
+  return `${first[0].toUpperCase()}${first.slice(1)} ${rest.join(" ")}`;
+}
+
+export function formatCostDetail(used: number, limit: number, currencyCode: string): string {
+  return limit > 0
+    ? `${formatCurrency(used, currencyCode)} / ${formatCurrency(limit, currencyCode)}`
+    : formatCurrency(used, currencyCode);
+}
+
 export function ProviderCostSection({
   cost,
   compact = false,
   fillActivationKey = "static",
 }: ProviderCostSectionProps) {
-  const label = cost.period ?? "On-demand";
+  const label = formatCostPeriodLabel(cost.period);
   const hasLimit = cost.limit > 0;
   const usedPercent = hasLimit ? Math.max(0, Math.min(100, (cost.used / cost.limit) * 100)) : 0;
   const leftPercent = hasLimit ? Math.max(0, Math.min(100, 100 - usedPercent)) : 100;
@@ -45,9 +65,7 @@ export function ProviderCostSection({
   useUsageMeterFill(meterRef, indicatorRef, leftPercent, fillActivationKey);
   useUsageMeterLeftLabel(leftLabelRef, leftPercent, fillActivationKey);
 
-  const detail = hasLimit
-    ? `${formatCurrency(cost.used, cost.currency_code)} / ${formatCurrency(cost.limit, cost.currency_code)}`
-    : formatCurrency(cost.used, cost.currency_code);
+  const detail = formatCostDetail(cost.used, cost.limit, cost.currency_code);
 
   return (
     <div ref={meterRef} className={cn("flex flex-col", compact ? "gap-1" : "gap-1.5")}>
