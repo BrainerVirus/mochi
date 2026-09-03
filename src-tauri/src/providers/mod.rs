@@ -2,6 +2,7 @@ pub(crate) mod antigravity;
 pub(crate) mod augment;
 pub(crate) mod claude;
 pub(crate) mod codex;
+pub mod commandcode;
 pub(crate) mod copilot;
 pub mod credential_probe;
 pub(crate) mod cursor;

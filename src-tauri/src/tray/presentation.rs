@@ -147,6 +147,7 @@ pub fn provider_display_name(provider: ProviderId) -> &'static str {
         ProviderId::Zai => "Z.ai",
         ProviderId::Kiro => "Kiro",
         ProviderId::Augment => "Augment",
+        ProviderId::CommandCode => "Command Code",
     }
 }
 

@@ -1,0 +1,13 @@
+{
+  "totalCount": 6319,
+  "totalCost": 46.80689824929999,
+  "averageCost": 0.007407326831666401,
+  "successRate": 99.96834942237696,
+  "completedCount": 6317,
+  "failedCount": 2,
+  "totalTokensIn": 1305381978,
+  "totalTokensOut": 3061181,
+  "totalTokens": 1308443159,
+  "totalCredits": 46.80689824929999,
+  "periodBasis": "billing-period"
+}

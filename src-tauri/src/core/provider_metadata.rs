@@ -355,7 +355,23 @@ const AUGMENT: ProviderDefinition = ProviderDefinition {
     implementation_status: ImplementationStatus::Done,
 };
 
-const REGISTRY: [ProviderDefinition; 12] = [
+const COMMANDCODE: ProviderDefinition = ProviderDefinition {
+    id: ProviderId::CommandCode,
+    codexbar_id: "commandcode",
+    display_name: "Command Code",
+    strategies: &[StrategyDefinition {
+        id: "commandcode-web",
+        kind: FetchKind::BrowserCookies,
+        label: "Web cookies",
+    }],
+    auth_requirements: &[AuthRequirement::BrowserCookies],
+    settings_fields: &[COOKIE_SOURCE, MANUAL_COOKIE],
+    status_url: None,
+    supports_cost: true,
+    implementation_status: ImplementationStatus::Done,
+};
+
+const REGISTRY: [ProviderDefinition; 13] = [
     CODEX,
     CLAUDE,
     CURSOR,
@@ -368,6 +384,7 @@ const REGISTRY: [ProviderDefinition; 12] = [
     ZAI,
     KIRO,
     AUGMENT,
+    COMMANDCODE,
 ];
 
 pub fn provider_registry() -> &'static [ProviderDefinition] {

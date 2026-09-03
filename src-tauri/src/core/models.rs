@@ -17,10 +17,11 @@ pub enum ProviderId {
     Zai,
     Kiro,
     Augment,
+    CommandCode,
 }
 
 impl ProviderId {
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 13] = [
         Self::Codex,
         Self::Claude,
         Self::Cursor,
@@ -33,6 +34,7 @@ impl ProviderId {
         Self::Zai,
         Self::Kiro,
         Self::Augment,
+        Self::CommandCode,
     ];
 
     pub fn all() -> &'static [Self] {
@@ -53,6 +55,7 @@ impl ProviderId {
             "zai" => Some(Self::Zai),
             "kiro" => Some(Self::Kiro),
             "augment" => Some(Self::Augment),
+            "commandcode" => Some(Self::CommandCode),
             _ => None,
         }
     }
@@ -80,6 +83,7 @@ impl ProviderId {
             Self::Zai => "zai",
             Self::Kiro => "kiro",
             Self::Augment => "augment",
+            Self::CommandCode => "commandcode",
         }
     }
 }

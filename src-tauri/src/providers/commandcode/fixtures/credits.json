@@ -1,0 +1,8 @@
+{
+  "credits": { "purchasedCredits": 0, "monthlyCredits": 12.5 },
+  "windowLimits": {
+    "fiveHour": { "usedPercent": 0, "resetsAt": "2026-09-02T23:32:00Z", "limited": false },
+    "weekly": { "usedPercent": 0, "resetsAt": "2026-09-06T18:59:00Z", "limited": false },
+    "monthly": { "usedPercent": 64, "resetsAt": "2026-09-10T00:00:00Z", "limited": true }
+  }
+}
