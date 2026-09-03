@@ -241,3 +241,131 @@ too), and the updater constant is channel/host-only.
   handling to the shell; both buttons open the menu. See tray section above.
 - **CLI stubs** (`config`, `status`, `cost`, `update`): declared but
   unimplemented; not platform defects.
+
+---
+
+# Owner-reported (2026-09-03) — round 2
+
+The owner ran the app on this machine after the first pass and reported four
+more issues. Each is mapped below to its fix or an accepted quirk. Evidence
+sources: journalctl (systemd user units), the in-app diagnostics log
+(`~/.local/share/app.mochi.Mochi/logs/diagnostics.log`), `/var/crash`, and
+direct process measurement. Fixes landed in commits `e002524` and `7ba1d9f`.
+
+## P0 — widget tab clicks very often crash the window
+
+**Diagnosis (partly repro'd, partly inferred):**
+
+- _Repro'd (log evidence):_ the diagnostics log contains bursts of
+  `frontend.error label=widget message=tray icon error: file name contained
+an unexpected NUL byte` from the widget (and once from main) at times
+  matching tab interaction (34 entries total, e.g. 2026-09-03T17:30:54Z —
+  33 errors in ~7s, exactly when tabs were clicked). This error is a
+  `tauri::Error::Tray(tray_icon::Error::OsError(io::Error))` produced by
+  `tray.set_icon`, which writes a PNG to `$XDG_RUNTIME_DIR/tray-icon/` on
+  every call. Every widget tab click fired `sync_tray_usage` from **two**
+  frontend effects (`useTrayPanelState` + `useTrayUsageSync`), so one click
+  → several IPC calls → several PNG writes racing the shell.
+- _Correlated:_ GNOME Shell simultaneously logs `unable to update icon:
+GdkPixbuf.PixbufError: Failed to recognize image format` for the same
+  tray-icon paths — the shell reads the icon file while it is being
+  rewritten.
+- _Correlated:_ journalctl shows the widget window being **created 5 times**
+  in the owner's session (13:35, 13:39, 13:46, 13:59, 14:03 UTC) — the
+  window/webview died and the user reopened it from the tray menu. A real
+  `WebKitWebProcess` SIGABRT crash report exists in `/var/crash`
+  (2026-09-01), confirming the webview process does crash on this machine
+  under WebKitGTK's software rendering path (`WEBKIT_DISABLE_DMABUF_RENDERER=1`
+  - `WEBKIT_DISABLE_COMPOSITING_MODE=1` are forced for stability).
+
+**Fixes (e002524):**
+
+1. `sync_tray_usage` no longer fails wholesale: `apply_tray_usage_reported`
+   skips redundant tray updates entirely (presentation cache — identical
+   state short-circuits before any PNG write) and logs per-step failures
+   (`set_tooltip`/`set_icon`/`set_title`) via `tray.apply` instead of
+   propagating them to the webview. Unit-tested (`needs_update_*` tests).
+2. Frontend dedupe: removed the duplicate `syncTrayUsage` effect in
+   `useTrayPanelState`; `useTrayUsageSync` is now the single owner (one
+   sync per tab click). Covered by the new `use-tray-usage-sync.test.ts`.
+3. Diagnostics: panics now route to the diagnostics log (`[panic]` scope)
+   in addition to stderr, so a future Rust panic is visible in journalctl
+   and `~/.local/share/app.mochi.Mochi/logs/diagnostics.log`.
+
+**Residual risk (accepted for this round):** the underlying
+`WebKitWebProcess` SIGABRT under software rendering is a WebKitGTK platform
+defect that cannot be fixed in-app; the mitigations above remove the
+in-app triggers (IPC error storms + disk-race icon writes) and make any
+future panic diagnosable. WebKitGTK itself is pinned by Tauri; upgrading
+the runtime is a distro-level fix.
+
+## P1 — first-paint mess on all windows (wrong colors, empty window, flicker)
+
+**Root causes found (code inspection + launch observation):**
+
+- Windows/webviews were created with the WebKitGTK default background
+  (white): `transparent=false` on Linux means no background color was set
+  at all. The CSS background only appeared after the bundled stylesheet
+  loaded → visible white→wrong-color→correct-color sequence.
+- `index.html` had zero styling, so the document painted white until the
+  bundled CSS arrived.
+- Fonts use `font-display: swap` (fontsource) — already correct; no font
+  change needed. GSAP usage is content-gated (meter fills, tab pills), not
+  entrance-hidden shells — no animation gating needed.
+
+**Fixes (e002524):**
+
+1. New `src-tauri/src/window_background.rs`: sets the native window **and**
+   webview background color at creation (Tauri `background_color(Color)`,
+   which wry maps to `webkit_web_view_set_background_color` and the GTK
+   window CSS provider). Colors mirror the CSS shell (`#fafafa` light /
+   `#242424` dark), chosen from the GTK theme name (`*dark*` heuristic,
+   unit-tested; this machine reports `Yaru-dark`). Applied to the settings
+   window, main panel, and widget builders — Linux only; macOS/Windows
+   keep their native vibrancy/Mica flow (no regression path exists).
+2. `index.html`: inline critical CSS paints `html`/`body` with the same
+   shell colors, theme-aware via `prefers-color-scheme`, before any bundle
+   loads — the zero-JS first frame is already the correct color.
+
+**Verification:** the debug binary was relaunched with the dev server; the
+window now appears in the shell color immediately (no white flash) —
+consistent with the webview bg color applying before document load. Not
+screenshot-scriptable; owner should confirm visually.
+
+## P2 — Command Code block inconsistent with other providers
+
+The owner likes the money used-vs-left info; the complaint was the raw
+`billing-period` label (a storage id, not a display label) and the block
+not matching the provider pattern.
+
+**Fix (7ba1d9f):** `ProviderCostSection` now maps period ids through
+`formatCostPeriodLabel` (`billing-period` → "Billing period", "Monthly"
+stays "Monthly", missing → "On-demand"), so Command Code renders with the
+same label/row/progress/money-line structure as Cursor's Monthly cost
+block. The money detail line (`$56.75 / $72.01` used-vs-limit) is kept.
+Covered by `provider-cost-section.test.ts` (4 tests).
+
+## P3 — RAM ~150MB (measured, then accepted-quirk analysis)
+
+Measured on this machine (debug binary, dev-server frontend, 3 windows:
+main panel, widget, settings) via `/proc/*/smaps_rollup`:
+
+| Process              | RSS         | PSS (shared deduped) |
+| -------------------- | ----------- | -------------------- |
+| mochi (Rust shell)   | 227 MB      | 155 MB               |
+| WebKitWebProcess ×3  | 246–255     | 115–125 each         |
+| WebKitNetworkProcess | 66 MB       | 26 MB                |
+| **Total**            | **1.04 GB** | **539 MB**           |
+
+PSS is the honest number: each webview costs ~120 MB of real memory even
+after shared-library dedup. The three windows are three full WebKitGTK
+webview process trees, each holding its own copy of the same SPA.
+
+Cheap wins considered: WebKitGTK has no exposed process-model toggle via
+the wry/Tauri settings API used here (webkit settings API exposes
+javascript/media defaults, not process sharing); the windows already share
+one WebKitNetworkProcess. Consolidating windows into one webview (tabs
+instead of windows) is the only real lever and is explicitly out of scope
+this round. **Accepted quirk:** the floor is the WebKitGTK baseline
+(~120 MB PSS per webview + ~155 MB shell + 26 MB network process); later
+options are window consolidation or shipping fewer pre-created windows.
