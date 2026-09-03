@@ -109,6 +109,18 @@ $env:MOCHI_VERSION = "v1.0.0"
 
 See [docs/releasing.md](docs/releasing.md) for the release process.
 
+## Release Process
+
+Releases are fully automated on `main` — no manual version bumps, no unstable channel:
+
+- **Conventional commits drive releases.** `feat:` → minor, `fix:`/`perf:` → patch, `!`/`BREAKING CHANGE:` → major.
+- **Only product changes release.** A `feat:`/`fix:`/`perf:` commit must also touch `app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, or `packaging/`; `docs:`, `chore:`, and `ci:` commits never trigger a release.
+- **Manifests sync automatically.** After a release, an auto-merged PR (`chore(release): sync manifests to vX.Y.Z`) aligns `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` with the released version.
+- **The `v*` tag builds installers.** A 4-platform stable build publishes installers, signed updater feeds (`stable.json`), and a Homebrew cask PR; build version comes from the tag, not the manifests.
+- A `workflow_dispatch` **dry run** of the Release workflow runs the gate + version computation without tagging.
+
+Details: [docs/releasing.md](docs/releasing.md).
+
 Linux install runs `scripts/install/lib/linux-deps.sh` before downloading the release artifact. Windows install runs `Ensure-MochiRuntimeDependencies` before MSI/NSIS.
 
 ## Tech stack

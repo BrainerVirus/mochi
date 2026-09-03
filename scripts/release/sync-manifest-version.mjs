@@ -12,10 +12,7 @@ export function setCargoVersion(src, version) {
 }
 
 export function setCargoLockVersion(src, version) {
-  return src.replace(
-    /(\[\[package\]\]\nname = "mochi"\nversion = )"[^"]+"/,
-    `$1"${version}"`,
-  );
+  return src.replace(/(\[\[package\]\]\nname = "mochi"\nversion = )"[^"]+"/, `$1"${version}"`);
 }
 
 export function setTauriVersion(src, version) {

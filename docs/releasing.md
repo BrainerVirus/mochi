@@ -1,84 +1,44 @@
 # Releasing Mochi
 
-Mochi uses GitHub Flow.
+Releases are fully automated: conventional commits on `main` drive semantic-release, which tags, publishes the GitHub Release, syncs manifests, and triggers the installer/updater pipeline. There is no unstable channel and no manual version bump.
 
-## Unstable
+## How a release happens
 
-Every successful merge to `main` publishes unstable artifacts and a GitHub **prerelease** tagged `unstable-*`. The unstable workflow validates updater feed JSON locally but **does not deploy to GitHub Pages**.
+1. A PR with conventional commits (`feat:`, `fix:`, `perf:` — or `!`/`BREAKING CHANGE:` for major) merges to `main`.
+2. `.github/workflows/release.yml` runs semantic-release with the path gate in `scripts/release/analyze-release-scope.mjs` (configured via `analyzeCommitsCmd` in [release.config.cjs](../release.config.cjs)):
+   - The gate prints `major|minor|patch` **only when** commits since the last `v*` tag contain a release-type commit **and** touch product paths: `app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, `packaging/`.
+   - Docs, CI, and chore-only pushes print nothing and skip the release entirely — no tag, no release, no sync PR.
+3. semantic-release pushes the `vX.Y.Z` tag and creates the GitHub Release with generated notes.
+4. The workflow opens a **manifest-sync PR** (`chore(release): sync manifests to vX.Y.Z`) setting `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` to the released version on `main`, then auto-merge squashes it.
+5. The tag triggers `.github/workflows/release-stable.yml`:
+   - 4-platform build matrix (macOS arm64/x64, Windows x64, Linux x64). The build **injects the tag version** into the manifests at build time (`scripts/release/sync-manifest-version.mjs --set`); it never trusts manifest versions.
+   - Verifies updater signing configuration, builds and publishes installers + signed Tauri updater artifacts to the GitHub Release.
+   - Deploys `stable.json` updater feeds to GitHub Pages (via `publish-updater-pages.yml@main`) and opens the Homebrew cask PR (`chore(homebrew): update stable cask for vX.Y.Z`).
 
-Install the latest unstable build with the `-i` flag — see [Install](../README.md#install) in the README.
+## Dry run
 
-## Stable
+Run **Release** (`release.yml`) via `workflow_dispatch` with **dry-run = true**: it runs the gate and version computation without tagging or publishing.
 
-Stable releases are created by tagging a commit on `main` with a semver tag such as `v1.0.0`.
+## Requirements
 
-Install scripts default to the latest stable release — see [Install](../README.md#install) in the README.
+- **`RELEASE_SYNC_TOKEN` secret** (fine-grained PAT, this repo only, Contents: read/write, Pull requests: read/write). `GITHUB_TOKEN`-created tags do not trigger other workflows, so the PAT is required for the tag to fire `release-stable.yml` and for the sync PR to run CI. The workflow fails fast if it is missing.
+- `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, `MOCHI_UPDATER_PUBLIC_KEY` — verified before any build.
+- `HOMEBREW_PR_TOKEN` (fine-grained token scoped to this repository; Actions: read, Contents: read and write, Pull requests: read and write) for the cask PR. Rotate before expiry.
 
-Release notes should describe only the tag being published. Put upgrade warnings in docs or issues, not in the body for unrelated future releases.
+## Commit discipline
 
-## Homebrew Cask Publication
+Because commit messages drive versioning:
 
-Stable and unstable release jobs regenerate their cask on a deterministic `chore/homebrew-*` branch. The publisher creates or reuses the branch and PR, waits for the normal protected-branch PR checks to pass, then squash-merges and deletes the branch. A retry updates the branch with an explicit force-with-lease; it reuses an open PR or reopens a closed, unmerged PR instead of creating duplicates.
+- Use conventional commit types only (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`).
+- `feat:` → minor, `fix:`/`perf:` → patch, `!` or `BREAKING CHANGE:` footer → major — but only when product paths change.
+- `docs:`, `chore:`, `ci:`, `test:`, `refactor:`, `style:` commits never release, even on product paths.
+- Never reword or edit commits on `main` after a release; semantic-release reads history from the last tag.
 
-This flow requires a fine-grained personal access token stored as the repository secret `HOMEBREW_PR_TOKEN`. Limit it to this repository with **Actions: read**, **Contents: read and write**, and **Pull requests: read and write** permissions. Rotate the secret before the token expires.
+## Updater feeds
 
-The dedicated token is necessary because `GITHUB_TOKEN`-created PR workflows require approval, while manually dispatched checks are not associated with the PR's required-check rollup. Branch pushes and PR creation both use `HOMEBREW_PR_TOKEN`, so opened and synchronized PRs trigger the normal validation workflow without approval. The built-in `GITHUB_TOKEN` remains read-only in the Homebrew job and is used only to read release assets during cask generation.
+Feeds live under `https://brainervirus.github.io/mochi/updates/{target}/{arch}/{current_version}/stable.json`. Only the stable pipeline deploys to Pages (full-site replacement — no other workflow may call `deploy-pages`). Feeds are backfilled for supported recovery versions (currently `0.1.7`, `0.2.0`).
 
-The unstable workflow ignores cask-only pushes to `main`. This prevents the cask PR merge from publishing another unstable release and starting a self-release loop. Stable tag releases are unaffected because their trigger is the `v*` tag.
-
-## GitHub Pages Publish Rules
-
-GitHub Pages deploys are **full-site replacements**: whatever artifact is uploaded becomes the entire site. Two workflows publishing different subsets of updater JSON will clobber each other.
-
-Rules:
-
-1. **Only the stable release pipeline deploys to GitHub Pages.** Unstable builds must never call `deploy-pages`.
-2. **Stable publishes both channels.** The stable Pages artifact includes `stable.json` and `unstable.json` for every supported recovery version so older installs can recover.
-3. **Publish logic lives in `.github/workflows/publish-updater-pages.yml` on `main`.** Stable release calls that reusable workflow at `@main` so feed deploy fixes can ship without cutting a new tag.
-4. **Do not gate Pages deploy on a protected `github-pages` environment** unless tag refs and `workflow_dispatch` are explicitly allowed. Otherwise stable tag releases fail after binaries are already published.
-5. **`GITHUB_SHA` cannot be overridden in Actions.** `deploy-pages` keys deployments by commit SHA. Unstable must not deploy Pages on the same commit as a stable tag, or the stable deploy can be skipped while the live site still serves the wrong feed set.
-
-### Republish feeds for an existing stable tag
-
-If binaries for `vX.Y.Z` are already on GitHub Releases but Pages deploy failed, run **Republish Updater Pages** (`republish-updater-pages.yml`) via `workflow_dispatch` with `release_tag=vX.Y.Z`. That workflow downloads the published release assets, rebuilds feeds, deploys Pages, and retries live validation. No new tag or version bump is required.
-
-## Update Channels
-
-Stable users receive only stable updates. Unstable users receive builds from `main`. Users can switch channels in Settings.
-
-## Required Secrets
-
-- `TAURI_SIGNING_PRIVATE_KEY`
-- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
-- `MOCHI_UPDATER_PUBLIC_KEY`
-- `HOMEBREW_PR_TOKEN` (fine-grained token scoped to this repository; Actions read, Contents write, Pull requests write)
-- Windows code signing secrets for stable releases when available
-- GitHub Pages publication token if `GITHUB_TOKEN` cannot write the Pages source branch
-
-## macOS distribution (no Apple Developer account)
-
-macOS builds are **ad-hoc signed** in CI (`APPLE_SIGNING_IDENTITY=-`). They are not notarized.
-
-Homebrew and direct `.dmg` installers remove the download quarantine flag so Gatekeeper does not show the misleading “damaged” dialog. If a manual install still fails to open, run:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/Mochi.app
-```
-
-## Updater Feed
-
-Release workflows must generate signed Tauri updater artifacts and publish versioned feeds under `https://brainervirus.github.io/mochi/updates/{target}/{arch}/{current_version}/{channel}.json`.
-
-Required secrets:
-
-- `TAURI_SIGNING_PRIVATE_KEY`
-- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
-- `MOCHI_UPDATER_PUBLIC_KEY`
-- GitHub Pages publication token if `GITHUB_TOKEN` cannot write the Pages source branch.
-
-The feed is backfilled for supported installed versions, currently `0.1.7` and `0.2.0`, so older installed apps can recover through in-app update. Every supported recovery version must have both `stable.json` and `unstable.json` for macOS arm64/x64, Linux x64, and Windows x64.
-
-The first stable repair release publishes both `stable.json` and `unstable.json` from tags like `v0.2.1` so installed unstable-channel apps recover from missing feeds. Unstable prereleases on `main` continue to publish GitHub Release assets, but **Pages feeds for both channels are updated only by stable release or Republish Updater Pages**. Workflows must fail when any required updater bundle or `.sig` file is missing.
+If binaries for `vX.Y.Z` are published but the Pages deploy failed, run **Republish Updater Pages** (`republish-updater-pages.yml`) via `workflow_dispatch` with `release_tag=vX.Y.Z` — no new tag needed.
 
 Validate representative endpoints after publication:
 
@@ -86,6 +46,18 @@ Validate representative endpoints after publication:
 curl -fsS https://brainervirus.github.io/mochi/updates/darwin/aarch64/0.1.7/stable.json
 curl -fsS https://brainervirus.github.io/mochi/updates/linux/x86_64/0.1.7/stable.json
 curl -fsS https://brainervirus.github.io/mochi/updates/windows/x86_64/0.1.7/stable.json
+```
+
+## Release notes
+
+Notes are generated from conventional commits by `@semantic-release/release-notes-generator`. User-facing highlights are curated in `.github/workflows/release-stable.yml` in both places (they must match): the `releaseBody` field in the `tauri-action` step and the `body` array in the `release-notes` job. Focus on what users experience; do not mention CI fixes, refactors, or internal tooling.
+
+## macOS distribution (no Apple Developer account)
+
+macOS builds are **ad-hoc signed** in CI (`APPLE_SIGNING_IDENTITY=-`). They are not notarized. Homebrew and direct `.dmg` installers remove the download quarantine flag so Gatekeeper does not show the misleading “damaged” dialog. If a manual install still fails to open, run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Mochi.app
 ```
 
 ## Linux Window Controls

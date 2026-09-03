@@ -88,45 +88,23 @@ When completing work for the user:
 
 ## Release Process
 
-Two GitHub Actions workflows handle releases. Both are triggered automatically but can also be run manually via `workflow_dispatch`.
+Releases are fully automated via semantic-release; agents must **not** hand-bump versions or hand-push `v*` tags. There is no unstable channel.
 
-### Unstable Release
+### How it works
 
-- **Triggers:** push to `main`, manual dispatch.
-- **Tag:** auto-generated as `unstable-YYYYMMDD.HHMMSS`.
-- **Channel:** `unstable` (prerelease).
-- **Updater feeds:** deploys `unstable.json` for recovery versions (0.1.7, 0.2.0, latest) to GitHub Pages.
-- **Notes location:** `releaseBody` in `.github/workflows/release-unstable.yml` and the `release-notes` job at the bottom of the same file. Both must match.
+- Push to `main` → `.github/workflows/release.yml` runs semantic-release with the path gate `scripts/release/analyze-release-scope.mjs` (wired via `analyzeCommitsCmd` in `release.config.cjs`).
+- A release happens **only** when commits since the last `v*` tag include a `feat:`/`fix:`/`perf:` (or breaking) commit **and** touch product paths (`app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, `packaging/`). `docs:`/`chore:`/`ci:` never release.
+- semantic-release pushes the `vX.Y.Z` tag + GitHub Release notes, then a **manifest-sync PR** (`chore(release): sync manifests to vX.Y.Z`) aligns all 4 manifests on `main` and auto-merges.
+- The tag triggers `.github/workflows/release-stable.yml`: 4-platform build that **injects the tag version** into manifests at build time, publishes installers, deploys `stable.json` updater feeds to Pages, and opens the Homebrew cask PR.
+- `workflow_dispatch` **dry run** on the Release workflow runs the gate + version computation without tagging.
 
-### Stable Release
+### Agent rules
 
-- **Triggers:** push of a `vMAJOR.MINOR.PATCH` tag, manual dispatch (requires the tag to exist).
-- **Tag:** must be created manually after all changes are on `main`.
-- **Channel:** `stable`.
-- **Updater feeds:** deploys both `stable.json` and `unstable.json` for recovery versions (0.1.7, 0.2.0, latest) to GitHub Pages. This is the only workflow that deploys to Pages, ensuring feeds are always consistent.
-- **Notes location:** `releaseBody` in `.github/workflows/release-stable.yml` and the `release-notes` job at the bottom of the same file. Both must match.
-
-### How to Cut a Stable Release
-
-1. Ensure all changes are merged to `main` via PRs (never push directly).
-2. Bump `version` in `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` to match the new tag (without `v` prefix).
-3. Commit the version bump on a `chore/release-*` branch, PR it into `main`.
-4. After the PR merges, pull `main`, then create and push the tag:
-   ```bash
-   git tag vMAJOR.MINOR.PATCH
-   git push origin vMAJOR.MINOR.PATCH
-   ```
-   This triggers the stable release workflow automatically.
-5. **Never** trigger the stable workflow via `workflow_dispatch` on `main` — it requires a `v*` tag ref to pass validation.
-
-### Updating Release Notes
-
-Release notes must be **user-facing highlights**, not internal changelog entries. Update them in **both** places inside each workflow file:
-
-1. The `releaseBody` field in the `tauri-action` step (used for the GitHub Release body).
-2. The `body` array in the `release-notes` job (used to overwrite the release body after publish).
-
-Keep stable and unstable notes in sync for the same set of changes. Focus on what the user experiences: new features, behavior changes, install instructions. Do not mention CI fixes, refactors, or internal tooling unless they affect the user.
+- Commit discipline matters: conventional types on every commit; use `feat:`/`fix:`/`perf:` only for product-path changes you want released.
+- Never edit manifest versions by hand or create release tags manually; let the sync PR and semantic-release own them.
+- `RELEASE_SYNC_TOKEN` secret (PAT) is required: `GITHUB_TOKEN`-created tags don't trigger other workflows, so the PAT fires `release-stable.yml` and CI on the sync PR.
+- User-facing release-note highlights are curated in `release-stable.yml` in both places (must match): `releaseBody` in the `tauri-action` step and the `body` array in the `release-notes` job.
+- Never push directly to `main`; releases only happen through PR merges.
 
 ## Structure And Maintainability
 
