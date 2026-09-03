@@ -12,6 +12,9 @@ export function setCargoVersion(src, version) {
 }
 
 export function setCargoLockVersion(src, version) {
+  if (!/\[\[package\]\]\nname = "mochi"\nversion = /.test(src)) {
+    throw new Error(`Cargo.lock has no mochi package entry to set version ${version}`);
+  }
   return src.replace(/(\[\[package\]\]\nname = "mochi"\nversion = )"[^"]+"/, `$1"${version}"`);
 }
 

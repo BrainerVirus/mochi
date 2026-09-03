@@ -4,7 +4,7 @@ Releases are fully automated: conventional commits on `main` drive semantic-rele
 
 ## How a release happens
 
-1. A PR with conventional commits (`feat:`, `fix:`, `perf:` — or `!`/`BREAKING CHANGE:` for major) merges to `main`.
+1. A PR with conventional commits (`feat:`, `fix:`, `perf:` — or `!` in the subject, e.g. `feat!:`, for major) merges to `main`.
 2. `.github/workflows/release.yml` runs semantic-release with the path gate in `scripts/release/analyze-release-scope.mjs` (configured via `analyzeCommitsCmd` in [release.config.cjs](../release.config.cjs)):
    - The gate prints `major|minor|patch` **only when** commits since the last `v*` tag contain a release-type commit **and** touch product paths: `app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, `packaging/`.
    - Docs, CI, and chore-only pushes print nothing and skip the release entirely — no tag, no release, no sync PR.
@@ -30,13 +30,13 @@ Run **Release** (`release.yml`) via `workflow_dispatch` with **dry-run = true**:
 Because commit messages drive versioning:
 
 - Use conventional commit types only (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`).
-- `feat:` → minor, `fix:`/`perf:` → patch, `!` or `BREAKING CHANGE:` footer → major — but only when product paths change.
+- `feat:` → minor, `fix:`/`perf:` → patch, `!` in the subject (e.g. `feat!:` / `fix(scope)!:`) → major — but only when product paths change. The release gate scans commit subjects only; a `BREAKING CHANGE:` footer does not trigger a major bump.
 - `docs:`, `chore:`, `ci:`, `test:`, `refactor:`, `style:` commits never release, even on product paths.
 - Never reword or edit commits on `main` after a release; semantic-release reads history from the last tag.
 
 ## Updater feeds
 
-Feeds live under `https://brainervirus.github.io/mochi/updates/{target}/{arch}/{current_version}/stable.json`. Only the stable pipeline deploys to Pages (full-site replacement — no other workflow may call `deploy-pages`). Feeds are backfilled for supported recovery versions (currently `0.1.7`, `0.2.0`).
+Feeds live under `https://brainervirus.github.io/mochi/updates/{target}/{arch}/{current_version}/stable.json`. Only the stable pipeline deploys to Pages (full-site replacement — no other release workflow may call `deploy-pages`). Feeds are backfilled for supported recovery versions (currently `0.1.7`, `0.2.0`).
 
 If binaries for `vX.Y.Z` are published but the Pages deploy failed, run **Republish Updater Pages** (`republish-updater-pages.yml`) via `workflow_dispatch` with `release_tag=vX.Y.Z` — no new tag needed.
 

@@ -28,6 +28,10 @@ describe("sync-manifest-version", () => {
     expect(out).toContain('name = "mochi"\nversion = "9.9.9"');
     expect(out).toContain('name = "other"\nversion = "1.0.0"');
   });
+  it("throws when Cargo.lock has no mochi package entry", () => {
+    const src = '[[package]]\nname = "other"\nversion = "1.0.0"\n';
+    expect(() => setCargoLockVersion(src, "9.9.9")).toThrow(/mochi/);
+  });
   it("rejects non-semver --set values with exit code 2", () => {
     const result = spawnSync(
       process.execPath,

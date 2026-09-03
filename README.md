@@ -113,7 +113,7 @@ See [docs/releasing.md](docs/releasing.md) for the release process.
 
 Releases are fully automated on `main` — no manual version bumps, no unstable channel:
 
-- **Conventional commits drive releases.** `feat:` → minor, `fix:`/`perf:` → patch, `!`/`BREAKING CHANGE:` → major.
+- **Conventional commits drive releases.** `feat:` → minor, `fix:`/`perf:` → patch, `!` in the subject (e.g. `feat!:`) → major.
 - **Only product changes release.** A `feat:`/`fix:`/`perf:` commit must also touch `app/`, `src/`, `src-tauri/`, `scripts/install/`, `Casks/`, or `packaging/`; `docs:`, `chore:`, and `ci:` commits never trigger a release.
 - **Manifests sync automatically.** After a release, an auto-merged PR (`chore(release): sync manifests to vX.Y.Z`) aligns `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` with the released version.
 - **The `v*` tag builds installers.** A 4-platform stable build publishes installers, signed updater feeds (`stable.json`), and a Homebrew cask PR; build version comes from the tag, not the manifests.
