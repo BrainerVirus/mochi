@@ -11,6 +11,13 @@ export function setCargoVersion(src, version) {
   return src.replace(/^version = "[^"]+"/m, `version = "${version}"`);
 }
 
+export function setCargoLockVersion(src, version) {
+  return src.replace(
+    /(\[\[package\]\]\nname = "mochi"\nversion = )"[^"]+"/,
+    `$1"${version}"`,
+  );
+}
+
 export function setTauriVersion(src, version) {
   const json = JSON.parse(src);
   json.version = version;
@@ -32,6 +39,10 @@ if (args[0] === "--set" && args[1]) {
   writeFileSync(
     "src-tauri/tauri.conf.json",
     setTauriVersion(readFileSync("src-tauri/tauri.conf.json", "utf8"), version),
+  );
+  writeFileSync(
+    "src-tauri/Cargo.lock",
+    setCargoLockVersion(readFileSync("src-tauri/Cargo.lock", "utf8"), version),
   );
   console.log(`manifests set to ${version}`);
 }

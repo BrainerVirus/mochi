@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { setPackageVersion, setCargoVersion, setTauriVersion } from "./sync-manifest-version.mjs";
+import { setPackageVersion, setCargoVersion, setCargoLockVersion, setTauriVersion } from "./sync-manifest-version.mjs";
 
 describe("sync-manifest-version", () => {
   it("sets package.json version", () => {
@@ -15,6 +15,12 @@ describe("sync-manifest-version", () => {
   it("sets tauri.conf.json version", () => {
     const src = '{\n  "version": "0.0.1",\n  "identifier": "app.mochi"\n}';
     expect(JSON.parse(setTauriVersion(src, "9.9.9")).version).toBe("9.9.9");
+  });
+  it("sets the mochi package version in Cargo.lock keeping other packages", () => {
+    const src = '[[package]]\nname = "other"\nversion = "1.0.0"\n\n[[package]]\nname = "mochi"\nversion = "0.0.1"\n';
+    const out = setCargoLockVersion(src, "9.9.9");
+    expect(out).toContain('name = "mochi"\nversion = "9.9.9"');
+    expect(out).toContain('name = "other"\nversion = "1.0.0"');
   });
   it("rejects non-semver --set values with exit code 2", () => {
     const result = spawnSync(

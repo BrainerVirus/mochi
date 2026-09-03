@@ -25,4 +25,13 @@ describe("semantic-release workflow", () => {
       "RELEASE_SYNC_TOKEN: ${{ secrets.RELEASE_SYNC_TOKEN }}",
     );
   });
+  it("sync commit stages all four manifests", () => {
+    const step = release().split("Sync release manifests to main")[1];
+    expect(step).toContain("src-tauri/Cargo.lock");
+  });
+  it("pages workflow does not reference the removed feed host", () => {
+    expect(readFileSync(".github/workflows/publish-updater-pages.yml", "utf8")).not.toContain(
+      "mochi-app.github.io",
+    );
+  });
 });

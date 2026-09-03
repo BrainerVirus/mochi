@@ -41,7 +41,6 @@ jobs:
         env:
           CHANNEL: stable
           CHANNELS: stable
-          UPDATER_FEED_BASE_URL: https://mochi-app.github.io/mochi/updates
           TAG_NAME: ${{ inputs.release_tag }}
           RELEASE_BASE_URL: https://github.com/BrainerVirus/mochi/releases/download/${{ inputs.release_tag }}
         run: |

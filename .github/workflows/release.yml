@@ -60,7 +60,7 @@ jobs:
           TAG=$(git describe --tags --abbrev=0 --match="v*" 2>/dev/null) || { echo "no v* tag found; nothing to sync"; exit 0; }
           VERSION=${TAG#v}
           node scripts/release/sync-manifest-version.mjs --set "$VERSION"
-          if [[ -z "$(git status --porcelain -- package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json)" ]]; then
+          if [[ -z "$(git status --porcelain -- package.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json)" ]]; then
             echo "manifests already match ${TAG}"; exit 0
           fi
           BRANCH="chore/manifest-sync-v${VERSION}"
@@ -72,7 +72,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git checkout -b "${BRANCH}"
-          git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+          git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json
           git commit -m "chore(release): sync manifests to v${VERSION}"
           git push -u origin "${BRANCH}"
           gh pr create --title "chore(release): sync manifests to v${VERSION}" \
