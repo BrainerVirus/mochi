@@ -578,7 +578,29 @@ fn open_visible_tray_panel(app: &AppHandle, window: &WebviewWindow) {
     );
 }
 
+/// Whether panel positioning should be skipped because the window's monitor
+/// cannot be resolved. On GNOME Wayland, `current_monitor()` returns `Ok(None)`
+/// before the window is mapped, and the positioner plugin panics on
+/// `unwrap()` in that state — so we never call it without a monitor.
+fn should_skip_positioning(current_monitor_result: Option<Option<()>>) -> bool {
+    !matches!(current_monitor_result, Some(Some(())))
+}
+
 fn position_tray_panel(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {
+    if should_skip_positioning(
+        window
+            .current_monitor()
+            .ok()
+            .map(|monitor| monitor.map(|_| ())),
+    ) {
+        crate::diagnostics::log_window_action_result(
+            MAIN_PANEL_LABEL,
+            "position_skipped_no_monitor",
+            Ok::<(), &str>(()),
+        );
+        return Ok(());
+    }
+
     if has_cached_tray_icon_rect(app) {
         window
             .move_window_constrained(tray_panel_anchor_position())
@@ -600,12 +622,25 @@ pub fn show_tray_panel_centered(app: &AppHandle, path: &str) {
     if let Err(error) = ensure_tray_panel_vibrancy(&window) {
         eprintln!("[mochi] tray panel vibrancy unavailable: {error}");
     }
-    let position_result = window.move_window(Position::Center);
-    crate::diagnostics::log_window_action_result(
-        MAIN_PANEL_LABEL,
-        "move_center",
-        position_result.as_ref().map(|_| ()),
-    );
+    if should_skip_positioning(
+        window
+            .current_monitor()
+            .ok()
+            .map(|monitor| monitor.map(|_| ())),
+    ) {
+        crate::diagnostics::log_window_action_result(
+            MAIN_PANEL_LABEL,
+            "position_skipped_no_monitor",
+            Ok::<(), &str>(()),
+        );
+    } else {
+        let position_result = window.move_window(Position::Center);
+        crate::diagnostics::log_window_action_result(
+            MAIN_PANEL_LABEL,
+            "move_center",
+            position_result.as_ref().map(|_| ()),
+        );
+    }
     let show_result = window.show();
     crate::diagnostics::log_window_action_result(
         MAIN_PANEL_LABEL,
@@ -740,5 +775,16 @@ mod tests {
     fn navigation_events_target_dedicated_window_labels() {
         assert_eq!(MAIN_PANEL_LABEL, "main");
         assert_eq!(SETTINGS_WINDOW_LABEL, "settings");
+    }
+
+    #[test]
+    fn positioning_is_skipped_when_monitor_is_unresolved() {
+        // Some(Some(())) = current_monitor() resolved to a monitor.
+        assert!(!should_skip_positioning(Some(Some(()))));
+        // Ok(None) is what GNOME Wayland reports before the window is mapped;
+        // calling the positioner then panics inside the plugin.
+        assert!(should_skip_positioning(Some(None)));
+        // Err(_) must also skip rather than risk the plugin unwrap panic.
+        assert!(should_skip_positioning(None));
     }
 }

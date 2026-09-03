@@ -43,13 +43,43 @@ CLI fetch, which produced a `fresh` snapshot rather than an auth error).
 `GET https://api.commandcode.ai/internal/billing/credits` → 200:
 
 ```json
-{"credits":{"belowThreshold":false,"creditThreshold":0,"monthlyCredits":15.2591649987,"purchasedCredits":0,"premiumMonthlyCredits":0,"opensourceMonthlyCredits":15.2591649987},"windowLimits":{"limited":true,"exceeded":null,"fiveHour":{"used":1.5458561125,"cap":14,"exceeded":false,"resetAt":1788461403481},"weekly":{"used":9.9639946525,"cap":35,"exceeded":false,"resetAt":1788978906872}}}
+{
+  "credits": {
+    "belowThreshold": false,
+    "creditThreshold": 0,
+    "monthlyCredits": 15.2591649987,
+    "purchasedCredits": 0,
+    "premiumMonthlyCredits": 0,
+    "opensourceMonthlyCredits": 15.2591649987
+  },
+  "windowLimits": {
+    "limited": true,
+    "exceeded": null,
+    "fiveHour": { "used": 1.5458561125, "cap": 14, "exceeded": false, "resetAt": 1788461403481 },
+    "weekly": { "used": 9.9639946525, "cap": 35, "exceeded": false, "resetAt": 1788978906872 }
+  }
+}
 ```
 
 `GET https://api.commandcode.ai/internal/usage/summary` → 200:
 
 ```json
-{"totalCount":7890,"totalCost":56.74708297929999,"averageCost":0.0071922792115716085,"successRate":99.97465145754119,"completedCount":7888,"failedCount":2,"totalTokensIn":1457290826,"totalTokensOut":3907907,"totalTokens":1461198733,"totalCredits":56.74708297929999,"totalFreeCredits":0,"totalMonthlyCredits":56.74708297929999,"totalPurchasedCredits":0,"periodBasis":"billing-period"}
+{
+  "totalCount": 7890,
+  "totalCost": 56.74708297929999,
+  "averageCost": 0.0071922792115716085,
+  "successRate": 99.97465145754119,
+  "completedCount": 7888,
+  "failedCount": 2,
+  "totalTokensIn": 1457290826,
+  "totalTokensOut": 3907907,
+  "totalTokens": 1461198733,
+  "totalCredits": 56.74708297929999,
+  "totalFreeCredits": 0,
+  "totalMonthlyCredits": 56.74708297929999,
+  "totalPurchasedCredits": 0,
+  "periodBasis": "billing-period"
+}
 ```
 
 ## Shape deltas vs the Task 5 fixture (inferred from HAR)
@@ -78,10 +108,10 @@ the real captured JSON, failing tests written first, then:
 
 ## Parsed snapshot values (CLI output, live run 2026-09-03T16:08Z)
 
-| Window | used_percent | resets_at |
-| --- | --- | --- |
-| Weekly (primary) | 28.778957 | 2026-09-09T18:35:06.872Z |
-| 5 hours (secondary) | 11.817831 | 2026-09-03T18:50:03.481Z |
+| Window              | used_percent | resets_at                |
+| ------------------- | ------------ | ------------------------ |
+| Weekly (primary)    | 28.778957    | 2026-09-09T18:35:06.872Z |
+| 5 hours (secondary) | 11.817831    | 2026-09-03T18:50:03.481Z |
 
 Cost snapshot: used **$56.813** / limit **$71.964** USD, period
 `billing-period`, resets_at `2026-09-09T18:35:06.872Z`

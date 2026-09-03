@@ -1,1 +1,16 @@
-{"credits":{"belowThreshold":false,"creditThreshold":0,"monthlyCredits":15.2591649987,"purchasedCredits":0,"premiumMonthlyCredits":0,"opensourceMonthlyCredits":15.2591649987},"windowLimits":{"limited":true,"exceeded":null,"fiveHour":{"used":1.5458561125,"cap":14,"exceeded":false,"resetAt":1788461403481},"weekly":{"used":9.9639946525,"cap":35,"exceeded":false,"resetAt":1788978906872}}}
+{
+  "credits": {
+    "belowThreshold": false,
+    "creditThreshold": 0,
+    "monthlyCredits": 15.2591649987,
+    "purchasedCredits": 0,
+    "premiumMonthlyCredits": 0,
+    "opensourceMonthlyCredits": 15.2591649987
+  },
+  "windowLimits": {
+    "limited": true,
+    "exceeded": null,
+    "fiveHour": { "used": 1.5458561125, "cap": 14, "exceeded": false, "resetAt": 1788461403481 },
+    "weekly": { "used": 9.9639946525, "cap": 35, "exceeded": false, "resetAt": 1788978906872 }
+  }
+}
