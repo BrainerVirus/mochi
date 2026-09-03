@@ -12,6 +12,8 @@ describe("formatCostPeriodLabel", () => {
     expect(formatCostPeriodLabel(null)).toBe("On-demand");
     expect(formatCostPeriodLabel(undefined)).toBe("On-demand");
     expect(formatCostPeriodLabel("")).toBe("On-demand");
+    expect(formatCostPeriodLabel("-")).toBe("On-demand");
+    expect(formatCostPeriodLabel("--")).toBe("On-demand");
   });
 });
 

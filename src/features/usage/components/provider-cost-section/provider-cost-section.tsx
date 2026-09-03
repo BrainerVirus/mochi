@@ -34,6 +34,9 @@ export function formatCostPeriodLabel(period: string | null | undefined): string
   }
 
   const [first, ...rest] = period.split("-").filter(Boolean);
+  if (!first) {
+    return "On-demand";
+  }
   if (rest.length === 0) {
     return `${first[0].toUpperCase()}${first.slice(1)}`;
   }
