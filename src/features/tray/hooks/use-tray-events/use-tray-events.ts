@@ -9,13 +9,9 @@ import {
 } from "@/features/tray/lib/stores/tray-ui-store/tray-ui-store";
 import { queryKeys } from "@/lib/query/keys";
 import { saveSettingsMutationOptions, settingsQueryOptions } from "@/lib/query/settings";
-import {
-  MochiSettingsSchema,
-  type MochiSettings,
-  type UpdateChannel,
-} from "@/lib/schemas/settings";
+import { MochiSettingsSchema, type MochiSettings } from "@/lib/schemas/settings";
 import { ProviderUsageStatesSchema, type ProviderUsageState } from "@/lib/schemas/usage";
-import { openAppWindow, saveSettings, syncTrayUpdateChannel } from "@/lib/tauri/commands";
+import { openAppWindow } from "@/lib/tauri/commands";
 import { logFrontendDebug, reportFrontendError } from "@/lib/tauri/diagnostics";
 import {
   shouldHandleAppNavigateEvent,
@@ -81,9 +77,6 @@ export function useTrayEvents() {
           () =>
             queryClient.getQueryData<Pick<MochiSettings, "enabled_providers">>(queryKeys.settings),
         );
-      }),
-      listen<UpdateChannel>("tray-set-channel", (event) => {
-        handleTraySetChannelEvent(event.payload, queryClient);
       }),
       listen("tray-check-update", () => {
         void openAppWindow("/update");
@@ -220,24 +213,6 @@ export function handleSettingsChangedEvent(
   void reconcile(queryClient, settings).catch(logSettingsReconcileFailure);
 }
 
-export function handleTraySetChannelEvent(
-  channel: UpdateChannel,
-  queryClient: SettingsSaveSuccessQueryClient,
-  save: (settings: MochiSettings) => Promise<MochiSettings> = saveSettings,
-): void {
-  const current = readSettingsCache(queryClient);
-  if (!current) {
-    return;
-  }
-
-  void save({
-    ...current,
-    update_channel: channel,
-  }).then((settings) => {
-    handleSettingsSaveSuccess(queryClient, settings);
-  });
-}
-
 export function handleSetTabEvent(payload: string): void {
   const tab = parseTrayTabChange(payload);
   useTrayUiStore.getState().setSelectedTab(tab);
@@ -246,11 +221,9 @@ export function handleSetTabEvent(payload: string): void {
 export async function reconcileSettingsSaveSuccess(
   queryClient: SettingsSaveSuccessQueryClient,
   settings: MochiSettings,
-  syncChannel: (channel: UpdateChannel) => Promise<void> = syncTrayUpdateChannel,
 ): Promise<void> {
   queryClient.setQueryData(queryKeys.settings, settings);
   pruneDisabledProvidersFromUsageCache(queryClient, settings.enabled_providers);
-  await syncChannel(settings.update_channel);
   await queryClient.invalidateQueries({ queryKey: queryKeys.usageSnapshots });
 }
 

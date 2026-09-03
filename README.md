@@ -43,7 +43,7 @@ Installer requirements:
 
 ## Install
 
-Install from [GitHub Releases](https://github.com/BrainerVirus/mochi/releases). Scripts default to the latest **stable** release. Pass **`-i`** (or **`--unstable`**) for the unstable channel (latest prerelease from `main`).
+Install from [GitHub Releases](https://github.com/BrainerVirus/mochi/releases). Scripts install the latest **stable** release.
 
 ### macOS
 
@@ -53,22 +53,10 @@ Install from [GitHub Releases](https://github.com/BrainerVirus/mochi/releases). 
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash
 ```
 
-Unstable:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos.sh | bash -s -- -i
-```
-
 **Homebrew** (requires [Homebrew](https://brew.sh/)):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash
-```
-
-Unstable:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-macos-brew.sh | bash -s -- -i
 ```
 
 Upgrade later (always use the fully qualified cask name — `mochi` alone is a different app in Homebrew):
@@ -78,22 +66,10 @@ curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/ins
 brew upgrade --cask BrainerVirus/mochi/mochi-desktop
 ```
 
-Unstable upgrade:
-
-```bash
-brew upgrade --cask BrainerVirus/mochi/mochi-unstable
-```
-
 ### Linux
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
-```
-
-Unstable:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i
 ```
 
 Package selection:
@@ -112,17 +88,10 @@ On GNOME, the installer attempts to install and enable AppIndicator support so t
 irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex
 ```
 
-Unstable:
-
-```powershell
-$env:MOCHI_UNSTABLE = "1"; irm https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-windows.ps1 | iex
-```
-
 Or download and run:
 
 ```powershell
 .\scripts\install\install-windows.ps1
-.\scripts\install\install-windows.ps1 -Unstable
 ```
 
 Prefer MSI (default); set `$env:MOCHI_PACKAGE = "exe"` for the NSIS installer.
@@ -131,7 +100,6 @@ Prefer MSI (default); set `$env:MOCHI_PACKAGE = "exe"` for the NSIS installer.
 
 ```bash
 MOCHI_VERSION=v1.0.0 ./scripts/install/install-macos.sh
-MOCHI_VERSION=unstable ./scripts/install/install-macos.sh -i
 ```
 
 ```powershell
@@ -139,9 +107,7 @@ $env:MOCHI_VERSION = "v1.0.0"
 .\scripts\install\install-windows.ps1
 ```
 
-Set `MOCHI_UNSTABLE=1` instead of `-i` / `-Unstable` if you prefer environment variables.
-
-See [docs/releasing.md](docs/releasing.md) for stable vs unstable release channels.
+See [docs/releasing.md](docs/releasing.md) for the release process.
 
 Linux install runs `scripts/install/lib/linux-deps.sh` before downloading the release artifact. Windows install runs `Ensure-MochiRuntimeDependencies` before MSI/NSIS.
 

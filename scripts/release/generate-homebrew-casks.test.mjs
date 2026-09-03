@@ -21,10 +21,6 @@ describe("caskVersionFromTag", () => {
   it("strips the v prefix from stable tags", () => {
     expect(caskVersionFromTag("v0.2.4")).toBe("0.2.4");
   });
-
-  it("keeps unstable timestamp tags intact", () => {
-    expect(caskVersionFromTag("unstable-20260621.225155")).toBe("unstable-20260621.225155");
-  });
 });
 
 describe("pickMacDmgAssets", () => {

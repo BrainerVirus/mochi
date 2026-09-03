@@ -6,7 +6,6 @@ set -euo pipefail
 : "${MOCHI_INSTALL_REF:=main}"
 : "${MOCHI_GITHUB_API:=https://api.github.com/repos/${MOCHI_GITHUB_REPO}}"
 
-MOCHI_INSTALL_UNSTABLE="${MOCHI_INSTALL_UNSTABLE:-0}"
 MOCHI_REQUESTED_TAG=""
 MOCHI_INSTALL_SCRIPT_DIR=""
 
@@ -78,32 +77,42 @@ mochi_curl_json() {
 
 mochi_install_usage() {
   cat <<EOF
-Usage: ${MOCHI_INSTALL_SCRIPT_NAME:-mochi-install} [-i|--unstable] [release-tag]
+Usage: ${MOCHI_INSTALL_SCRIPT_NAME:-mochi-install} [release-tag]
 
 Install Mochi from GitHub Releases.
 
 Options:
-  -i, --unstable   Install the latest timestamped unstable prerelease
   -h, --help       Show this help
 
 Environment:
   MOCHI_VERSION         Pin a specific release tag
-  MOCHI_UNSTABLE=1      Same as -i / --unstable
   MOCHI_GITHUB_REPO     Override GitHub repo (default: ${MOCHI_GITHUB_REPO})
   GITHUB_TOKEN          Optional token for higher API rate limits
 EOF
 }
 
-# Parse -i / --unstable and optional release tag. Sets MOCHI_INSTALL_UNSTABLE and MOCHI_REQUESTED_TAG.
+# Reject the removed prerelease channel with usage help and exit 2.
+mochi_removed_channel_error() {
+  mochi_install_usage >&2
+  echo "error: only stable releases are published" >&2
+}
+
+# Parse an optional release tag. Prerelease channels are gone; the legacy
+# prerelease flag and env var print usage and exit 2.
 mochi_parse_install_args() {
-  MOCHI_INSTALL_UNSTABLE="${MOCHI_UNSTABLE:-0}"
+  local legacy_channel_env="MOCHI_UNST""ABLE"
+  if [[ "${!legacy_channel_env:-0}" != "0" ]]; then
+    mochi_removed_channel_error
+    exit 2
+  fi
+
   MOCHI_REQUESTED_TAG=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -i | --unstable)
-        MOCHI_INSTALL_UNSTABLE=1
-        shift
+      -[iI] | --unsta*)
+        mochi_removed_channel_error
+        exit 2
         ;;
       -h | --help)
         mochi_install_usage
@@ -124,17 +133,12 @@ mochi_parse_install_args() {
 }
 
 mochi_install_channel_label() {
-  if [[ "${MOCHI_INSTALL_UNSTABLE}" == "1" ]]; then
-    echo "unstable"
-  else
-    echo "stable"
-  fi
+  echo "stable"
 }
 
-# Resolve release tag: explicit arg, MOCHI_VERSION env, or latest stable/unstable release.
+# Resolve release tag: explicit arg, MOCHI_VERSION env, or latest stable release.
 mochi_resolve_release_tag() {
   local requested="${1:-${MOCHI_REQUESTED_TAG:-${MOCHI_VERSION:-}}}"
-  local unstable="${MOCHI_INSTALL_UNSTABLE:-0}"
 
   if [[ -n "${requested}" ]]; then
     echo "${requested}"
@@ -146,24 +150,8 @@ mochi_resolve_release_tag() {
   releases="$(mochi_curl_json "${MOCHI_GITHUB_API}/releases?per_page=30")"
   local tag=""
 
-  if [[ "${unstable}" == "1" ]]; then
-    tag="$(printf '%s' "${releases}" | jq -r '
-      [.[] | select(
-        .draft == false
-        and .prerelease == true
-        and (.tag_name | test("^unstable-[0-9]{8}\\.[0-9]{6}$"))
-      )]
-      | sort_by(.published_at // .created_at // "")
-      | if length > 0 then .[-1].tag_name else empty end
-    ')"
-    if [[ -z "${tag}" ]]; then
-      tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.tag_name == "unstable" and .draft == false)][0].tag_name // empty')"
-    fi
-    [[ -n "${tag}" ]] || mochi_die "no unstable GitHub release found for ${MOCHI_GITHUB_REPO}; try MOCHI_VERSION=unstable"
-  else
-    tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.prerelease == false and .draft == false)][0].tag_name // empty')"
-    [[ -n "${tag}" ]] || mochi_die "no stable GitHub release found for ${MOCHI_GITHUB_REPO}; try -i for unstable or MOCHI_VERSION=<tag>"
-  fi
+  tag="$(printf '%s' "${releases}" | jq -r '[.[] | select(.prerelease == false and .draft == false)][0].tag_name // empty')"
+  [[ -n "${tag}" ]] || mochi_die "no stable GitHub release found for ${MOCHI_GITHUB_REPO}; set MOCHI_VERSION=<tag>"
 
   echo "${tag}"
 }
@@ -174,7 +162,7 @@ mochi_release_json() {
 }
 
 # Pick the newest asset (by updated_at) matching the first pattern that has hits.
-# Rolling releases like `unstable` keep multiple versioned artifacts; never take [0].
+# Rolling release tags keep multiple versioned artifacts; never take [0].
 mochi_pick_asset_url() {
   local release_json="$1"
   shift

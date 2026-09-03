@@ -28,7 +28,6 @@ function Get-MochiGitHubJson {
 function Resolve-MochiReleaseTag {
   param(
     [string]$ReleaseTag,
-    [bool]$Unstable,
     [string]$ApiBase
   )
 
@@ -36,23 +35,10 @@ function Resolve-MochiReleaseTag {
 
   $releases = Get-MochiGitHubJson "$ApiBase/releases?per_page=30"
 
-  if ($Unstable) {
-    $unstableTag = $releases |
-      Where-Object { $_.prerelease -and -not $_.draft -and $_.tag_name -match '^unstable-[0-9]{8}\.[0-9]{6}$' } |
-      Sort-Object { [datetime]$(if ($_.published_at) { $_.published_at } else { $_.created_at }) } -Descending |
-      Select-Object -First 1
-    if ($unstableTag) { return $unstableTag.tag_name }
-
-    $unstableTag = $releases | Where-Object { $_.tag_name -eq 'unstable' -and -not $_.draft } | Select-Object -First 1
-    if ($unstableTag) { return $unstableTag.tag_name }
-
-    throw "No unstable GitHub release found for $ApiBase. Set MOCHI_VERSION=unstable or pass -ReleaseTag."
-  }
-
   $stable = $releases | Where-Object { -not $_.prerelease -and -not $_.draft } | Select-Object -First 1
   if ($stable) { return $stable.tag_name }
 
-  throw "No stable GitHub release found for $ApiBase. Use -Unstable for prereleases or set MOCHI_VERSION."
+  throw "No stable GitHub release found for $ApiBase. Set MOCHI_VERSION."
 }
 
 function Select-MochiAsset {

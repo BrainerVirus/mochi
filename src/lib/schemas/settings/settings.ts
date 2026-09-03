@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { normalizeProviderId, ProviderIdSchema } from "@/lib/schemas/usage";
 
-export const UpdateChannelSchema = z.enum(["stable", "unstable"]);
+export const UpdateChannelSchema = z.literal("stable");
 
 export type UpdateChannel = z.infer<typeof UpdateChannelSchema>;
 

@@ -38,38 +38,6 @@ describePwsh("windows-install.ps1", () => {
     expect(() => parsePs1(installPs1)).not.toThrow();
   });
 
-  it("resolves unstable installs to the newest timestamped prerelease", () => {
-    withReleaseFixture(
-      [
-        {
-          tag_name: "unstable-20260606.145138",
-          prerelease: true,
-          draft: false,
-          published_at: "2026-06-06T14:53:53Z",
-        },
-        {
-          tag_name: "unstable-20260606.150109",
-          prerelease: true,
-          draft: false,
-          published_at: "2026-06-06T15:03:34Z",
-        },
-        {
-          tag_name: "v0.2.2",
-          prerelease: false,
-          draft: false,
-          published_at: "2026-06-06T14:26:43Z",
-        },
-      ],
-      (fixture) => {
-        const tag = invokeLib(
-          "Resolve-MochiReleaseTag -ReleaseTag '' -Unstable:$true -ApiBase 'https://api.github.com/repos/BrainerVirus/mochi'",
-          { MOCHI_TEST_RELEASES_JSON: fixture },
-        );
-        expect(tag).toBe("unstable-20260606.150109");
-      },
-    );
-  });
-
   it("resolves stable installs to the first non-prerelease release", () => {
     withReleaseFixture(
       [
@@ -79,16 +47,36 @@ describePwsh("windows-install.ps1", () => {
           draft: false,
           published_at: "2026-06-06T14:26:43Z",
         },
+      ],
+      (fixture) => {
+        const tag = invokeLib(
+          "Resolve-MochiReleaseTag -ReleaseTag '' -ApiBase 'https://api.github.com/repos/BrainerVirus/mochi'",
+          { MOCHI_TEST_RELEASES_JSON: fixture },
+        );
+        expect(tag).toBe("v0.2.2");
+      },
+    );
+  });
+
+  it("ignores prereleases when resolving the stable tag", () => {
+    withReleaseFixture(
+      [
         {
-          tag_name: "unstable-20260606.150109",
+          tag_name: "0.3.0-rc.1",
           prerelease: true,
           draft: false,
           published_at: "2026-06-06T15:03:34Z",
         },
+        {
+          tag_name: "v0.2.2",
+          prerelease: false,
+          draft: false,
+          published_at: "2026-06-06T14:26:43Z",
+        },
       ],
       (fixture) => {
         const tag = invokeLib(
-          "Resolve-MochiReleaseTag -ReleaseTag '' -Unstable:$false -ApiBase 'https://api.github.com/repos/BrainerVirus/mochi'",
+          "Resolve-MochiReleaseTag -ReleaseTag '' -ApiBase 'https://api.github.com/repos/BrainerVirus/mochi'",
           { MOCHI_TEST_RELEASES_JSON: fixture },
         );
         expect(tag).toBe("v0.2.2");

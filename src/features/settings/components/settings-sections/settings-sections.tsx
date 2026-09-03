@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ProviderIcon } from "@/components/providers/provider-icon";
-import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import {
   Field,
   FieldContent,
@@ -154,29 +153,9 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
         <FieldContent>
           <FieldLabel className="text-sm font-medium">Update channel</FieldLabel>
           <FieldDescription className="text-[11px]">
-            Which release channel to follow.
+            Mochi follows the stable release channel.
           </FieldDescription>
         </FieldContent>
-        <AppSegmentedControl
-          items={[
-            { id: "stable", label: "Stable" },
-            { id: "unstable", label: "Unstable" },
-          ]}
-          value={settings.update_channel}
-          onValueChange={(channel) => {
-            if (channel === "stable" || channel === "unstable") {
-              onChange({ update_channel: channel });
-            }
-          }}
-          variant="inline"
-          rowHeight="h-8"
-          stretchItems
-        />
-        {settings.update_channel === "unstable" ? (
-          <FieldDescription className="text-[11px]">
-            Unstable builds may change frequently.
-          </FieldDescription>
-        ) : null}
       </Field>
 
       <Separator />

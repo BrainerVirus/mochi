@@ -118,9 +118,9 @@ describe("update commands", () => {
   it("passes the selected channel when installing updates", async () => {
     vi.mocked(invoke).mockResolvedValue(undefined);
 
-    await installUpdate("unstable");
+    await installUpdate("stable");
 
-    expect(invoke).toHaveBeenCalledWith("install_update", { channel: "unstable" });
+    expect(invoke).toHaveBeenCalledWith("install_update", { channel: "stable" });
   });
 });
 

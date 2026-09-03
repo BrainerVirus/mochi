@@ -94,10 +94,9 @@ fn updater_for_channel(
 }
 
 fn update_endpoint_for_channel(channel: &str) -> Result<reqwest::Url, String> {
-    let channel = match channel {
-        "stable" | "unstable" => channel,
-        other => return Err(format!("unsupported update channel: {other}")),
-    };
+    if channel != "stable" {
+        return Err(format!("unsupported update channel: {channel}"));
+    }
 
     reqwest::Url::parse(&format!(
         "{UPDATE_ENDPOINT_BASE}/{{{{target}}}}/{{{{arch}}}}/{{{{current_version}}}}/{channel}.json"
@@ -142,12 +141,10 @@ mod tests {
     }
 
     #[test]
-    fn update_endpoint_builds_exact_unstable_feed_url() {
-        let endpoint = update_endpoint_for_channel("unstable").expect("unstable endpoint");
-        assert_eq!(
-            endpoint.as_str(),
-            "https://mochi-app.github.io/mochi/updates/%7B%7Btarget%7D%7D/%7B%7Barch%7D%7D/%7B%7Bcurrent_version%7D%7D/unstable.json"
-        );
+    fn update_endpoint_rejects_removed_channels() {
+        assert!(update_endpoint_for_channel("nightly").is_err());
+        assert!(update_endpoint_for_channel("beta").is_err());
+        assert!(update_endpoint_for_channel("").is_err());
     }
 
     #[test]

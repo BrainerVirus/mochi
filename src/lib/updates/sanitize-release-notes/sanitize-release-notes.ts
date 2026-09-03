@@ -1,6 +1,5 @@
 const KEEP_SECTION = /^(what'?s changed|changes|fixes|features|improvements|bug fixes)$/i;
-const DROP_SECTION =
-  /^(install|install stable|install unstable|downloads?|assets?|binaries|packages?)$/i;
+const DROP_SECTION = /^(install|install stable|downloads?|assets?|binaries|packages?)$/i;
 const ARTIFACT_LINE = /\.(appimage|deb|rpm|dmg|msi|exe|app\.tar\.gz)\b/i;
 const COMMAND_LINE = /\b(curl|irm|bash|powershell|brew install|sudo)\b/i;
 

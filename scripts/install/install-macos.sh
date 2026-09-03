@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install Mochi from GitHub Releases (macOS).
-# Usage: install-macos.sh [-i|--unstable] [release-tag]
-# Env: MOCHI_VERSION, MOCHI_UNSTABLE=1, MOCHI_INSTALL_DIR (default /Applications), GITHUB_TOKEN
+# Usage: install-macos.sh [release-tag]
+# Env: MOCHI_VERSION, MOCHI_INSTALL_DIR (default /Applications), GITHUB_TOKEN
 set -euo pipefail
 
 : "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"

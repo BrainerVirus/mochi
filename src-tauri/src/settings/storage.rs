@@ -53,7 +53,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("mochi-settings-{}", uuid_like()));
         let path = settings_file_path(&dir);
         let settings = MochiSettings {
-            update_channel: UpdateChannel::Unstable,
+            update_channel: UpdateChannel::Stable,
             refresh_interval_seconds: 120,
             enabled_providers: vec!["claude".into(), "cursor".into()],
             show_notifications: false,

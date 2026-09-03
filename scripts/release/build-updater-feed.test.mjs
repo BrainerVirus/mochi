@@ -18,10 +18,10 @@ describe("updater feed builder", () => {
     expect(supportedRecoveryVersions(["0.2.1"])).toEqual(["0.1.7", "0.2.0", "0.2.1"]);
   });
 
-  it("creates stable and unstable entries for every platform/version pair", () => {
+  it("creates stable entries for every platform/version pair", () => {
     const entries = buildUpdaterFeedEntries({
       versions: ["0.1.7", "0.2.0"],
-      channels: ["stable", "unstable"],
+      channels: ["stable"],
       latestVersion: "0.2.1",
       notes: "### What's changed\n- Fix updater",
       pubDate: "2026-06-06T12:34:56.000Z",
@@ -52,7 +52,7 @@ describe("updater feed builder", () => {
     );
     expect(entries).toContainEqual(
       expect.objectContaining({
-        path: "updates/windows/x86_64/0.2.0/unstable.json",
+        path: "updates/windows/x86_64/0.2.0/stable.json",
       }),
     );
   });

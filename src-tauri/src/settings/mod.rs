@@ -14,11 +14,10 @@ pub use commands::{
 };
 pub use storage::{load_settings, save_settings as persist_settings, settings_file_path};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum UpdateChannel {
+    #[default]
     Stable,
-    Unstable,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -127,6 +126,7 @@ impl ProviderConfig {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MochiSettings {
+    #[serde(default)]
     pub update_channel: UpdateChannel,
     pub refresh_interval_seconds: u64,
     pub enabled_providers: Vec<String>,
@@ -141,7 +141,7 @@ pub struct MochiSettings {
 impl Default for MochiSettings {
     fn default() -> Self {
         Self {
-            update_channel: UpdateChannel::Stable,
+            update_channel: UpdateChannel::default(),
             refresh_interval_seconds: 300,
             enabled_providers: Vec::new(),
             show_notifications: true,
@@ -204,13 +204,21 @@ mod tests {
     }
 
     #[test]
-    fn serializes_update_channel_as_kebab_case() {
-        let settings = MochiSettings {
-            update_channel: UpdateChannel::Unstable,
-            ..MochiSettings::default()
-        };
-        let json = serde_json::to_string(&settings).expect("settings should serialize");
-        assert!(json.contains("\"update_channel\":\"unstable\""));
+    fn update_channel_defaults_to_stable() {
+        let settings: MochiSettings = serde_json::from_value(serde_json::json!({
+            "refresh_interval_seconds": 300,
+            "enabled_providers": [],
+            "show_notifications": true,
+        }))
+        .expect("parse");
+        assert_eq!(settings.update_channel, UpdateChannel::Stable);
+    }
+
+    #[test]
+    fn update_channel_rejects_unknown_values() {
+        let result: Result<MochiSettings, _> =
+            serde_json::from_value(serde_json::json!({ "update_channel": "nightly" }));
+        assert!(result.is_err());
     }
 
     #[test]

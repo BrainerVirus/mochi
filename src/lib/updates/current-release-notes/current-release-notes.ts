@@ -12,11 +12,10 @@ const GitHubReleaseResponseSchema = z.object({
   body: z.string().nullable().optional(),
 });
 
-export function githubReleaseTagForChannel(channel: UpdateChannel, currentVersion: string): string {
-  if (channel === "unstable") {
-    return "unstable";
-  }
-
+export function githubReleaseTagForChannel(
+  _channel: UpdateChannel,
+  currentVersion: string,
+): string {
   return currentVersion.startsWith("v") ? currentVersion : `v${currentVersion}`;
 }
 

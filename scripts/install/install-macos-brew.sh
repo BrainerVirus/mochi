@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # Install Mochi via Homebrew cask from the GitHub tap (macOS).
-# Usage: install-macos-brew.sh [-i|--unstable]
+# Usage: install-macos-brew.sh [release-tag]
 set -euo pipefail
 
 : "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"
 : "${MOCHI_INSTALL_REF:=main}"
 : "${MOCHI_STABLE_CASK:=mochi-desktop}"
-: "${MOCHI_UNSTABLE_CASK:=mochi-unstable}"
 
 _mochi_common_loaded=0
 for _i in "${!BASH_SOURCE[@]}"; do
@@ -42,11 +41,7 @@ mochi_parse_install_args "$@"
 
 mochi_need_cmd brew
 
-if [[ "${MOCHI_INSTALL_UNSTABLE}" == "1" ]]; then
-  CHANNEL="unstable"
-else
-  CHANNEL="stable"
-fi
+CHANNEL="stable"
 
 CASK_REF="$(mochi_homebrew_install_cask_ref "${CHANNEL}")"
 CASK_TOKEN="$(mochi_homebrew_cask_token "${CASK_REF}")"

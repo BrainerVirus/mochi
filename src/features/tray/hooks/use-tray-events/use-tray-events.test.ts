@@ -8,13 +8,12 @@ import { useTrayUiStore } from "@/features/tray/lib/stores/tray-ui-store/tray-ui
 import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_MOCHI_SETTINGS, type MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderUsageState } from "@/lib/schemas/usage";
-import { saveSettings, syncTrayUpdateChannel, syncTrayUsage } from "@/lib/tauri/commands";
+import { syncTrayUsage } from "@/lib/tauri/commands";
 
 import {
   cacheSavedSettings,
   handleSetTabEvent,
   handleSettingsSaveSuccess,
-  handleTraySetChannelEvent,
   handleUsageRefreshComplete,
   useSaveSettings,
   useTrayEvents,
@@ -52,9 +51,6 @@ vi.mock("@/lib/tauri/commands", () => ({
   saveSettings: vi.fn<(settings: MochiSettings) => Promise<MochiSettings>>((settings) =>
     Promise.resolve(settings),
   ),
-  syncTrayUpdateChannel: vi.fn<(channel: MochiSettings["update_channel"]) => Promise<void>>(() =>
-    Promise.resolve(),
-  ),
   syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
 }));
 
@@ -74,8 +70,6 @@ function createWrapper(queryClient: QueryClient) {
 
 beforeEach(() => {
   listenHandlers.clear();
-  vi.mocked(saveSettings).mockClear();
-  vi.mocked(syncTrayUpdateChannel).mockClear();
   vi.mocked(syncTrayUsage).mockClear();
   useTrayUiStore.getState().setSelectedTab("overview");
 });
@@ -116,7 +110,6 @@ describe("useSaveSettings", () => {
       ...DEFAULT_MOCHI_SETTINGS,
       enabled_providers: ["codex"],
     });
-    expect(syncTrayUpdateChannel).toHaveBeenCalledWith("stable");
   });
 });
 
@@ -147,31 +140,6 @@ describe("cacheSavedSettings", () => {
     const queryClient = new QueryClient();
     cacheSavedSettings(queryClient, DEFAULT_MOCHI_SETTINGS);
     expect(queryClient.getQueryData(queryKeys.settings)).toEqual(DEFAULT_MOCHI_SETTINGS);
-  });
-});
-
-describe("handleTraySetChannelEvent", () => {
-  it("persists channel changes and reconciles locally as emit fallback", async () => {
-    const queryClient = new QueryClient();
-    queryClient.setQueryData(queryKeys.settings, DEFAULT_MOCHI_SETTINGS);
-
-    handleTraySetChannelEvent("unstable", queryClient);
-
-    await waitFor(() => {
-      expect(saveSettings).toHaveBeenCalledWith({
-        ...DEFAULT_MOCHI_SETTINGS,
-        update_channel: "unstable",
-      });
-      expect(syncTrayUpdateChannel).toHaveBeenCalledWith("unstable");
-    });
-  });
-
-  it("does nothing when settings are not cached", () => {
-    const queryClient = new QueryClient();
-
-    handleTraySetChannelEvent("unstable", queryClient);
-
-    expect(saveSettings).not.toHaveBeenCalled();
   });
 });
 

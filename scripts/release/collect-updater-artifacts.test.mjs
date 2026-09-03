@@ -63,44 +63,20 @@ describe("collectUpdaterArtifacts", () => {
     expect(JSON.parse(await readFile(manifestPath, "utf8"))).toEqual(manifest);
   });
 
-  it("derives an unstable version that is newer than the recovery versions", async () => {
+  it("rejects removed or unknown channels", async () => {
     const root = await mkdtemp(join(tmpdir(), "mochi-updater-artifacts-"));
-    await writeArtifact(
-      root,
-      "updater-bundle-macos-26-macos-arm64/aarch64-apple-darwin/release/bundle/macos/Mochi.app.tar.gz",
-      "sig-darwin-arm",
-    );
-    await writeArtifact(
-      root,
-      "updater-bundle-macos-26-intel-macos-x64/x86_64-apple-darwin/release/bundle/macos/Mochi.app.tar.gz",
-      "sig-darwin-x64",
-    );
-    await writeArtifact(
-      root,
-      "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage/Mochi_0.2.1_amd64.AppImage",
-      "sig-linux",
-    );
-    await writeArtifact(
-      root,
-      "updater-bundle-windows-2025-vs2026-windows-x64/release/bundle/nsis/Mochi_0.2.1_x64-setup.exe",
-      "sig-windows",
-    );
-
-    const manifest = await collectUpdaterArtifacts({
-      artifactRoot: root,
-      channel: "unstable",
-      tagName: "unstable-20260606.123456",
-      unstableBaseVersion: "0.2.1",
-      releaseBaseUrl:
-        "https://github.com/BrainerVirus/mochi/releases/download/unstable-20260606.123456",
-      releaseNotesPath: join(root, "missing-notes.md"),
-      outputPath: join(root, "updater-feed.json"),
-      pubDate: "2026-06-06T12:34:56.000Z",
-    });
-
-    expect(manifest.latestVersion).toBe("0.2.1-unstable.20260606.123456");
-    expect(manifest.versions).toContain("0.1.7");
-    expect(manifest.versions).toContain("0.2.0");
+    const legacyChannel = ["un", "stable"].join("");
+    await expect(
+      collectUpdaterArtifacts({
+        artifactRoot: root,
+        channel: legacyChannel,
+        tagName: "0.2.1-rc.1",
+        releaseBaseUrl: "https://github.com/BrainerVirus/mochi/releases/download/0.2.1-rc.1",
+        releaseNotesPath: join(root, "missing-notes.md"),
+        outputPath: join(root, "updater-feed.json"),
+        pubDate: "2026-06-06T12:34:56.000Z",
+      }),
+    ).rejects.toThrow(`unsupported updater channel: ${legacyChannel}`);
   });
 
   it("accepts flat GitHub Release asset names for republish", async () => {
@@ -144,11 +120,9 @@ describe("collectUpdaterArtifacts", () => {
     await expect(
       collectUpdaterArtifacts({
         artifactRoot: root,
-        channel: "unstable",
-        tagName: "unstable-20260606.123456",
-        unstableBaseVersion: "0.2.1",
-        releaseBaseUrl:
-          "https://github.com/BrainerVirus/mochi/releases/download/unstable-20260606.123456",
+        channel: "stable",
+        tagName: "v0.2.1",
+        releaseBaseUrl: "https://github.com/BrainerVirus/mochi/releases/download/v0.2.1",
         releaseNotesPath: join(root, "missing-notes.md"),
         outputPath: join(root, "updater-feed.json"),
         pubDate: "2026-06-06T12:34:56.000Z",

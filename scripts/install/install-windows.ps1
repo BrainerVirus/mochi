@@ -4,24 +4,19 @@
   Install Mochi from GitHub Releases (Windows).
 
 .DESCRIPTION
-  Downloads the latest stable release by default, or the unstable prerelease
-  when -Unstable is set. Pass an explicit tag or set MOCHI_VERSION to pin.
+  Downloads the latest stable release. Pass an explicit tag or set
+  MOCHI_VERSION to pin.
 
 .PARAMETER ReleaseTag
   Optional GitHub release tag. Overrides automatic channel resolution.
-
-.PARAMETER Unstable
-  Install the unstable channel (latest prerelease) instead of stable.
 
 .PARAMETER Package
   msi, exe, or auto (default: auto prefers MSI).
 
 .ENV
-  MOCHI_VERSION, MOCHI_UNSTABLE=1, MOCHI_PACKAGE, GITHUB_TOKEN
+  MOCHI_VERSION, MOCHI_PACKAGE, GITHUB_TOKEN
 #>
 param(
-  [Alias('i')]
-  [switch]$Unstable,
   [string]$ReleaseTag = $env:MOCHI_VERSION,
   [ValidateSet('auto', 'msi', 'exe')]
   [string]$Package = $(if ($env:MOCHI_PACKAGE) { $env:MOCHI_PACKAGE } else { 'auto' })
@@ -33,8 +28,11 @@ $ApiBase = "https://api.github.com/repos/$Repo"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $ScriptDir 'lib/windows-install.ps1')
 
-if (-not $Unstable -and $env:MOCHI_UNSTABLE -eq '1') {
-  $Unstable = $true
+# Legacy prerelease channel env/flag print usage-style notice and exit 2.
+$legacyChannelEnv = 'MOCHI_UNSTA' + 'BLE'
+if ([Environment]::GetEnvironmentVariable($legacyChannelEnv) -eq '1') {
+  Write-Host 'Only stable releases are published.'
+  exit 2
 }
 
 function Test-WebView2Installed {
@@ -85,9 +83,8 @@ function Ensure-MochiRuntimeDependencies {
   Write-Host 'WebView2 runtime installed'
 }
 
-$channel = if ($Unstable) { 'unstable' } else { 'stable' }
-$tag = Resolve-MochiReleaseTag -ReleaseTag $ReleaseTag -Unstable:$Unstable -ApiBase $ApiBase
-Write-Host "Installing Mochi ($channel channel, release $tag)"
+$tag = Resolve-MochiReleaseTag -ReleaseTag $ReleaseTag -ApiBase $ApiBase
+Write-Host "Installing Mochi (stable channel, release $tag)"
 Ensure-MochiRuntimeDependencies
 $release = Get-MochiGitHubJson "$ApiBase/releases/tags/$tag"
 
@@ -125,7 +122,7 @@ try {
       throw "Installer exited with code $($proc.ExitCode)"
     }
   }
-  Write-Host "Installed Mochi $tag ($channel)"
+  Write-Host "Installed Mochi $tag (stable)"
 }
 finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue

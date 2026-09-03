@@ -85,7 +85,7 @@ function useInitialIndicatorPlacement(
       return undefined;
     }
 
-    // Wait until settings content is loaded — avoid failed snaps while layout is unstable.
+    // Wait until settings content is loaded — avoid failed snaps while layout is settling.
     if (placementTrigger === false) {
       onPlaced(false);
       return undefined;

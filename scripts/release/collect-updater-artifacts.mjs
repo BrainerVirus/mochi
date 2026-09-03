@@ -22,16 +22,9 @@ function toPosixPath(filePath) {
   return filePath.split(sep).join("/");
 }
 
-function versionFromTag(tagName, unstableBaseVersion) {
+function versionFromTag(tagName) {
   const stable = /^v(?<version>\d+\.\d+\.\d+)$/.exec(tagName);
   if (stable?.groups?.version) return stable.groups.version;
-  const unstable = /^unstable-(?<version>\d{8}\.\d{6})$/.exec(tagName);
-  if (unstable?.groups?.version) {
-    if (!unstableBaseVersion || !/^\d+\.\d+\.\d+$/.test(unstableBaseVersion)) {
-      throw new Error("unstable releases require --unstableBaseVersion=X.Y.Z");
-    }
-    return `${unstableBaseVersion}-unstable.${unstable.groups.version}`;
-  }
   throw new Error(`unsupported release tag for updater feed: ${tagName}`);
 }
 
@@ -47,16 +40,15 @@ export async function collectUpdaterArtifacts({
   artifactRoot,
   channel,
   tagName,
-  unstableBaseVersion,
   releaseBaseUrl,
   releaseNotesPath,
   outputPath,
   pubDate = new Date().toISOString(),
 }) {
-  if (channel !== "stable" && channel !== "unstable") {
+  if (channel !== "stable") {
     throw new Error(`unsupported updater channel: ${channel}`);
   }
-  const latestVersion = versionFromTag(tagName, unstableBaseVersion);
+  const latestVersion = versionFromTag(tagName);
 
   const files = await listFiles(artifactRoot);
   const artifacts = {};
@@ -106,7 +98,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     artifactRoot: args.artifactRoot,
     channel: args.channel,
     tagName: args.tagName,
-    unstableBaseVersion: args.unstableBaseVersion,
     releaseBaseUrl: args.releaseBaseUrl,
     releaseNotesPath: args.releaseNotesPath,
     outputPath: args.outputPath,

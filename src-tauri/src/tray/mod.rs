@@ -9,14 +9,14 @@ mod vibrancy;
 mod window_transparency;
 
 use tauri::{
-    menu::{CheckMenuItem, CheckMenuItemBuilder, Menu, MenuItem, PredefinedMenuItem, Submenu},
+    menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, State,
 };
 
 use crate::core::models::UsageSnapshot;
 use crate::core::usage_store::UsageStore;
-use crate::settings::{MochiSettings, SettingsState, UpdateChannel};
+use crate::settings::{MochiSettings, SettingsState};
 use crate::status::{read_cached_snapshots, RefreshCompletePayload};
 
 pub use panel::{
@@ -40,15 +40,6 @@ enum TrayMenuEntry {
         id: &'static str,
         label: &'static str,
     },
-    Channel {
-        id: &'static str,
-        label: &'static str,
-        checked: bool,
-    },
-    Submenu {
-        label: &'static str,
-        children: Vec<TrayMenuEntry>,
-    },
     Separator,
 }
 
@@ -57,26 +48,7 @@ struct TrayMenuModel {
     entries: Vec<TrayMenuEntry>,
 }
 
-#[derive(Clone)]
-pub struct TrayChannelMenuState {
-    stable: CheckMenuItem<Runtime>,
-    unstable: CheckMenuItem<Runtime>,
-}
-
-impl TrayChannelMenuState {
-    fn set_channel(&self, channel: &str) -> Result<(), String> {
-        let unstable = channel == "unstable";
-        self.stable
-            .set_checked(!unstable)
-            .map_err(|error| error.to_string())?;
-        self.unstable
-            .set_checked(unstable)
-            .map_err(|error| error.to_string())
-    }
-}
-
-fn build_tray_menu_model(channel: &str) -> TrayMenuModel {
-    let unstable = channel == "unstable";
+fn build_tray_menu_model() -> TrayMenuModel {
     TrayMenuModel {
         entries: vec![
             TrayMenuEntry::Item {
@@ -90,21 +62,6 @@ fn build_tray_menu_model(channel: &str) -> TrayMenuModel {
             TrayMenuEntry::Item {
                 id: "settings",
                 label: "Settings",
-            },
-            TrayMenuEntry::Submenu {
-                label: "Update channel",
-                children: vec![
-                    TrayMenuEntry::Channel {
-                        id: "channel-stable",
-                        label: "Stable",
-                        checked: !unstable,
-                    },
-                    TrayMenuEntry::Channel {
-                        id: "channel-unstable",
-                        label: "Unstable",
-                        checked: unstable,
-                    },
-                ],
             },
             TrayMenuEntry::Item {
                 id: "update",
@@ -160,45 +117,17 @@ pub async fn sync_tray_usage(
     apply_tray_usage(&app, &snapshots, tray_selection)
 }
 
-#[tauri::command]
-pub fn sync_tray_update_channel(
-    channel: String,
-    state: State<'_, TrayChannelMenuState>,
-) -> Result<(), String> {
-    state.set_channel(channel.as_str())
-}
-
 fn build_menu_from_model(
     app: &AppHandle,
     model: &TrayMenuModel,
-) -> Result<(Menu<Runtime>, TrayChannelMenuState), Box<dyn std::error::Error>> {
+) -> Result<Menu<Runtime>, Box<dyn std::error::Error>> {
     let menu = Menu::new(app)?;
-    let mut stable_channel_item = None;
-    let mut unstable_channel_item = None;
 
     for entry in &model.entries {
         match entry {
             TrayMenuEntry::Item { id, label } => {
                 let item = MenuItem::with_id(app, *id, *label, true, None::<&str>)?;
                 menu.append(&item)?;
-            }
-            TrayMenuEntry::Channel { .. } => {}
-            TrayMenuEntry::Submenu { label, children } => {
-                let submenu = Submenu::new(app, *label, true)?;
-                for child in children {
-                    if let TrayMenuEntry::Channel { id, label, checked } = child {
-                        let item = CheckMenuItemBuilder::with_id(*id, *label)
-                            .checked(*checked)
-                            .build(app)?;
-                        if *id == "channel-stable" {
-                            stable_channel_item = Some(item.clone());
-                        } else if *id == "channel-unstable" {
-                            unstable_channel_item = Some(item.clone());
-                        }
-                        submenu.append(&item)?;
-                    }
-                }
-                menu.append(&submenu)?;
             }
             TrayMenuEntry::Separator => {
                 let separator = PredefinedMenuItem::separator(app)?;
@@ -207,26 +136,12 @@ fn build_menu_from_model(
         }
     }
 
-    let state = TrayChannelMenuState {
-        stable: stable_channel_item.ok_or("missing stable channel menu item")?,
-        unstable: unstable_channel_item.ok_or("missing unstable channel menu item")?,
-    };
-
-    Ok((menu, state))
+    Ok(menu)
 }
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    let current_channel = app
-        .try_state::<SettingsState>()
-        .and_then(|state| state.current().ok())
-        .map(|settings| match settings.update_channel {
-            UpdateChannel::Stable => "stable".to_string(),
-            UpdateChannel::Unstable => "unstable".to_string(),
-        })
-        .unwrap_or_else(|| "stable".to_string());
-    let model = build_tray_menu_model(&current_channel);
-    let (menu, channel_state) = build_menu_from_model(app, &model)?;
-    app.manage(channel_state);
+    let model = build_tray_menu_model();
+    let menu = build_menu_from_model(app, &model)?;
 
     let icon = icon::tray_icon_fallback();
 
@@ -266,12 +181,6 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             }
             "settings" => {
                 let _ = open_app_window(app.clone(), "/settings".to_string());
-            }
-            "channel-stable" => {
-                let _ = app.emit("tray-set-channel", "stable");
-            }
-            "channel-unstable" => {
-                let _ = app.emit("tray-set-channel", "unstable");
             }
             "update" => {
                 let _ = app.emit("tray-check-update", ());
@@ -343,45 +252,34 @@ mod tests {
 
     #[test]
     fn tray_menu_model_removes_show_usage_and_prioritizes_widget() {
-        let model = build_tray_menu_model("stable");
+        let model = build_tray_menu_model();
         let labels = tray_menu_labels(&model);
         assert_eq!(labels.first(), Some(&"Open widget"));
         assert!(!labels.contains(&"Show usage"));
         assert!(!labels.contains(&"Show widget"));
+        assert!(!labels.contains(&"Update channel"));
         assert!(labels.contains(&"Refresh usage"));
         assert!(labels.contains(&"Settings"));
-        assert!(labels.contains(&"Update channel"));
     }
 
     #[test]
-    fn tray_menu_model_marks_current_channel() {
-        assert_eq!(
-            checked_channel_id(&build_tray_menu_model("stable")),
-            Some("channel-stable")
-        );
-        assert_eq!(
-            checked_channel_id(&build_tray_menu_model("unstable")),
-            Some("channel-unstable")
-        );
-        assert_eq!(
-            checked_channel_id(&build_tray_menu_model("unexpected")),
-            Some("channel-stable")
-        );
+    fn tray_menu_model_has_no_channel_items() {
+        let ids: Vec<&str> = build_tray_menu_model()
+            .entries
+            .iter()
+            .filter_map(|entry| match entry {
+                TrayMenuEntry::Item { id, .. } => Some(*id),
+                TrayMenuEntry::Separator => None,
+            })
+            .collect();
+        assert_eq!(ids, vec!["widget", "refresh", "settings", "update", "quit"]);
     }
 
     fn tray_menu_labels(model: &TrayMenuModel) -> Vec<&'static str> {
         fn collect(entry: &TrayMenuEntry, labels: &mut Vec<&'static str>) {
             match entry {
-                TrayMenuEntry::Item { label, .. }
-                | TrayMenuEntry::Channel { label, .. }
-                | TrayMenuEntry::Submenu { label, .. } => labels.push(label),
+                TrayMenuEntry::Item { label, .. } => labels.push(label),
                 TrayMenuEntry::Separator => {}
-            }
-
-            if let TrayMenuEntry::Submenu { children, .. } = entry {
-                for child in children {
-                    collect(child, labels);
-                }
             }
         }
 
@@ -390,19 +288,5 @@ mod tests {
             collect(entry, &mut labels);
         }
         labels
-    }
-
-    fn checked_channel_id(model: &TrayMenuModel) -> Option<&'static str> {
-        model.entries.iter().find_map(|entry| match entry {
-            TrayMenuEntry::Submenu { children, .. } => {
-                children.iter().find_map(|child| match child {
-                    TrayMenuEntry::Channel {
-                        id, checked: true, ..
-                    } => Some(*id),
-                    _ => None,
-                })
-            }
-            _ => None,
-        })
     }
 }

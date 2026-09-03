@@ -12,16 +12,10 @@ curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/ins
 
 The installer resolves `main` to the latest commit SHA so GitHub’s raw CDN does not serve a stale `common.sh`. You should see a native Linux artifact in the download line (`.deb`, `.rpm`, or `.AppImage`), not a macOS `.dmg` or app archive.
 
-**Stable (recommended):** installs the latest non-prerelease tag.
+**Stable:** installs the latest non-prerelease tag.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash
-```
-
-**Unstable** (`-i` uses the `unstable` release tag, not deprecated v0.1.0):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/BrainerVirus/mochi/main/scripts/install/install-linux.sh | bash -s -- -i
 ```
 
 Set `MOCHI_SKIP_DEPS=1` to skip the dependency phase. Set `MOCHI_GNOME_TRAY=0` to skip the optional GNOME AppIndicator extension step. See [README](../README.md) for package formats and pinning releases.
@@ -101,7 +95,7 @@ On Ubuntu, verify:
 
 - Native tray menu does not contain `Show usage`.
 - `Open widget` is the first action.
-- Stable/unstable channel submenu shows the current channel checked.
+- The tray menu has no update-channel submenu.
 - Selecting a provider tab keeps that provider percentage in the tray after refresh interval elapses.
 - Mouse wheel and trackpad scrolling work in widget, settings, update page, and What's New dialog.
 - Settings and widget native minimize/maximize/close controls work.

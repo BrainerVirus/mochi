@@ -44,22 +44,22 @@ describe("createUpdateCheckQueryOptions", () => {
     vi.mocked(checkForUpdate).mockResolvedValue({
       available: true,
       version: "0.1.6",
-      channel: "unstable",
+      channel: "stable",
       notes:
         "### What's changed\n- Current release only\n\n### Install stable\n- macOS: `curl example`",
     });
 
-    const options = createUpdateCheckQueryOptions("unstable");
+    const options = createUpdateCheckQueryOptions("stable");
 
     await expect(
-      runUpdateCheckQuery(options.queryFn, "unstable", queryClient),
+      runUpdateCheckQuery(options.queryFn, "stable", queryClient),
     ).resolves.toMatchObject({
       available: true,
     });
     expect(cacheReleaseNotes).toHaveBeenCalledWith(
       expect.objectContaining({
         version: "0.1.6",
-        channel: "unstable",
+        channel: "stable",
         notes: "### What's changed\n- Current release only",
         source: "updater",
       }),
@@ -71,7 +71,7 @@ function runUpdateCheckQuery(
   queryFn:
     | ((context: QueryFunctionContext<readonly ["update", "check", string]>) => unknown)
     | undefined,
-  channel: "stable" | "unstable",
+  channel: "stable",
   client: QueryClient,
 ) {
   if (!queryFn) {
