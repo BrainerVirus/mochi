@@ -5,6 +5,7 @@ use crate::core::provider::{ProviderError, ProviderResult};
 pub struct WindowLimit {
     pub used_percent: f32,
     pub resets_at: Option<String>,
+    #[allow(dead_code)]
     pub limited: bool,
 }
 
@@ -18,11 +19,16 @@ pub struct CreditsResponse {
 
 #[derive(Debug, Clone)]
 pub struct SummaryResponse {
+    #[allow(dead_code)]
     pub total_tokens: f64,
+    #[allow(dead_code)]
     pub total_tokens_in: f64,
+    #[allow(dead_code)]
     pub total_tokens_out: f64,
+    #[allow(dead_code)]
     pub run_count: u64,
     pub total_cost: f64,
+    #[allow(dead_code)]
     pub success_rate: f64,
 }
 

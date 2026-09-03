@@ -2,7 +2,7 @@ pub(crate) mod antigravity;
 pub(crate) mod augment;
 pub(crate) mod claude;
 pub(crate) mod codex;
-pub mod commandcode;
+pub(crate) mod commandcode;
 pub(crate) mod copilot;
 pub mod credential_probe;
 pub(crate) mod cursor;
@@ -20,6 +20,7 @@ pub use antigravity::AntigravityProvider;
 pub use augment::AugmentProvider;
 pub use claude::ClaudeProvider;
 pub use codex::CodexProvider;
+pub use commandcode::CommandCodeProvider;
 pub use copilot::CopilotProvider;
 pub use cursor::CursorProvider;
 pub use factory::FactoryProvider;
@@ -43,6 +44,7 @@ pub fn built_in_providers() -> Vec<Arc<dyn Provider>> {
         Arc::new(ZaiProvider),
         Arc::new(KiroProvider),
         Arc::new(AugmentProvider),
+        Arc::new(CommandCodeProvider),
     ]
 }
 
@@ -51,7 +53,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn includes_twelve_v1_providers() {
-        assert_eq!(built_in_providers().len(), 12);
+    fn includes_thirteen_v1_providers() {
+        assert_eq!(built_in_providers().len(), 13);
     }
 }

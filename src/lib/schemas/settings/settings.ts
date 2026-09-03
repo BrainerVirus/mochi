@@ -66,6 +66,7 @@ export const PROVIDER_LABELS: Record<z.infer<typeof ProviderIdSchema>, string> =
   zai: "z.ai",
   kiro: "Kiro",
   augment: "Augment",
+  commandcode: "Command Code",
 };
 
 export const ALL_PROVIDER_IDS = ProviderIdSchema.options;

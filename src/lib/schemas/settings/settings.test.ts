@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_MOCHI_SETTINGS, MochiSettingsSchema } from "./settings";
+import { DEFAULT_MOCHI_SETTINGS, MochiSettingsSchema, PROVIDER_LABELS } from "./settings";
 
 describe("MochiSettingsSchema", () => {
   it("ships defaults aligned with the Rust backend", () => {
@@ -19,6 +19,18 @@ describe("MochiSettingsSchema", () => {
     });
 
     expect(parsed.update_channel).toBe("stable");
+  });
+
+  it("accepts commandcode as an enabled provider", () => {
+    const parsed = MochiSettingsSchema.parse({
+      update_channel: "stable",
+      refresh_interval_seconds: 300,
+      enabled_providers: ["commandcode"],
+      show_notifications: true,
+    });
+
+    expect(parsed.enabled_providers).toEqual(["commandcode"]);
+    expect(PROVIDER_LABELS.commandcode).toBe("Command Code");
   });
 
   it("rejects refresh intervals below thirty seconds", () => {

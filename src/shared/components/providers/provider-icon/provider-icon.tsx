@@ -43,6 +43,7 @@ function ProviderLetter({ provider, className }: { provider: ProviderId; classNa
     zai: "Z",
     kiro: "K",
     augment: "+",
+    commandcode: ">",
   };
 
   return (

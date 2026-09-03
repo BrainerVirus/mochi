@@ -55,6 +55,10 @@ export const PROVIDER_EXTERNAL_LINKS: Record<ProviderId, ProviderExternalLinks> 
     dashboardUrl: "https://app.augmentcode.com/account/subscription",
     statusPageUrl: null,
   },
+  commandcode: {
+    dashboardUrl: "https://commandcode.ai/settings/usage",
+    statusPageUrl: null,
+  },
 };
 
 export function getProviderExternalLinks(provider: ProviderId): ProviderExternalLinks {
