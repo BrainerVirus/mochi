@@ -103,6 +103,8 @@ mod tests {
         ));
         std::fs::create_dir_all(&home).expect("home dir");
         std::env::set_var("HOME", &home);
+        #[cfg(windows)]
+        std::env::set_var("USERPROFILE", &home);
 
         struct UnconfiguredClient;
 
@@ -123,6 +125,8 @@ mod tests {
             .await
             .expect("check");
         std::env::remove_var("HOME");
+        #[cfg(windows)]
+        std::env::remove_var("USERPROFILE");
         let _ = std::fs::remove_dir_all(home);
 
         assert!(!available);

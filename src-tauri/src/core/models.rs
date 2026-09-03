@@ -17,6 +17,7 @@ pub enum ProviderId {
     Zai,
     Kiro,
     Augment,
+    #[serde(rename = "commandcode", alias = "command-code")]
     CommandCode,
 }
 
@@ -347,6 +348,16 @@ mod tests {
             serde_json::to_string(&ProviderId::OpenCode).unwrap(),
             "\"opencode\""
         );
+    }
+
+    #[test]
+    fn provider_id_commandcode_roundtrips_canonical_string() {
+        assert_eq!(
+            serde_json::to_string(&ProviderId::CommandCode).unwrap(),
+            "\"commandcode\""
+        );
+        let parsed: ProviderId = serde_json::from_str("\"commandcode\"").unwrap();
+        assert_eq!(parsed, ProviderId::CommandCode);
     }
 
     #[test]

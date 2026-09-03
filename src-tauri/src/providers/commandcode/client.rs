@@ -39,17 +39,18 @@ impl Default for HttpCommandCodeClient {
 #[async_trait]
 impl CommandCodeClient for HttpCommandCodeClient {
     async fn fetch_credits(&self, cookie: &str) -> ProviderResult<serde_json::Value> {
-        self.get_json(CREDITS_PATH, cookie).await
+        self.get_json(&format!("{BASE_URL}{CREDITS_PATH}"), cookie)
+            .await
     }
 
     async fn fetch_summary(&self, cookie: &str) -> ProviderResult<serde_json::Value> {
-        self.get_json(SUMMARY_PATH, cookie).await
+        self.get_json(&format!("{BASE_URL}{SUMMARY_PATH}"), cookie)
+            .await
     }
 }
 
 impl HttpCommandCodeClient {
-    async fn get_json(&self, path: &str, cookie: &str) -> ProviderResult<serde_json::Value> {
-        let url = format!("{BASE_URL}{path}");
+    async fn get_json(&self, url: &str, cookie: &str) -> ProviderResult<serde_json::Value> {
         let response = self
             .http
             .get(url)
@@ -81,46 +82,161 @@ impl HttpCommandCodeClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
+    use std::io::{BufRead, BufReader, Write};
+    use std::net::TcpListener;
 
-    #[derive(Default)]
-    struct RecordingClient {
-        credits_cookies: Mutex<Vec<String>>,
-        summary_cookies: Mutex<Vec<String>>,
+    /// Captured HTTP request: request line plus all headers.
+    #[derive(Debug)]
+    struct CapturedRequest {
+        request_line: String,
+        headers: String,
     }
 
-    #[async_trait]
-    impl CommandCodeClient for RecordingClient {
-        async fn fetch_credits(&self, cookie: &str) -> ProviderResult<serde_json::Value> {
-            self.credits_cookies
-                .lock()
-                .expect("lock")
-                .push(cookie.to_string());
-            Ok(serde_json::json!({}))
-        }
-
-        async fn fetch_summary(&self, cookie: &str) -> ProviderResult<serde_json::Value> {
-            self.summary_cookies
-                .lock()
-                .expect("lock")
-                .push(cookie.to_string());
-            Ok(serde_json::json!({}))
-        }
+    /// One-request test HTTP server: accepts a single connection, records the
+    /// request, writes a canned response, then shuts down.
+    fn serve_one(
+        status_line: &str,
+        body: &str,
+    ) -> (String, std::thread::JoinHandle<CapturedRequest>) {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let addr = listener.local_addr().expect("addr");
+        let status_line = status_line.to_string();
+        let body = body.to_string();
+        let handle = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().expect("accept");
+            let mut reader = BufReader::new(stream.try_clone().expect("clone"));
+            let mut request_line = String::new();
+            reader.read_line(&mut request_line).expect("request line");
+            let mut headers = String::new();
+            loop {
+                let mut line = String::new();
+                reader.read_line(&mut line).expect("header line");
+                if line == "\r\n" || line.is_empty() {
+                    break;
+                }
+                headers.push_str(&line);
+            }
+            let response = format!(
+                "HTTP/1.1 {status_line}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            let mut stream = stream;
+            stream.write_all(response.as_bytes()).expect("respond");
+            CapturedRequest {
+                request_line: request_line.trim().to_string(),
+                headers,
+            }
+        });
+        (addr.to_string(), handle)
     }
 
     #[tokio::test]
-    async fn fetches_both_endpoints_with_cookie() {
-        let client = RecordingClient::default();
-        let cookie = "__Secure-commandcode_prod_.session_token=abc";
-        let _ = client.fetch_credits(cookie).await;
-        let _ = client.fetch_summary(cookie).await;
-        assert_eq!(
-            client.credits_cookies.lock().expect("lock").as_slice(),
-            [cookie]
+    async fn get_json_maps_200_to_parsed_json() {
+        let (addr, server) = serve_one("200 OK", r#"{"credits":123}"#);
+        let client = HttpCommandCodeClient::new();
+        let value = client
+            .get_json(&format!("http://{addr}/x"), "cookie=1")
+            .await
+            .expect("200 must parse");
+        assert_eq!(value["credits"], 123);
+        server.join().expect("server thread");
+    }
+
+    #[tokio::test]
+    async fn get_json_maps_401_to_auth_error() {
+        let (addr, server) = serve_one("401 Unauthorized", "{}");
+        let client = HttpCommandCodeClient::new();
+        let result = client
+            .get_json(&format!("http://{addr}/x"), "cookie=1")
+            .await;
+        assert!(
+            matches!(result, Err(ProviderError::Auth(_))),
+            "401 must map to Auth, got {result:?}"
         );
-        assert_eq!(
-            client.summary_cookies.lock().expect("lock").as_slice(),
-            [cookie]
+        server.join().expect("server thread");
+    }
+
+    #[tokio::test]
+    async fn get_json_maps_403_to_auth_error() {
+        let (addr, server) = serve_one("403 Forbidden", "{}");
+        let client = HttpCommandCodeClient::new();
+        let result = client
+            .get_json(&format!("http://{addr}/x"), "cookie=1")
+            .await;
+        assert!(
+            matches!(result, Err(ProviderError::Auth(_))),
+            "403 must map to Auth, got {result:?}"
+        );
+        server.join().expect("server thread");
+    }
+
+    #[tokio::test]
+    async fn get_json_maps_500_to_fetch_error() {
+        let (addr, server) = serve_one("500 Internal Server Error", "{}");
+        let client = HttpCommandCodeClient::new();
+        let result = client
+            .get_json(&format!("http://{addr}/x"), "cookie=1")
+            .await;
+        match &result {
+            Err(ProviderError::Fetch(message)) => {
+                assert!(
+                    message.contains("HTTP 500"),
+                    "must name the status: {message}"
+                );
+            }
+            other => panic!("500 must map to Fetch, got {other:?}"),
+        }
+        server.join().expect("server thread");
+    }
+
+    #[tokio::test]
+    async fn get_json_maps_invalid_200_body_to_parse_error() {
+        let (addr, server) = serve_one("200 OK", "not-json{");
+        let client = HttpCommandCodeClient::new();
+        let result = client
+            .get_json(&format!("http://{addr}/x"), "cookie=1")
+            .await;
+        assert!(
+            matches!(result, Err(ProviderError::Parse(_))),
+            "invalid body must map to Parse, got {result:?}"
+        );
+        server.join().expect("server thread");
+    }
+
+    #[tokio::test]
+    async fn request_carries_cookie_and_accept_headers() {
+        let (addr, server) = serve_one("200 OK", "{}");
+        let client = HttpCommandCodeClient::new();
+        let _ = client
+            .get_json(
+                &format!("http://{addr}/internal/usage/summary"),
+                "session=abc",
+            )
+            .await;
+        let captured = server.join().expect("server thread");
+        assert!(
+            captured
+                .headers
+                .lines()
+                .any(|l| l.to_ascii_lowercase().starts_with("cookie:") && l.contains("session=abc")),
+            "cookie header must be sent, got: {}",
+            captured.headers
+        );
+        assert!(
+            captured
+                .headers
+                .lines()
+                .any(|l| l.to_ascii_lowercase().starts_with("accept:")
+                    && l.contains("application/json")),
+            "accept header must be sent, got: {}",
+            captured.headers
+        );
+        assert!(
+            captured
+                .request_line
+                .contains("GET /internal/usage/summary"),
+            "must hit the requested path, got: {}",
+            captured.request_line
         );
     }
 
@@ -135,10 +251,5 @@ mod tests {
             "https://api.commandcode.ai/internal/usage/summary"
         );
         assert_eq!(REQUEST_TIMEOUT, Duration::from_secs(30));
-    }
-
-    #[allow(dead_code)]
-    fn assert_error_shapes(error: ProviderError) -> ProviderError {
-        error
     }
 }
