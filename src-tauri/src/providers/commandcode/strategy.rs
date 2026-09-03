@@ -86,7 +86,7 @@ mod tests {
         let snapshot = strategy.fetch(&FetchContext::empty()).await.expect("fetch");
 
         assert_eq!(snapshot.source, "commandcode-web");
-        assert_eq!(snapshot.primary.label, "Monthly");
+        assert_eq!(snapshot.primary.label, "Weekly");
     }
 
     #[tokio::test]

@@ -1,13 +1,1 @@
-{
-  "totalCount": 6319,
-  "totalCost": 46.80689824929999,
-  "averageCost": 0.007407326831666401,
-  "successRate": 99.96834942237696,
-  "completedCount": 6317,
-  "failedCount": 2,
-  "totalTokensIn": 1305381978,
-  "totalTokensOut": 3061181,
-  "totalTokens": 1308443159,
-  "totalCredits": 46.80689824929999,
-  "periodBasis": "billing-period"
-}
+{"totalCount":7890,"totalCost":56.74708297929999,"averageCost":0.0071922792115716085,"successRate":99.97465145754119,"completedCount":7888,"failedCount":2,"totalTokensIn":1457290826,"totalTokensOut":3907907,"totalTokens":1461198733,"totalCredits":56.74708297929999,"totalFreeCredits":0,"totalMonthlyCredits":56.74708297929999,"totalPurchasedCredits":0,"periodBasis":"billing-period"}

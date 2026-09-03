@@ -1,8 +1,1 @@
-{
-  "credits": { "purchasedCredits": 0, "monthlyCredits": 12.5 },
-  "windowLimits": {
-    "fiveHour": { "usedPercent": 0, "resetsAt": "2026-09-02T23:32:00Z", "limited": false },
-    "weekly": { "usedPercent": 0, "resetsAt": "2026-09-06T18:59:00Z", "limited": false },
-    "monthly": { "usedPercent": 64, "resetsAt": "2026-09-10T00:00:00Z", "limited": true }
-  }
-}
+{"credits":{"belowThreshold":false,"creditThreshold":0,"monthlyCredits":15.2591649987,"purchasedCredits":0,"premiumMonthlyCredits":0,"opensourceMonthlyCredits":15.2591649987},"windowLimits":{"limited":true,"exceeded":null,"fiveHour":{"used":1.5458561125,"cap":14,"exceeded":false,"resetAt":1788461403481},"weekly":{"used":9.9639946525,"cap":35,"exceeded":false,"resetAt":1788978906872}}}
