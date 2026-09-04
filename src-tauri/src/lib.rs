@@ -87,6 +87,13 @@ pub fn run() -> anyhow::Result<()> {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_positioner::init())
+        // Second GUI launch focuses the running instance's panel instead of
+        // starting a duplicate process (duplicate writers amplified tray races
+        // and SQLite contention). CLI subcommands return before this point.
+        // open_tray_panel (not show_tray_panel): focus, never toggle-hide.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            tray::open_tray_panel(app, "/");
+        }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             #[cfg(target_os = "macos")]
