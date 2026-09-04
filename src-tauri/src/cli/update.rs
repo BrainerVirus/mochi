@@ -18,15 +18,36 @@ pub fn format_check_output(info: &UpdateInfo) -> String {
     }
 }
 
+/// Honest apply output: the headless CLI never replaces the binary (that
+/// stays with the GUI updater's `install_update`), so it reports what is
+/// available, where to fetch it, and how to install it — never "updated to".
+pub fn format_apply_output(info: &UpdateInfo) -> String {
+    match (&info.available, &info.version) {
+        (true, Some(version)) => {
+            let mut output = format!("{version} available");
+            if let Some(url) = info
+                .download_url
+                .as_deref()
+                .filter(|url| !url.trim().is_empty())
+            {
+                output.push_str(&format!("\n{url}"));
+            }
+            output.push_str(
+                "\ninstall via the GUI updater (install_update), or run the install script on headless machines",
+            );
+            output
+        }
+        _ => "up to date".to_string(),
+    }
+}
+
 fn apply_stable_update() -> Result<String, String> {
     // No installer runtime exists before the Tauri builder runs, so apply
     // re-verifies against the live stable feed (shared extraction, never a
-    // second feed parser); binary replacement stays with the GUI updater.
+    // second feed parser) and reports the install path; binary replacement
+    // stays with the GUI updater.
     let info = check_stable_update()?;
-    match (&info.available, &info.version) {
-        (true, Some(version)) => Ok(format!("updated to {version}")),
-        _ => Ok("up to date".to_string()),
-    }
+    Ok(format_apply_output(&info))
 }
 
 pub fn run_update_action(action: &str, confirm: bool) -> Result<String, String> {
@@ -78,6 +99,7 @@ mod tests {
             version: None,
             channel: "stable".to_string(),
             notes: None,
+            download_url: None,
         };
         assert_eq!(format_check_output(&info), "up to date");
     }
@@ -89,6 +111,7 @@ mod tests {
             version: Some("0.3.0".to_string()),
             channel: "stable".to_string(),
             notes: Some("- fixed tray races".to_string()),
+            download_url: None,
         };
         let output = format_check_output(&info);
         assert!(output.contains("0.3.0 available"));
@@ -102,7 +125,45 @@ mod tests {
             version: Some("0.3.0".to_string()),
             channel: "stable".to_string(),
             notes: Some("  ".to_string()),
+            download_url: None,
         };
         assert_eq!(format_check_output(&info), "0.3.0 available");
+    }
+
+    #[test]
+    fn update_apply_output_names_version_and_url_without_claiming_install() {
+        let info = UpdateInfo {
+            available: true,
+            version: Some("0.3.0".to_string()),
+            channel: "stable".to_string(),
+            notes: None,
+            download_url: Some("https://example.com/mochi-0.3.0.dmg".to_string()),
+        };
+        let output = format_apply_output(&info);
+        assert!(output.contains("0.3.0"), "names the version, got: {output}");
+        assert!(
+            output.contains("https://example.com/mochi-0.3.0.dmg"),
+            "links the installer, got: {output}"
+        );
+        assert!(
+            !output.contains("updated to"),
+            "must never claim the binary was replaced, got: {output}"
+        );
+        assert!(
+            output.contains("install_update"),
+            "directs to the GUI updater, got: {output}"
+        );
+    }
+
+    #[test]
+    fn update_apply_output_reports_up_to_date() {
+        let info = UpdateInfo {
+            available: false,
+            version: None,
+            channel: "stable".to_string(),
+            notes: None,
+            download_url: None,
+        };
+        assert_eq!(format_apply_output(&info), "up to date");
     }
 }
