@@ -10,35 +10,51 @@ use crossterm::{
 /// [`TuiGuard::enter`] enables raw mode and switches to the alternate screen;
 /// dropping the guard restores both, so early returns and `?` unwinding cannot
 /// leave the user's terminal in a broken state.
-pub struct TuiGuard;
+pub struct TuiGuard<W: io::Write = io::Stdout> {
+    writer: W,
+    disable: Option<Box<dyn FnOnce() -> io::Result<()>>>,
+}
 
-impl TuiGuard {
+impl TuiGuard<io::Stdout> {
     /// Enter raw mode + alternate screen. Errors when there is no terminal
     /// (piped output, CI), which is how callers detect non-interactive use.
     pub fn enter() -> io::Result<Self> {
-        Self::enter_with(&mut io::stdout(), enable_raw_mode, disable_raw_mode)
+        Self::enter_with(io::stdout(), enable_raw_mode, disable_raw_mode)
     }
 
-    fn enter_with<W: io::Write>(
-        writer: &mut W,
+    fn restore() {
+        Self::restore_with(&mut io::stdout(), disable_raw_mode);
+    }
+}
+
+impl<W: io::Write> TuiGuard<W> {
+    fn enter_with(
+        mut writer: W,
         enable: impl FnOnce() -> io::Result<()>,
-        disable: impl FnOnce() -> io::Result<()>,
+        disable: impl FnOnce() -> io::Result<()> + 'static,
     ) -> io::Result<Self> {
         enable()?;
         if let Err(error) = execute!(writer, EnterAlternateScreen) {
             let _ = disable();
             return Err(error);
         }
-        Ok(Self)
+        Ok(Self {
+            writer,
+            disable: Some(Box::new(disable)),
+        })
     }
 
-    fn restore() {
-        Self::restore_with(&mut io::stdout(), disable_raw_mode);
-    }
-
-    fn restore_with<W: io::Write>(writer: &mut W, disable: impl FnOnce() -> io::Result<()>) {
+    fn restore_with(writer: &mut W, disable: impl FnOnce() -> io::Result<()>) {
         let _ = execute!(writer, LeaveAlternateScreen);
         let _ = disable();
+    }
+}
+
+impl<W: io::Write> Drop for TuiGuard<W> {
+    fn drop(&mut self) {
+        if let Some(disable) = self.disable.take() {
+            Self::restore_with(&mut self.writer, disable);
+        }
     }
 }
 
@@ -76,13 +92,14 @@ mod tests {
 
     #[test]
     fn enter_disables_raw_mode_when_alt_screen_fails() {
-        let disabled = RefCell::new(false);
-        let mut writer = FailingWriter;
+        let disabled = Rc::new(RefCell::new(false));
+        let writer = FailingWriter;
+        let disabled_in_hook = Rc::clone(&disabled);
         let result = TuiGuard::enter_with(
-            &mut writer,
+            writer,
             || Ok(()),
-            || {
-                *disabled.borrow_mut() = true;
+            move || {
+                *disabled_in_hook.borrow_mut() = true;
                 Ok(())
             },
         );
@@ -109,6 +126,52 @@ mod tests {
         }
     }
 
+    struct SharedWriter {
+        buf: Rc<RefCell<Vec<u8>>>,
+        log: Rc<RefCell<Vec<&'static str>>>,
+    }
+
+    impl io::Write for SharedWriter {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            self.buf.borrow_mut().extend_from_slice(buf);
+            self.log.borrow_mut().push("leave-write");
+            Ok(buf.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn dropping_guard_leaves_alt_screen_before_disabling_raw_mode() {
+        let log: Rc<RefCell<Vec<&'static str>>> = Rc::default();
+        let buf: Rc<RefCell<Vec<u8>>> = Rc::default();
+        let writer = SharedWriter {
+            buf: Rc::clone(&buf),
+            log: Rc::clone(&log),
+        };
+        let log_in_hook = Rc::clone(&log);
+        let guard = TuiGuard::enter_with(
+            writer,
+            || Ok(()),
+            move || {
+                log_in_hook.borrow_mut().push("disable");
+                Ok(())
+            },
+        );
+        assert!(guard.is_ok(), "enter with a working writer must succeed");
+        // Ignore the enter-phase write; the drop below must emit the leave
+        // sequence first and disable raw mode second.
+        log.borrow_mut().clear();
+        buf.borrow_mut().clear();
+        drop(guard);
+        assert_eq!(log.borrow().as_slice(), ["leave-write", "disable"]);
+        assert!(
+            buf.borrow().windows(8).any(|w| w == b"\x1b[?1049l"),
+            "dropping the guard must emit the leave-alternate-screen sequence"
+        );
+    }
+
     #[test]
     fn restore_leaves_alt_screen_before_disabling_raw_mode() {
         let log: Rc<RefCell<Vec<&'static str>>> = Rc::default();
@@ -117,7 +180,7 @@ mod tests {
             log: Rc::clone(&log),
         };
         let log_in_hook = Rc::clone(&log);
-        TuiGuard::restore_with(&mut writer, || {
+        TuiGuard::<OrderWriter>::restore_with(&mut writer, || {
             log_in_hook.borrow_mut().push("disable");
             Ok(())
         });
