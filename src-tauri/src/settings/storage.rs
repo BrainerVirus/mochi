@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use super::MochiSettings;
@@ -29,7 +30,15 @@ pub fn save_settings(path: &Path, settings: &MochiSettings) -> Result<(), String
     }
 
     let contents = serde_json::to_string_pretty(settings).map_err(|error| error.to_string())?;
-    fs::write(path, contents).map_err(|error| error.to_string())
+    // Atomic persist: write to a temp file in the same directory, fsync it,
+    // then rename over the live path so readers never observe a torn file.
+    let tmp_path = path.with_extension("tmp");
+    let mut file = fs::File::create(&tmp_path).map_err(|error| error.to_string())?;
+    file.write_all(contents.as_bytes())
+        .map_err(|error| error.to_string())?;
+    file.sync_all().map_err(|error| error.to_string())?;
+    drop(file);
+    fs::rename(&tmp_path, path).map_err(|error| error.to_string())
 }
 
 #[cfg(test)]

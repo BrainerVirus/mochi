@@ -39,6 +39,15 @@ impl UpdateChannel {
     }
 }
 
+impl<'de> Deserialize<'de> for UpdateChannel {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Self::deserialize_value(deserializer)
+    }
+}
+
 impl Serialize for UpdateChannel {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
