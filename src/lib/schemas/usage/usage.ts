@@ -33,6 +33,7 @@ export const UsageWindowSchema = z.object({
   used_percent: z.number(),
   remaining_percent: z.number(),
   resets_at: z.string().nullable(),
+  limited: z.boolean().optional(),
 });
 
 export type UsageWindow = z.infer<typeof UsageWindowSchema>;

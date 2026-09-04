@@ -185,6 +185,12 @@ pub struct UsageWindow {
     pub used_percent: f32,
     pub remaining_percent: f32,
     pub resets_at: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub limited: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
 }
 
 impl UsageWindow {
@@ -195,7 +201,13 @@ impl UsageWindow {
             used_percent,
             remaining_percent: 100.0 - used_percent,
             resets_at,
+            limited: false,
         }
+    }
+
+    pub fn with_limited(mut self, limited: bool) -> Self {
+        self.limited = limited;
+        self
     }
 }
 

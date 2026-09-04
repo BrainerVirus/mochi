@@ -7,7 +7,6 @@ use time::OffsetDateTime;
 pub struct WindowLimit {
     pub used_percent: f32,
     pub resets_at: Option<String>,
-    #[allow(dead_code)]
     pub limited: bool,
 }
 
@@ -17,21 +16,19 @@ pub struct CreditsResponse {
     pub five_hour: Option<WindowLimit>,
     pub weekly: Option<WindowLimit>,
     pub monthly: Option<WindowLimit>,
+    pub limited: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct SummaryResponse {
+    // Kept (not mapped into the snapshot yet): asserted by
+    // parses_summary_totals/total_count_* tests to pin the API shape so
+    // silent upstream renames fail loudly instead of parsing as 0.
     #[allow(dead_code)]
     pub total_tokens: f64,
     #[allow(dead_code)]
-    pub total_tokens_in: f64,
-    #[allow(dead_code)]
-    pub total_tokens_out: f64,
-    #[allow(dead_code)]
     pub run_count: u64,
     pub total_cost: f64,
-    #[allow(dead_code)]
-    pub success_rate: f64,
 }
 
 pub fn parse_credits(value: &serde_json::Value) -> ProviderResult<CreditsResponse> {
@@ -46,16 +43,15 @@ pub fn parse_credits(value: &serde_json::Value) -> ProviderResult<CreditsRespons
     let window = |key: &str| -> Option<WindowLimit> {
         let raw = value.get("windowLimits")?.get(key)?;
         let used = raw.get("used").and_then(serde_json::Value::as_f64)?;
-        let cap = raw
-            .get("cap")
-            .and_then(serde_json::Value::as_f64)
-            .unwrap_or(1.0);
+        // A missing or non-positive cap carries no ratio information: report
+        // 0.0% rather than dividing by the 1.0 fallback (which rendered
+        // `used * 100`% and masked schema drift as a full window).
+        let used_percent = match raw.get("cap").and_then(serde_json::Value::as_f64) {
+            Some(cap) if cap > 0.0 => (used / cap * 100.0) as f32,
+            _ => 0.0,
+        };
         Some(WindowLimit {
-            used_percent: if cap > 0.0 {
-                (used / cap * 100.0) as f32
-            } else {
-                0.0
-            },
+            used_percent,
             resets_at: raw
                 .get("resetAt")
                 .and_then(serde_json::Value::as_i64)
@@ -72,6 +68,11 @@ pub fn parse_credits(value: &serde_json::Value) -> ProviderResult<CreditsRespons
         five_hour: window("fiveHour"),
         weekly: window("weekly"),
         monthly: window("monthly"),
+        limited: value
+            .get("windowLimits")
+            .and_then(|limits| limits.get("limited"))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false),
     })
 }
 
@@ -83,9 +84,18 @@ fn reset_at_to_rfc3339(epoch_ms: i64) -> Option<String> {
 }
 
 pub fn parse_summary(value: &serde_json::Value) -> ProviderResult<SummaryResponse> {
+    // Some API shapes encode integral counts as floats (e.g. 6319.0):
+    // accept those, reject genuinely fractional values.
     let run_count = value
         .get("totalCount")
-        .and_then(serde_json::Value::as_u64)
+        .and_then(|count| {
+            count.as_u64().or_else(|| {
+                count
+                    .as_f64()
+                    .filter(|f| f.fract() == 0.0)
+                    .map(|f| f as u64)
+            })
+        })
         .ok_or_else(|| ProviderError::Parse("commandcode: missing totalCount".into()))?;
     let total_tokens = value
         .get("totalTokens")
@@ -95,20 +105,8 @@ pub fn parse_summary(value: &serde_json::Value) -> ProviderResult<SummaryRespons
     Ok(SummaryResponse {
         run_count,
         total_tokens,
-        total_tokens_in: value
-            .get("totalTokensIn")
-            .and_then(serde_json::Value::as_f64)
-            .unwrap_or(0.0),
-        total_tokens_out: value
-            .get("totalTokensOut")
-            .and_then(serde_json::Value::as_f64)
-            .unwrap_or(0.0),
         total_cost: value
             .get("totalCost")
-            .and_then(serde_json::Value::as_f64)
-            .unwrap_or(0.0),
-        success_rate: value
-            .get("successRate")
             .and_then(serde_json::Value::as_f64)
             .unwrap_or(0.0),
     })
@@ -124,7 +122,8 @@ pub fn snapshot_from_commandcode(
         .weekly
         .as_ref()
         .ok_or_else(|| ProviderError::Parse("commandcode: missing weekly window".into()))?;
-    let primary = UsageWindow::new("Weekly", weekly.used_percent, weekly.resets_at.clone());
+    let primary = UsageWindow::new("Weekly", weekly.used_percent, weekly.resets_at.clone())
+        .with_limited(credits.limited || weekly.limited);
     let secondary = credits
         .five_hour
         .as_ref()
@@ -147,12 +146,16 @@ pub fn snapshot_from_commandcode(
 
     let used = summary.total_cost;
     let limit = used + credits.monthly_credits_remaining;
+    // The API exposes no billing-cycle reset timestamp (only rate-window
+    // `resetAt` values plus a "billing-period" periodBasis label), so the
+    // cost snapshot carries no resets_at: stamping the weekly reset onto a
+    // billing-cycle figure printed a misleading date in the widget.
     snapshot = snapshot.with_provider_cost(ProviderCostSnapshot::new(
         used,
         limit,
         "USD",
         Some("billing-period".to_string()),
-        weekly.resets_at.clone(),
+        None,
     ));
 
     Ok(snapshot)
@@ -214,12 +217,93 @@ mod tests {
         assert!((cost.limit - 72.00624797799999).abs() < 0.001);
         assert_eq!(cost.currency_code, "USD");
         assert_eq!(cost.period.as_deref(), Some("billing-period"));
-        assert_eq!(cost.resets_at.as_deref(), Some("2026-09-09T18:35:06.872Z"));
+        assert_eq!(cost.resets_at, None);
     }
 
     #[test]
     fn rejects_malformed_credits() {
         let bad = serde_json::json!({ "credits": "nope" });
         assert!(parse_credits(&bad).is_err());
+    }
+
+    #[test]
+    fn missing_cap_renders_zero_percent() {
+        let value = serde_json::json!({
+            "credits": { "monthlyCredits": 10.0 },
+            "windowLimits": {
+                "weekly": { "used": 9.0, "exceeded": false, "resetAt": 1788978906872i64 }
+            }
+        });
+        let credits = parse_credits(&value).expect("parse credits");
+        let weekly = credits.weekly.as_ref().expect("weekly window");
+        assert_eq!(weekly.used_percent, 0.0);
+    }
+
+    #[test]
+    fn monthly_window_becomes_extra_window() {
+        let mut value = credits_fixture();
+        value["windowLimits"]["monthly"] = serde_json::json!({
+            "used": 7.0, "cap": 100.0, "exceeded": false, "resetAt": 1788978906872i64
+        });
+        let credits = parse_credits(&value).expect("parse credits");
+        let summary = parse_summary(&summary_fixture()).expect("summary");
+        let snapshot = snapshot_from_commandcode(
+            &credits,
+            &summary,
+            "2026-09-03T16:00:00Z",
+            "commandcode-web",
+        )
+        .expect("snap");
+        assert_eq!(snapshot.extra_windows.len(), 1);
+        assert_eq!(snapshot.extra_windows[0].label, "Monthly");
+        assert!((snapshot.extra_windows[0].used_percent - 7.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn cost_has_no_resets_at_without_billing_cycle_date() {
+        let credits = parse_credits(&credits_fixture()).expect("credits");
+        let summary = parse_summary(&summary_fixture()).expect("summary");
+        let snapshot = snapshot_from_commandcode(
+            &credits,
+            &summary,
+            "2026-09-03T16:00:00Z",
+            "commandcode-web",
+        )
+        .expect("snap");
+        let cost = snapshot.provider_cost.as_ref().expect("cost");
+        // The API only provides rate-window reset timestamps; no billing-cycle
+        // reset date exists, so the cost snapshot must not imply one.
+        assert_eq!(cost.resets_at, None);
+    }
+
+    #[test]
+    fn top_level_limited_reaches_primary_window() {
+        let credits = parse_credits(&credits_fixture()).expect("credits");
+        // Fixture has windowLimits.limited = true.
+        assert!(credits.limited);
+        let summary = parse_summary(&summary_fixture()).expect("summary");
+        let snapshot = snapshot_from_commandcode(
+            &credits,
+            &summary,
+            "2026-09-03T16:00:00Z",
+            "commandcode-web",
+        )
+        .expect("snap");
+        assert!(snapshot.primary.limited);
+    }
+
+    #[test]
+    fn total_count_accepts_integral_floats() {
+        let mut value = summary_fixture();
+        value["totalCount"] = serde_json::json!(6319.0);
+        let summary = parse_summary(&value).expect("integral float count");
+        assert_eq!(summary.run_count, 6319);
+    }
+
+    #[test]
+    fn total_count_rejects_fractional_floats() {
+        let mut value = summary_fixture();
+        value["totalCount"] = serde_json::json!(6319.5);
+        assert!(parse_summary(&value).is_err());
     }
 }
