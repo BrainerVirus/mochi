@@ -1,7 +1,9 @@
 pub mod config_wizard;
+pub mod cost_view;
 pub mod guard;
 pub mod screens;
 pub mod update_flow;
+pub mod usage_dashboard;
 
 pub use guard::{install_panic_hook, TuiGuard};
 

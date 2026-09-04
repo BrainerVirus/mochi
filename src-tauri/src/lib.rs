@@ -211,6 +211,18 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
         Command::Usage {
             provider,
             refresh,
+            json: false,
+        } if cli::tui::should_use_tui_env(
+            std::io::stdin().is_terminal(),
+            std::io::stdout().is_terminal(),
+            false,
+        ) =>
+        {
+            return cli::tui::usage_dashboard::run_usage_dashboard(provider.as_deref(), refresh);
+        }
+        Command::Usage {
+            provider,
+            refresh,
             json,
         } => {
             let states = cli_usage_states(provider.as_deref(), refresh)?;
@@ -220,6 +232,15 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
                 println!("{}", cli::usage::format_usage_text(&states));
             }
         }
+        Command::Status { provider }
+            if cli::tui::should_use_tui_env(
+                std::io::stdin().is_terminal(),
+                std::io::stdout().is_terminal(),
+                false,
+            ) =>
+        {
+            return cli::tui::usage_dashboard::run_usage_dashboard(provider.as_deref(), false);
+        }
         Command::Status { provider } => {
             let states = cli_usage_states(provider.as_deref(), false)?;
             println!("{}", cli::status::format_status_text(&states));
@@ -228,6 +249,15 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
             let states = cli_usage_states(None, false)?;
             let output = status_bar::format_output_from_states(&format, &states);
             println!("{output}");
+        }
+        Command::Cost { provider, days }
+            if cli::tui::should_use_tui_env(
+                std::io::stdin().is_terminal(),
+                std::io::stdout().is_terminal(),
+                false,
+            ) =>
+        {
+            return cli::tui::cost_view::run_cost_view(provider.as_deref(), days);
         }
         Command::Cost { provider, days } => {
             let filter = provider
