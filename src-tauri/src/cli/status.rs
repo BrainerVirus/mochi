@@ -34,6 +34,10 @@ pub fn format_status_text(states: &[ProviderUsageState]) -> String {
         .join("\n")
 }
 
+pub fn format_status_json(states: &[ProviderUsageState]) -> Result<String, serde_json::Error> {
+    serde_json::to_string(states)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -70,5 +74,16 @@ mod tests {
         };
         let output = format_status_text(&[state]);
         assert!(output.contains("credentials missing"));
+    }
+
+    #[test]
+    fn status_json_parses_and_matches_text_content() {
+        let states = vec![fresh_claude()];
+        let text = format_status_text(&states);
+        let json = format_status_json(&states).expect("json");
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("parses");
+        assert!(parsed.is_array());
+        assert!(json.contains("claude"), "unexpected: {json}");
+        assert!(text.contains("Claude"), "unexpected: {text}");
     }
 }

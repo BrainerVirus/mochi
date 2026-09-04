@@ -1,3 +1,4 @@
+use serde::Serialize;
 use time::format_description::well_known::Rfc3339;
 use time::{Duration, OffsetDateTime};
 
@@ -5,7 +6,7 @@ use crate::core::models::ProviderId;
 use crate::core::usage_state::ProviderUsageState;
 use crate::tray::provider_display_name;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct CostEntry {
     pub provider: ProviderId,
     pub used: f64,
@@ -108,6 +109,10 @@ pub fn format_cost_text(entries: &[CostEntry], days: u16, provider: Option<Provi
         })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+pub fn format_cost_json(entries: &[CostEntry]) -> Result<String, serde_json::Error> {
+    serde_json::to_string(entries)
 }
 
 fn snapshot_within_days(updated_at: &str, days: u16, now: OffsetDateTime) -> bool {
@@ -446,5 +451,23 @@ mod tests {
         let entries =
             cost_entries_from_states(&[ProviderUsageState::fresh(snapshot)], 30, test_now());
         assert!(entries.is_empty());
+    }
+
+    #[test]
+    fn cost_json_parses_and_matches_text_content() {
+        let entries = vec![CostEntry {
+            provider: ProviderId::Cursor,
+            used: 7.54,
+            limit: 71.93,
+            currency_code: "USD".to_string(),
+            period: "billing-period".to_string(),
+        }];
+        let text = format_cost_text(&entries, 30, None);
+        let json = format_cost_json(&entries).expect("json");
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("parses");
+        assert!(parsed.is_array());
+        assert_eq!(parsed[0]["provider"], serde_json::json!("cursor"));
+        assert_eq!(parsed[0]["used"], serde_json::json!(7.54));
+        assert!(text.contains("$7.54"), "unexpected: {text}");
     }
 }

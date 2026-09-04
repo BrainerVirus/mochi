@@ -28,16 +28,22 @@ pub enum Command {
     Status {
         #[arg(short, long)]
         provider: Option<String>,
+        #[arg(long)]
+        json: bool,
     },
     Cost {
         #[arg(short, long)]
         provider: Option<String>,
         #[arg(long, default_value_t = 30)]
         days: u16,
+        #[arg(long)]
+        json: bool,
     },
     Config {
         key: Option<String>,
         value: Option<String>,
+        #[arg(long)]
+        json: bool,
     },
     Update {
         action: String,
@@ -54,4 +60,36 @@ pub enum Command {
         #[arg(long)]
         bundle: bool,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn status_cost_config_accept_json_flag() {
+        assert!(matches!(
+            Cli::try_parse_from(["mochi", "status", "--json"])
+                .expect("status")
+                .command,
+            Some(Command::Status { json: true, .. })
+        ));
+        assert!(matches!(
+            Cli::try_parse_from(["mochi", "cost", "--json"])
+                .expect("cost")
+                .command,
+            Some(Command::Cost { json: true, .. })
+        ));
+        assert!(matches!(
+            Cli::try_parse_from(["mochi", "config", "--json"])
+                .expect("config")
+                .command,
+            Some(Command::Config { json: true, .. })
+        ));
+    }
+
+    #[test]
+    fn json_flag_implies_no_tui() {
+        assert!(!tui::should_use_tui_env(true, true, true));
+    }
 }

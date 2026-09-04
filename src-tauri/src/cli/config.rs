@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::Path;
 
 use serde::Deserialize;
@@ -130,24 +131,55 @@ fn cookie_source_of(settings: &MochiSettings, provider: ProviderId) -> String {
         .unwrap_or_else(|| "(unset)".to_string())
 }
 
-pub fn run_config_list(dir: &Path) -> anyhow::Result<String> {
+/// The same key/value pairs `run_config_list` prints, as a map so the
+/// `--json` output and the human-readable output cannot drift apart.
+/// Secret names and values never appear here.
+pub fn config_list_map(dir: &Path) -> BTreeMap<String, String> {
     let settings = settings_in(dir);
-    let mut lines = vec![
-        format!("update_channel = {}", channel_as_str(&settings)),
-        format!(
-            "enabled_providers = {}",
-            settings.enabled_providers.join(",")
+    let mut map = BTreeMap::from([
+        ("update_channel".to_string(), channel_as_str(&settings)),
+        (
+            "enabled_providers".to_string(),
+            settings.enabled_providers.join(","),
         ),
-    ];
+    ]);
     // Per-provider cookie sources derived from the registry; secret names and
     // values never appear here.
     for provider in ProviderId::all() {
         let source = cookie_source_of(&settings, *provider);
         if source != "(unset)" {
-            lines.push(format!("{}.cookie_source = {source}", provider.as_str()));
+            map.insert(format!("{}.cookie_source", provider.as_str()), source);
         }
     }
-    Ok(lines.join("\n"))
+    map
+}
+
+pub fn run_config_list(dir: &Path) -> anyhow::Result<String> {
+    Ok(config_list_map(dir)
+        .iter()
+        .map(|(key, value)| format!("{key} = {value}"))
+        .collect::<Vec<_>>()
+        .join("\n"))
+}
+
+/// `config --json`: the list map as JSON (still masked — secrets never enter
+/// the map).
+pub fn format_config_list_json(dir: &Path) -> anyhow::Result<String> {
+    serde_json::to_string(&config_list_map(dir)).map_err(|error| anyhow::anyhow!(error.to_string()))
+}
+
+/// `config <key> [--json]` / `config <key> <value> [--json]`: single-pair JSON
+/// matching the human-readable `key = value` display line.
+pub fn format_config_value_json(key: &str, display: &str) -> anyhow::Result<String> {
+    let value = display
+        .split_once(" = ")
+        .map(|(_, value)| value)
+        .unwrap_or(display);
+    serde_json::to_string(&BTreeMap::from([(
+        key.trim().to_string(),
+        value.to_string(),
+    )]))
+    .map_err(|error| anyhow::anyhow!(error.to_string()))
 }
 
 pub fn run_config_get(dir: &Path, key: &str) -> anyhow::Result<String> {
@@ -396,6 +428,34 @@ mod tests {
         );
         let list = run_config_list(&dir).expect("list");
         assert!(!list.contains("sk-live-secret"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_list_json_matches_text_and_masks_secrets() {
+        let dir = test_dir("list-json");
+        run_config_set(&dir, "cursor.cookie_source", "manual").expect("seed");
+        let path = settings_file_path(&dir);
+        let mut settings = load_settings(&path);
+        settings.provider_configs.insert(
+            "cursor".to_string(),
+            ProviderConfig {
+                api_key: Some("sk-live-secret".to_string()),
+                cookie_source: Some("manual".to_string()),
+                ..ProviderConfig::default()
+            },
+        );
+        persist_settings(&path, &settings).expect("seed secret");
+
+        let text = run_config_list(&dir).expect("list");
+        let json = format_config_list_json(&dir).expect("json");
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("parses");
+        assert!(!json.contains("sk-live-secret"), "leak: {json}");
+        assert_eq!(parsed["cursor.cookie_source"], serde_json::json!("manual"));
+        for line in text.lines() {
+            let (key, _) = line.split_once(" = ").expect("line");
+            assert!(parsed.get(key).is_some(), "missing {key} in {json}");
+        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

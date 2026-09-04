@@ -232,34 +232,45 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
                 println!("{}", cli::usage::format_usage_text(&states));
             }
         }
-        Command::Status { provider }
+        Command::Status { provider, json }
             if cli::tui::should_use_tui_env(
                 std::io::stdin().is_terminal(),
                 std::io::stdout().is_terminal(),
-                false,
+                json,
             ) =>
         {
             return cli::tui::usage_dashboard::run_usage_dashboard(provider.as_deref(), false);
         }
-        Command::Status { provider } => {
+        Command::Status { provider, json } => {
             let states = cli_usage_states(provider.as_deref(), false)?;
-            println!("{}", cli::status::format_status_text(&states));
+            if json {
+                println!("{}", cli::status::format_status_json(&states)?);
+            } else {
+                println!("{}", cli::status::format_status_text(&states));
+            }
         }
         Command::StatusBar { format } => {
             let states = cli_usage_states(None, false)?;
             let output = status_bar::format_output_from_states(&format, &states);
             println!("{output}");
         }
-        Command::Cost { provider, days }
-            if cli::tui::should_use_tui_env(
-                std::io::stdin().is_terminal(),
-                std::io::stdout().is_terminal(),
-                false,
-            ) =>
+        Command::Cost {
+            provider,
+            days,
+            json,
+        } if cli::tui::should_use_tui_env(
+            std::io::stdin().is_terminal(),
+            std::io::stdout().is_terminal(),
+            json,
+        ) =>
         {
             return cli::tui::cost_view::run_cost_view(provider.as_deref(), days);
         }
-        Command::Cost { provider, days } => {
+        Command::Cost {
+            provider,
+            days,
+            json,
+        } => {
             let filter = provider
                 .as_deref()
                 .map(crate::cli::cost::parse_provider_filter)
@@ -269,27 +280,50 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
                 Some(id) => entries.into_iter().filter(|e| e.provider == id).collect(),
                 None => entries,
             };
-            println!("{}", cli::cost::format_cost_text(&entries, days, filter));
+            if json {
+                println!("{}", cli::cost::format_cost_json(&entries)?);
+            } else {
+                println!("{}", cli::cost::format_cost_text(&entries, days, filter));
+            }
         }
         Command::Config {
             key: None,
             value: None,
+            json,
         } if cli::tui::should_use_tui_env(
             std::io::stdin().is_terminal(),
             std::io::stdout().is_terminal(),
-            false,
+            json,
         ) =>
         {
             return cli::tui::config_wizard::run_config_wizard();
         }
-        Command::Config { key, value } => {
+        Command::Config { key, value, json } => {
             let dir = cli_config_dir()
                 .ok_or_else(|| anyhow::anyhow!("cannot locate config directory"))?;
             match (key, value) {
-                (None, None) => println!("{}", cli::config::run_config_list(&dir)?),
-                (Some(key), None) => println!("{}", cli::config::run_config_get(&dir, &key)?),
+                (None, None) => {
+                    if json {
+                        println!("{}", cli::config::format_config_list_json(&dir)?);
+                    } else {
+                        println!("{}", cli::config::run_config_list(&dir)?);
+                    }
+                }
+                (Some(key), None) => {
+                    let display = cli::config::run_config_get(&dir, &key)?;
+                    if json {
+                        println!("{}", cli::config::format_config_value_json(&key, &display)?);
+                    } else {
+                        println!("{display}");
+                    }
+                }
                 (Some(key), Some(value)) => {
-                    println!("{}", cli::config::run_config_set(&dir, &key, &value)?)
+                    let display = cli::config::run_config_set(&dir, &key, &value)?;
+                    if json {
+                        println!("{}", cli::config::format_config_value_json(&key, &display)?);
+                    } else {
+                        println!("{display}");
+                    }
                 }
                 (None, Some(_)) => {
                     eprintln!("usage: mochi config [<key> [<value>]]");

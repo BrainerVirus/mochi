@@ -1,10 +1,4 @@
-//! Shared screen identity + list navigation for the CLI/TUI entry points.
-
-/// Fullscreen TUI screens. Tasks 8-9 add their variants here.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Screen {
-    ConfigWizard,
-}
+//! Shared list navigation for the CLI/TUI entry points.
 
 /// Shared up/down cursor over a list of `len` rows. Saturates at the ends.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
