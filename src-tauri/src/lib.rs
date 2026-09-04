@@ -28,6 +28,7 @@ use time::format_description::well_known::Rfc3339;
 use time::{Duration, OffsetDateTime};
 
 use cli::{Cli, Command};
+use core::models::ProviderId;
 use core::usage_repository::{SqliteUsageRepository, UsageRepository};
 use core::usage_store::UsageStore;
 use lifecycle::{should_prevent_exit_request, AppLifecycle};
@@ -226,6 +227,17 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
             let states = cli_usage_states(None, false)?;
             let output = status_bar::format_output_from_states(&format, &states);
             println!("{output}");
+        }
+        Command::Cost { provider, days } => {
+            let entries = cli::cost::load_cost_entries(days)?;
+            let entries: Vec<_> = match provider.as_deref() {
+                Some(name) => match ProviderId::parse(name) {
+                    Some(id) => entries.into_iter().filter(|e| e.provider == id).collect(),
+                    None => anyhow::bail!("unknown provider: {name}"),
+                },
+                None => entries,
+            };
+            println!("{}", cli::cost::format_cost_text(&entries, days));
         }
         Command::Diagnostics { bundle } => {
             diagnostics::run_cli_diagnostics(bundle).map_err(|error| anyhow::anyhow!(error))?;
