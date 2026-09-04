@@ -57,14 +57,14 @@ flowchart LR
 
 ## Data flow / contracts
 
-| Term              | Meaning                                                                                                                                                  |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TTY gate          | `should_use_tui()`: stdin/stdout both TTY, no `--json`/`--format` flag, stdout not piped; otherwise plain output. Scripts never see the TUI.              |
-| Exit contract     | `0` success; `1` domain failure (human message on stderr, no stack trace); `2` usage error or missing `--confirm` where required. Mirrors workit.        |
-| Terminal restore  | Raw mode + alternate screen teardown in a scope guard on every exit path including panics; `stdin.isTTY` guard before entering.                          |
-| Review-before-save | Every mutating screen ends on a confirm step reusing the exact reviewed values; apply calls the same setter the GUI path uses.                           |
-| Cookie onboarding | Order mirrors `resolve_session_cookie`: manual paste (masked) → `MOCHI_COMMANDCODE_COOKIE`-style env → browser import; never logs the value.             |
-| Windows console   | `AttachConsole` at CLI startup; `AllocConsole` when entering TUI without a console; plain output path unchanged.                                         |
+| Term               | Meaning                                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TTY gate           | `should_use_tui()`: stdin/stdout both TTY, no `--json`/`--format` flag, stdout not piped; otherwise plain output. Scripts never see the TUI.      |
+| Exit contract      | `0` success; `1` domain failure (human message on stderr, no stack trace); `2` usage error or missing `--confirm` where required. Mirrors workit. |
+| Terminal restore   | Raw mode + alternate screen teardown in a scope guard on every exit path including panics; `stdin.isTTY` guard before entering.                   |
+| Review-before-save | Every mutating screen ends on a confirm step reusing the exact reviewed values; apply calls the same setter the GUI path uses.                    |
+| Cookie onboarding  | Order mirrors `resolve_session_cookie`: manual paste (masked) → `MOCHI_COMMANDCODE_COOKIE`-style env → browser import; never logs the value.      |
+| Windows console    | `AttachConsole` at CLI startup; `AllocConsole` when entering TUI without a console; plain output path unchanged.                                  |
 
 ## Acceptance criteria
 

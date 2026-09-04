@@ -26,11 +26,13 @@
 ### Task 1: Real `status` command (plain output)
 
 **Files:**
+
 - Create: `src-tauri/src/cli/status.rs`
 - Modify: `src-tauri/src/lib.rs` (`run_cli` match arm, lines ~207-234)
 - Modify: `src-tauri/src/cli/mod.rs` (add `pub mod status;`)
 
 **Interfaces:**
+
 - Consumes: `cli_usage_states(provider, false)` (same helper `run_cli` uses for `Usage`); `provider_display_name` from `crate::tray`.
 - Produces: `format_status_text(states: &[ProviderUsageState]) -> String` — one line per provider: `<label> <state>` (fresh `64%`, `credentials missing`, `update available`, error message passthrough). `Command::Status` arm prints it, exit 0.
 
@@ -148,11 +150,13 @@ git commit -m "feat(cli): implement status command"
 ### Task 2: Real `cost` command (plain output)
 
 **Files:**
+
 - Create: `src-tauri/src/cli/cost.rs`
 - Modify: `src-tauri/src/lib.rs` (`run_cli` match arm)
 - Modify: `src-tauri/src/cli/mod.rs` (add `pub mod cost;`)
 
 **Interfaces:**
+
 - Consumes: `SqliteUsageRepository` history read path (same repository `initialize_usage_store` opens; find the history query in `src-tauri/src/core/` — e.g. cost snapshots by day); `ProviderId` display names.
 - Produces: `format_cost_text(entries: &[CostEntry], days: u16) -> String` — one line per provider: `<label> $<used> / $<limit> <currency> (<period>)`; empty → `No cost data in the last {days} days.` `Command::Cost` arm prints it, exit 0.
 
@@ -222,11 +226,13 @@ git commit -m "feat(cli): implement cost command"
 ### Task 3: Real `config` command (get/set/list)
 
 **Files:**
+
 - Create: `src-tauri/src/cli/config.rs`
 - Modify: `src-tauri/src/lib.rs` (`run_cli` match arm)
 - Modify: `src-tauri/src/cli/mod.rs` (add `pub mod config;`)
 
 **Interfaces:**
+
 - Consumes: the settings file path + load/save used by `SettingsState` (find in `src-tauri/src/settings/storage.rs`; CLI has no `AppHandle`, so reuse the path helper + serde directly — do NOT duplicate the schema).
 - Produces: `config list` prints `key = value` lines (provider allowlist: `update_channel`, `enabled_providers`, per-provider `cookie_source` only — never secret values; secrets print `<set>`/`<unset>`); `config get <key>` prints the value or exits 1 with `unknown key: <key>`; `config set <key> <value>` validates through the real settings deserialization, writes the file, prints `key = value`. Unknown key → exit 1; invalid value → exit 1 with the serde error.
 
@@ -305,11 +311,13 @@ git commit -m "feat(cli): implement config command"
 ### Task 4: Real `update` command (check/apply, plain output)
 
 **Files:**
+
 - Create: `src-tauri/src/cli/update.rs`
 - Modify: `src-tauri/src/lib.rs` (`run_cli` match arm)
 - Modify: `src-tauri/src/cli/mod.rs` (add `pub mod update;`)
 
 **Interfaces:**
+
 - Consumes: the stable updater feed check (same endpoint/logic `updater::check_for_update` uses — extract a non-GUI `check_stable_update() -> ProviderResult<Option<UpdateInfo { version, notes }>>` if one doesn't exist; do not duplicate feed parsing).
 - Produces: `mochi update check` prints `up to date` or `<version> available` + notes; `mochi update apply` requires `--confirm` (without it: usage error exit 2), then applies and prints `updated to <version>`; any other action → exit 2 with usage.
 
@@ -369,12 +377,14 @@ git commit -m "feat(cli): implement update command"
 ### Task 5: TUI shell — gate, exit contract, restore guards, deps
 
 **Files:**
+
 - Modify: `src-tauri/Cargo.toml` (add `ratatui`, `crossterm`; extend `windows-sys` features with `Win32_System_Console`)
 - Create: `src-tauri/src/cli/tui/mod.rs` (re-exports + `should_use_tui`)
 - Create: `src-tauri/src/cli/tui/guard.rs` (terminal restore guard + panic hook)
 - Modify: `src-tauri/src/cli/mod.rs` (add `pub mod tui;`)
 
 **Interfaces:**
+
 - Consumes: `std::io::IsTerminal`; clap matches (whether `--json`/format flags present — gate takes explicit bools so it stays testable).
 - Produces: `should_use_tui(stdin_tty: bool, stdout_tty: bool, machine_output: bool) -> bool` (true only when all TTY and no machine flag); `TuiGuard::enter() -> io::Result<TuiGuard>` enabling raw mode + alternate screen, restoring both on drop; `install_panic_hook()` chaining the default hook after restoring the terminal. Exit-code constants `EXIT_OK/EXIT_DOMAIN/EXIT_USAGE = 0/1/2`.
 
@@ -434,11 +444,13 @@ git commit -m "feat(cli): add tui shell and gate"
 ### Task 6: Windows console attach/alloc
 
 **Files:**
+
 - Create: `src-tauri/src/cli/windows_console.rs`
 - Modify: `src-tauri/src/lib.rs` (call `cli::windows_console::ensure_console()` at the top of `run_cli`)
 - Modify: `src-tauri/src/cli/mod.rs` (add `#[cfg(windows)] pub mod windows_console;`)
 
 **Interfaces:**
+
 - Consumes: `windows_sys::Win32::System::Console::{AttachConsole, AllocConsole, ATTACH_PARENT_PROCESS}` (feature added in Task 5).
 - Produces: `#[cfg(windows)] pub fn ensure_console()` — `AttachConsole(ATTACH_PARENT_PROCESS)`; on failure, `AllocConsole()`; both failures → return silently (plain output may vanish, TUI reports the error — never panic). `#[cfg(not(windows))] pub fn ensure_console()` — no-op. Pure helper `attach_or_alloc(attached: bool, allocated: bool)` is unit-tested for the decision table; the real syscalls are manual-QA (Windows Terminal checklist in Task 10).
 
@@ -488,11 +500,13 @@ git commit -m "fix(cli): attach windows console"
 ### Task 7: Config wizard screen
 
 **Files:**
+
 - Create: `src-tauri/src/cli/tui/screens.rs` (screen enum + shared list-navigation state)
 - Create: `src-tauri/src/cli/tui/config_wizard.rs` (wizard state machine + rendering)
 - Modify: `src-tauri/src/lib.rs` (route `Command::Config` without key/value to the wizard when `should_use_tui()`)
 
 **Interfaces:**
+
 - Consumes: Task 3's `run_config_list/get/set` + provider registry (enabled_providers, cookie sources); `resolve_session_cookie`-compatible manual paste path (masked input, never logged).
 - Produces: `ConfigWizard { step, providers, edits }` with `next/back/confirm` transitions; `render(frame, &wizard)` drawing via ratatui `TestBackend`-compatible code; finishing confirm calls the same setters as `run_config_set` and returns the reviewed values. Cancelling (Esc/q) returns `Ok(None)` — settings untouched (CA-01 abort case).
 
@@ -558,10 +572,12 @@ git commit -m "feat(cli): add config wizard screen"
 ### Task 8: Update flow screen
 
 **Files:**
+
 - Create: `src-tauri/src/cli/tui/update_flow.rs`
 - Modify: `src-tauri/src/lib.rs` (route `Command::Update` to the flow screen under the gate)
 
 **Interfaces:**
+
 - Consumes: Task 4's `run_update_action("check", ...)` result type + updater `UpdateInfo { version, notes }`.
 - Produces: `UpdateFlow { state: Check/Notes/Confirm/Applied }`; notes preview rendered from the stable feed; confirm only on explicit Enter on the confirm button, Esc cancels with no mutation (CA-03). `run_update_flow() -> anyhow::Result<()>` drives the event loop with the Task 5 guard.
 
@@ -617,11 +633,13 @@ git commit -m "feat(cli): add update flow screen"
 ### Task 9: Usage dashboard + cost view screens
 
 **Files:**
+
 - Create: `src-tauri/src/cli/tui/usage_dashboard.rs`
 - Create: `src-tauri/src/cli/tui/cost_view.rs`
 - Modify: `src-tauri/src/lib.rs` (route `Command::Usage`/`Status`/`Cost` under the gate)
 
 **Interfaces:**
+
 - Consumes: Task 1's states + Task 2's `CostEntry` list; widget label strings (`5 hours`, `Weekly`, `Billing period` + money line — copy the exact literals from `provider-cost-section.tsx`, do not invent variants).
 - Produces: `render_usage_dashboard(frame, &states)` table (provider, primary %, reset) + `render_cost_view(frame, &entries)` money lines; read-only screens (q/Esc exits, r refreshes). TestBackend snapshot tests pin the labels (CA-04).
 
@@ -679,10 +697,12 @@ git commit -m "feat(cli): add usage and cost screens"
 ### Task 10: QA evidence + docs
 
 **Files:**
+
 - Create: `docs/qa/cli-tui-evidence.md`
 - Modify: `docs/releasing.md` (one paragraph: CLI/TUI surface + exit contract) — only if the file has a CLI section; otherwise skip.
 
 **Interfaces:**
+
 - Consumes: all prior tasks.
 - Produces: evidence doc with per-surface status (PASS/manual-checklist) for GNOME terminal, macOS Terminal, Windows Terminal; exit-code matrix proof (`; echo $?` for 0/1/2 paths); TTY-fallback proof (piped + `--json` runs); masked-secret proof (screenshot description or redacted log excerpt).
 
