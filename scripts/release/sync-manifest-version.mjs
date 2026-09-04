@@ -2,9 +2,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 export function setPackageVersion(src, version) {
-  const json = JSON.parse(src);
-  json.version = version;
-  return JSON.stringify(json, null, 2) + "\n";
+  if (!/^(\s*"version":\s*)"[^"]*"/m.test(src)) {
+    throw new Error(`package.json has no version field to set to ${version}`);
+  }
+  return src.replace(/^(\s*"version":\s*)"[^"]*"/m, `$1"${version}"`);
 }
 
 export function setCargoVersion(src, version) {
@@ -19,9 +20,10 @@ export function setCargoLockVersion(src, version) {
 }
 
 export function setTauriVersion(src, version) {
-  const json = JSON.parse(src);
-  json.version = version;
-  return JSON.stringify(json, null, 2) + "\n";
+  if (!/^(\s*"version":\s*)"[^"]*"/m.test(src)) {
+    throw new Error(`tauri.conf.json has no version field to set to ${version}`);
+  }
+  return src.replace(/^(\s*"version":\s*)"[^"]*"/m, `$1"${version}"`);
 }
 
 const args = process.argv.slice(2);

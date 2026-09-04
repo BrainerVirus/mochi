@@ -21,6 +21,49 @@ describe("sync-manifest-version", () => {
     const src = '{\n  "version": "0.0.1",\n  "identifier": "app.mochi"\n}';
     expect(JSON.parse(setTauriVersion(src, "9.9.9")).version).toBe("9.9.9");
   });
+  it("keeps compact single-line arrays byte-identical in tauri.conf.json", () => {
+    const src = [
+      "{",
+      '  "$schema": "https://schema.tauri.app/config/2",',
+      '  "version": "0.2.6",',
+      '  "identifier": "app.mochi.Mochi",',
+      '  "app": {',
+      '    "security": {',
+      '      "capabilities": ["default"]',
+      "    }",
+      "  },",
+      '  "bundle": {',
+      '    "targets": ["app", "dmg", "msi", "nsis", "appimage", "deb", "rpm"]',
+      "  }",
+      "}",
+      "",
+    ].join("\n");
+    const out = setTauriVersion(src, "0.4.0");
+    expect(out).toContain('"capabilities": ["default"]');
+    expect(out).toContain('"targets": ["app", "dmg", "msi", "nsis", "appimage", "deb", "rpm"]');
+    expect(out).toContain('"version": "0.4.0"');
+    expect(out).not.toContain('"version": "0.2.6"');
+    const srcLines = src.split("\n");
+    const outLines = out.split("\n");
+    expect(outLines.length).toBe(srcLines.length);
+    for (const line of srcLines) {
+      if (line.includes('"capabilities"') || line.includes('"targets"')) {
+        expect(outLines).toContain(line);
+      }
+    }
+  });
+  it("keeps every non-version byte identical in package.json", () => {
+    const src = '{\n  "name": "mochi",\n  "version": "0.2.6",\n  "private": true\n}\n';
+    const out = setPackageVersion(src, "0.4.0");
+    expect(out).toContain('"version": "0.4.0"');
+    expect(out).not.toContain('"version": "0.2.6"');
+    expect(out.split("\n").length).toBe(src.split("\n").length);
+    for (const line of src.split("\n")) {
+      if (!line.includes('"version"')) {
+        expect(out.split("\n")).toContain(line);
+      }
+    }
+  });
   it("sets the mochi package version in Cargo.lock keeping other packages", () => {
     const src =
       '[[package]]\nname = "other"\nversion = "1.0.0"\n\n[[package]]\nname = "mochi"\nversion = "0.0.1"\n';
