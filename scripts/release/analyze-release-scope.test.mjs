@@ -1,6 +1,14 @@
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { bumpFromSubjects, changedProductPaths, PRODUCT_PATHS } from "./analyze-release-scope.mjs";
+import {
+  bumpFromSubjects,
+  changedProductPaths,
+  collect,
+  PRODUCT_PATHS,
+} from "./analyze-release-scope.mjs";
 
 describe("bumpFromSubjects", () => {
   it("returns major for breaking change", () => {
@@ -58,5 +66,32 @@ describe("invalid tag argument", () => {
     expect(result.status).toBe(0);
     expect(result.stdout.trim()).toBe("");
     expect(result.stderr).toMatch(/cannot resolve tag|skipping release/i);
+  });
+});
+
+describe("collect excludes manifest-sync commits", () => {
+  it("ignores sync commit subjects and files so the gate stays closed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mochi-release-gate-"));
+    const git = (...args) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+    git("init");
+    git("config", "user.email", "test@example.com");
+    git("config", "user.name", "test");
+    writeFileSync(join(dir, "README.md"), "init\n");
+    git("add", "README.md");
+    git("commit", "-m", "chore: init");
+    git("tag", "v0.0.0");
+    mkdirSync(join(dir, "docs"), { recursive: true });
+    writeFileSync(join(dir, "docs", "note.md"), "note\n");
+    git("add", "docs/note.md");
+    git("commit", "-m", "fix: typo in docs");
+    mkdirSync(join(dir, "src-tauri"), { recursive: true });
+    writeFileSync(join(dir, "src-tauri", "Cargo.toml"), "[package]\n");
+    git("add", "src-tauri/Cargo.toml");
+    git("commit", "-m", "chore(release): sync manifests to v9.9.9");
+    const { subjects, files } = collect("v0.0.0", { cwd: dir });
+    expect(subjects).not.toContain("chore(release): sync manifests to v9.9.9");
+    expect(files).not.toContain("src-tauri/Cargo.toml");
+    expect(bumpFromSubjects(subjects)).toBe("patch");
+    expect(changedProductPaths(files)).toEqual([]);
   });
 });
