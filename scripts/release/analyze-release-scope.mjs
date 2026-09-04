@@ -14,9 +14,9 @@ export const PRODUCT_PATHS = [
 
 const BUMPS = [
   ["major", /^(\w+)(\(.+\))?!:/],
-  ["major", /^break(ing)?( change)?:/],
+  ["major", /^break(ing)?( change)?:/i],
   ["minor", /^feat(\(.+\))?:/],
-  ["patch", /^(fix|perf)(\(.+\))?:/],
+  ["patch", /^(fix|perf|revert)(\(.+\))?:/],
 ];
 
 export function bumpFromSubjects(subjects) {
@@ -55,7 +55,16 @@ if (!lastTag) {
     lastTag = "";
   }
 }
-const { subjects, files } = collect(lastTag);
+let subjects = [];
+let files = [];
+try {
+  ({ subjects, files } = collect(lastTag));
+} catch {
+  // Unknown tag or git failure: close the gate silently (no stdout) with a
+  // one-line stderr note and exit 0 — a gate must never crash the release job.
+  console.error(`analyze-release-scope: cannot resolve tag '${lastTag}', skipping release`);
+  process.exit(0);
+}
 const bump = bumpFromSubjects(subjects);
 const productChanged = changedProductPaths(files).length > 0;
 if (bump && productChanged) console.log(bump);
