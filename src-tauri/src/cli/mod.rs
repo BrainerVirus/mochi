@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 pub mod config;
 pub mod cost;
 pub mod status;
+pub mod tui;
 pub mod update;
 pub mod usage;
 
