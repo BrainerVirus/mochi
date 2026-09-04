@@ -218,6 +218,10 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
                 println!("{}", cli::usage::format_usage_text(&states));
             }
         }
+        Command::Status { provider } => {
+            let states = cli_usage_states(provider.as_deref(), false)?;
+            println!("{}", cli::status::format_status_text(&states));
+        }
         Command::StatusBar { format } => {
             let states = cli_usage_states(None, false)?;
             let output = status_bar::format_output_from_states(&format, &states);

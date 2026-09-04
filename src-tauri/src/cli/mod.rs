@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 
+pub mod status;
 pub mod usage;
 
 #[derive(Debug, Parser)]
