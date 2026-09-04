@@ -21,6 +21,7 @@ pub mod window_background;
 pub mod window_policy;
 
 use clap::Parser;
+use std::io::IsTerminal;
 use std::path::PathBuf;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -240,6 +241,17 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
             };
             println!("{}", cli::cost::format_cost_text(&entries, days, filter));
         }
+        Command::Config {
+            key: None,
+            value: None,
+        } if cli::tui::should_use_tui_env(
+            std::io::stdin().is_terminal(),
+            std::io::stdout().is_terminal(),
+            false,
+        ) =>
+        {
+            return cli::tui::config_wizard::run_config_wizard();
+        }
         Command::Config { key, value } => {
             let dir = cli_config_dir()
                 .ok_or_else(|| anyhow::anyhow!("cannot locate config directory"))?;
@@ -335,7 +347,7 @@ pub(crate) fn cli_usage_states_with_db_path(
     Ok(status::read_cached_usage_states(&store, &settings))
 }
 
-fn cli_config_dir() -> Option<PathBuf> {
+pub(crate) fn cli_config_dir() -> Option<PathBuf> {
     platform_base_config_dir().map(|base| base.join("app.mochi.Mochi"))
 }
 
