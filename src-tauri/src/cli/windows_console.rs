@@ -23,6 +23,14 @@ pub fn attach_or_alloc(attached: bool, allocated: bool) -> ConsoleAction {
     }
 }
 
+/// Pure decision for std-handle repair: a GUI-subsystem process starts
+/// with invalid std handles, and `AttachConsole`/`AllocConsole` alone do
+/// not repair them — reopen `CONOUT$`/`CONIN$` whenever a console was
+/// attached or allocated, never when none is available.
+pub fn needs_handle_reopen(action: ConsoleAction) -> bool {
+    action != ConsoleAction::Unavailable
+}
+
 #[cfg(windows)]
 pub fn ensure_console() {
     use windows_sys::Win32::System::Console::{AllocConsole, AttachConsole, ATTACH_PARENT_PROCESS};
@@ -30,10 +38,60 @@ pub fn ensure_console() {
     // SAFETY: attaching to the parent console (or allocating a new one)
     // carries no memory-safety contract; BOOL results are checked and every
     // outcome — including both calls failing — returns silently.
-    if unsafe { AttachConsole(ATTACH_PARENT_PROCESS) } != 0 {
-        return;
+    let action = if unsafe { AttachConsole(ATTACH_PARENT_PROCESS) } != 0 {
+        ConsoleAction::Attached
+    } else if unsafe { AllocConsole() } != 0 {
+        ConsoleAction::Allocated
+    } else {
+        ConsoleAction::Unavailable
+    };
+    if needs_handle_reopen(action) {
+        reopen_std_handles();
     }
-    let _ = unsafe { AllocConsole() };
+}
+
+/// Reopen std handles on the attached/allocated console (`CONOUT$` for
+/// stdout/stderr, `CONIN$` for stdin) so `println!` reaches the console
+/// on `windows_subsystem = "windows"` release builds. All failures silent.
+#[cfg(windows)]
+fn reopen_std_handles() {
+    use windows_sys::Win32::Foundation::{GENERIC_READ, GENERIC_WRITE, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::Storage::FileSystem::{
+        CreateFileW, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING,
+    };
+    use windows_sys::Win32::System::Console::{
+        SetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
+    };
+
+    // SAFETY: raw-handle syscalls with checked results; a failed open
+    // simply skips its `SetStdHandle`, and the function never panics.
+    unsafe {
+        let out = CreateFileW(
+            windows_sys::core::w!("CONOUT$"),
+            GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            std::ptr::null(),
+            OPEN_EXISTING,
+            0,
+            std::ptr::null_mut(),
+        );
+        if out != INVALID_HANDLE_VALUE {
+            SetStdHandle(STD_OUTPUT_HANDLE, out);
+            SetStdHandle(STD_ERROR_HANDLE, out);
+        }
+        let inp = CreateFileW(
+            windows_sys::core::w!("CONIN$"),
+            GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            std::ptr::null(),
+            OPEN_EXISTING,
+            0,
+            std::ptr::null_mut(),
+        );
+        if inp != INVALID_HANDLE_VALUE {
+            SetStdHandle(STD_INPUT_HANDLE, inp);
+        }
+    }
 }
 
 #[cfg(not(windows))]
@@ -56,6 +114,26 @@ mod tests {
     #[test]
     fn both_failures_unavailable() {
         assert_eq!(attach_or_alloc(false, false), ConsoleAction::Unavailable);
+    }
+
+    #[test]
+    fn attach_takes_precedence_over_alloc() {
+        assert_eq!(attach_or_alloc(true, true), ConsoleAction::Attached);
+    }
+
+    #[test]
+    fn reopen_after_attach() {
+        assert!(needs_handle_reopen(ConsoleAction::Attached));
+    }
+
+    #[test]
+    fn reopen_after_alloc() {
+        assert!(needs_handle_reopen(ConsoleAction::Allocated));
+    }
+
+    #[test]
+    fn no_reopen_when_unavailable() {
+        assert!(!needs_handle_reopen(ConsoleAction::Unavailable));
     }
 
     #[test]
