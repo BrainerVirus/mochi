@@ -61,6 +61,31 @@ pub fn format_cost_detail(used: f64, limit: f64, currency_code: &str) -> String 
     }
 }
 
+/// Mirror of the frontend `formatCostPeriodLabel`: raw period ids
+/// ("billing-period") never render as labels; human labels
+/// ("Billing period") do, with "On-demand" for missing periods.
+/// Shared by the headless `format_cost_text` and the cost TUI so both
+/// render identical labels.
+pub fn cost_period_label(period: Option<&str>) -> String {
+    let raw = period.map(str::trim).unwrap_or("");
+    let words: Vec<&str> = raw.split('-').filter(|word| !word.is_empty()).collect();
+    let [first, rest @ ..] = words.as_slice() else {
+        return "On-demand".to_string();
+    };
+    let mut label = String::with_capacity(raw.len() + 1);
+    let mut chars = first.chars();
+    match chars.next() {
+        Some(head) => label.extend(head.to_uppercase()),
+        None => return "On-demand".to_string(),
+    }
+    label.push_str(chars.as_str());
+    for word in rest {
+        label.push(' ');
+        label.push_str(word);
+    }
+    label
+}
+
 pub fn format_cost_text(entries: &[CostEntry], days: u16, provider: Option<ProviderId>) -> String {
     if entries.is_empty() {
         if let Some(id) = provider {
@@ -78,7 +103,7 @@ pub fn format_cost_text(entries: &[CostEntry], days: u16, provider: Option<Provi
                 "{} {} ({})",
                 provider_display_name(entry.provider),
                 format_cost_detail(entry.used, entry.limit, &entry.currency_code),
-                entry.period
+                cost_period_label(Some(&entry.period))
             )
         })
         .collect::<Vec<_>>()
@@ -152,7 +177,33 @@ mod tests {
         }];
         let output = format_cost_text(&entries, 30, None);
         assert!(output.contains("$7.54 / $71.93"));
-        assert!(output.contains("(billing-period)"));
+        assert!(output.contains("(Billing period)"));
+        assert!(!output.contains("billing-period"));
+    }
+
+    #[test]
+    fn cost_period_label_formats_like_widget() {
+        assert_eq!(
+            cost_period_label(Some("billing-period")),
+            "Billing period".to_string()
+        );
+        assert_eq!(cost_period_label(None), "On-demand".to_string());
+        assert_eq!(cost_period_label(Some("")), "On-demand".to_string());
+        assert_eq!(cost_period_label(Some("--")), "On-demand".to_string());
+    }
+
+    #[test]
+    fn cost_headless_uses_shared_period_label() {
+        let entries = vec![CostEntry {
+            provider: ProviderId::CommandCode,
+            used: 7.54,
+            limit: 71.93,
+            currency_code: "USD".to_string(),
+            period: "billing-period".to_string(),
+        }];
+        let output = format_cost_text(&entries, 30, None);
+        assert!(output.contains("$7.54 / $71.93"));
+        assert!(output.contains("Billing period"));
     }
 
     #[test]
@@ -239,7 +290,7 @@ mod tests {
         assert!(output.contains("7.54 / 71.93"), "unexpected: {output}");
         assert!(!output.contains("  "), "double space in: {output}");
         assert!(
-            output.contains("71.93 (billing-period)"),
+            output.contains("71.93 (Billing period)"),
             "dangling space in: {output}"
         );
     }

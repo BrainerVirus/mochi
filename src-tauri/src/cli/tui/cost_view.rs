@@ -5,7 +5,7 @@
 
 use std::time::Duration;
 
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
@@ -13,16 +13,59 @@ use ratatui::{
     Frame, Terminal,
 };
 
-use super::{install_panic_hook, usage_dashboard::cost_period_label, TuiGuard};
-use crate::cli::cost::{format_cost_detail, CostEntry};
+use super::{install_panic_hook, usage_dashboard::apply_refresh, TuiGuard};
+use crate::cli::cost::{cost_period_label, format_cost_detail, CostEntry};
 use crate::tray::provider_display_name;
 
+/// Unit-testable key decision for the cost loop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CostKeyAction {
+    Quit,
+    Refresh,
+    Ignore,
+}
+
+/// Full key-event entry point: Ctrl+C quits from anywhere
+/// (the `KeyCode`-only path cannot see modifiers).
+pub fn handle_cost_key_event(key: KeyEvent) -> CostKeyAction {
+    if key.modifiers.contains(KeyModifiers::CONTROL)
+        && matches!(key.code, KeyCode::Char('c') | KeyCode::Char('C'))
+    {
+        return CostKeyAction::Quit;
+    }
+    handle_cost_key(key.code)
+}
+
+pub fn handle_cost_key(code: KeyCode) -> CostKeyAction {
+    match code {
+        KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => CostKeyAction::Quit,
+        KeyCode::Char('r') | KeyCode::Char('R') => CostKeyAction::Refresh,
+        _ => CostKeyAction::Ignore,
+    }
+}
+
+/// Thin typed fold over the shared [`apply_refresh`]; failure keeps the
+/// stale entries and records the brief cause for the on-screen indicator.
+pub fn apply_cost_refresh(
+    current: Vec<CostEntry>,
+    result: anyhow::Result<Vec<CostEntry>>,
+    refresh_error: &mut Option<String>,
+) -> Vec<CostEntry> {
+    apply_refresh(current, result, refresh_error)
+}
+
 /// Pure render over `&[CostEntry]`; TestBackend-compatible (no terminal I/O).
-pub fn render_cost_view(frame: &mut Frame, entries: &[CostEntry]) {
+/// `refresh_error` (when `Some`) renders a visible failure indicator while the
+/// stale list stays on screen.
+pub fn render_cost_view(frame: &mut Frame, entries: &[CostEntry], refresh_error: Option<&str>) {
     let area = frame.area();
+    let failed = refresh_error.map(str::trim).filter(|s| !s.is_empty());
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(1), Constraint::Length(1)])
+        .constraints(match failed {
+            Some(_) => [Constraint::Min(1), Constraint::Length(2)],
+            None => [Constraint::Min(1), Constraint::Length(1)],
+        })
         .split(area);
     let rows: Vec<String> = if entries.is_empty() {
         vec!["No cost data.".to_string()]
@@ -41,7 +84,13 @@ pub fn render_cost_view(frame: &mut Frame, entries: &[CostEntry]) {
     };
     let list = List::new(rows).block(Block::default().title("Mochi cost").borders(Borders::ALL));
     frame.render_widget(list, chunks[0]);
-    frame.render_widget(Paragraph::new("q/Esc quit · r refresh"), chunks[1]);
+    let footer = match failed {
+        Some(cause) => {
+            format!("q/Esc quit · r refresh\n(refresh failed: {cause} — showing cached data)")
+        }
+        None => "q/Esc quit · r refresh".to_string(),
+    };
+    frame.render_widget(Paragraph::new(footer), chunks[1]);
 }
 
 /// Run the fullscreen cost event loop. Read-only: q/Esc exits and `r`
@@ -58,27 +107,24 @@ pub fn run_cost_view(provider: Option<&str>, days: u16) -> anyhow::Result<()> {
         })
     };
     let mut entries = load(filter)?;
+    let mut refresh_error: Option<String> = None;
     // Install LAST so terminal restore runs before the diagnostics logger.
     install_panic_hook();
     {
         let _guard = TuiGuard::enter()?;
         let mut terminal = Terminal::new(CrosstermBackend::new(std::io::stdout()))?;
         loop {
-            terminal.draw(|frame| render_cost_view(frame, &entries))?;
+            terminal.draw(|frame| render_cost_view(frame, &entries, refresh_error.as_deref()))?;
             if event::poll(Duration::from_millis(250))? {
                 match event::read()? {
                     Event::Key(key) if key.kind == KeyEventKind::Press => {
-                        if key.modifiers.contains(KeyModifiers::CONTROL)
-                            && matches!(key.code, KeyCode::Char('c') | KeyCode::Char('C'))
-                        {
-                            break;
-                        }
-                        match key.code {
-                            KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => break,
-                            KeyCode::Char('r') | KeyCode::Char('R') => {
-                                entries = load(filter).unwrap_or(entries);
+                        match handle_cost_key_event(key) {
+                            CostKeyAction::Quit => break,
+                            CostKeyAction::Refresh => {
+                                entries =
+                                    apply_cost_refresh(entries, load(filter), &mut refresh_error);
                             }
-                            _ => {}
+                            CostKeyAction::Ignore => {}
                         }
                     }
                     _ => {}
@@ -91,9 +137,12 @@ pub fn run_cost_view(provider: Option<&str>, days: u16) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
     use ratatui::{backend::TestBackend, Terminal};
 
-    use super::render_cost_view;
+    use super::{
+        apply_cost_refresh, handle_cost_key, handle_cost_key_event, render_cost_view, CostKeyAction,
+    };
     use crate::cli::cost::CostEntry;
     use crate::core::models::ProviderId;
 
@@ -107,25 +156,75 @@ mod tests {
         }]
     }
 
-    #[test]
-    fn cost_view_shows_money_line() {
-        let backend = TestBackend::new(60, 20);
+    fn render_text(entries: &[CostEntry], refresh_error: Option<&str>) -> String {
+        // 80 wide: fits the two-line refresh-failed footer without truncation.
+        let backend = TestBackend::new(80, 20);
         let mut terminal = Terminal::new(backend).expect("terminal");
         terminal
-            .draw(|frame| render_cost_view(frame, &fixture_costs()))
+            .draw(|frame| render_cost_view(frame, entries, refresh_error))
             .expect("draw");
-        assert!(terminal.backend().to_string().contains("$7.54 / $71.93"));
+        terminal.backend().to_string()
+    }
+
+    fn ctrl_c() -> KeyEvent {
+        KeyEvent {
+            code: KeyCode::Char('c'),
+            modifiers: KeyModifiers::CONTROL,
+            kind: KeyEventKind::Press,
+            state: KeyEventState::empty(),
+        }
+    }
+
+    #[test]
+    fn cost_view_shows_money_line() {
+        assert!(render_text(&fixture_costs(), None).contains("$7.54 / $71.93"));
     }
 
     #[test]
     fn cost_view_uses_widget_period_label() {
-        let backend = TestBackend::new(60, 20);
-        let mut terminal = Terminal::new(backend).expect("terminal");
-        terminal
-            .draw(|frame| render_cost_view(frame, &fixture_costs()))
-            .expect("draw");
-        let content = terminal.backend().to_string();
+        let content = render_text(&fixture_costs(), None);
         assert!(content.contains("Billing period"));
         assert!(!content.contains("billing-period"));
+    }
+
+    #[test]
+    fn cost_view_renders_empty_state() {
+        assert!(render_text(&[], None).contains("No cost data."));
+    }
+
+    #[test]
+    fn cost_view_failed_refresh_renders_indicator_and_success_clears_it() {
+        let entries = fixture_costs();
+        let mut error: Option<String> = None;
+        let kept = apply_cost_refresh(
+            entries.clone(),
+            Err(anyhow::anyhow!("cannot open usage database")),
+            &mut error,
+        );
+        assert_eq!(kept.len(), entries.len());
+        let shown = error.clone().expect("refresh error recorded");
+        let content = render_text(&kept, Some(&shown));
+        assert!(content.contains("refresh failed"));
+        assert!(content.contains("showing cached data"));
+
+        let refreshed = apply_cost_refresh(entries.clone(), Ok(entries.clone()), &mut error);
+        assert!(error.is_none());
+        let content = render_text(&refreshed, error.as_deref());
+        assert!(!content.contains("refresh failed"));
+    }
+
+    #[test]
+    fn cost_view_q_esc_and_ctrl_c_quit() {
+        assert_eq!(handle_cost_key(KeyCode::Char('q')), CostKeyAction::Quit);
+        assert_eq!(handle_cost_key(KeyCode::Char('Q')), CostKeyAction::Quit);
+        assert_eq!(handle_cost_key(KeyCode::Esc), CostKeyAction::Quit);
+        assert_eq!(handle_cost_key_event(ctrl_c()), CostKeyAction::Quit);
+    }
+
+    #[test]
+    fn cost_view_r_refreshes_and_other_keys_are_ignored() {
+        assert_eq!(handle_cost_key(KeyCode::Char('r')), CostKeyAction::Refresh);
+        assert_eq!(handle_cost_key(KeyCode::Char('R')), CostKeyAction::Refresh);
+        assert_eq!(handle_cost_key(KeyCode::Enter), CostKeyAction::Ignore);
     }
 }
