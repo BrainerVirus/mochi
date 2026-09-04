@@ -1,7 +1,7 @@
-//! Update flow TUI: check → notes preview → confirm → applied/aborted.
+//! Update flow TUI: notes preview → confirm → applied/aborted.
 //! Honest semantics (Task 4): the headless CLI never replaces the binary,
 //! so Applied reports the version, the installer URL, and the GUI-install
-//! path — never "updated to". Esc cancels with no mutation (CA-03).
+//! path — never "updated to". Esc/q cancels with no mutation (CA-03).
 
 use std::time::Duration;
 
@@ -13,14 +13,13 @@ use ratatui::{
     Frame, Terminal,
 };
 
-use super::{install_panic_hook, TuiGuard};
-use crate::cli::update::{format_apply_output, run_update_action};
+use super::{install_panic_hook, TuiGuard, EXIT_DOMAIN};
+use crate::cli::update::format_apply_output;
 use crate::updater::{check_stable_update, UpdateInfo};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FlowState {
     #[default]
-    Check,
     Notes,
     Confirm,
     Applied,
@@ -39,7 +38,7 @@ pub struct UpdateFlow {
 impl UpdateFlow {
     pub fn new() -> Self {
         Self {
-            state: FlowState::Check,
+            state: FlowState::Notes,
             version: None,
             notes: String::new(),
             download_url: None,
@@ -101,10 +100,7 @@ impl UpdateFlow {
     }
 
     fn abort(&mut self) {
-        if matches!(
-            self.state,
-            FlowState::Check | FlowState::Notes | FlowState::Confirm
-        ) {
+        if matches!(self.state, FlowState::Notes | FlowState::Confirm) {
             self.state = FlowState::Aborted;
         }
     }
@@ -123,33 +119,41 @@ impl UpdateFlow {
 
     pub fn handle_key(&mut self, key: KeyCode) {
         match self.state {
-            FlowState::Check => match key {
-                KeyCode::Enter if self.version.is_some() => self.state = FlowState::Notes,
-                KeyCode::Enter => {
-                    self.output = Some("up to date".to_string());
-                    self.state = FlowState::Applied;
-                }
-                KeyCode::Esc => self.abort(),
-                _ => {}
-            },
             FlowState::Notes => match key {
                 KeyCode::Enter => self.state = FlowState::Confirm,
-                KeyCode::Esc => self.abort(),
+                KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => self.abort(),
                 _ => {}
             },
             // Confirm ONLY on explicit Enter; anything else leaves the flow
-            // put (Esc aborts with no mutation).
+            // put (Esc/q aborts with no mutation).
             FlowState::Confirm => match key {
                 KeyCode::Enter => {
                     self.output = Some(format_apply_output(&self.info()));
                     self.confirmed = true;
                     self.state = FlowState::Applied;
                 }
-                KeyCode::Esc => self.abort(),
+                KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => self.abort(),
                 _ => {}
             },
             FlowState::Applied | FlowState::Aborted => {}
         }
+    }
+
+    /// Confirm-step rows: version line, installer URL only when present, and
+    /// the GUI-install path. No blank filler, no inline prompt — the footer
+    /// owns the single `Enter confirm` prompt.
+    fn confirm_rows(&self) -> Vec<String> {
+        let version = self.version.as_deref().unwrap_or("(none)");
+        let mut rows = vec![format!("{version} available")];
+        if let Some(url) = self
+            .download_url
+            .as_deref()
+            .filter(|url| !url.trim().is_empty())
+        {
+            rows.push(url.to_string());
+        }
+        rows.push("install via the GUI updater (install_update)".to_string());
+        rows
     }
 }
 
@@ -168,34 +172,21 @@ pub fn render_update_flow(frame: &mut Frame, flow: &UpdateFlow) {
         .split(area);
     let version = flow.version.as_deref().unwrap_or("(none)");
     let (title, rows, help) = match flow.state {
-        FlowState::Check => (
-            "Mochi update".to_string(),
-            vec!["Checking for updates…".to_string()],
-            "Enter continue · Esc cancel",
-        ),
         FlowState::Notes => {
             let mut rows: Vec<String> = flow.notes.lines().map(str::to_string).collect();
             if rows.is_empty() {
                 rows.push("(no release notes)".to_string());
             }
-            rows.push(String::new());
-            rows.push("Enter confirm · Esc cancel".to_string());
             (
                 format!("Mochi update — {version} available"),
                 rows,
-                "Enter confirm · Esc cancel",
+                "Enter confirm · Esc/q cancel",
             )
         }
         FlowState::Confirm => (
             format!("Mochi update — confirm {version}"),
-            vec![
-                format!("{version} available"),
-                flow.download_url.clone().unwrap_or_default(),
-                "install via the GUI updater (install_update)".to_string(),
-                String::new(),
-                "Enter confirm · Esc cancel".to_string(),
-            ],
-            "Enter confirm · Esc cancel (no change until Enter)",
+            flow.confirm_rows(),
+            "Enter confirm · Esc/q cancel (no change until Enter)",
         ),
         FlowState::Applied => (
             "Mochi update".to_string(),
@@ -218,14 +209,42 @@ pub fn render_update_flow(frame: &mut Frame, flow: &UpdateFlow) {
     frame.render_widget(Paragraph::new(help), chunks[1]);
 }
 
+/// Persistent output for a finished flow, formatted from the already-fetched
+/// snapshot — never a second live fetch, so feed flap between confirm and
+/// apply can neither change nor fail the printed result. `Some` exactly when
+/// the flow reached `Applied`, which covers both the confirmed apply and the
+/// up-to-date short-circuit. The caller prints it after the alternate-screen
+/// restore so it survives on real stdout.
+pub fn final_output_for_flow(info: &UpdateInfo, flow: &UpdateFlow) -> Option<String> {
+    (flow.state == FlowState::Applied).then(|| format_apply_output(info))
+}
+
+/// Map a pre-TUI fetch failure onto the headless arm's shape: the raw feed
+/// message plus the domain exit code, without the anyhow `mochi failed:`
+/// prefix the `?` early-return would add via `main`.
+pub(crate) fn precheck_failure(message: String) -> (String, i32) {
+    (message, EXIT_DOMAIN)
+}
+
 /// Run the fullscreen update event loop. Returns after the terminal is
-/// restored; the live apply runs only after explicit in-TUI confirm, through
-/// the same code path as the plain `update apply --confirm` command.
+/// restored; the printed apply output is formatted from the pre-TUI fetch
+/// snapshot through the same [`format_apply_output`] helper as the plain
+/// `update apply --confirm` command — no second network fetch.
 pub fn run_update_flow() -> anyhow::Result<()> {
-    // Install LAST so terminal restore runs before the diagnostics logger.
-    install_panic_hook();
-    let info = check_stable_update().map_err(|message| anyhow::anyhow!(message))?;
+    let info = match check_stable_update() {
+        Ok(info) => info,
+        Err(message) => {
+            let (message, code) = precheck_failure(message);
+            eprintln!("{message}");
+            std::process::exit(code);
+        }
+    };
     let mut flow = UpdateFlow::from_info(&info);
+    // Install LAST and only once the pre-TUI fetch succeeded, just before
+    // entering the alternate screen: a pre-TUI panic must never emit
+    // leave-screen escapes to a never-entered terminal, and hook order is
+    // LIFO so terminal restore still runs before the diagnostics logger.
+    install_panic_hook();
     {
         let _guard = TuiGuard::enter()?;
         let mut terminal = Terminal::new(CrosstermBackend::new(std::io::stdout()))?;
@@ -244,11 +263,8 @@ pub fn run_update_flow() -> anyhow::Result<()> {
             }
         }
     }
-    if flow.applied() {
-        match run_update_action("apply", true) {
-            Ok(output) => println!("{output}"),
-            Err(message) => return Err(anyhow::anyhow!(message)),
-        }
+    if let Some(output) = final_output_for_flow(&info, &flow) {
+        println!("{output}");
     }
     Ok(())
 }
@@ -322,5 +338,223 @@ mod tests {
         flow.handle_key(KeyCode::Esc);
         assert_eq!(flow.state, FlowState::Aborted);
         assert!(!flow.applied());
+    }
+
+    fn ctrl_c_event() -> crossterm::event::KeyEvent {
+        crossterm::event::KeyEvent {
+            code: KeyCode::Char('c'),
+            modifiers: crossterm::event::KeyModifiers::CONTROL,
+            kind: crossterm::event::KeyEventKind::Press,
+            state: crossterm::event::KeyEventState::empty(),
+        }
+    }
+
+    fn sample_available_info() -> crate::updater::UpdateInfo {
+        crate::updater::UpdateInfo {
+            available: true,
+            version: Some("0.3.1".to_string()),
+            channel: "stable".to_string(),
+            notes: Some("- fixed tray races".to_string()),
+            download_url: Some("https://example.com/mochi-0.3.1.dmg".to_string()),
+        }
+    }
+
+    fn up_to_date_info() -> crate::updater::UpdateInfo {
+        crate::updater::UpdateInfo {
+            available: false,
+            version: None,
+            channel: "stable".to_string(),
+            notes: None,
+            download_url: None,
+        }
+    }
+
+    #[test]
+    fn update_flow_q_cancels_from_notes() {
+        let mut flow = UpdateFlow::notes_available("0.3.1", "notes");
+        flow.handle_key(KeyCode::Char('q'));
+        assert_eq!(flow.state, FlowState::Aborted);
+        assert!(!flow.applied());
+    }
+
+    #[test]
+    fn update_flow_q_cancels_from_confirm() {
+        let mut flow = UpdateFlow::notes_available("0.3.1", "notes");
+        flow.handle_key(KeyCode::Enter);
+        assert_eq!(flow.state, FlowState::Confirm);
+        flow.handle_key(KeyCode::Char('q'));
+        assert_eq!(flow.state, FlowState::Aborted);
+        assert!(!flow.applied());
+    }
+
+    #[test]
+    fn update_flow_ctrl_c_aborts_every_live_step_without_apply() {
+        let mut flow = UpdateFlow::notes_available("0.3.1", "notes");
+        flow.handle_key_event(ctrl_c_event());
+        assert_eq!(flow.state, FlowState::Aborted);
+        assert!(!flow.applied());
+
+        let mut flow = UpdateFlow::notes_available("0.3.1", "notes");
+        flow.handle_key(KeyCode::Enter);
+        assert_eq!(flow.state, FlowState::Confirm);
+        flow.handle_key_event(ctrl_c_event());
+        assert_eq!(flow.state, FlowState::Aborted);
+        assert!(!flow.applied());
+
+        // Terminal states ignore Ctrl+C.
+        let mut flow = UpdateFlow::from_info(&up_to_date_info());
+        assert_eq!(flow.state, FlowState::Applied);
+        flow.handle_key_event(ctrl_c_event());
+        assert_eq!(flow.state, FlowState::Applied);
+        assert!(!flow.applied());
+    }
+
+    #[test]
+    fn update_flow_from_info_branches() {
+        let flow = UpdateFlow::from_info(&sample_available_info());
+        assert_eq!(flow.state, FlowState::Notes);
+        assert!(!flow.applied());
+
+        let flow = UpdateFlow::from_info(&up_to_date_info());
+        assert_eq!(flow.state, FlowState::Applied);
+        assert!(!flow.applied());
+        assert_eq!(flow.output(), Some("up to date"));
+
+        let mut flapped = sample_available_info();
+        flapped.available = true;
+        flapped.version = None;
+        let flow = UpdateFlow::from_info(&flapped);
+        assert_eq!(flow.state, FlowState::Applied);
+        assert!(!flow.applied());
+    }
+
+    #[test]
+    fn update_flow_enter_on_applied_is_idempotent() {
+        let mut flow = UpdateFlow::notes_available("0.3.1", "notes");
+        flow.handle_key(KeyCode::Enter);
+        flow.handle_key(KeyCode::Enter);
+        assert!(flow.applied());
+        let output_before = flow.output().map(str::to_string);
+        // Extra Enters on Applied are no-ops: same state, same output.
+        flow.handle_key(KeyCode::Enter);
+        flow.handle_key(KeyCode::Enter);
+        assert_eq!(flow.state, FlowState::Applied);
+        assert!(flow.applied());
+        assert_eq!(flow.output().map(str::to_string), output_before);
+    }
+
+    #[test]
+    fn update_flow_notes_render_prompts_once() {
+        let flow = UpdateFlow::notes_available("0.3.1", "- fixed tray races");
+        let content = render_text(&flow);
+        assert_eq!(
+            content.matches("Enter confirm").count(),
+            1,
+            "prompt must live in exactly one place, got:\n{content}"
+        );
+    }
+
+    #[test]
+    fn update_flow_confirm_render_without_url_has_single_prompt() {
+        let mut flow = UpdateFlow::notes_available("0.3.1", "notes");
+        flow.handle_key(KeyCode::Enter);
+        assert_eq!(flow.state, FlowState::Confirm);
+        let content = render_text(&flow);
+        assert_eq!(
+            content.matches("Enter confirm").count(),
+            1,
+            "prompt must live in exactly one place, got:\n{content}"
+        );
+        assert!(content.contains("install_update"));
+    }
+
+    #[test]
+    fn update_flow_confirm_render_with_url_links_installer() {
+        let mut flow = UpdateFlow::from_info(&sample_available_info());
+        flow.handle_key(KeyCode::Enter);
+        assert_eq!(flow.state, FlowState::Confirm);
+        let content = render_text(&flow);
+        assert!(content.contains("https://example.com/mochi-0.3.1.dmg"));
+        assert!(content.contains("install_update"));
+    }
+
+    #[test]
+    fn update_flow_terminal_states_render() {
+        let flow = UpdateFlow::from_info(&up_to_date_info());
+        assert!(render_text(&flow).contains("up to date"));
+        let mut flow = UpdateFlow::notes_available("0.3.1", "notes");
+        flow.handle_key(KeyCode::Esc);
+        assert!(render_text(&flow).contains("Cancelled"));
+    }
+
+    #[test]
+    fn update_flow_up_to_date_yields_printable_output() {
+        let info = up_to_date_info();
+        let flow = UpdateFlow::from_info(&info);
+        assert_eq!(flow.state, FlowState::Applied);
+        assert!(!flow.applied());
+        let output = super::final_output_for_flow(&info, &flow).expect("printable output");
+        assert!(
+            output.contains("up to date"),
+            "up-to-date path must print, got: {output}"
+        );
+    }
+
+    #[test]
+    fn update_flow_final_output_reuses_snapshot_without_refetch() {
+        let info = sample_available_info();
+        let mut flow = UpdateFlow::from_info(&info);
+        flow.handle_key(KeyCode::Enter);
+        flow.handle_key(KeyCode::Enter);
+        assert!(flow.applied());
+        let printed = super::final_output_for_flow(&info, &flow).expect("applied output");
+        // Matches the confirmed snapshot even if the live feed flapped.
+        assert_eq!(
+            printed,
+            crate::cli::update::format_apply_output(&info),
+            "printed output must reflect the confirmed snapshot"
+        );
+        assert_eq!(printed, flow.output().expect("confirm-screen output"));
+        let mut flapped = info.clone();
+        flapped.version = Some("9.9.9".to_string());
+        flapped.download_url = Some("https://example.com/other.dmg".to_string());
+        assert_ne!(
+            printed,
+            crate::cli::update::format_apply_output(&flapped),
+            "a changed feed must not rewrite the confirmed output"
+        );
+        // Aborted flows print nothing.
+        let mut flow = UpdateFlow::notes_available("0.3.1", "notes");
+        flow.handle_key(KeyCode::Esc);
+        assert!(super::final_output_for_flow(&info, &flow).is_none());
+    }
+
+    #[test]
+    fn update_flow_precheck_failure_matches_headless_shape() {
+        let (message, code) = super::precheck_failure("request timeout".to_string());
+        assert_eq!(message, "request timeout");
+        assert!(!message.contains("mochi failed:"));
+        assert_eq!(code, crate::cli::tui::EXIT_DOMAIN);
+    }
+
+    #[test]
+    fn update_flow_confirm_rows_skip_absent_url() {
+        let flow = UpdateFlow::notes_available("0.3.1", "notes");
+        assert_eq!(
+            flow.confirm_rows(),
+            vec![
+                "0.3.1 available".to_string(),
+                "install via the GUI updater (install_update)".to_string(),
+            ]
+        );
+        let flow = UpdateFlow::from_info(&sample_available_info());
+        assert_eq!(
+            flow.confirm_rows(),
+            vec![
+                "0.3.1 available".to_string(),
+                "https://example.com/mochi-0.3.1.dmg".to_string(),
+                "install via the GUI updater (install_update)".to_string(),
+            ]
+        );
     }
 }
