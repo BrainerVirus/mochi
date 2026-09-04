@@ -20,30 +20,41 @@ steps. Nothing is invented.
 Build note: Node 24 + system GTK/WebKit dev packages are installed on this
 machine, so a plain `cargo build --manifest-path src-tauri/Cargo.toml`
 succeeds (finished in-cache this session, no sysroot workaround needed).
+Reconciliation (2026-09-04): this supersedes the `linux-ubuntu-evidence.md`
+(2026-09-03) build note, which said the GTK/WebKit dev packages were NOT
+installed and cargo needed a deb-extracted sysroot. The packages were
+installed system-wide on 2026-09-04 via apt — verified this session:
+`dpkg -l` shows `libwebkit2gtk-4.1-dev` + `libjavascriptcoregtk-4.1-dev`
+installed and `pkg-config --modversion webkit2gtk-4.1` reports `2.52.6`.
+The 2026-09-03 doc was accurate for its date; this doc is current.
 
 ## Exit-code matrix (real binary)
 
-| Command                         | Exit | Output (verbatim)                                                                 |
-| ------------------------------- | ---- | --------------------------------------------------------------------------------- |
-| `mochi status --bad-flag`       | 2    | `error: unexpected argument '--bad-flag' found` + usage text                      |
-| `mochi config <unknown-key>`    | 1    | `mochi failed: unknown key: <key>` (ran as `mochi config unknown-key`)            |
-| `mochi update frobnicate`       | 2    | `usage: mochi update <check\|apply> [--confirm] (unknown action: frobnicate)`     |
-| `mochi update` (missing action) | 2    | clap required-argument error + usage text                                         |
-| `mochi status`                  | 0    | `Codex 0% / Cursor 87% / OpenCode Go 8% / Command Code 50%` (one line each)       |
-| `mochi config` (bare)           | 0    | `update_channel = stable`, `enabled_providers = …`, `cursor.cookie_source = auto` |
-| `mochi cost`                    | 0    | `Command Code $64.37 / $71.95 (Billing period)`                                   |
+| Command                               | Exit | Output (verbatim)                                                                                                                                                                                                    |
+| ------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mochi status --bad-flag`             | 2    | `error: unexpected argument '--bad-flag' found` + usage text                                                                                                                                                         |
+| `mochi config <unknown-key>`          | 1    | `mochi failed: unknown key: <key>` (ran as `mochi config unknown-key`)                                                                                                                                               |
+| `mochi update frobnicate`             | 2    | `usage: mochi update <check\|apply> [--confirm] (unknown action: frobnicate)`                                                                                                                                        |
+| `mochi update` (missing action)       | 2    | clap required-argument error + usage text                                                                                                                                                                            |
+| `mochi status`                        | 0    | `Codex 0% / Cursor 87% / OpenCode Go 8% / Command Code 50%` (one line each)                                                                                                                                          |
+| `mochi config` (bare)                 | 0    | `update_channel = stable`, `enabled_providers = …`, `cursor.cookie_source = auto`                                                                                                                                    |
+| `mochi update apply` (no `--confirm`) | 2    | `refusing to apply without --confirm` + `usage: mochi update <check\|apply> [--confirm] apply --confirm` (ran piped, `< /dev/null`)                                                                                  |
+| `mochi config update_channel bogus`   | 1    | `mochi failed: unknown update channel: bogus` (ran piped, `< /dev/null`; note: `config` takes `[KEY] [VALUE]` with no `set` verb, so the invalid-value path is `mochi config <key> <bad-value>`, not `config set …`) |
+| `mochi cost`                          | 0    | `Command Code $64.37 / $71.95 (Billing period)`                                                                                                                                                                      |
 
 Contract note: the failure-domain split is **usage error → 2** (clap parse
 failures, unknown `update` action) vs **domain failure → 1** (resolved CLI
 shape but unknown config key). `mochi update frobnicate` lands on the usage
-side (exit 2), not exit 1 — the brief's "expect 1" example holds for the
-`mochi config <unknown-key>` path instead. `mochi config list` also exits 1
+side (exit 2), not exit 1 — the task brief/worker instructions' "expect 1"
+example holds for the `mochi config <unknown-key>` path instead (that
+expectation text lived in the brief, not in plan.md Task 10, which contains
+no such example). `mochi config list` also exits 1
 (`mochi failed: unknown key: list`): `config` takes `[KEY] [VALUE]`, there is
 no `list`/`get` verb.
 
 ## TTY-fallback proof (piped runs, no TUI escape codes)
 
-Both runs below were piped (non-TTY), and the raw bytes were counted with
+All three runs below were piped (non-TTY), and the raw bytes were counted with
 Python (`data.count(b'\x1b')`):
 
 - `mochi status | cat` → plain lines, `ESC count: 0`:
@@ -70,8 +81,10 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib masks
 → config_get_masks_secret_values … ok (4 passed, 0 failed)
 ```
 
-What they cover: `config get <provider>.api_key` prints `<set>`/`<unset>`,
-never the value (`src-tauri/src/cli/config.rs`); the wizard's
+What they cover: `mochi config <provider>.api_key` prints `<set>`/`<unset>`,
+never the value (`src-tauri/src/cli/config.rs`; `Config` takes `[KEY] [VALUE]`
+per `src-tauri/src/cli/mod.rs`, no `get` verb — verified live this session:
+`mochi config cursor.api_key` → `<unset>`, exit 0); the wizard's
 `masked_secret()` renders `•` per char (multibyte-safe) and the review/detail
 lines use it (`src-tauri/src/cli/tui/config_wizard.rs`); diagnostics output
 redacts sensitive markers (`src-tauri/src/diagnostics/report.rs`). The secret
@@ -121,5 +134,21 @@ Linux window controls). No paragraph added.
 
 - `cargo build --manifest-path src-tauri/Cargo.toml` — clean (debug).
 - `cargo test --manifest-path src-tauri/Cargo.toml --lib masks` — 4 passed.
-- `pnpm format:check` + `pnpm lint` — run at commit time (docs-only change
-  affects the format gate).
+- `pnpm format:check` — green, verbatim (2026-09-04):
+
+```
+> mochi@0.2.6 format:check /home/cristhofer-pincetti/Documents/projects/personal/mochi
+> oxfmt --check
+
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 3251ms on 360 files using 14 threads.
+```
+
+- `pnpm lint` — green, verbatim (2026-09-04):
+
+```
+> mochi@0.2.6 lint /home/cristhofer-pincetti/Documents/projects/personal/mochi
+> oxlint --type-aware --react-plugin --jsx-a11y-plugin --import-plugin --deny-warnings app src
+```
