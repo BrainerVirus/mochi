@@ -12,11 +12,7 @@ const GitHubReleaseResponseSchema = z.object({
   body: z.string().nullable().optional(),
 });
 
-export function githubReleaseTagForChannel(channel: UpdateChannel, currentVersion: string): string {
-  if (channel === "unstable") {
-    return "unstable";
-  }
-
+export function githubReleaseTagForChannel(currentVersion: string): string {
   return currentVersion.startsWith("v") ? currentVersion : `v${currentVersion}`;
 }
 
@@ -28,7 +24,7 @@ export async function fetchCurrentReleaseNotes(
   channel: UpdateChannel,
 ): Promise<ReleaseNotesCache | null> {
   const version = await appVersion();
-  const tag = githubReleaseTagForChannel(channel, version);
+  const tag = githubReleaseTagForChannel(version);
   const response = await fetch(`${GITHUB_RELEASE_API}/${encodeURIComponent(tag)}`);
 
   if (!response.ok) {

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { normalizeProviderId, ProviderIdSchema } from "@/lib/schemas/usage";
 
-export const UpdateChannelSchema = z.enum(["stable", "unstable"]);
+export const UpdateChannelSchema = z.literal("stable");
 
 export type UpdateChannel = z.infer<typeof UpdateChannelSchema>;
 
@@ -66,6 +66,7 @@ export const PROVIDER_LABELS: Record<z.infer<typeof ProviderIdSchema>, string> =
   zai: "z.ai",
   kiro: "Kiro",
   augment: "Augment",
+  commandcode: "Command Code",
 };
 
 export const ALL_PROVIDER_IDS = ProviderIdSchema.options;

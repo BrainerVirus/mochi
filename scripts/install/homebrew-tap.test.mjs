@@ -286,9 +286,10 @@ describe("homebrew install cask ref", () => {
     expect(ref).not.toBe("BrainerVirus/mochi/mochi");
   });
 
-  it("uses the unstable cask token", () => {
-    const ref = runBash(`source "$LIB" && mochi_homebrew_install_cask_ref unstable`).trim();
-    expect(ref).toBe("BrainerVirus/mochi/mochi-unstable");
+  it("rejects any non-stable channel", () => {
+    expect(() => runBash(`source "$LIB" && mochi_homebrew_install_cask_ref nightly`)).toThrow(
+      /only stable releases are published/,
+    );
   });
 });
 
@@ -431,20 +432,18 @@ describe("install-macos-brew.sh", () => {
     expect(log).not.toMatch(/\binstall --cask mochi\b/);
   });
 
-  it("installs the fully qualified unstable cask", () => {
+  it("rejects -i with a usage error", () => {
     const fakeBrew = createFakeBrew({ taps: [] });
-    execFileSync("/bin/bash", [installSh, "-i"], {
-      cwd: path.dirname(installSh),
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PATH: fakeBrew.pathPrefix,
-      },
-    });
-
-    expect(fakeBrew.readLog()).toContain(
-      "install --cask BrainerVirus/mochi/mochi-unstable --force",
-    );
+    expect(() =>
+      execFileSync("/bin/bash", [installSh, "-i"], {
+        cwd: path.dirname(installSh),
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PATH: fakeBrew.pathPrefix,
+        },
+      }),
+    ).toThrow(/only stable releases are published/);
   });
 
   it("works when piped to bash from an unrelated working directory", () => {

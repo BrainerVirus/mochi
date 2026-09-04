@@ -195,7 +195,7 @@ describe("TrayPanelTabList selection", () => {
   it("preserves the tab group and accessible tab labels", () => {
     renderTabList("overview");
 
-    expect(screen.getByRole("group")).toBeTruthy();
+    expect(screen.getByRole("radiogroup")).toBeTruthy();
     expect(screen.getByRole("radio", { name: "Overview" }).getAttribute("aria-checked")).toBe(
       "true",
     );

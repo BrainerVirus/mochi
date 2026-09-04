@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mochi</title>
+    <!--
+      Critical first-paint CSS: the native window background is set in Rust
+      (window_background.rs); this keeps the document background matched to the
+      shell so there is no white flash or empty frame while the bundled CSS and
+      JS load. Colors mirror src/styles/index.css [data-platform="linux"].
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background-color: #fafafa;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background-color: #242424;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { root, sourceCommon } from "./test-helpers.mjs";
+import { root, runBash, sourceCommon } from "./test-helpers.mjs";
 
 function withReleaseFixture(releases, fn, env = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "mochi-install-test-"));
@@ -14,44 +14,6 @@ function withReleaseFixture(releases, fn, env = {}) {
 }
 
 describe("install common.sh", () => {
-  it("resolves unstable installs to the newest timestamped unstable prerelease", () => {
-    withReleaseFixture(
-      [
-        {
-          tag_name: "unstable",
-          prerelease: true,
-          draft: false,
-          published_at: "2026-05-25T02:07:00Z",
-        },
-        {
-          tag_name: "unstable-20260606.145138",
-          prerelease: true,
-          draft: false,
-          published_at: "2026-06-06T14:53:53Z",
-        },
-        {
-          tag_name: "unstable-20260606.150109",
-          prerelease: true,
-          draft: false,
-          published_at: "2026-06-06T15:03:34Z",
-        },
-        {
-          tag_name: "v0.2.2",
-          prerelease: false,
-          draft: false,
-          published_at: "2026-06-06T14:26:43Z",
-        },
-      ],
-      (fixture) => {
-        const tag = sourceCommon(
-          `mochi_curl_json() { cat "${fixture}"; }\nmochi_resolve_release_tag`,
-          { MOCHI_INSTALL_UNSTABLE: "1" },
-        );
-        expect(tag).toBe("unstable-20260606.150109");
-      },
-    );
-  });
-
   it("resolves stable installs to the newest non-prerelease release", () => {
     withReleaseFixture(
       [
@@ -82,12 +44,33 @@ describe("install common.sh", () => {
     expect(sourceCommon("mochi_resolve_release_tag", { MOCHI_VERSION: "v9.9.9" })).toBe("v9.9.9");
   });
 
-  it("parses -i/--unstable and rejects unknown flags", () => {
-    const unstable = sourceCommon(
-      `MOCHI_INSTALL_SCRIPT_NAME=install.sh; mochi_parse_install_args -i; echo "$MOCHI_INSTALL_UNSTABLE"`,
-    );
-    expect(unstable).toBe("1");
+  it("rejects the legacy prerelease flag and env with usage and exit 2", () => {
+    for (const args of ["-i", "--unstable"]) {
+      let status = 0;
+      let stderr = "";
+      try {
+        runBash(
+          `set -euo pipefail\nsource "$COMMON_SH"\nMOCHI_INSTALL_SCRIPT_NAME=install.sh\nmochi_parse_install_args ${args}`,
+          {},
+        );
+      } catch (error) {
+        status = error.status ?? 1;
+        stderr = error.stderr ?? "";
+      }
+      expect(status).toBe(2);
+      expect(stderr.toLowerCase()).toContain("usage");
+    }
 
+    let envStatus = 0;
+    try {
+      sourceCommon(`mochi_parse_install_args`, { MOCHI_UNSTABLE: "1" });
+    } catch (error) {
+      envStatus = error.status ?? 1;
+    }
+    expect(envStatus).toBe(2);
+  });
+
+  it("rejects unknown flags", () => {
     expect(() =>
       sourceCommon(`MOCHI_INSTALL_SCRIPT_NAME=install.sh; mochi_parse_install_args --wat`),
     ).toThrow();

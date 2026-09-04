@@ -17,7 +17,6 @@ vi.mock("@/lib/tauri/commands", () => ({
   saveSettings: vi.fn<(settings: MochiSettings) => Promise<MochiSettings>>((settings) =>
     Promise.resolve(settings),
   ),
-  syncTrayUpdateChannel: vi.fn<() => Promise<void>>(() => Promise.resolve()),
   syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
 }));
 
@@ -60,8 +59,8 @@ beforeEach(() => {
   useTrayUiStore.getState().setSelectedTab("overview");
 });
 
-describe("settings save reconciliation — cache and channel updates", () => {
-  it("invalidates cached usage and syncs update channel after settings save", async () => {
+describe("settings save reconciliation — cache updates", () => {
+  it("invalidates cached usage after settings save", async () => {
     const calls: string[] = [];
     const queryClient = {
       setQueryData: (queryKey: readonly unknown[]) => {
@@ -74,14 +73,10 @@ describe("settings save reconciliation — cache and channel updates", () => {
       },
     };
 
-    await reconcileSettingsSaveSuccess(queryClient, DEFAULT_MOCHI_SETTINGS, (channel) => {
-      calls.push(`sync-channel:${channel}`);
-      return Promise.resolve();
-    });
+    await reconcileSettingsSaveSuccess(queryClient, DEFAULT_MOCHI_SETTINGS);
 
     expect(calls).toEqual([
       `set:${queryKeys.settings.join("/")}`,
-      "sync-channel:stable",
       `invalidate:${queryKeys.usageSnapshots.join("/")}`,
     ]);
     expect(syncTrayUsage).not.toHaveBeenCalled();
@@ -98,11 +93,10 @@ describe("settings save reconciliation — cache and channel updates", () => {
       },
     };
 
-    await reconcileSettingsSaveSuccess(
-      queryClient,
-      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: ["codex", "claude"] },
-      () => Promise.resolve(),
-    );
+    await reconcileSettingsSaveSuccess(queryClient, {
+      ...DEFAULT_MOCHI_SETTINGS,
+      enabled_providers: ["codex", "claude"],
+    });
 
     expect(calls).toEqual([`invalidate:${queryKeys.usageSnapshots.join("/")}`]);
   });
@@ -115,11 +109,10 @@ describe("settings save reconciliation — usage cache pruning", () => {
       usageState("gemini"),
     ]);
 
-    await reconcileSettingsSaveSuccess(
-      queryClient,
-      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: ["codex"] },
-      () => Promise.resolve(),
-    );
+    await reconcileSettingsSaveSuccess(queryClient, {
+      ...DEFAULT_MOCHI_SETTINGS,
+      enabled_providers: ["codex"],
+    });
 
     expect(usageCache().map((state) => state.provider)).toEqual(["codex"]);
   });
@@ -130,11 +123,10 @@ describe("settings save reconciliation — usage cache pruning", () => {
       usageState("gemini"),
     ]);
 
-    await reconcileSettingsSaveSuccess(
-      queryClient,
-      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: [] },
-      () => Promise.resolve(),
-    );
+    await reconcileSettingsSaveSuccess(queryClient, {
+      ...DEFAULT_MOCHI_SETTINGS,
+      enabled_providers: [],
+    });
 
     expect(usageCache()).toEqual([]);
   });
@@ -146,18 +138,16 @@ describe("settings save reconciliation — usage cache pruning", () => {
       usageState("cursor"),
     ]);
 
-    await reconcileSettingsSaveSuccess(
-      queryClient,
-      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: ["codex", "gemini"] },
-      () => Promise.resolve(),
-    );
+    await reconcileSettingsSaveSuccess(queryClient, {
+      ...DEFAULT_MOCHI_SETTINGS,
+      enabled_providers: ["codex", "gemini"],
+    });
     expect(usageCache().map((state) => state.provider)).toEqual(["codex", "gemini"]);
 
-    await reconcileSettingsSaveSuccess(
-      queryClient,
-      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: ["codex"] },
-      () => Promise.resolve(),
-    );
+    await reconcileSettingsSaveSuccess(queryClient, {
+      ...DEFAULT_MOCHI_SETTINGS,
+      enabled_providers: ["codex"],
+    });
     expect(usageCache().map((state) => state.provider)).toEqual(["codex"]);
   });
 });
@@ -171,11 +161,10 @@ describe("settings save reconciliation — tray tab sync", () => {
       invalidateQueries: () => Promise.resolve(),
     };
 
-    await reconcileSettingsSaveSuccess(
-      queryClient,
-      { ...DEFAULT_MOCHI_SETTINGS, enabled_providers: ["codex"] },
-      () => Promise.resolve(),
-    );
+    await reconcileSettingsSaveSuccess(queryClient, {
+      ...DEFAULT_MOCHI_SETTINGS,
+      enabled_providers: ["codex"],
+    });
     await syncCurrentTrayUsage({ enabled_providers: ["codex"] });
 
     expect(useTrayUiStore.getState().selectedTab).toBe("overview");

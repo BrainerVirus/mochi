@@ -17,10 +17,12 @@ pub enum ProviderId {
     Zai,
     Kiro,
     Augment,
+    #[serde(rename = "commandcode", alias = "command-code")]
+    CommandCode,
 }
 
 impl ProviderId {
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 13] = [
         Self::Codex,
         Self::Claude,
         Self::Cursor,
@@ -33,6 +35,7 @@ impl ProviderId {
         Self::Zai,
         Self::Kiro,
         Self::Augment,
+        Self::CommandCode,
     ];
 
     pub fn all() -> &'static [Self] {
@@ -53,6 +56,7 @@ impl ProviderId {
             "zai" => Some(Self::Zai),
             "kiro" => Some(Self::Kiro),
             "augment" => Some(Self::Augment),
+            "commandcode" => Some(Self::CommandCode),
             _ => None,
         }
     }
@@ -80,6 +84,7 @@ impl ProviderId {
             Self::Zai => "zai",
             Self::Kiro => "kiro",
             Self::Augment => "augment",
+            Self::CommandCode => "commandcode",
         }
     }
 }
@@ -180,6 +185,12 @@ pub struct UsageWindow {
     pub used_percent: f32,
     pub remaining_percent: f32,
     pub resets_at: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub limited: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
 }
 
 impl UsageWindow {
@@ -190,7 +201,13 @@ impl UsageWindow {
             used_percent,
             remaining_percent: 100.0 - used_percent,
             resets_at,
+            limited: false,
         }
+    }
+
+    pub fn with_limited(mut self, limited: bool) -> Self {
+        self.limited = limited;
+        self
     }
 }
 
@@ -343,6 +360,16 @@ mod tests {
             serde_json::to_string(&ProviderId::OpenCode).unwrap(),
             "\"opencode\""
         );
+    }
+
+    #[test]
+    fn provider_id_commandcode_roundtrips_canonical_string() {
+        assert_eq!(
+            serde_json::to_string(&ProviderId::CommandCode).unwrap(),
+            "\"commandcode\""
+        );
+        let parsed: ProviderId = serde_json::from_str("\"commandcode\"").unwrap();
+        assert_eq!(parsed, ProviderId::CommandCode);
     }
 
     #[test]

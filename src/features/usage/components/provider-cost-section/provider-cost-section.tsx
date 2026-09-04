@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { useUsageMeterFill } from "@/features/usage/hooks/use-usage-meter-fill/use-usage-meter-fill";
 import { useUsageMeterLeftLabel } from "@/features/usage/hooks/use-usage-meter-left-label/use-usage-meter-left-label";
 import { cn } from "@/lib/utils";
+import { formatCostDetail, formatCostPeriodLabel } from "@/lib/utils/format-cost-label";
 import { formatResetLine } from "@/lib/utils/format-reset-line";
 import { formatUsageMeterLeftLabel } from "@/lib/utils/usage-meter-fill-animation";
 import { getUsageMeterTone, usageMeterToneClasses } from "@/lib/utils/usage-meter-tone";
@@ -15,24 +16,12 @@ interface ProviderCostSectionProps {
   fillActivationKey?: string;
 }
 
-function formatCurrency(amount: number, currencyCode: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currencyCode,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `$${amount.toFixed(2)}`;
-  }
-}
-
 export function ProviderCostSection({
   cost,
   compact = false,
   fillActivationKey = "static",
 }: ProviderCostSectionProps) {
-  const label = cost.period ?? "On-demand";
+  const label = formatCostPeriodLabel(cost.period);
   const hasLimit = cost.limit > 0;
   const usedPercent = hasLimit ? Math.max(0, Math.min(100, (cost.used / cost.limit) * 100)) : 0;
   const leftPercent = hasLimit ? Math.max(0, Math.min(100, 100 - usedPercent)) : 100;
@@ -45,9 +34,7 @@ export function ProviderCostSection({
   useUsageMeterFill(meterRef, indicatorRef, leftPercent, fillActivationKey);
   useUsageMeterLeftLabel(leftLabelRef, leftPercent, fillActivationKey);
 
-  const detail = hasLimit
-    ? `${formatCurrency(cost.used, cost.currency_code)} / ${formatCurrency(cost.limit, cost.currency_code)}`
-    : formatCurrency(cost.used, cost.currency_code);
+  const detail = formatCostDetail(cost.used, cost.limit, cost.currency_code);
 
   return (
     <div ref={meterRef} className={cn("flex flex-col", compact ? "gap-1" : "gap-1.5")}>

@@ -23,7 +23,6 @@ vi.mock("@/lib/tauri/commands", () => ({
   saveSelectedTab: vi.fn<(selectedTab: TraySelectedTab) => Promise<MochiSettings>>((selectedTab) =>
     Promise.resolve({ ...DEFAULT_MOCHI_SETTINGS, selected_tab: selectedTab }),
   ),
-  syncTrayUpdateChannel: vi.fn<() => Promise<void>>(() => Promise.resolve()),
   syncTrayUsage: vi.fn<() => Promise<void>>(() => Promise.resolve()),
 }));
 

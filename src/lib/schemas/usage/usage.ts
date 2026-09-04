@@ -13,6 +13,7 @@ export const ProviderIdSchema = z.enum([
   "zai",
   "kiro",
   "augment",
+  "commandcode",
 ]);
 
 export type ProviderId = z.infer<typeof ProviderIdSchema>;
@@ -32,6 +33,7 @@ export const UsageWindowSchema = z.object({
   used_percent: z.number(),
   remaining_percent: z.number(),
   resets_at: z.string().nullable(),
+  limited: z.boolean().optional(),
 });
 
 export type UsageWindow = z.infer<typeof UsageWindowSchema>;
@@ -159,7 +161,7 @@ function normalizeUsageSnapshotInput(snapshot: unknown): unknown {
     return snapshot;
   }
 
-  const provider = normalizeProviderId((snapshot as { provider: unknown }).provider);
+  const provider = normalizeProviderId(snapshot.provider);
   if (!provider) {
     return snapshot;
   }
@@ -177,7 +179,7 @@ export function parseUsageSnapshots(data: unknown): UsageSnapshots {
       return false;
     }
 
-    return ProviderIdSchema.safeParse((snapshot as { provider: unknown }).provider).success;
+    return ProviderIdSchema.safeParse(snapshot.provider).success;
   });
 
   return UsageSnapshotsSchema.parse(normalized);
@@ -188,7 +190,7 @@ function normalizeProviderUsageStateInput(state: unknown): unknown {
     return state;
   }
 
-  const provider = normalizeProviderId((state as { provider: unknown }).provider);
+  const provider = normalizeProviderId(state.provider);
   if (!provider) {
     return state;
   }
@@ -207,7 +209,7 @@ export function parseProviderUsageStates(data: unknown): ProviderUsageStates {
       return false;
     }
 
-    return ProviderIdSchema.safeParse((state as { provider: unknown }).provider).success;
+    return ProviderIdSchema.safeParse(state.provider).success;
   });
 
   return ProviderUsageStatesSchema.parse(normalized);

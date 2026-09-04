@@ -4,7 +4,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_updater::UpdaterExt;
 
-const UPDATE_ENDPOINT_BASE: &str = "https://mochi-app.github.io/mochi/updates";
+const UPDATE_ENDPOINT_BASE: &str = "https://brainervirus.github.io/mochi/updates";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct UpdateInfo {
@@ -94,10 +94,9 @@ fn updater_for_channel(
 }
 
 fn update_endpoint_for_channel(channel: &str) -> Result<reqwest::Url, String> {
-    let channel = match channel {
-        "stable" | "unstable" => channel,
-        other => return Err(format!("unsupported update channel: {other}")),
-    };
+    if channel != "stable" {
+        return Err(format!("unsupported update channel: {channel}"));
+    }
 
     reqwest::Url::parse(&format!(
         "{UPDATE_ENDPOINT_BASE}/{{{{target}}}}/{{{{arch}}}}/{{{{current_version}}}}/{channel}.json"
@@ -137,21 +136,14 @@ mod tests {
         let endpoint = update_endpoint_for_channel("stable").expect("stable endpoint");
         assert_eq!(
             endpoint.as_str(),
-            "https://mochi-app.github.io/mochi/updates/%7B%7Btarget%7D%7D/%7B%7Barch%7D%7D/%7B%7Bcurrent_version%7D%7D/stable.json"
-        );
-    }
-
-    #[test]
-    fn update_endpoint_builds_exact_unstable_feed_url() {
-        let endpoint = update_endpoint_for_channel("unstable").expect("unstable endpoint");
-        assert_eq!(
-            endpoint.as_str(),
-            "https://mochi-app.github.io/mochi/updates/%7B%7Btarget%7D%7D/%7B%7Barch%7D%7D/%7B%7Bcurrent_version%7D%7D/unstable.json"
+            "https://brainervirus.github.io/mochi/updates/%7B%7Btarget%7D%7D/%7B%7Barch%7D%7D/%7B%7Bcurrent_version%7D%7D/stable.json"
         );
     }
 
     #[test]
     fn update_endpoint_rejects_unknown_channel() {
+        assert!(update_endpoint_for_channel("nightly").is_err());
+        assert!(update_endpoint_for_channel("").is_err());
         let error = update_endpoint_for_channel("beta").expect_err("beta rejected");
         assert!(error.contains("unsupported update channel: beta"));
     }

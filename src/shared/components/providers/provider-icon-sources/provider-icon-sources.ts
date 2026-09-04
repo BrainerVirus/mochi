@@ -4,6 +4,7 @@ import antigravitySvg from "@/assets/providers/antigravity.svg?raw";
 import augmentSvg from "@/assets/providers/augment.svg?raw";
 import claudeSvg from "@/assets/providers/claude.svg?raw";
 import codexSvg from "@/assets/providers/codex.svg?raw";
+import commandcodeSvg from "@/assets/providers/commandcode.svg?raw";
 import copilotSvg from "@/assets/providers/copilot.svg?raw";
 import cursorSvg from "@/assets/providers/cursor.svg?raw";
 import factorySvg from "@/assets/providers/factory.svg?raw";
@@ -27,4 +28,5 @@ export const PROVIDER_BRAND_SVGS: Record<ProviderId, string> = {
   zai: zaiSvg,
   kiro: kiroSvg,
   augment: augmentSvg,
+  commandcode: commandcodeSvg,
 };

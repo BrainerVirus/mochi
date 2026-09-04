@@ -36,39 +36,7 @@ describePwsh("windows-install.ps1", () => {
   it("parses under PowerShell", () => {
     expect(() => parsePs1(libPs1)).not.toThrow();
     expect(() => parsePs1(installPs1)).not.toThrow();
-  });
-
-  it("resolves unstable installs to the newest timestamped prerelease", () => {
-    withReleaseFixture(
-      [
-        {
-          tag_name: "unstable-20260606.145138",
-          prerelease: true,
-          draft: false,
-          published_at: "2026-06-06T14:53:53Z",
-        },
-        {
-          tag_name: "unstable-20260606.150109",
-          prerelease: true,
-          draft: false,
-          published_at: "2026-06-06T15:03:34Z",
-        },
-        {
-          tag_name: "v0.2.2",
-          prerelease: false,
-          draft: false,
-          published_at: "2026-06-06T14:26:43Z",
-        },
-      ],
-      (fixture) => {
-        const tag = invokeLib(
-          "Resolve-MochiReleaseTag -ReleaseTag '' -Unstable:$true -ApiBase 'https://api.github.com/repos/BrainerVirus/mochi'",
-          { MOCHI_TEST_RELEASES_JSON: fixture },
-        );
-        expect(tag).toBe("unstable-20260606.150109");
-      },
-    );
-  });
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
 
   it("resolves stable installs to the first non-prerelease release", () => {
     withReleaseFixture(
@@ -79,22 +47,42 @@ describePwsh("windows-install.ps1", () => {
           draft: false,
           published_at: "2026-06-06T14:26:43Z",
         },
-        {
-          tag_name: "unstable-20260606.150109",
-          prerelease: true,
-          draft: false,
-          published_at: "2026-06-06T15:03:34Z",
-        },
       ],
       (fixture) => {
         const tag = invokeLib(
-          "Resolve-MochiReleaseTag -ReleaseTag '' -Unstable:$false -ApiBase 'https://api.github.com/repos/BrainerVirus/mochi'",
+          "Resolve-MochiReleaseTag -ReleaseTag '' -ApiBase 'https://api.github.com/repos/BrainerVirus/mochi'",
           { MOCHI_TEST_RELEASES_JSON: fixture },
         );
         expect(tag).toBe("v0.2.2");
       },
     );
-  });
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
+
+  it("ignores prereleases when resolving the stable tag", () => {
+    withReleaseFixture(
+      [
+        {
+          tag_name: "0.3.0-rc.1",
+          prerelease: true,
+          draft: false,
+          published_at: "2026-06-06T15:03:34Z",
+        },
+        {
+          tag_name: "v0.2.2",
+          prerelease: false,
+          draft: false,
+          published_at: "2026-06-06T14:26:43Z",
+        },
+      ],
+      (fixture) => {
+        const tag = invokeLib(
+          "Resolve-MochiReleaseTag -ReleaseTag '' -ApiBase 'https://api.github.com/repos/BrainerVirus/mochi'",
+          { MOCHI_TEST_RELEASES_JSON: fixture },
+        );
+        expect(tag).toBe("v0.2.2");
+      },
+    );
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
 
   it("prefers MSI assets and falls back to setup EXE", () => {
     const release = {
@@ -132,7 +120,7 @@ describePwsh("windows-install.ps1", () => {
       `$release = '${JSON.stringify(exeOnlyRelease)}' | ConvertFrom-Json; (Resolve-MochiWindowsAsset -Release $release -Package 'auto').Asset.name`,
     );
     expect(exe).toBe("Mochi_0.2.2_x64-setup.exe");
-  });
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
 });
 
 if (!pwsh) {

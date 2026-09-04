@@ -11,7 +11,7 @@ import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-da
 import { queryKeys } from "@/lib/query/keys";
 import type { MochiSettings } from "@/lib/schemas/settings";
 import type { ProviderId } from "@/lib/schemas/usage";
-import { refreshSingleProvider, saveSelectedTab, syncTrayUsage } from "@/lib/tauri/commands";
+import { refreshSingleProvider, saveSelectedTab } from "@/lib/tauri/commands";
 import {
   buildTrayPanelTabsFromStates,
   filterUsageStatesForTrayPanel,
@@ -82,10 +82,6 @@ export function useTrayPanelState() {
       );
     }
   }, [selectedTab, setSelectedTab, tabs, settings, queryClient]);
-
-  useEffect(() => {
-    void syncTrayUsage(selectedTab);
-  }, [selectedTab]);
 
   const handleTabChange = useCallback(
     (value: string) => {

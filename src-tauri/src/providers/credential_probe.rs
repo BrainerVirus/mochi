@@ -112,6 +112,17 @@ fn provider_credential_detail(
                 },
             }
         }
+        ProviderId::CommandCode => {
+            let configured = super::commandcode::has_credentials(config).unwrap_or(false);
+            ProviderCredentialDetail {
+                configured,
+                source: if configured {
+                    Some("Browser cookies".into())
+                } else {
+                    None
+                },
+            }
+        }
     }
 }
 

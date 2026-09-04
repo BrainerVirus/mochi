@@ -1,6 +1,6 @@
 interface UpdatePromptProps {
   version: string;
-  channel: "stable" | "unstable";
+  channel: "stable";
   onInstall: () => void;
   onDismiss: () => void;
 }

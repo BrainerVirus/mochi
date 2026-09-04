@@ -208,6 +208,10 @@ fn provider_svg(provider: ProviderId) -> &'static str {
                 "/../src/assets/providers/augment.svg"
             ))
         }
+        ProviderId::CommandCode => include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../src/assets/providers/commandcode.svg"
+        )),
     }
 }
 

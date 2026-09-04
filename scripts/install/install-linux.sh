@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install Mochi from GitHub Releases (Linux).
-# Usage: install-linux.sh [-i|--unstable] [release-tag]
-# Env: MOCHI_VERSION, MOCHI_UNSTABLE=1, MOCHI_PACKAGE (appimage|deb|rpm; default auto), GITHUB_TOKEN
+# Usage: install-linux.sh [release-tag]
+# Env: MOCHI_VERSION, MOCHI_PACKAGE (appimage|deb|rpm; default auto), GITHUB_TOKEN
 set -euo pipefail
 
 : "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"

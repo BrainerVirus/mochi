@@ -29,6 +29,15 @@ pub struct TrayIconPresentation {
     pub tooltip: String,
 }
 
+impl TrayIconPresentation {
+    /// Whether applying this presentation requires touching the tray icon.
+    /// Linux writes the icon PNG to disk on every `set_icon`; skipping
+    /// unchanged presentations avoids redundant writes and shell races.
+    pub fn needs_update(&self, current: &TrayIconPresentation) -> bool {
+        self != current
+    }
+}
+
 pub fn resolve_tray_presentation(
     snapshots: &[UsageSnapshot],
     selection: TraySelection,
@@ -147,6 +156,7 @@ pub fn provider_display_name(provider: ProviderId) -> &'static str {
         ProviderId::Zai => "Z.ai",
         ProviderId::Kiro => "Kiro",
         ProviderId::Augment => "Augment",
+        ProviderId::CommandCode => "Command Code",
     }
 }
 
@@ -253,6 +263,30 @@ mod tests {
         assert_eq!(presentation.remaining_percent, 61);
         assert_eq!(presentation.title, Some(tray_title_from_remaining(61)));
         assert!(presentation.tooltip.contains("Overview"));
+    }
+
+    #[test]
+    fn needs_update_skips_identical_presentations() {
+        let snapshots = vec![
+            snapshot(ProviderId::Claude, 12.0),
+            snapshot(ProviderId::Cursor, 67.0),
+        ];
+        let first = resolve_tray_presentation(&snapshots, TraySelection::Overview);
+        let second = resolve_tray_presentation(&snapshots, TraySelection::Overview);
+        assert!(!first.needs_update(&second), "identical state must skip");
+
+        let changed =
+            resolve_tray_presentation(&snapshots, TraySelection::Provider(ProviderId::Claude));
+        assert!(changed.needs_update(&first), "tab change must update");
+    }
+
+    #[test]
+    fn needs_update_detects_usage_change() {
+        let before = vec![snapshot(ProviderId::Claude, 12.0)];
+        let after = vec![snapshot(ProviderId::Claude, 20.0)];
+        let before_presentation = resolve_tray_presentation(&before, TraySelection::Overview);
+        let after_presentation = resolve_tray_presentation(&after, TraySelection::Overview);
+        assert!(after_presentation.needs_update(&before_presentation));
     }
 
     #[test]

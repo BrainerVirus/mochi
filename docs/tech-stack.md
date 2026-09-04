@@ -1,26 +1,40 @@
 # Mochi Tech Stack
 
-This is the source of truth for the implementation stack. It reflects the installed repo skills and current npm metadata checked on 2026-05-30.
+This is the source of truth for the implementation stack. It reflects the installed repo skills and current npm metadata checked on 2026-09-02.
 
 ## Package Versions
 
-Re-check exact patch versions with `npm view <package> version` immediately before installing. The verified current versions were:
+Re-check exact patch versions with `npm view <package> version` immediately before installing. The verified current versions are:
 
-- `@tanstack/react-router`: `1.170.6`
-- `@tanstack/router-plugin`: `1.168.9`
-- `@tanstack/react-query`: `5.100.11`
+- `@tanstack/react-router`: `1.170.32`
+- `@tanstack/router-plugin`: `1.168.35`
+- `@tanstack/react-query`: `5.102.8`
 - `@vitejs/plugin-react`: `6.0.1`
 - `babel-plugin-react-compiler`: `1.0.0`
-- `vite`: `8.0.13`
-- `react`: `19.2.6`
-- `tailwindcss`: `4.3.0`
-- `@tailwindcss/vite`: `4.3.0`
-- `oxlint`: `1.66.0`
-- `oxlint-tailwindcss`: `0.8.0`
-- `oxfmt`: `0.51.0`
+- `vite`: `8.2.2`
+- `react`: `19.2.8`
+- `tailwindcss`: `4.3.3`
+- `@tailwindcss/vite`: `4.3.3`
+- `oxlint`: `1.78.0`
+- `oxlint-tailwindcss`: `1.10.2`
+- `oxlint-tsgolint`: `7.0.2001`
+- `oxfmt`: `0.66.0`
 - `gsap`: `3.15.0`
 - `@gsap/react`: `2.1.2`
-- `zod`: `4.4.3`
+- `zod`: `4.5.4`
+- `zustand`: `5.0.15`
+- `lucide-react`: `1.39.0`
+- `radix-ui`: `1.6.7`
+- `happy-dom`: `16.8.1`
+- `@babel/core`: `8.0.1`
+- `vitest` / `@vitest/coverage-v8`: `4.1.11`
+- `typescript`: `7.0.2`
+
+Pinned packages (do not bump without checking the reason):
+
+- `oxlint` pinned to exact `1.78.0`: versions 1.79+ enable React Compiler `react(refs)`/`react(preserve-manual-memoization)` errors on the existing GSAP indicator hooks (`use-tray-segment-indicators`, `use-tray-segment-indicator-sync`, `use-tab-fill-activation-key`); refactor those render-time ref reads before bumping.
+- `happy-dom` pinned `^16.8.1`: 17+ `blur()` no longer clears `activeElement` on disabled buttons, breaking tests.
+- `@babel/core@8` note: exceeds `babel-plugin-react-compiler`'s declared peer range (`@babel/types ^7.26.0`); works in practice, expect peer warnings.
 
 Use compatible major ranges anchored on these:
 
@@ -34,12 +48,11 @@ Use compatible major ranges anchored on these:
 - `react-dom@^19`
 - `tailwindcss@^4`
 - `@tailwindcss/vite@^4`
-- `oxlint@^1`
-- `oxlint-tailwindcss@^0.8`
-- `oxfmt@^0.51`
+- `oxlint-tailwindcss@^1`
+- `oxfmt@^0.66`
 - `gsap@^3`
 - `@gsap/react@^2`
-- `zod@^4`
+- `zod@^4.5.4`
 - `zustand@^5`
 
 ## Frontend

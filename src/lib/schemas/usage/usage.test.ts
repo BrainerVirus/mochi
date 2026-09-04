@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ProviderUsageStateSchema, parseUsageSnapshots } from "./usage";
+import { ProviderUsageStateSchema, UsageSnapshotSchema, parseUsageSnapshots } from "./usage";
 
 describe("ProviderUsageStateSchema", () => {
   it("parses missing credentials provider state without snapshot", () => {
@@ -187,7 +187,9 @@ describe("parseUsageSnapshots", () => {
     expect(snapshots).toHaveLength(1);
     expect(snapshots[0]?.provider).toBe("claude");
   });
+});
 
+describe("parseUsageSnapshots provider normalization", () => {
   it("normalizes codexbar provider ids before parsing", () => {
     const snapshots = parseUsageSnapshots([
       {
@@ -205,5 +207,43 @@ describe("parseUsageSnapshots", () => {
     ]);
 
     expect(snapshots[0]?.provider).toBe("opencode-go");
+  });
+
+  it("accepts commandcode snapshots", () => {
+    const snapshots = parseUsageSnapshots([
+      {
+        provider: "commandcode",
+        primary: {
+          label: "Monthly",
+          used_percent: 64,
+          remaining_percent: 36,
+          resets_at: null,
+        },
+        secondary: null,
+        updated_at: "2026-05-20T12:00:00Z",
+        source: "commandcode-web",
+      },
+    ]);
+
+    expect(snapshots[0]?.provider).toBe("commandcode");
+  });
+});
+
+describe("UsageSnapshotSchema provider union", () => {
+  it("accepts commandcode directly", () => {
+    const result = UsageSnapshotSchema.safeParse({
+      provider: "commandcode",
+      primary: {
+        label: "Monthly",
+        used_percent: 64,
+        remaining_percent: 36,
+        resets_at: null,
+      },
+      secondary: null,
+      updated_at: "2026-05-20T12:00:00Z",
+      source: "commandcode-web",
+    });
+
+    expect(result.success).toBe(true);
   });
 });

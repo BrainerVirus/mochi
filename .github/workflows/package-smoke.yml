@@ -2,7 +2,7 @@ name: Package Smoke
 
 on:
   workflow_run:
-    workflows: ["Stable Release", "Unstable Release"]
+    workflows: ["Stable Release", "Release"]
     types: [completed]
 
 permissions:

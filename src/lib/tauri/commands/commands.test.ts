@@ -8,7 +8,6 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { DEFAULT_MOCHI_SETTINGS } from "@/lib/schemas/settings";
 
-import type { ProviderId } from "@/lib/schemas/usage";
 import {
   getSettings,
   installUpdate,
@@ -73,7 +72,7 @@ describe("refreshSingleProvider", () => {
       ],
     });
 
-    const states = await refreshSingleProvider("claude" as ProviderId);
+    const states = await refreshSingleProvider("claude");
 
     expect(invoke).toHaveBeenCalledWith("refresh_single_provider", { provider: "claude" });
     expect(states).toHaveLength(1);
@@ -119,9 +118,9 @@ describe("update commands", () => {
   it("passes the selected channel when installing updates", async () => {
     vi.mocked(invoke).mockResolvedValue(undefined);
 
-    await installUpdate("unstable");
+    await installUpdate("stable");
 
-    expect(invoke).toHaveBeenCalledWith("install_update", { channel: "unstable" });
+    expect(invoke).toHaveBeenCalledWith("install_update", { channel: "stable" });
   });
 });
 

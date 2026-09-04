@@ -168,15 +168,15 @@ EOF
 mochi_homebrew_install_cask_ref() {
   local channel="${1:-stable}"
   local stable_cask="${MOCHI_STABLE_CASK:-mochi-desktop}"
-  local unstable_cask="${MOCHI_UNSTABLE_CASK:-mochi-unstable}"
   local tap
   local cask_id
 
   tap="$(mochi_homebrew_tap_name)"
-  if [ "${channel}" = "unstable" ]; then
-    cask_id="${unstable_cask}"
-  else
+  if [ "${channel}" = "stable" ]; then
     cask_id="${stable_cask}"
+  else
+    echo "error: only stable releases are published" >&2
+    return 1
   fi
 
   printf '%s/%s' "${tap}" "${cask_id}"

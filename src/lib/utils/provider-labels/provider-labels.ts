@@ -13,6 +13,7 @@ const PROVIDER_LABELS: Record<ProviderId, string> = {
   zai: "Z.ai",
   kiro: "Kiro",
   augment: "Augment",
+  commandcode: "Command Code",
 };
 
 export function getProviderLabel(provider: ProviderId): string {
