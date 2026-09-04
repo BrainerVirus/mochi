@@ -21,6 +21,7 @@ pub mod window_background;
 pub mod window_policy;
 
 use clap::Parser;
+use std::io::IsTerminal;
 use std::path::PathBuf;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -205,7 +206,20 @@ fn initialize_usage_store(app: &tauri::AppHandle, settings_state: &SettingsState
 }
 
 fn run_cli(command: Command) -> anyhow::Result<()> {
+    cli::windows_console::ensure_console();
     match command {
+        Command::Usage {
+            provider,
+            refresh,
+            json: false,
+        } if cli::tui::should_use_tui_env(
+            std::io::stdin().is_terminal(),
+            std::io::stdout().is_terminal(),
+            false,
+        ) =>
+        {
+            return cli::tui::usage_dashboard::run_usage_dashboard(provider.as_deref(), refresh);
+        }
         Command::Usage {
             provider,
             refresh,
@@ -218,17 +232,130 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
                 println!("{}", cli::usage::format_usage_text(&states));
             }
         }
+        Command::Status { provider, json }
+            if cli::tui::should_use_tui_env(
+                std::io::stdin().is_terminal(),
+                std::io::stdout().is_terminal(),
+                json,
+            ) =>
+        {
+            return cli::tui::usage_dashboard::run_usage_dashboard(provider.as_deref(), false);
+        }
+        Command::Status { provider, json } => {
+            let states = cli_usage_states(provider.as_deref(), false)?;
+            if json {
+                println!("{}", cli::status::format_status_json(&states)?);
+            } else {
+                println!("{}", cli::status::format_status_text(&states));
+            }
+        }
         Command::StatusBar { format } => {
             let states = cli_usage_states(None, false)?;
             let output = status_bar::format_output_from_states(&format, &states);
             println!("{output}");
         }
+        Command::Cost {
+            provider,
+            days,
+            json,
+        } if cli::tui::should_use_tui_env(
+            std::io::stdin().is_terminal(),
+            std::io::stdout().is_terminal(),
+            json,
+        ) =>
+        {
+            return cli::tui::cost_view::run_cost_view(provider.as_deref(), days);
+        }
+        Command::Cost {
+            provider,
+            days,
+            json,
+        } => {
+            let filter = provider
+                .as_deref()
+                .map(crate::cli::cost::parse_provider_filter)
+                .transpose()?;
+            let entries = cli::cost::load_cost_entries(days)?;
+            let entries: Vec<_> = match filter {
+                Some(id) => entries.into_iter().filter(|e| e.provider == id).collect(),
+                None => entries,
+            };
+            if json {
+                println!("{}", cli::cost::format_cost_json(&entries)?);
+            } else {
+                println!("{}", cli::cost::format_cost_text(&entries, days, filter));
+            }
+        }
+        Command::Config {
+            key: None,
+            value: None,
+            json,
+        } if cli::tui::should_use_tui_env(
+            std::io::stdin().is_terminal(),
+            std::io::stdout().is_terminal(),
+            json,
+        ) =>
+        {
+            return cli::tui::config_wizard::run_config_wizard();
+        }
+        Command::Config { key, value, json } => {
+            let dir = cli_config_dir()
+                .ok_or_else(|| anyhow::anyhow!("cannot locate config directory"))?;
+            match (key, value) {
+                (None, None) => {
+                    if json {
+                        println!("{}", cli::config::format_config_list_json(&dir)?);
+                    } else {
+                        println!("{}", cli::config::run_config_list(&dir)?);
+                    }
+                }
+                (Some(key), None) => {
+                    let display = cli::config::run_config_get(&dir, &key)?;
+                    if json {
+                        println!("{}", cli::config::format_config_value_json(&key, &display)?);
+                    } else {
+                        println!("{display}");
+                    }
+                }
+                (Some(key), Some(value)) => {
+                    let display = cli::config::run_config_set(&dir, &key, &value)?;
+                    if json {
+                        println!("{}", cli::config::format_config_value_json(&key, &display)?);
+                    } else {
+                        println!("{display}");
+                    }
+                }
+                (None, Some(_)) => {
+                    eprintln!("usage: mochi config [<key> [<value>]]");
+                    std::process::exit(2);
+                }
+            }
+        }
         Command::Diagnostics { bundle } => {
             diagnostics::run_cli_diagnostics(bundle).map_err(|error| anyhow::anyhow!(error))?;
         }
-        _ => {
-            eprintln!("CLI subcommand not yet implemented: {command:?}");
-            std::process::exit(2);
+        Command::Update { action, confirm: _ }
+            if action == "check"
+                && cli::tui::should_use_tui_env(
+                    std::io::stdin().is_terminal(),
+                    std::io::stdout().is_terminal(),
+                    false,
+                ) =>
+        {
+            return cli::tui::update_flow::run_update_flow();
+        }
+        Command::Update { action, confirm } => {
+            match cli::update::run_update_action(&action, confirm) {
+                Ok(output) => println!("{output}"),
+                Err(message) => {
+                    eprintln!("{message}");
+                    std::process::exit(if cli::update::is_usage_error(&message) {
+                        2
+                    } else {
+                        1
+                    });
+                }
+            }
         }
     }
 
@@ -239,38 +366,62 @@ fn cli_usage_states(
     provider: Option<&str>,
     refresh: bool,
 ) -> anyhow::Result<Vec<core::usage_state::ProviderUsageState>> {
+    cli_usage_states_with_db_path(
+        provider,
+        refresh,
+        cli_data_dir().map(|dir| dir.join("usage.sqlite3")),
+    )
+}
+
+pub(crate) fn cli_usage_states_with_db_path(
+    provider: Option<&str>,
+    refresh: bool,
+    db_path: Option<PathBuf>,
+) -> anyhow::Result<Vec<core::usage_state::ProviderUsageState>> {
     let settings = cli_config_dir()
         .map(|dir| load_settings(&settings_file_path(&dir)))
         .unwrap_or_default();
-    let repository = cli_data_dir()
-        .map(|dir| dir.join("usage.sqlite3"))
-        .and_then(|path| core::usage_repository::SqliteUsageRepository::open(&path).ok());
+    let repository = match db_path.as_ref() {
+        Some(path) => Some(
+            core::usage_repository::SqliteUsageRepository::open(path).map_err(|cause| {
+                anyhow::anyhow!("cannot open usage database at {}: {cause}", path.display())
+            })?,
+        ),
+        None => None,
+    };
     let store = repository
         .map(|repository| UsageStore::with_repository(std::sync::Arc::new(repository)))
         .unwrap_or_else(|| UsageStore::new(None));
 
     let mut enabled = settings.enabled_providers.clone();
     if let Some(provider) = provider {
-        let provider = core::models::ProviderId::parse(provider)
-            .ok_or_else(|| anyhow::anyhow!("unknown provider: {provider}"))?;
+        let provider = crate::cli::cost::parse_provider_filter(provider)?;
         enabled = vec![provider.as_str().to_string()];
     }
 
     let mut settings = settings;
     settings.enabled_providers = enabled;
-    let _ = store.load_latest_states(&settings.enabled_providers);
+    let db_label = db_path
+        .as_ref()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|| "<in-memory>".to_string());
+    store
+        .load_latest_states(&settings.enabled_providers)
+        .map_err(|cause| anyhow::anyhow!("cannot read usage data from {db_label}: {cause}"))?;
 
     if refresh {
         eprintln!("Refreshing usage...");
         let runtime = tokio::runtime::Runtime::new()?;
         let _ = runtime.block_on(status::refresh_enabled_snapshots(&store, &settings));
-        let _ = store.load_latest_states(&settings.enabled_providers);
+        store
+            .load_latest_states(&settings.enabled_providers)
+            .map_err(|cause| anyhow::anyhow!("cannot read usage data from {db_label}: {cause}"))?;
     }
 
     Ok(status::read_cached_usage_states(&store, &settings))
 }
 
-fn cli_config_dir() -> Option<PathBuf> {
+pub(crate) fn cli_config_dir() -> Option<PathBuf> {
     platform_base_config_dir().map(|base| base.join("app.mochi.Mochi"))
 }
 
