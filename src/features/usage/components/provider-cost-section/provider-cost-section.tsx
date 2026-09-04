@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { useUsageMeterFill } from "@/features/usage/hooks/use-usage-meter-fill/use-usage-meter-fill";
 import { useUsageMeterLeftLabel } from "@/features/usage/hooks/use-usage-meter-left-label/use-usage-meter-left-label";
 import { cn } from "@/lib/utils";
+import { formatCostDetail, formatCostPeriodLabel } from "@/lib/utils/format-cost-label";
 import { formatResetLine } from "@/lib/utils/format-reset-line";
 import { formatUsageMeterLeftLabel } from "@/lib/utils/usage-meter-fill-animation";
 import { getUsageMeterTone, usageMeterToneClasses } from "@/lib/utils/usage-meter-tone";
@@ -13,41 +14,6 @@ interface ProviderCostSectionProps {
   cost: ProviderCostSnapshot;
   compact?: boolean;
   fillActivationKey?: string;
-}
-
-function formatCurrency(amount: number, currencyCode: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currencyCode,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `$${amount.toFixed(2)}`;
-  }
-}
-
-/** Raw period ids ("billing-period") must never render as labels. */
-export function formatCostPeriodLabel(period: string | null | undefined): string {
-  if (!period) {
-    return "On-demand";
-  }
-
-  const [first, ...rest] = period.split("-").filter(Boolean);
-  if (!first) {
-    return "On-demand";
-  }
-  if (rest.length === 0) {
-    return `${first[0].toUpperCase()}${first.slice(1)}`;
-  }
-
-  return `${first[0].toUpperCase()}${first.slice(1)} ${rest.join(" ")}`;
-}
-
-export function formatCostDetail(used: number, limit: number, currencyCode: string): string {
-  return limit > 0
-    ? `${formatCurrency(used, currencyCode)} / ${formatCurrency(limit, currencyCode)}`
-    : formatCurrency(used, currencyCode);
 }
 
 export function ProviderCostSection({

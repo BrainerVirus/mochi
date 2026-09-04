@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatCostDetail, formatCostPeriodLabel } from "./provider-cost-section";
+import { formatCostDetail, formatCostPeriodLabel } from "./format-cost-label";
 
 describe("formatCostPeriodLabel", () => {
   it("title-cases kebab-case periods so raw ids never render as labels", () => {
