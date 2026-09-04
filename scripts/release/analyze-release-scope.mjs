@@ -34,12 +34,36 @@ function git(...args) {
   return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
-export function collect(lastTag) {
+function gitIn(cwd, ...args) {
+  return execFileSync("git", args, { encoding: "utf8", cwd }).trim();
+}
+
+const SYNC_SUBJECT_GREP = "^chore(release): sync manifests";
+
+export function collect(lastTag, opts = {}) {
+  const cwd = opts.cwd ?? process.cwd();
   const range = lastTag ? `${lastTag}..HEAD` : "HEAD";
-  const subjects = git("log", range, "--no-merges", "--pretty=format:%s")
+  const subjects = gitIn(
+    cwd,
+    "log",
+    range,
+    "--no-merges",
+    "--invert-grep",
+    `--grep=${SYNC_SUBJECT_GREP}`,
+    "--pretty=format:%s",
+  )
     .split("\n")
     .filter(Boolean);
-  const files = git("log", range, "--no-merges", "--pretty=format:", "--name-only")
+  const files = gitIn(
+    cwd,
+    "log",
+    range,
+    "--no-merges",
+    "--invert-grep",
+    `--grep=${SYNC_SUBJECT_GREP}`,
+    "--pretty=format:",
+    "--name-only",
+  )
     .split("\n")
     .map((f) => f.trim())
     .filter(Boolean);
