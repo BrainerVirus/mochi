@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use serde::Deserialize;
+
 use crate::core::models::ProviderId;
 use crate::settings::{
     load_settings, persist_settings, settings_file_path, MochiSettings, UpdateChannel,
@@ -13,20 +15,31 @@ fn settings_in(dir: &Path) -> MochiSettings {
 }
 
 fn channel_as_str(settings: &MochiSettings) -> String {
-    serde_json::to_value(settings.update_channel)
-        .ok()
-        .and_then(|value| value.as_str().map(str::to_string))
-        .unwrap_or_else(|| "stable".to_string())
+    match settings.update_channel {
+        UpdateChannel::Stable => "stable".to_string(),
+    }
+}
+
+/// Minimal probe so `update_channel` is validated through the real
+/// `UpdateChannel` deserialization without hardcoding unrelated settings fields.
+#[derive(Debug, Deserialize)]
+struct ChannelProbe {
+    update_channel: UpdateChannel,
+}
+
+/// Minimal probe so `enabled_providers` entries are validated through the real
+/// `ProviderId` deserialization (aliases, canonical spellings) instead of only
+/// the hand-rolled `ProviderId::parse`.
+#[derive(Debug, Deserialize)]
+struct ProvidersProbe {
+    enabled_providers: Vec<ProviderId>,
 }
 
 /// `update_channel` validated through the real settings deserialization, so an
 /// invalid channel fails with the serde error instead of a hand-rolled copy.
 fn parse_update_channel(value: &str) -> anyhow::Result<UpdateChannel> {
-    let probe: MochiSettings = serde_json::from_value(serde_json::json!({
+    let probe: ChannelProbe = serde_json::from_value(serde_json::json!({
         "update_channel": value.trim(),
-        "refresh_interval_seconds": 300,
-        "enabled_providers": [],
-        "show_notifications": true,
     }))
     .map_err(|error| anyhow::anyhow!(error.to_string()))?;
     Ok(probe.update_channel)
@@ -46,11 +59,46 @@ fn parse_enabled_providers(value: &str) -> anyhow::Result<Vec<String>> {
             providers.push(canonical);
         }
     }
-    Ok(providers)
+    // Round-trip through real serde so the accepted spellings stay tied to
+    // the `ProviderId` schema rather than drifting from it.
+    let probe: ProvidersProbe = serde_json::from_value(serde_json::json!({
+        "enabled_providers": providers,
+    }))
+    .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    Ok(probe
+        .enabled_providers
+        .iter()
+        .map(|provider| provider.as_str().to_string())
+        .collect())
 }
 
+/// Refuses to proceed when a settings file is present but unreadable, so a
+/// `set` never silently discards user data by persisting defaults over it.
+fn refuse_unreadable_settings(path: &Path) -> anyhow::Result<()> {
+    if !path.exists() {
+        return Ok(());
+    }
+    let contents = std::fs::read_to_string(path).map_err(|error| {
+        anyhow::anyhow!(
+            "refusing to overwrite unreadable settings at {}: {error}",
+            path.display()
+        )
+    })?;
+    serde_json::from_str::<MochiSettings>(&contents).map_err(|error| {
+        anyhow::anyhow!(
+            "refusing to overwrite unreadable settings at {}: {error}",
+            path.display()
+        )
+    })?;
+    Ok(())
+}
+
+/// Splits `provider.field` keys. Field names are case-sensitive and matched
+/// verbatim (`cookie_source` plus the secret names); only surrounding
+/// whitespace around the field segment is trimmed.
 fn split_provider_key(key: &str) -> Option<(ProviderId, &str)> {
     let (raw_provider, field) = key.split_once('.')?;
+    let field = field.trim();
     if field.is_empty() || field.contains('.') {
         return None;
     }
@@ -129,6 +177,7 @@ pub fn run_config_get(dir: &Path, key: &str) -> anyhow::Result<String> {
 pub fn run_config_set(dir: &Path, key: &str, value: &str) -> anyhow::Result<String> {
     let key = key.trim();
     let path = settings_file_path(dir);
+    refuse_unreadable_settings(&path)?;
     let mut settings = load_settings(&path);
     let display = match key {
         "update_channel" => {
@@ -154,7 +203,12 @@ pub fn run_config_set(dir: &Path, key: &str, value: &str) -> anyhow::Result<Stri
                     .or_default();
                 entry.cookie_source = (!trimmed.is_empty()).then(|| trimmed.to_string());
                 settings.normalize_provider_ids();
-                format!("{}.cookie_source = {trimmed}", provider.as_str())
+                let shown = if trimmed.is_empty() {
+                    "(unset)"
+                } else {
+                    trimmed
+                };
+                format!("{}.cookie_source = {shown}", provider.as_str())
             } else if SECRET_FIELDS.contains(&field) {
                 return Err(anyhow::anyhow!("refusing to write secret '{key}' via CLI"));
             } else {
@@ -215,6 +269,110 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    #[test]
+    fn config_set_refuses_corrupt_settings_without_touching_file() {
+        let dir = test_dir("corrupt-guard");
+        let path = settings_file_path(&dir);
+        std::fs::write(&path, "{ not valid json !!!").expect("seed garbage");
+        let before = std::fs::read(&path).expect("read seed");
+
+        let err = run_config_set(&dir, "update_channel", "stable").expect_err("corrupt file");
+        assert!(
+            err.to_string()
+                .contains("refusing to overwrite unreadable settings"),
+            "unexpected error: {err}"
+        );
+        assert_eq!(std::fs::read(&path).expect("read after"), before);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_set_rejects_bogus_channel_and_leaves_file_intact() {
+        let dir = test_dir("bogus-channel");
+        run_config_set(&dir, "update_channel", "stable").expect("seed");
+        let path = settings_file_path(&dir);
+        let before = std::fs::read(&path).expect("read seed");
+
+        let err = run_config_set(&dir, "update_channel", "bogus").expect_err("bogus channel");
+        assert!(
+            err.to_string().contains("unknown update channel"),
+            "unexpected: {err}"
+        );
+        assert_eq!(std::fs::read(&path).expect("read after"), before);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_set_rejects_unknown_provider_and_leaves_file_intact() {
+        let dir = test_dir("unknown-provider");
+        run_config_set(&dir, "update_channel", "stable").expect("seed");
+        let path = settings_file_path(&dir);
+        let before = std::fs::read(&path).expect("read seed");
+
+        let err = run_config_set(&dir, "enabled_providers", "cursor,nope-provider")
+            .expect_err("unknown provider");
+        assert!(
+            err.to_string().contains("unknown provider"),
+            "unexpected: {err}"
+        );
+        assert_eq!(std::fs::read(&path).expect("read after"), before);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_set_refuses_secret_api_key_and_leaves_file_intact() {
+        let dir = test_dir("refuse-secret");
+        run_config_set(&dir, "update_channel", "stable").expect("seed");
+        let path = settings_file_path(&dir);
+        let before = std::fs::read(&path).expect("read seed");
+
+        let err = run_config_set(&dir, "cursor.api_key", "sk-live").expect_err("secret refused");
+        assert!(
+            err.to_string().contains("refusing to write secret"),
+            "unexpected: {err}"
+        );
+        assert_eq!(std::fs::read(&path).expect("read after"), before);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_set_leaves_complete_valid_file() {
+        let dir = test_dir("valid-file");
+        run_config_set(&dir, "enabled_providers", "cursor,claude").expect("set");
+        let path = settings_file_path(&dir);
+
+        let contents = std::fs::read_to_string(&path).expect("read file");
+        let parsed: MochiSettings = serde_json::from_str(&contents).expect("valid settings");
+        assert_eq!(
+            parsed.enabled_providers,
+            vec!["cursor".to_string(), "claude".to_string()]
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_set_clear_cookie_source_prints_unset() {
+        let dir = test_dir("clear-cookie");
+        run_config_set(&dir, "cursor.cookie_source", "manual").expect("seed");
+        let display = run_config_set(&dir, "cursor.cookie_source", "  ").expect("clear");
+        assert_eq!(display, "cursor.cookie_source = (unset)");
+        assert_eq!(
+            run_config_get(&dir, "cursor.cookie_source").expect("get"),
+            "(unset)"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_dot_notation_trims_field_segment() {
+        let dir = test_dir("trim-field");
+        run_config_set(&dir, "cursor.cookie_source", "manual").expect("seed");
+        assert_eq!(
+            run_config_get(&dir, "cursor. cookie_source ").expect("get"),
+            "manual"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
     #[test]
     fn config_get_masks_secret_values() {
         let dir = test_dir("masks-secrets");
