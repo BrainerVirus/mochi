@@ -270,6 +270,16 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
         Command::Diagnostics { bundle } => {
             diagnostics::run_cli_diagnostics(bundle).map_err(|error| anyhow::anyhow!(error))?;
         }
+        Command::Update { action, confirm: _ }
+            if action == "check"
+                && cli::tui::should_use_tui_env(
+                    std::io::stdin().is_terminal(),
+                    std::io::stdout().is_terminal(),
+                    false,
+                ) =>
+        {
+            return cli::tui::update_flow::run_update_flow();
+        }
         Command::Update { action, confirm } => {
             match cli::update::run_update_action(&action, confirm) {
                 Ok(output) => println!("{output}"),

@@ -1,6 +1,7 @@
 pub mod config_wizard;
 pub mod guard;
 pub mod screens;
+pub mod update_flow;
 
 pub use guard::{install_panic_hook, TuiGuard};
 
