@@ -81,6 +81,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
     async fn fixture_client_maps_commandcode_snapshot() {
         let _guard = crate::core::test_env::LOCK.lock().expect("env lock");
         std::env::set_var(
