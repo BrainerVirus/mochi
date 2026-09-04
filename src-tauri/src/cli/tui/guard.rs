@@ -1,14 +1,17 @@
 use std::io;
 
 use crossterm::{
+    event::{DisableBracketedPaste, EnableBracketedPaste},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
 /// RAII guard for fullscreen TUI mode.
 ///
-/// [`TuiGuard::enter`] enables raw mode and switches to the alternate screen;
-/// dropping the guard restores both, so early returns and `?` unwinding cannot
+/// [`TuiGuard::enter`] enables raw mode, switches to the alternate screen,
+/// and enables bracketed paste (so terminal pastes arrive as a single
+/// `Event::Paste` instead of per-char key events); dropping the guard
+/// restores all three, so early returns and `?` unwinding cannot
 /// leave the user's terminal in a broken state.
 pub struct TuiGuard<W: io::Write = io::Stdout> {
     writer: W,
@@ -38,6 +41,10 @@ impl<W: io::Write> TuiGuard<W> {
             let _ = disable();
             return Err(error);
         }
+        if let Err(error) = execute!(writer, EnableBracketedPaste) {
+            Self::restore_with(&mut writer, disable);
+            return Err(error);
+        }
         Ok(Self {
             writer,
             disable: Some(Box::new(disable)),
@@ -46,6 +53,7 @@ impl<W: io::Write> TuiGuard<W> {
 
     fn restore_with(writer: &mut W, disable: impl FnOnce() -> io::Result<()>) {
         let _ = execute!(writer, LeaveAlternateScreen);
+        let _ = execute!(writer, DisableBracketedPaste);
         let _ = disable();
     }
 }
@@ -161,14 +169,51 @@ mod tests {
         );
         assert!(guard.is_ok(), "enter with a working writer must succeed");
         // Ignore the enter-phase write; the drop below must emit the leave
-        // sequence first and disable raw mode second.
+        // and disable-paste sequences first and disable raw mode second.
         log.borrow_mut().clear();
         buf.borrow_mut().clear();
         drop(guard);
-        assert_eq!(log.borrow().as_slice(), ["leave-write", "disable"]);
+        assert_eq!(
+            log.borrow().as_slice(),
+            ["leave-write", "leave-write", "disable"]
+        );
         assert!(
             buf.borrow().windows(8).any(|w| w == b"\x1b[?1049l"),
             "dropping the guard must emit the leave-alternate-screen sequence"
+        );
+        assert!(
+            buf.borrow().windows(8).any(|w| w == b"\x1b[?2004l"),
+            "dropping the guard must emit the disable-bracketed-paste sequence"
+        );
+    }
+
+    #[test]
+    fn guard_enables_and_disables_bracketed_paste() {
+        let log: Rc<RefCell<Vec<&'static str>>> = Rc::default();
+        let buf: Rc<RefCell<Vec<u8>>> = Rc::default();
+        let writer = SharedWriter {
+            buf: Rc::clone(&buf),
+            log: Rc::clone(&log),
+        };
+        let log_in_hook = Rc::clone(&log);
+        let guard = TuiGuard::enter_with(
+            writer,
+            || Ok(()),
+            move || {
+                log_in_hook.borrow_mut().push("disable");
+                Ok(())
+            },
+        );
+        assert!(guard.is_ok(), "enter with a working writer must succeed");
+        assert!(
+            buf.borrow().windows(8).any(|w| w == b"\x1b[?2004h"),
+            "entering the guard must enable bracketed paste"
+        );
+        buf.borrow_mut().clear();
+        drop(guard);
+        assert!(
+            buf.borrow().windows(8).any(|w| w == b"\x1b[?2004l"),
+            "dropping the guard must disable bracketed paste"
         );
     }
 
@@ -184,10 +229,17 @@ mod tests {
             log_in_hook.borrow_mut().push("disable");
             Ok(())
         });
-        assert_eq!(log.borrow().as_slice(), ["leave-write", "disable"]);
+        assert_eq!(
+            log.borrow().as_slice(),
+            ["leave-write", "leave-write", "disable"]
+        );
         assert!(
             writer.buf.windows(8).any(|w| w == b"\x1b[?1049l"),
             "restore must emit the leave-alternate-screen sequence"
+        );
+        assert!(
+            writer.buf.windows(8).any(|w| w == b"\x1b[?2004l"),
+            "restore must emit the disable-bracketed-paste sequence"
         );
     }
 }

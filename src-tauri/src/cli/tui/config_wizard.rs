@@ -129,6 +129,11 @@ impl ConfigWizard {
     }
 
     #[cfg(test)]
+    pub fn secret_for_test(&self) -> &str {
+        &self.secret
+    }
+
+    #[cfg(test)]
     pub fn edits_for_test(&mut self, edits: Vec<WizardEdit>) {
         self.edits = edits;
     }
@@ -271,6 +276,16 @@ impl ConfigWizard {
         self.handle_key(key.code);
     }
 
+    /// Insert a bracketed-paste string verbatim into the secret buffer.
+    /// Unlike per-key typing, pasting bypasses the `q`/`Q` cancel and `j`/`k`
+    /// cursor arms, so cookie alphabets containing those letters survive.
+    /// Ignored unless the detail step is on the `manual` source.
+    pub fn handle_paste(&mut self, pasted: &str) {
+        if self.step == WizardStep::ProviderDetail && self.current_source() == "manual" {
+            self.secret.push_str(pasted);
+        }
+    }
+
     pub fn handle_key(&mut self, key: KeyCode) {
         match self.step {
             WizardStep::ProviderList => match key {
@@ -380,7 +395,7 @@ pub fn render_config_wizard(frame: &mut Frame, wizard: &ConfigWizard) {
         WizardStep::ProviderDetail => (
             format!("Mochi config — {current}"),
             wizard.detail_rows(),
-            "↑↓/jk source · type to paste · Enter save · Esc back · q cancel",
+            "↑↓/jk source · paste cookie (don't type it) · Enter save · Esc back · q cancel",
         ),
         WizardStep::Review => (
             "Mochi config — review".to_string(),
@@ -427,10 +442,14 @@ pub fn run_config_wizard() -> anyhow::Result<()> {
                 break;
             }
             if event::poll(Duration::from_millis(250))? {
-                if let Event::Key(key) = event::read()? {
-                    if key.kind == KeyEventKind::Press {
-                        wizard.handle_key_event(key);
+                match event::read()? {
+                    Event::Key(key) => {
+                        if key.kind == KeyEventKind::Press {
+                            wizard.handle_key_event(key);
+                        }
                     }
+                    Event::Paste(pasted) => wizard.handle_paste(&pasted),
+                    _ => {}
                 }
             }
         }
@@ -591,6 +610,27 @@ mod tests {
         assert_eq!(wizard.source_for_test(), "manual");
         wizard.handle_key(KeyCode::Char('k'));
         assert_eq!(wizard.source_for_test(), "browser");
+    }
+
+    #[test]
+    fn paste_inserts_verbatim_without_cancel_or_move() {
+        let mut wizard = ConfigWizard::new(vec!["cursor".to_string()]);
+        enter_detail(&mut wizard);
+        select_manual(&mut wizard);
+        wizard.handle_paste("aqjkQZ-9_~.;/=");
+        assert_eq!(wizard.step, WizardStep::ProviderDetail);
+        assert_eq!(wizard.source_for_test(), "manual");
+        assert_eq!(wizard.secret_for_test(), "aqjkQZ-9_~.;/=");
+    }
+
+    #[test]
+    fn paste_ignored_when_source_not_manual() {
+        let mut wizard = ConfigWizard::new(vec!["cursor".to_string()]);
+        enter_detail(&mut wizard);
+        assert_eq!(wizard.source_for_test(), "browser");
+        wizard.handle_paste("qjkQ-secret");
+        assert_eq!(wizard.step, WizardStep::ProviderDetail);
+        assert_eq!(wizard.secret_for_test(), "");
     }
 
     #[test]
