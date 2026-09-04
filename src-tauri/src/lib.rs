@@ -257,9 +257,18 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
         Command::Diagnostics { bundle } => {
             diagnostics::run_cli_diagnostics(bundle).map_err(|error| anyhow::anyhow!(error))?;
         }
-        _ => {
-            eprintln!("CLI subcommand not yet implemented: {command:?}");
-            std::process::exit(2);
+        Command::Update { action, confirm } => {
+            match cli::update::run_update_action(&action, confirm) {
+                Ok(output) => println!("{output}"),
+                Err(message) => {
+                    eprintln!("{message}");
+                    std::process::exit(if cli::update::is_usage_error(&message) {
+                        2
+                    } else {
+                        1
+                    });
+                }
+            }
         }
     }
 

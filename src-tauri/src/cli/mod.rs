@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 pub mod config;
 pub mod cost;
 pub mod status;
+pub mod update;
 pub mod usage;
 
 #[derive(Debug, Parser)]
@@ -38,6 +39,8 @@ pub enum Command {
     },
     Update {
         action: String,
+        #[arg(long)]
+        confirm: bool,
     },
     StatusBar {
         #[arg(long, default_value = "waybar")]
