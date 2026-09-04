@@ -28,7 +28,6 @@ use time::format_description::well_known::Rfc3339;
 use time::{Duration, OffsetDateTime};
 
 use cli::{Cli, Command};
-use core::models::ProviderId;
 use core::usage_repository::{SqliteUsageRepository, UsageRepository};
 use core::usage_store::UsageStore;
 use lifecycle::{should_prevent_exit_request, AppLifecycle};
@@ -229,15 +228,16 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
             println!("{output}");
         }
         Command::Cost { provider, days } => {
+            let filter = provider
+                .as_deref()
+                .map(crate::cli::cost::parse_provider_filter)
+                .transpose()?;
             let entries = cli::cost::load_cost_entries(days)?;
-            let entries: Vec<_> = match provider.as_deref() {
-                Some(name) => match ProviderId::parse(name) {
-                    Some(id) => entries.into_iter().filter(|e| e.provider == id).collect(),
-                    None => anyhow::bail!("unknown provider: {name}"),
-                },
+            let entries: Vec<_> = match filter {
+                Some(id) => entries.into_iter().filter(|e| e.provider == id).collect(),
                 None => entries,
             };
-            println!("{}", cli::cost::format_cost_text(&entries, days));
+            println!("{}", cli::cost::format_cost_text(&entries, days, filter));
         }
         Command::Diagnostics { bundle } => {
             diagnostics::run_cli_diagnostics(bundle).map_err(|error| anyhow::anyhow!(error))?;
@@ -255,32 +255,56 @@ fn cli_usage_states(
     provider: Option<&str>,
     refresh: bool,
 ) -> anyhow::Result<Vec<core::usage_state::ProviderUsageState>> {
+    cli_usage_states_with_db_path(
+        provider,
+        refresh,
+        cli_data_dir().map(|dir| dir.join("usage.sqlite3")),
+    )
+}
+
+pub(crate) fn cli_usage_states_with_db_path(
+    provider: Option<&str>,
+    refresh: bool,
+    db_path: Option<PathBuf>,
+) -> anyhow::Result<Vec<core::usage_state::ProviderUsageState>> {
     let settings = cli_config_dir()
         .map(|dir| load_settings(&settings_file_path(&dir)))
         .unwrap_or_default();
-    let repository = cli_data_dir()
-        .map(|dir| dir.join("usage.sqlite3"))
-        .and_then(|path| core::usage_repository::SqliteUsageRepository::open(&path).ok());
+    let repository = match db_path.as_ref() {
+        Some(path) => Some(
+            core::usage_repository::SqliteUsageRepository::open(path).map_err(|cause| {
+                anyhow::anyhow!("cannot open usage database at {}: {cause}", path.display())
+            })?,
+        ),
+        None => None,
+    };
     let store = repository
         .map(|repository| UsageStore::with_repository(std::sync::Arc::new(repository)))
         .unwrap_or_else(|| UsageStore::new(None));
 
     let mut enabled = settings.enabled_providers.clone();
     if let Some(provider) = provider {
-        let provider = core::models::ProviderId::parse(provider)
-            .ok_or_else(|| anyhow::anyhow!("unknown provider: {provider}"))?;
+        let provider = crate::cli::cost::parse_provider_filter(provider)?;
         enabled = vec![provider.as_str().to_string()];
     }
 
     let mut settings = settings;
     settings.enabled_providers = enabled;
-    let _ = store.load_latest_states(&settings.enabled_providers);
+    let db_label = db_path
+        .as_ref()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|| "<in-memory>".to_string());
+    store
+        .load_latest_states(&settings.enabled_providers)
+        .map_err(|cause| anyhow::anyhow!("cannot read usage data from {db_label}: {cause}"))?;
 
     if refresh {
         eprintln!("Refreshing usage...");
         let runtime = tokio::runtime::Runtime::new()?;
         let _ = runtime.block_on(status::refresh_enabled_snapshots(&store, &settings));
-        let _ = store.load_latest_states(&settings.enabled_providers);
+        store
+            .load_latest_states(&settings.enabled_providers)
+            .map_err(|cause| anyhow::anyhow!("cannot read usage data from {db_label}: {cause}"))?;
     }
 
     Ok(status::read_cached_usage_states(&store, &settings))

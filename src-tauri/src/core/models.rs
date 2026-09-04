@@ -43,7 +43,7 @@ impl ProviderId {
     }
 
     pub fn parse(value: &str) -> Option<Self> {
-        match value {
+        match value.trim().to_lowercase().as_str() {
             "codex" => Some(Self::Codex),
             "claude" => Some(Self::Claude),
             "cursor" => Some(Self::Cursor),
@@ -56,7 +56,7 @@ impl ProviderId {
             "zai" => Some(Self::Zai),
             "kiro" => Some(Self::Kiro),
             "augment" => Some(Self::Augment),
-            "commandcode" => Some(Self::CommandCode),
+            "commandcode" | "command-code" => Some(Self::CommandCode),
             _ => None,
         }
     }
@@ -66,6 +66,7 @@ impl ProviderId {
             Self::OpenCode => &["open-code"],
             Self::OpenCodeGo => &["opencodego", "open-code-go"],
             Self::Factory => &["droid"],
+            Self::CommandCode => &["command-code"],
             _ => &[],
         }
     }
@@ -329,6 +330,21 @@ mod tests {
         let window = UsageWindow::new("Weekly", -8.0, None);
         assert_eq!(window.used_percent, 0.0);
         assert_eq!(window.remaining_percent, 100.0);
+    }
+
+    #[test]
+    fn provider_id_parse_normalizes_case_and_whitespace() {
+        assert_eq!(ProviderId::parse("Cursor"), Some(ProviderId::Cursor));
+        assert_eq!(ProviderId::parse(" CURSOR "), Some(ProviderId::Cursor));
+        assert_eq!(
+            ProviderId::parse("command-code"),
+            Some(ProviderId::CommandCode)
+        );
+        assert_eq!(
+            ProviderId::parse(" COMMANDCODE "),
+            Some(ProviderId::CommandCode)
+        );
+        assert_eq!(ProviderId::parse(" gibberish "), None);
     }
 
     #[test]
