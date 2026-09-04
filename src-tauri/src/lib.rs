@@ -205,6 +205,7 @@ fn initialize_usage_store(app: &tauri::AppHandle, settings_state: &SettingsState
 }
 
 fn run_cli(command: Command) -> anyhow::Result<()> {
+    cli::windows_console::ensure_console();
     match command {
         Command::Usage {
             provider,

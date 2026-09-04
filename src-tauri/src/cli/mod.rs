@@ -6,6 +6,7 @@ pub mod status;
 pub mod tui;
 pub mod update;
 pub mod usage;
+pub mod windows_console;
 
 #[derive(Debug, Parser)]
 #[command(name = "mochi", version, about = "Soft alerts before hard limits.")]
