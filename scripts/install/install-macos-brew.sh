@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Install Mochi via Homebrew cask from the GitHub tap (macOS).
-# Usage: install-macos-brew.sh [release-tag]
+# Usage: install-macos-brew.sh
+# Note: the Homebrew path always installs the stable cask; a release-tag argument is ignored.
 set -euo pipefail
 
 : "${MOCHI_GITHUB_REPO:=BrainerVirus/mochi}"

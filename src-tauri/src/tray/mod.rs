@@ -84,7 +84,7 @@ fn build_tray_menu_model() -> TrayMenuModel {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TrayApplyResult {
     pub icon_updated: bool,
-    pub failures: Vec<&'static str>,
+    pub failures: Vec<String>,
 }
 
 pub fn apply_tray_usage(
@@ -117,53 +117,79 @@ pub fn apply_tray_usage_reported(
         .tray_by_id(TRAY_ID)
         .ok_or_else(|| format!("tray icon {TRAY_ID} not found"))?;
 
-    if !presentation.needs_update(&tray_presentation_cache(app)) {
-        return Ok(TrayApplyResult::default());
-    }
+    // Check, icon writes, and cache store run as ONE critical section over the
+    // presentation lock: concurrent sync commands serialize here, so the loser
+    // observes the winner's presentation and skips its redundant set_icon
+    // disk write instead of interleaving check-then-set on a stale read.
+    let run_writes = || {
+        let mut failures = Vec::new();
 
-    let mut failures = Vec::new();
-
-    if tray
-        .set_tooltip(Some(presentation.tooltip.clone()))
-        .is_err()
-    {
-        failures.push("set_tooltip");
-    }
-
-    let icon_updated = tray
-        .set_icon(Some(tray_icon_for_presentation(&presentation)))
-        .is_ok();
-    if !icon_updated {
-        failures.push("set_icon");
-    }
-
-    // Crisp system font beside template icon (macOS); no percent baked into RGBA.
-    if tray.set_title(presentation.title.as_deref()).is_err() {
-        failures.push("set_title");
-    }
-
-    if failures.is_empty() {
-        tray_presentation_cache_set(app, presentation);
-    }
-
-    Ok(TrayApplyResult {
-        icon_updated,
-        failures,
-    })
-}
-
-fn tray_presentation_cache(app: &AppHandle) -> TrayIconPresentation {
-    app.try_state::<TrayPresentationState>()
-        .and_then(|state| state.0.lock().ok().and_then(|guard| guard.clone()))
-        .unwrap_or_else(resolve_empty_presentation)
-}
-
-fn tray_presentation_cache_set(app: &AppHandle, presentation: TrayIconPresentation) {
-    if let Some(state) = app.try_state::<TrayPresentationState>() {
-        if let Ok(mut guard) = state.0.lock() {
-            *guard = Some(presentation);
+        if let Err(error) = tray.set_tooltip(Some(presentation.tooltip.clone())) {
+            failures.push(failure_entry("set_tooltip", error));
         }
+
+        let icon_updated = match tray.set_icon(Some(tray_icon_for_presentation(&presentation))) {
+            Ok(()) => true,
+            Err(error) => {
+                failures.push(failure_entry("set_icon", error));
+                false
+            }
+        };
+
+        // Crisp system font beside template icon (macOS); no percent baked into RGBA.
+        if let Err(error) = tray.set_title(presentation.title.as_deref()) {
+            failures.push(failure_entry("set_title", error));
+        }
+
+        // The claim is cached only when every step succeeded, preserving retries.
+        let cache = failures.is_empty();
+        ((icon_updated, failures), cache)
+    };
+
+    let updated = match app.try_state::<TrayPresentationState>() {
+        Some(state) => update_presentation_once(&state.0, &presentation, run_writes),
+        // No managed cache (startup ordering edge): apply without dedup.
+        None => {
+            let ((icon_updated, failures), _) = run_writes();
+            Some((icon_updated, failures))
+        }
+    };
+
+    match updated {
+        // Cache hit: an identical presentation is already applied.
+        None => Ok(TrayApplyResult::default()),
+        Some((icon_updated, failures)) => Ok(TrayApplyResult {
+            icon_updated,
+            failures,
+        }),
     }
+}
+
+/// Check + work + store as one critical section over the presentation cache.
+/// Returns the work result, or None when the cached presentation already
+/// matches (work skipped). The `cache` flag from `work` decides whether the
+/// claim is stored, so failed applies keep retrying instead of going stale.
+fn update_presentation_once<T>(
+    state: &std::sync::Mutex<Option<TrayIconPresentation>>,
+    next: &TrayIconPresentation,
+    work: impl FnOnce() -> (T, bool),
+) -> Option<T> {
+    let mut guard = state.lock().ok()?;
+    let cached = guard.clone().unwrap_or_else(resolve_empty_presentation);
+    if !next.needs_update(&cached) {
+        return None;
+    }
+    let (result, cache) = work();
+    if cache {
+        *guard = Some(next.clone());
+    }
+    Some(result)
+}
+
+/// Formats a partial tray-update failure with its io error text so the
+/// diagnostics log keeps the cause (not just the step id).
+fn failure_entry(step: &'static str, error: impl std::fmt::Display) -> String {
+    format!("{step}: {error}")
 }
 
 fn resolve_empty_presentation() -> TrayIconPresentation {
@@ -361,5 +387,55 @@ mod tests {
             collect(entry, &mut labels);
         }
         labels
+    }
+
+    #[test]
+    fn concurrent_identical_presentations_apply_once() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::{Arc, Barrier};
+
+        // Reproduces the old check-then-set interleaving: 8 threads racing on
+        // one cache slot with identical input must perform the icon work
+        // exactly once. Separate check/set lock acquisitions let losers act on
+        // a stale read and duplicate the set_icon disk write.
+        let state = Arc::new(TrayPresentationState::default());
+        let next = TrayIconPresentation {
+            selection: TraySelection::Overview,
+            remaining_percent: 50,
+            title: None,
+            tooltip: "Mochi — Overview · 50% left".to_string(),
+        };
+        let work_count = Arc::new(AtomicUsize::new(0));
+        let barrier = Arc::new(Barrier::new(8));
+        let handles: Vec<_> = (0..8)
+            .map(|_| {
+                let (state, next, work_count, barrier) = (
+                    Arc::clone(&state),
+                    next.clone(),
+                    Arc::clone(&work_count),
+                    Arc::clone(&barrier),
+                );
+                std::thread::spawn(move || {
+                    barrier.wait();
+                    let skipped = update_presentation_once(&state.0, &next, || {
+                        work_count.fetch_add(1, Ordering::SeqCst);
+                        ((), true)
+                    })
+                    .is_none();
+                    assert!(skipped || work_count.load(Ordering::SeqCst) >= 1);
+                })
+            })
+            .collect();
+        for handle in handles {
+            handle.join().expect("worker");
+        }
+        assert_eq!(work_count.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn failure_entry_keeps_the_io_error_text() {
+        let entry = failure_entry("set_icon", "io error: permission denied");
+        assert!(entry.contains("set_icon"));
+        assert!(entry.contains("io error: permission denied"));
     }
 }
