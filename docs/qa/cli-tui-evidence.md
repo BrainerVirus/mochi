@@ -152,3 +152,5 @@ Finished in 3251ms on 360 files using 14 threads.
 > mochi@0.2.6 lint /home/cristhofer-pincetti/Documents/projects/personal/mochi
 > oxlint --type-aware --react-plugin --jsx-a11y-plugin --import-plugin --deny-warnings app src
 ```
+
+(exit 0, no warnings — oxlint emits no output on success).
