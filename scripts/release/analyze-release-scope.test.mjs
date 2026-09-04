@@ -12,10 +12,13 @@ describe("bumpFromSubjects", () => {
   it("returns patch for revert subjects (semantic-release convention)", () => {
     expect(bumpFromSubjects(["revert: restore login"])).toBe("patch");
   });
-  it("matches lowercase breaking/break forms", () => {
-    expect(bumpFromSubjects(["breaking: drop"])).toBe("major");
-    expect(bumpFromSubjects(["break: drop"])).toBe("major");
-    expect(bumpFromSubjects(["breaking change: drop"])).toBe("major");
+  it("matches BREAKING-CHANGE hyphen synonym", () => {
+    expect(bumpFromSubjects(["BREAKING-CHANGE: drop api"])).toBe("major");
+    expect(bumpFromSubjects(["breaking-change: drop api"])).toBe("major");
+  });
+  it("matches git-generated Revert subject case-insensitively", () => {
+    expect(bumpFromSubjects(['Revert "fix: bad deploy"'])).toBe("patch");
+    expect(bumpFromSubjects(["Revert: restore login"])).toBe("patch");
   });
   it("keeps chore!/docs! as major when product paths change (safe gate direction: under-release is worse than over-release)", () => {
     expect(bumpFromSubjects(["chore!: rotate keys"])).toBe("major");

@@ -92,7 +92,7 @@ pub fn parse_summary(value: &serde_json::Value) -> ProviderResult<SummaryRespons
             count.as_u64().or_else(|| {
                 count
                     .as_f64()
-                    .filter(|f| f.fract() == 0.0)
+                    .filter(|f| f.fract() == 0.0 && *f >= 0.0 && *f <= u64::MAX as f64)
                     .map(|f| f as u64)
             })
         })
@@ -305,5 +305,14 @@ mod tests {
         let mut value = summary_fixture();
         value["totalCount"] = serde_json::json!(6319.5);
         assert!(parse_summary(&value).is_err());
+    }
+
+    #[test]
+    fn total_count_rejects_negative_and_huge_integral_floats() {
+        for bad in [-5.0, 1e30] {
+            let mut value = summary_fixture();
+            value["totalCount"] = serde_json::json!(bad);
+            assert!(parse_summary(&value).is_err(), "count {bad} must fail");
+        }
     }
 }

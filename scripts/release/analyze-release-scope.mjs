@@ -14,9 +14,9 @@ export const PRODUCT_PATHS = [
 
 const BUMPS = [
   ["major", /^(\w+)(\(.+\))?!:/],
-  ["major", /^break(ing)?( change)?:/i],
+  ["major", /^break(ing)?([ -]change)?:/i],
   ["minor", /^feat(\(.+\))?:/],
-  ["patch", /^(fix|perf|revert)(\(.+\))?:/],
+  ["patch", /^(fix|perf|revert)(\(.+\))?:|^revert "/i],
 ];
 
 export function bumpFromSubjects(subjects) {
