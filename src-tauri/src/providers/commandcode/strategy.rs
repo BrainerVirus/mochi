@@ -82,8 +82,14 @@ mod tests {
 
     #[tokio::test]
     async fn fixture_client_maps_commandcode_snapshot() {
+        let _guard = crate::core::test_env::LOCK.lock().expect("env lock");
+        std::env::set_var(
+            super::super::credentials::ENV_COOKIE,
+            "__Secure-commandcode_prod_.session_token=fixture",
+        );
         let strategy = WebStrategy::with_client(Arc::new(FixtureClient));
         let snapshot = strategy.fetch(&FetchContext::empty()).await.expect("fetch");
+        std::env::remove_var(super::super::credentials::ENV_COOKIE);
 
         assert_eq!(snapshot.source, "commandcode-web");
         assert_eq!(snapshot.primary.label, "Weekly");
