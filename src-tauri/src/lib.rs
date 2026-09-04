@@ -239,6 +239,21 @@ fn run_cli(command: Command) -> anyhow::Result<()> {
             };
             println!("{}", cli::cost::format_cost_text(&entries, days, filter));
         }
+        Command::Config { key, value } => {
+            let dir = cli_config_dir()
+                .ok_or_else(|| anyhow::anyhow!("cannot locate config directory"))?;
+            match (key, value) {
+                (None, None) => println!("{}", cli::config::run_config_list(&dir)?),
+                (Some(key), None) => println!("{}", cli::config::run_config_get(&dir, &key)?),
+                (Some(key), Some(value)) => {
+                    println!("{}", cli::config::run_config_set(&dir, &key, &value)?)
+                }
+                (None, Some(_)) => {
+                    eprintln!("usage: mochi config [<key> [<value>]]");
+                    std::process::exit(2);
+                }
+            }
+        }
         Command::Diagnostics { bundle } => {
             diagnostics::run_cli_diagnostics(bundle).map_err(|error| anyhow::anyhow!(error))?;
         }
