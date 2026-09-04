@@ -98,5 +98,5 @@ describe("powershell install scripts", () => {
 
     expect(() => parse(libPs1)).not.toThrow();
     expect(() => parse(installPs1)).not.toThrow();
-  });
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
 });

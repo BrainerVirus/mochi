@@ -36,7 +36,7 @@ describePwsh("windows-install.ps1", () => {
   it("parses under PowerShell", () => {
     expect(() => parsePs1(libPs1)).not.toThrow();
     expect(() => parsePs1(installPs1)).not.toThrow();
-  });
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
 
   it("resolves stable installs to the first non-prerelease release", () => {
     withReleaseFixture(
@@ -56,7 +56,7 @@ describePwsh("windows-install.ps1", () => {
         expect(tag).toBe("v0.2.2");
       },
     );
-  });
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
 
   it("ignores prereleases when resolving the stable tag", () => {
     withReleaseFixture(
@@ -82,7 +82,7 @@ describePwsh("windows-install.ps1", () => {
         expect(tag).toBe("v0.2.2");
       },
     );
-  });
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
 
   it("prefers MSI assets and falls back to setup EXE", () => {
     const release = {
@@ -120,7 +120,7 @@ describePwsh("windows-install.ps1", () => {
       `$release = '${JSON.stringify(exeOnlyRelease)}' | ConvertFrom-Json; (Resolve-MochiWindowsAsset -Release $release -Package 'auto').Asset.name`,
     );
     expect(exe).toBe("Mochi_0.2.2_x64-setup.exe");
-  });
+  }, 30000); // pwsh cold start on CI runners can exceed vitest's 5s default
 });
 
 if (!pwsh) {
