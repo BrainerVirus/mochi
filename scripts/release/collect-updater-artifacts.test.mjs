@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { collectUpdaterArtifacts } from "./collect-updater-artifacts.mjs";
+import { collectUpdaterArtifacts, resolveFeedVersions } from "./collect-updater-artifacts.mjs";
 
 async function writeArtifact(root, relativePath, signature) {
   const path = join(root, relativePath);
@@ -128,5 +128,58 @@ describe("collectUpdaterArtifacts", () => {
         pubDate: "2026-06-06T12:34:56.000Z",
       }),
     ).rejects.toThrow("missing updater artifact for darwin-aarch64");
+  });
+
+  it("retains feeds for every tagged stable version", async () => {
+    expect(
+      resolveFeedVersions({
+        latestVersion: "0.4.1",
+        tags: ["v0.3.0", "v0.4.0", "v0.4.1", "unstable-20260828.1"],
+      }),
+    ).toEqual(["0.1.7", "0.2.0", "0.3.0", "0.4.0", "0.4.1"]);
+  });
+
+  it("falls back to the hardcoded list when git yields no tags", async () => {
+    expect(resolveFeedVersions({ latestVersion: "0.2.1", tags: [] })).toEqual([
+      "0.1.7",
+      "0.2.0",
+      "0.2.1",
+    ]);
+  });
+
+  it("excludes unstable tags and keeps untagged latest versions", async () => {
+    expect(
+      resolveFeedVersions({ latestVersion: "9.9.9", tags: ["unstable-20260828.1", "v0.3.0"] }),
+    ).toEqual(["0.1.7", "0.2.0", "0.3.0", "9.9.9"]);
+  });
+
+  it("sorts versions numerically, not lexicographically", async () => {
+    expect(resolveFeedVersions({ latestVersion: "0.10.0", tags: ["v0.9.0", "v0.10.0"] })).toEqual([
+      "0.1.7",
+      "0.2.0",
+      "0.9.0",
+      "0.10.0",
+    ]);
+  });
+
+  it("writes retained versions into the manifest", async () => {
+    const root = await mkdtemp(join(tmpdir(), "mochi-updater-artifacts-"));
+    await writeArtifact(root, "Mochi_aarch64.app.tar.gz", "sig-darwin-arm");
+    await writeArtifact(root, "Mochi_x64.app.tar.gz", "sig-darwin-x64");
+    await writeArtifact(root, "Mochi_0.4.1_amd64.AppImage", "sig-linux");
+    await writeArtifact(root, "Mochi_0.4.1_x64-setup.exe", "sig-windows");
+
+    const manifest = await collectUpdaterArtifacts({
+      artifactRoot: root,
+      channel: "stable",
+      tagName: "v0.4.1",
+      releaseBaseUrl: "https://github.com/BrainerVirus/mochi/releases/download/v0.4.1",
+      releaseNotesPath: join(root, "missing-notes.md"),
+      outputPath: join(root, "updater-feed.json"),
+      pubDate: "2026-06-06T12:34:56.000Z",
+      tags: ["v0.3.0", "v0.4.0", "v0.4.1"],
+    });
+
+    expect(manifest.versions).toEqual(["0.1.7", "0.2.0", "0.3.0", "0.4.0", "0.4.1"]);
   });
 });
