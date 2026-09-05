@@ -59,28 +59,32 @@ describe("MochiSettingsSchema warn percent", () => {
     expect(parsed.usage_warn_percent).toBe(80);
   });
 
-  it("rejects warn percents outside one to one hundred", () => {
-    for (const usage_warn_percent of [0, 101]) {
-      expect(
-        MochiSettingsSchema.safeParse({
-          update_channel: "stable",
-          refresh_interval_seconds: 300,
-          enabled_providers: [],
-          show_notifications: true,
-          usage_warn_percent,
-        }).success,
-      ).toBe(false);
-    }
-
-    expect(
-      MochiSettingsSchema.safeParse({
+  it("clamps warn percents to one to one hundred like Rust", () => {
+    for (const [input, expected] of [
+      [0, 1],
+      [101, 100],
+      [90, 90],
+    ] as const) {
+      const parsed = MochiSettingsSchema.parse({
         update_channel: "stable",
         refresh_interval_seconds: 300,
         enabled_providers: [],
         show_notifications: true,
-        provider_configs: { claude: { warn_percent: 0 } },
-      }).success,
-    ).toBe(false);
+        usage_warn_percent: input,
+      });
+
+      expect(parsed.usage_warn_percent).toBe(expected);
+    }
+
+    const parsedProvider = MochiSettingsSchema.parse({
+      update_channel: "stable",
+      refresh_interval_seconds: 300,
+      enabled_providers: [],
+      show_notifications: true,
+      provider_configs: { claude: { warn_percent: 0 } },
+    });
+
+    expect(parsedProvider.provider_configs.claude?.warn_percent).toBe(1);
   });
 
   it("persists global and per-provider warn percents", () => {
