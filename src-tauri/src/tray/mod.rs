@@ -72,6 +72,10 @@ fn build_tray_menu_model() -> TrayMenuModel {
                 id: "update",
                 label: "Check for updates",
             },
+            TrayMenuEntry::Item {
+                id: "about",
+                label: "About Mochi",
+            },
             TrayMenuEntry::Separator,
             TrayMenuEntry::Item {
                 id: "quit",
@@ -284,6 +288,9 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             "update" => {
                 let _ = app.emit("tray-check-update", ());
             }
+            "about" => {
+                let _ = open_app_window(app.clone(), "/about".to_string());
+            }
             "quit" => {
                 if let Some(lifecycle) = app.try_state::<crate::lifecycle::AppLifecycle>() {
                     lifecycle.request_quit();
@@ -371,7 +378,7 @@ mod tests {
                 TrayMenuEntry::Separator => None,
             })
             .collect();
-        assert_eq!(ids, vec!["widget", "refresh", "settings", "update", "quit"]);
+        assert_eq!(ids, vec!["widget", "refresh", "settings", "update", "about", "quit"]);
     }
 
     fn tray_menu_labels(model: &TrayMenuModel) -> Vec<&'static str> {
