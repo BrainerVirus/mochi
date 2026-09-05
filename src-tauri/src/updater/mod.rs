@@ -31,23 +31,36 @@ pub async fn check_for_update(
     let update = updater_for_channel(&app, &channel)?
         .check()
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| {
+            let message = error.to_string();
+            crate::diagnostics::log_line("update", &format!("check failed: {message}"));
+            message
+        })?;
 
     Ok(match update {
-        Some(update) => UpdateInfo {
-            available: true,
-            version: Some(update.version),
-            channel,
-            notes: update.body,
-            download_url: None,
-        },
-        None => UpdateInfo {
-            available: false,
-            version: None,
-            channel,
-            notes: None,
-            download_url: None,
-        },
+        Some(update) => {
+            crate::diagnostics::log_line(
+                "update",
+                &format!("check ok: {} available (channel {channel})", update.version),
+            );
+            UpdateInfo {
+                available: true,
+                version: Some(update.version),
+                channel,
+                notes: update.body,
+                download_url: None,
+            }
+        }
+        None => {
+            crate::diagnostics::log_line("update", "check ok: up to date");
+            UpdateInfo {
+                available: false,
+                version: None,
+                channel,
+                notes: None,
+                download_url: None,
+            }
+        }
     })
 }
 
@@ -56,8 +69,13 @@ pub async fn install_update(app: AppHandle, channel: String) -> Result<(), Strin
     if let Some(update) = updater_for_channel(&app, &channel)?
         .check()
         .await
-        .map_err(|error| error.to_string())?
+        .map_err(|error| {
+            let message = error.to_string();
+            crate::diagnostics::log_line("update", &format!("install check failed: {message}"));
+            message
+        })?
     {
+        let version = update.version.clone();
         let downloaded = AtomicU64::new(0);
         let app_for_progress = app.clone();
 
@@ -79,7 +97,15 @@ pub async fn install_update(app: AppHandle, channel: String) -> Result<(), Strin
                 },
             )
             .await
-            .map_err(|error| error.to_string())?;
+            .map_err(|error| {
+                let message = error.to_string();
+                crate::diagnostics::log_line(
+                    "update",
+                    &format!("install failed for {version}: {message}"),
+                );
+                message
+            })?;
+        crate::diagnostics::log_line("update", &format!("install ok: {version}, restarting"));
         app.restart();
     }
 
