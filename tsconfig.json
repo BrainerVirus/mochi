@@ -121,6 +121,18 @@
       "@/components/providers/provider-icon-sources": [
         "./src/shared/components/providers/provider-icon-sources/provider-icon-sources.ts"
       ],
+      "@/shared/components/mascot/mochi-chibi": [
+        "./src/shared/components/mascot/mochi-chibi/mochi-chibi.tsx"
+      ],
+      "@/shared/components/mascot/mochi-mark": [
+        "./src/shared/components/mascot/mochi-mark/mochi-mark.tsx"
+      ],
+      "@/shared/components/providers/provider-icon": [
+        "./src/shared/components/providers/provider-icon/provider-icon.tsx"
+      ],
+      "@/shared/components/providers/provider-icon-sources": [
+        "./src/shared/components/providers/provider-icon-sources/provider-icon-sources.ts"
+      ],
       "@/features/tray/components/scroll-fade-cycle": [
         "./src/features/tray/components/scroll-fade-cycle/scroll-fade-cycle.ts"
       ],

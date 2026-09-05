@@ -44,6 +44,7 @@ const ROOT_AREAS = [
   { dir: "components", prefix: "@/components" },
   { dir: "hooks", prefix: "@/hooks" },
   { dir: "shared/components", prefix: "@/components" },
+  { dir: "shared/components", prefix: "@/shared/components" },
   { dir: "shared/hooks", prefix: "@/hooks" },
   { dir: "features/tray/components", prefix: "@/features/tray/components" },
   { dir: "features/tray/hooks", prefix: "@/features/tray/hooks" },
