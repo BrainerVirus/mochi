@@ -265,6 +265,9 @@
       "@/features/settings/components/settings-update-section": [
         "./src/features/settings/components/settings-update-section/settings-update-section.tsx"
       ],
+      "@/features/settings/components/warn-percent-field": [
+        "./src/features/settings/components/warn-percent-field/warn-percent-field.tsx"
+      ],
       "@/features/usage/components/provider-cost-section": [
         "./src/features/usage/components/provider-cost-section/provider-cost-section.tsx"
       ],

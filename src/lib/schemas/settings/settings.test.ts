@@ -44,3 +44,56 @@ describe("MochiSettingsSchema", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("MochiSettingsSchema warn percent", () => {
+  it("defaults the global warn percent to eighty", () => {
+    expect(DEFAULT_MOCHI_SETTINGS.usage_warn_percent).toBe(80);
+
+    const parsed = MochiSettingsSchema.parse({
+      update_channel: "stable",
+      refresh_interval_seconds: 300,
+      enabled_providers: [],
+      show_notifications: true,
+    });
+
+    expect(parsed.usage_warn_percent).toBe(80);
+  });
+
+  it("rejects warn percents outside one to one hundred", () => {
+    for (const usage_warn_percent of [0, 101]) {
+      expect(
+        MochiSettingsSchema.safeParse({
+          update_channel: "stable",
+          refresh_interval_seconds: 300,
+          enabled_providers: [],
+          show_notifications: true,
+          usage_warn_percent,
+        }).success,
+      ).toBe(false);
+    }
+
+    expect(
+      MochiSettingsSchema.safeParse({
+        update_channel: "stable",
+        refresh_interval_seconds: 300,
+        enabled_providers: [],
+        show_notifications: true,
+        provider_configs: { claude: { warn_percent: 0 } },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("persists global and per-provider warn percents", () => {
+    const parsed = MochiSettingsSchema.parse({
+      update_channel: "stable",
+      refresh_interval_seconds: 300,
+      enabled_providers: ["claude"],
+      show_notifications: true,
+      usage_warn_percent: 80,
+      provider_configs: { claude: { warn_percent: 90 } },
+    });
+
+    expect(parsed.usage_warn_percent).toBe(80);
+    expect(parsed.provider_configs.claude?.warn_percent).toBe(90);
+  });
+});

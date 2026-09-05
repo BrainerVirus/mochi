@@ -20,6 +20,7 @@ vi.mock("@/lib/tauri/commands", () => ({
       refresh_interval_seconds: 300,
       enabled_providers: ["codex"],
       show_notifications: true,
+      usage_warn_percent: 80,
       provider_configs: {},
     }),
   ),
@@ -45,6 +46,7 @@ function settings(enabledProviders: MochiSettings["enabled_providers"]): MochiSe
     refresh_interval_seconds: 300,
     enabled_providers: enabledProviders,
     show_notifications: true,
+    usage_warn_percent: 80,
     provider_configs: {},
   };
 }
