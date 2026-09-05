@@ -26,3 +26,22 @@ export function shouldNavigateFromPackagedShell(pathname: string): boolean {
 
   return pathname.endsWith(".html");
 }
+
+/**
+ * Synchronously applies the `#/path` boot hash injected by the Rust window
+ * builder (`initial_app_url_for_path`). Runs before router creation so first
+ * paint renders the requested route — the async pending-route handoff stays
+ * as fallback for windows booted at the plain shell URL.
+ */
+export function consumeBootHashRoute(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const { hash, search } = window.location;
+  if (!hash.startsWith("#/")) {
+    return null;
+  }
+  const target = hash.slice(1);
+  window.history.replaceState(null, "", `${target}${search}`);
+  return target;
+}

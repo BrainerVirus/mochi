@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TrayOverview } from "@/features/tray/components/tray-overview";
 import { TrayPanelTabList } from "@/features/tray/components/tray-panel-tab-list";
 import { useTabFillActivationKey } from "@/features/tray/hooks/use-tab-fill-activation-key/use-tab-fill-activation-key";
-import { ProviderListSkeleton } from "@/features/usage/components/provider-list-skeleton";
 import { ProviderUsageSection } from "@/features/usage/components/provider-usage-section";
 import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
@@ -23,6 +24,8 @@ interface UsageSnapshotsPanelProps {
   states: NonNullable<ReturnType<typeof useUsageData>["data"]>;
   onRefreshProvider: (provider: ProviderId) => void;
   refreshingProvider: ProviderId | null;
+  /** Surface-specific first-paint placeholder (tray popover vs widget window). */
+  skeleton?: ReactNode;
 }
 
 export function UsageSnapshotsPanel({
@@ -38,9 +41,10 @@ export function UsageSnapshotsPanel({
   states,
   onRefreshProvider,
   refreshingProvider,
+  skeleton,
 }: UsageSnapshotsPanelProps) {
   if (isPending && data === undefined) {
-    return <ProviderListSkeleton providerCount={enabledProviderCount} />;
+    return <>{skeleton}</>;
   }
 
   if (isError) {

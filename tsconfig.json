@@ -172,6 +172,9 @@
       "@/features/tray/components/tray-panel-shell": [
         "./src/features/tray/components/tray-panel-shell/tray-panel-shell.tsx"
       ],
+      "@/features/tray/components/tray-panel-skeleton": [
+        "./src/features/tray/components/tray-panel-skeleton/tray-panel-skeleton.tsx"
+      ],
       "@/features/tray/components/tray-panel-tab-cycle": [
         "./src/features/tray/components/tray-panel-tab-cycle/tray-panel-tab-cycle.ts"
       ],
@@ -235,6 +238,9 @@
       "@/features/tray/lib/stores/tray-ui-store": [
         "./src/features/tray/lib/stores/tray-ui-store/tray-ui-store.ts"
       ],
+      "@/features/widget/components/widget-skeleton": [
+        "./src/features/widget/components/widget-skeleton/widget-skeleton.tsx"
+      ],
       "@/features/widget/components/widget-window": [
         "./src/features/widget/components/widget-window/widget-window.tsx"
       ],
@@ -282,9 +288,6 @@
       ],
       "@/features/usage/components/provider-cost-section": [
         "./src/features/usage/components/provider-cost-section/provider-cost-section.tsx"
-      ],
-      "@/features/usage/components/provider-list-skeleton": [
-        "./src/features/usage/components/provider-list-skeleton/provider-list-skeleton.tsx"
       ],
       "@/features/usage/components/provider-usage-actions": [
         "./src/features/usage/components/provider-usage-actions/provider-usage-actions.tsx"

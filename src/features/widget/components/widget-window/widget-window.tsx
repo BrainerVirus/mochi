@@ -6,6 +6,7 @@ import { TrayPanelFooter } from "@/features/tray/components/tray-panel-footer";
 import { useTrayPanelFocusReset } from "@/features/tray/hooks/use-tray-panel-focus-reset";
 import { useTrayPanelShortcuts } from "@/features/tray/hooks/use-tray-panel-shortcuts";
 import { useTrayPanelState } from "@/features/tray/hooks/use-tray-panel-state";
+import { WidgetSkeleton } from "@/features/widget/components/widget-skeleton";
 import { quitApp } from "@/lib/tauri/commands";
 
 export function WidgetWindow() {
@@ -64,6 +65,7 @@ export function WidgetWindow() {
             states={states}
             onRefreshProvider={handleRefreshProvider}
             refreshingProvider={refreshingProvider}
+            skeleton={<WidgetSkeleton providerCount={settings?.enabled_providers.length ?? 0} />}
           />
           <TrayPanelDivider inset data-tray-panel-separator />
           <TrayPanelFooter
