@@ -9,6 +9,8 @@ export function createUsageSnapshotsQueryOptions(refreshIntervalSeconds?: number
   return queryOptions({
     queryKey: queryKeys.usageSnapshots,
     queryFn: getUsageStates,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     ...(refreshIntervalSeconds === undefined
       ? {}
       : {

@@ -15,6 +15,12 @@ describe("createUsageSnapshotsQueryOptions", () => {
     expect(options.refetchIntervalInBackground).toBe(true);
   });
 
+  it("serves cache on window remount without focus refetch", () => {
+    const options = createUsageSnapshotsQueryOptions(300);
+    expect(options.refetchOnMount).toBe(false);
+    expect(options.refetchOnWindowFocus).toBe(false);
+  });
+
   it("does not poll until a refresh interval is provided", () => {
     const options = createUsageSnapshotsQueryOptions();
 
