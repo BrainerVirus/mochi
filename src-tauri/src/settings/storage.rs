@@ -55,6 +55,7 @@ mod tests {
         assert_eq!(settings.update_channel, UpdateChannel::Stable);
         assert_eq!(settings.refresh_interval_seconds, 300);
         assert!(settings.enabled_providers.is_empty());
+        assert_eq!(settings.usage_warn_percent, 80);
     }
 
     #[test]
@@ -66,6 +67,7 @@ mod tests {
             refresh_interval_seconds: 120,
             enabled_providers: vec!["claude".into(), "cursor".into()],
             show_notifications: false,
+            usage_warn_percent: 80,
             provider_configs: Default::default(),
             selected_tab: None,
         };

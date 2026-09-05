@@ -267,7 +267,14 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                                 )
                                 .await
                                 {
-                                    Ok(payload) => payload,
+                                    Ok(payload) => {
+                                        crate::notifications::notify_threshold_crossings(
+                                            &app,
+                                            &settings,
+                                            &read_cached_snapshots(&store, &settings),
+                                        );
+                                        payload
+                                    }
                                     Err(error) => {
                                         crate::notifications::send_notification(
                                             &app,

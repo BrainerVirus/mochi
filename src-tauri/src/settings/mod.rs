@@ -105,6 +105,8 @@ pub struct ProviderConfig {
     pub workspace_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub token_accounts: Option<TokenAccountData>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub warn_percent: Option<u8>,
 }
 
 impl ProviderConfig {
@@ -169,6 +171,8 @@ pub struct MochiSettings {
     pub refresh_interval_seconds: u64,
     pub enabled_providers: Vec<String>,
     pub show_notifications: bool,
+    #[serde(default = "default_usage_warn_percent")]
+    pub usage_warn_percent: u8,
     #[serde(default)]
     pub provider_configs: HashMap<String, ProviderConfig>,
     /// Tray panel / widget selected tab, persisted across windows.
@@ -183,10 +187,27 @@ impl Default for MochiSettings {
             refresh_interval_seconds: 300,
             enabled_providers: Vec::new(),
             show_notifications: true,
+            usage_warn_percent: default_usage_warn_percent(),
             provider_configs: HashMap::new(),
             selected_tab: None,
         }
     }
+}
+
+fn default_usage_warn_percent() -> u8 {
+    80
+}
+
+pub(crate) fn clamp_warn_percent(value: u8) -> u8 {
+    value.clamp(1, 100)
+}
+
+pub(crate) fn should_notify_threshold(usage: f64, threshold: u8, armed: bool) -> bool {
+    armed && usage >= threshold as f64
+}
+
+pub(crate) fn rearmed_below_threshold(usage: f64, threshold: u8) -> bool {
+    usage < threshold as f64
 }
 
 impl MochiSettings {
@@ -202,6 +223,15 @@ impl MochiSettings {
         }
 
         None
+    }
+
+    /// Provider override else the global default; clamped at read time so
+    /// stored out-of-range values degrade gracefully instead of rejecting.
+    pub(crate) fn effective_warn_percent(&self, provider: ProviderId) -> u8 {
+        let override_value = self
+            .provider_config(provider)
+            .and_then(|config| config.warn_percent);
+        clamp_warn_percent(override_value.unwrap_or(self.usage_warn_percent))
     }
 
     pub fn normalize_provider_ids(&mut self) {
@@ -354,5 +384,29 @@ mod tests {
             data.active_account().map(|account| account.label.as_str()),
             Some("zen")
         );
+    }
+
+    #[test]
+    fn default_global_warn_percent_is_80() {
+        assert_eq!(MochiSettings::default().usage_warn_percent, 80);
+    }
+
+    #[test]
+    fn warn_percent_clamps_to_1_to_100() {
+        assert_eq!(clamp_warn_percent(0), 1);
+        assert_eq!(clamp_warn_percent(101), 100);
+        assert_eq!(clamp_warn_percent(90), 90);
+    }
+
+    #[test]
+    fn crossing_armed_threshold_fires_once_then_disarms() {
+        assert!(should_notify_threshold(85.0, 80, true));
+        assert!(!should_notify_threshold(86.0, 80, false));
+    }
+
+    #[test]
+    fn dropping_below_rearms() {
+        assert!(!should_notify_threshold(79.9, 80, false));
+        assert!(rearmed_below_threshold(79.9, 80));
     }
 }
