@@ -20,6 +20,12 @@ export const TokenAccountDataSchema = z.object({
 
 export type TokenAccountData = z.infer<typeof TokenAccountDataSchema>;
 
+/** Mirrors Rust `clamp_warn_percent`: coerce, truncate to int, clamp 1..100. */
+const warnPercentSchema = z.coerce
+  .number()
+  .transform((value) => Math.min(100, Math.max(1, Math.trunc(value))))
+  .pipe(z.number().int().min(1).max(100));
+
 export const ProviderConfigSchema = z.object({
   cookie_source: z.string().optional(),
   manual_cookie: z.string().optional(),
@@ -30,6 +36,7 @@ export const ProviderConfigSchema = z.object({
   token_account: z.string().optional(),
   workspace_id: z.string().optional(),
   token_accounts: TokenAccountDataSchema.optional(),
+  warn_percent: warnPercentSchema.optional(),
 });
 
 export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
@@ -47,6 +54,7 @@ export const MochiSettingsSchema = z.object({
     )
     .pipe(z.array(ProviderIdSchema)),
   show_notifications: z.boolean(),
+  usage_warn_percent: warnPercentSchema.default(80),
   provider_configs: z.record(z.string(), ProviderConfigSchema).default({}),
   selected_tab: z.string().optional(),
 });
@@ -77,6 +85,7 @@ export const DEFAULT_MOCHI_SETTINGS = MochiSettingsSchema.parse({
   refresh_interval_seconds: 300,
   enabled_providers: [],
   show_notifications: true,
+  usage_warn_percent: 80,
   provider_configs: {},
   selected_tab: undefined,
 });

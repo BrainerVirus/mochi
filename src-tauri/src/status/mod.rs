@@ -333,11 +333,23 @@ pub async fn refresh_all_providers(
     settings_state: State<'_, SettingsState>,
 ) -> Result<RefreshCompletePayload, String> {
     let settings = settings_state.current()?;
-    let payload = refresh_all_providers_inner(&store, &settings)
-        .await
-        .unwrap_or_else(|_| RefreshCompletePayload {
-            states: read_cached_usage_states(&store, &settings),
-        });
+    let payload = match refresh_all_providers_inner(&store, &settings).await {
+        Ok(payload) => {
+            crate::notifications::notify_threshold_crossings(
+                &app,
+                &settings,
+                &read_cached_snapshots(&store, &settings),
+            );
+            payload
+        }
+        Err(error) => {
+            let body: String = error.to_string().chars().take(160).collect();
+            crate::notifications::send_notification(&app, "Mochi refresh failed", &body);
+            RefreshCompletePayload {
+                states: read_cached_usage_states(&store, &settings),
+            }
+        }
+    };
     let _ = app.emit("usage-refresh-complete", &payload);
     Ok(payload)
 }

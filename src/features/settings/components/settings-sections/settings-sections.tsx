@@ -18,6 +18,7 @@ import { getProviderCatalog, getProviderCredentialStatus } from "@/lib/tauri/com
 
 import { ProviderConfigFields } from "@/features/settings/components/provider-config-fields";
 import { SettingsUpdateSection } from "@/features/settings/components/settings-update-section";
+import { WarnPercentField } from "@/features/settings/components/warn-percent-field";
 
 function formatCredentialStatusLabel(configured: boolean, source?: string): string {
   if (!configured) {
@@ -57,6 +58,7 @@ export function ProviderSettingsSection({ settings, onChange }: ProviderSettings
           entry={catalogById.get(provider)}
           enabled={settings.enabled_providers.includes(provider)}
           config={settings.provider_configs[provider] ?? {}}
+          globalWarnPercent={settings.usage_warn_percent}
           credentialStatus={credentialStatus[provider]}
           onToggle={() => {
             const enabled = settings.enabled_providers.includes(provider);
@@ -88,6 +90,7 @@ function ProviderSettingsRow({
   entry,
   enabled,
   config,
+  globalWarnPercent,
   credentialStatus,
   onToggle,
   onConfigChange,
@@ -97,6 +100,7 @@ function ProviderSettingsRow({
   entry?: ProviderCatalogEntry;
   enabled: boolean;
   config: MochiSettings["provider_configs"][ProviderId];
+  globalWarnPercent: number;
   credentialStatus?: { configured?: boolean; source?: string };
   onToggle: () => void;
   onConfigChange: (patch: Partial<MochiSettings["provider_configs"][ProviderId]>) => void;
@@ -128,9 +132,21 @@ function ProviderSettingsRow({
         />
       </Field>
 
-      {enabled && entry && entry.settingsFields.length > 0 ? (
+      {enabled ? (
         <div className="flex flex-col gap-3 pb-2.5">
-          <ProviderConfigFields entry={entry} config={config} onChange={onConfigChange} />
+          <WarnPercentField
+            id={`${provider}-warn-percent`}
+            label="Usage warning"
+            description={`Notify at this usage (default ${globalWarnPercent}%). Clear to inherit.`}
+            value={config.warn_percent}
+            placeholder={`${globalWarnPercent}`}
+            onChange={(warn_percent) => {
+              onConfigChange({ warn_percent });
+            }}
+          />
+          {entry && entry.settingsFields.length > 0 ? (
+            <ProviderConfigFields entry={entry} config={config} onChange={onConfigChange} />
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -170,6 +186,18 @@ export function GeneralSettingsSection({ settings, onChange }: GeneralSettingsSe
           }}
         />
       </Field>
+
+      <Separator />
+
+      <WarnPercentField
+        id="usage-warn-percent"
+        label="Default warning threshold"
+        description="Providers warn at this usage unless overridden above."
+        value={settings.usage_warn_percent}
+        onChange={(value) => {
+          onChange({ usage_warn_percent: value ?? settings.usage_warn_percent });
+        }}
+      />
     </FieldGroup>
   );
 }

@@ -7,6 +7,8 @@ use crate::core::models::ProviderId;
 pub(crate) mod codexbar_import;
 mod commands;
 mod storage;
+#[cfg(test)]
+mod tests;
 
 pub use commands::{
     get_provider_catalog, get_provider_credential_status, get_settings, save_selected_tab,
@@ -105,6 +107,8 @@ pub struct ProviderConfig {
     pub workspace_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub token_accounts: Option<TokenAccountData>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub warn_percent: Option<u8>,
 }
 
 impl ProviderConfig {
@@ -169,6 +173,8 @@ pub struct MochiSettings {
     pub refresh_interval_seconds: u64,
     pub enabled_providers: Vec<String>,
     pub show_notifications: bool,
+    #[serde(default = "default_usage_warn_percent")]
+    pub usage_warn_percent: u8,
     #[serde(default)]
     pub provider_configs: HashMap<String, ProviderConfig>,
     /// Tray panel / widget selected tab, persisted across windows.
@@ -183,10 +189,27 @@ impl Default for MochiSettings {
             refresh_interval_seconds: 300,
             enabled_providers: Vec::new(),
             show_notifications: true,
+            usage_warn_percent: default_usage_warn_percent(),
             provider_configs: HashMap::new(),
             selected_tab: None,
         }
     }
+}
+
+fn default_usage_warn_percent() -> u8 {
+    80
+}
+
+pub(crate) fn clamp_warn_percent(value: u8) -> u8 {
+    value.clamp(1, 100)
+}
+
+pub(crate) fn should_notify_threshold(usage: f64, threshold: u8, armed: bool) -> bool {
+    armed && usage >= threshold as f64
+}
+
+pub(crate) fn rearmed_below_threshold(usage: f64, threshold: u8) -> bool {
+    usage < threshold as f64
 }
 
 impl MochiSettings {
@@ -202,6 +225,15 @@ impl MochiSettings {
         }
 
         None
+    }
+
+    /// Provider override else the global default; clamped at read time so
+    /// stored out-of-range values degrade gracefully instead of rejecting.
+    pub(crate) fn effective_warn_percent(&self, provider: ProviderId) -> u8 {
+        let override_value = self
+            .provider_config(provider)
+            .and_then(|config| config.warn_percent);
+        clamp_warn_percent(override_value.unwrap_or(self.usage_warn_percent))
     }
 
     pub fn normalize_provider_ids(&mut self) {
@@ -227,132 +259,5 @@ impl MochiSettings {
             }
             ProviderId::parse(tab).map(|provider| provider.as_str().to_string())
         });
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn defaults_to_stable_channel() {
-        let settings = MochiSettings::default();
-        assert_eq!(settings.update_channel, UpdateChannel::Stable);
-        assert!(settings.enabled_providers.is_empty());
-    }
-
-    #[test]
-    fn update_channel_defaults_to_stable() {
-        let settings: MochiSettings = serde_json::from_value(serde_json::json!({
-            "refresh_interval_seconds": 300,
-            "enabled_providers": [],
-            "show_notifications": true,
-        }))
-        .expect("parse");
-        assert_eq!(settings.update_channel, UpdateChannel::Stable);
-    }
-
-    #[test]
-    fn update_channel_round_trips_kebab_case() {
-        let settings: MochiSettings = serde_json::from_value(serde_json::json!({
-            "update_channel": "stable",
-            "refresh_interval_seconds": 300,
-            "enabled_providers": [],
-            "show_notifications": true,
-        }))
-        .expect("lowercase channel should parse");
-
-        let json = serde_json::to_string(&settings).expect("settings should serialize");
-        assert!(json.contains("\"update_channel\":\"stable\""));
-    }
-
-    #[test]
-    fn legacy_unstable_channel_maps_to_stable_and_rest_survives() {
-        let settings: MochiSettings = serde_json::from_value(serde_json::json!({
-            "update_channel": "unstable",
-            "refresh_interval_seconds": 120,
-            "enabled_providers": ["opencode"],
-            "show_notifications": false,
-            "provider_configs": {
-                "opencode": { "api_key": "sk-test" }
-            },
-        }))
-        .expect("legacy channel should not discard the whole settings file");
-
-        assert_eq!(settings.update_channel, UpdateChannel::Stable);
-        assert_eq!(settings.refresh_interval_seconds, 120);
-        assert_eq!(settings.enabled_providers, vec!["opencode".to_string()]);
-        assert!(!settings.show_notifications);
-        assert_eq!(
-            settings
-                .provider_config(ProviderId::OpenCode)
-                .and_then(|config| config.api_key_value()),
-            Some("sk-test")
-        );
-    }
-
-    #[test]
-    fn normalize_provider_ids_maps_codexbar_aliases() {
-        let mut settings = MochiSettings {
-            enabled_providers: vec!["opencodego".into(), "open-code".into()],
-            provider_configs: HashMap::from([(
-                "opencodego".into(),
-                ProviderConfig {
-                    manual_cookie: Some("auth=test".into()),
-                    ..ProviderConfig::default()
-                },
-            )]),
-            ..MochiSettings::default()
-        };
-
-        settings.normalize_provider_ids();
-
-        assert_eq!(
-            settings.enabled_providers,
-            vec!["opencode-go".to_string(), "opencode".to_string()]
-        );
-        assert!(settings.provider_config(ProviderId::OpenCodeGo).is_some());
-    }
-
-    #[test]
-    fn normalize_provider_ids_canonicalizes_selected_tab_alias() {
-        let mut settings = MochiSettings {
-            selected_tab: Some("opencodego".into()),
-            ..MochiSettings::default()
-        };
-
-        settings.normalize_provider_ids();
-
-        assert_eq!(settings.selected_tab.as_deref(), Some("opencode-go"));
-    }
-
-    #[test]
-    fn normalize_provider_ids_clears_invalid_selected_tab() {
-        let mut settings = MochiSettings {
-            selected_tab: Some("';globalThis.pwned=true;//".into()),
-            ..MochiSettings::default()
-        };
-
-        settings.normalize_provider_ids();
-
-        assert_eq!(settings.selected_tab, None);
-    }
-
-    #[test]
-    fn token_account_data_returns_active_account() {
-        let data = TokenAccountData {
-            version: 1,
-            accounts: vec![TokenAccount {
-                id: "a".into(),
-                label: "zen".into(),
-                token: "auth=test".into(),
-            }],
-            active_index: 0,
-        };
-
-        assert_eq!(
-            data.active_account().map(|account| account.label.as_str()),
-            Some("zen")
-        );
     }
 }

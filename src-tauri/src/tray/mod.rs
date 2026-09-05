@@ -72,12 +72,38 @@ fn build_tray_menu_model() -> TrayMenuModel {
                 id: "update",
                 label: "Check for updates",
             },
+            TrayMenuEntry::Item {
+                id: "about",
+                label: "About Mochi",
+            },
             TrayMenuEntry::Separator,
             TrayMenuEntry::Item {
                 id: "quit",
                 label: "Quit Mochi",
             },
         ],
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TrayMenuAction {
+    Widget,
+    Refresh,
+    Settings,
+    Update,
+    About,
+    Quit,
+}
+
+fn tray_menu_action(id: &str) -> Option<TrayMenuAction> {
+    match id {
+        "widget" => Some(TrayMenuAction::Widget),
+        "refresh" => Some(TrayMenuAction::Refresh),
+        "settings" => Some(TrayMenuAction::Settings),
+        "update" => Some(TrayMenuAction::Update),
+        "about" => Some(TrayMenuAction::About),
+        "quit" => Some(TrayMenuAction::Quit),
+        _ => None,
     }
 }
 
@@ -249,8 +275,8 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .tooltip("Mochi")
         .menu(&menu)
         .show_menu_on_left_click(false)
-        .on_menu_event(|app, event| match event.id.as_ref() {
-            "refresh" => {
+        .on_menu_event(|app, event| match tray_menu_action(event.id.as_ref()) {
+            Some(TrayMenuAction::Refresh) => {
                 let app = app.clone();
                 tauri::async_runtime::spawn(async move {
                     if let Some(store) = app.try_state::<crate::core::usage_store::UsageStore>() {
@@ -258,14 +284,34 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                             app.try_state::<crate::settings::SettingsState>()
                         {
                             if let Ok(settings) = settings_state.current() {
-                                let payload =
-                                    crate::status::refresh_all_providers_inner(&store, &settings)
-                                        .await
-                                        .unwrap_or_else(|_| RefreshCompletePayload {
+                                let payload = match crate::status::refresh_all_providers_inner(
+                                    &store, &settings,
+                                )
+                                .await
+                                {
+                                    Ok(payload) => {
+                                        crate::notifications::notify_threshold_crossings(
+                                            &app,
+                                            &settings,
+                                            &read_cached_snapshots(&store, &settings),
+                                        );
+                                        payload
+                                    }
+                                    Err(error) => {
+                                        let body: String =
+                                            error.to_string().chars().take(160).collect();
+                                        crate::notifications::send_notification(
+                                            &app,
+                                            "Mochi refresh failed",
+                                            &body,
+                                        );
+                                        RefreshCompletePayload {
                                             states: crate::status::read_cached_usage_states(
                                                 &store, &settings,
                                             ),
-                                        });
+                                        }
+                                    }
+                                };
                                 let _ = app.emit("usage-refresh-complete", &payload);
                                 let snapshots = read_cached_snapshots(&store, &settings);
                                 let selection = refresh_tray_selection(&settings);
@@ -275,22 +321,25 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                     }
                 });
             }
-            "widget" => {
+            Some(TrayMenuAction::Widget) => {
                 let _ = crate::widget::show_widget(app.clone());
             }
-            "settings" => {
+            Some(TrayMenuAction::Settings) => {
                 let _ = open_app_window(app.clone(), "/settings".to_string());
             }
-            "update" => {
+            Some(TrayMenuAction::Update) => {
                 let _ = app.emit("tray-check-update", ());
             }
-            "quit" => {
+            Some(TrayMenuAction::About) => {
+                let _ = open_app_window(app.clone(), "/about".to_string());
+            }
+            Some(TrayMenuAction::Quit) => {
                 if let Some(lifecycle) = app.try_state::<crate::lifecycle::AppLifecycle>() {
                     lifecycle.request_quit();
                 }
                 app.exit(0);
             }
-            _ => {}
+            None => {}
         })
         .on_tray_icon_event(|tray, event| {
             record_tray_icon_event(tray.app_handle(), &event);
@@ -371,7 +420,32 @@ mod tests {
                 TrayMenuEntry::Separator => None,
             })
             .collect();
-        assert_eq!(ids, vec!["widget", "refresh", "settings", "update", "quit"]);
+        assert_eq!(
+            ids,
+            vec!["widget", "refresh", "settings", "update", "about", "quit"]
+        );
+    }
+
+    #[test]
+    fn tray_menu_model_about_entry_label() {
+        let about = build_tray_menu_model()
+            .entries
+            .into_iter()
+            .find_map(|entry| match entry {
+                TrayMenuEntry::Item { id: "about", label } => Some(label),
+                _ => None,
+            });
+        assert_eq!(about, Some("About Mochi"));
+    }
+
+    #[test]
+    fn tray_menu_action_routes_about() {
+        assert_eq!(tray_menu_action("about"), Some(TrayMenuAction::About));
+    }
+
+    #[test]
+    fn tray_menu_action_ignores_unknown_ids() {
+        assert_eq!(tray_menu_action("bogus"), None);
     }
 
     fn tray_menu_labels(model: &TrayMenuModel) -> Vec<&'static str> {

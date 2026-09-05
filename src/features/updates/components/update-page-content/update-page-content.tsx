@@ -1,13 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
-import { MochiChibi } from "@/components/mascot/mochi-chibi";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { ScrollFadeRegion } from "@/features/tray/components/scroll-fade-region";
 import { useUpdateInstall } from "@/features/updates/hooks/use-update-install/use-update-install";
 import { splitPatchNotesSections, type PatchNotesSection } from "@/lib/updates/format-patch-notes";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
+import { MochiChibi } from "@/shared/components/mascot/mochi-chibi";
 
 interface UpdatePageContentProps {
   notesOnly: boolean;
@@ -83,28 +82,31 @@ function UpdateNotesBody({
 }: Pick<UpdatePageContentProps, "notesOnly" | "updateAvailable" | "isChecking" | "checkError"> & {
   sections: PatchNotesSection[];
 }) {
-  const content = (
-    <>
-      {checkError ? <p className="text-destructive text-xs">{checkError}</p> : null}
-      {sections.length > 0 ? (
-        <PatchNotesSections sections={sections} />
-      ) : (
-        <p className="text-muted-foreground text-xs leading-relaxed">
-          {resolveEmptyNotesMessage({ notesOnly, isChecking, updateAvailable })}
-        </p>
-      )}
-    </>
-  );
+  const [notesOpen, setNotesOpen] = useState(false);
 
   return (
-    <ScrollFadeRegion
-      orientation="vertical"
-      controls="none"
-      className="min-h-0 flex-1"
-      scrollClassName="overscroll-y-contain"
-    >
-      <div className={`${trayPanelSpacing.contentX} py-2`}>{content}</div>
-    </ScrollFadeRegion>
+    <div className={`${trayPanelSpacing.contentX} min-h-0 flex-1 py-2`}>
+      {checkError ? <p className="text-destructive text-xs">{checkError}</p> : null}
+      <button
+        type="button"
+        onClick={() => setNotesOpen((open) => !open)}
+        aria-expanded={notesOpen}
+        className="text-xs font-medium underline-offset-4 hover:underline"
+      >
+        Release notes
+      </button>
+      {notesOpen ? (
+        <div className="max-h-40 overflow-y-auto">
+          {sections.length > 0 ? (
+            <PatchNotesSections sections={sections} />
+          ) : (
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              {resolveEmptyNotesMessage({ notesOnly, isChecking, updateAvailable })}
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

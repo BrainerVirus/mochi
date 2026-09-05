@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { MochiChibi } from "@/components/mascot/mochi-chibi";
 import { queryKeys } from "@/lib/query/keys";
 import { appVersion } from "@/lib/tauri/commands";
 import { trayPanelSpacing } from "@/lib/utils/tray-panel-spacing";
+import { MochiChibi } from "@/shared/components/mascot/mochi-chibi";
 
 export function AboutPageContent() {
   const { data: version = "…" } = useQuery({
