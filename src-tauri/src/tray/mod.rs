@@ -262,14 +262,25 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                             app.try_state::<crate::settings::SettingsState>()
                         {
                             if let Ok(settings) = settings_state.current() {
-                                let payload =
-                                    crate::status::refresh_all_providers_inner(&store, &settings)
-                                        .await
-                                        .unwrap_or_else(|_| RefreshCompletePayload {
+                                let payload = match crate::status::refresh_all_providers_inner(
+                                    &store, &settings,
+                                )
+                                .await
+                                {
+                                    Ok(payload) => payload,
+                                    Err(error) => {
+                                        crate::notifications::send_notification(
+                                            &app,
+                                            "Mochi refresh failed",
+                                            &error.to_string(),
+                                        );
+                                        RefreshCompletePayload {
                                             states: crate::status::read_cached_usage_states(
                                                 &store, &settings,
                                             ),
-                                        });
+                                        }
+                                    }
+                                };
                                 let _ = app.emit("usage-refresh-complete", &payload);
                                 let snapshots = read_cached_snapshots(&store, &settings);
                                 let selection = refresh_tray_selection(&settings);
@@ -378,7 +389,10 @@ mod tests {
                 TrayMenuEntry::Separator => None,
             })
             .collect();
-        assert_eq!(ids, vec!["widget", "refresh", "settings", "update", "about", "quit"]);
+        assert_eq!(
+            ids,
+            vec!["widget", "refresh", "settings", "update", "about", "quit"]
+        );
     }
 
     fn tray_menu_labels(model: &TrayMenuModel) -> Vec<&'static str> {

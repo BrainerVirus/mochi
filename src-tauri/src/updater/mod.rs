@@ -106,6 +106,11 @@ pub async fn install_update(app: AppHandle, channel: String) -> Result<(), Strin
                 message
             })?;
         crate::diagnostics::log_line("update", &format!("install ok: {version}, restarting"));
+        crate::notifications::send_notification(
+            &app,
+            "Mochi update ready",
+            &format!("Version {version} installed"),
+        );
         app.restart();
     }
 

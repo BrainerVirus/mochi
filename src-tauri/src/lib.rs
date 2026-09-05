@@ -10,6 +10,8 @@ pub mod linux_webkit;
 pub mod linux_window_controls;
 #[cfg(target_os = "macos")]
 pub mod macos;
+#[path = "notifications/notifications.rs"]
+pub mod notifications;
 pub mod providers;
 pub mod settings;
 pub mod status;
@@ -86,6 +88,7 @@ pub fn run() -> anyhow::Result<()> {
     linux_webkit::apply_linux_webkit_workarounds();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_positioner::init())
         // Second GUI launch focuses the running instance's panel instead of
