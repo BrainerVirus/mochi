@@ -37,18 +37,18 @@ jobs:
     steps:
       - name: Checkout repository
         id: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         continue-on-error: true
       - name: Checkout repository (retry)
         if: steps.checkout.outcome == 'failure'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - uses: pnpm/action-setup@v6
         with:
           package_json_file: package.json
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -87,7 +87,7 @@ jobs:
             fs.writeFileSync(path, text);
           '
       - name: Build and publish stable Tauri app
-        uses: tauri-apps/tauri-action@v0.6.2
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MOCHI_UPDATE_CHANNEL: stable
@@ -149,11 +149,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout main
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           token: ${{ secrets.HOMEBREW_PR_TOKEN }}
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
       - name: Generate stable Homebrew cask

@@ -104,6 +104,31 @@ describe("collectUpdaterArtifacts", () => {
     );
   });
 
+  it("accepts versioned macos bundle names from tauri-action v1", async () => {
+    const root = await mkdtemp(join(tmpdir(), "mochi-updater-artifacts-"));
+    await writeArtifact(root, "Mochi_0.4.2_aarch64.app.tar.gz", "sig-darwin-arm");
+    await writeArtifact(root, "Mochi_0.4.2_x64.app.tar.gz", "sig-darwin-x64");
+    await writeArtifact(root, "Mochi_0.4.2_amd64.AppImage", "sig-linux");
+    await writeArtifact(root, "Mochi_0.4.2_x64-setup.exe", "sig-windows");
+
+    const manifest = await collectUpdaterArtifacts({
+      artifactRoot: root,
+      channel: "stable",
+      tagName: "v0.4.2",
+      releaseBaseUrl: "https://github.com/BrainerVirus/mochi/releases/download/v0.4.2",
+      releaseNotesPath: join(root, "missing-notes.md"),
+      outputPath: join(root, "updater-feed.json"),
+      pubDate: "2026-09-04T12:00:00.000Z",
+    });
+
+    expect(manifest.artifacts["darwin-aarch64"].url).toBe(
+      "https://github.com/BrainerVirus/mochi/releases/download/v0.4.2/Mochi_0.4.2_aarch64.app.tar.gz",
+    );
+    expect(manifest.artifacts["darwin-x86_64"].url).toBe(
+      "https://github.com/BrainerVirus/mochi/releases/download/v0.4.2/Mochi_0.4.2_x64.app.tar.gz",
+    );
+  });
+
   it("fails when an updater signature is missing", async () => {
     const root = await mkdtemp(join(tmpdir(), "mochi-updater-artifacts-"));
     await mkdir(join(root, "updater-bundle-ubuntu-24.04-linux-x64/release/bundle/appimage"), {

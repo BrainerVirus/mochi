@@ -26,10 +26,10 @@ jobs:
     name: Publish Updater Pages (${{ inputs.release_tag }})
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
       - name: Download updater bundle artifacts
