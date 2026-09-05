@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEffect } from "react";
 
+import { takePendingAppRoute } from "@/lib/tauri/commands";
 import {
   initialRouteForWindowLabel,
   shouldNavigateFromPackagedShell,
@@ -16,21 +17,37 @@ export function useInitialWindowRoute() {
       return;
     }
 
-    try {
-      const label = getCurrentWebviewWindow().label;
-      const pathname = window.location.pathname;
-      if (!shouldNavigateFromPackagedShell(pathname)) {
-        return;
-      }
+    const bootFromPackagedShell = async () => {
+      try {
+        const label = getCurrentWebviewWindow().label;
+        const pathname = window.location.pathname;
+        if (!shouldNavigateFromPackagedShell(pathname)) {
+          return;
+        }
 
-      const target = initialRouteForWindowLabel(label);
-      if (pathname === target) {
-        return;
-      }
+        // Fresh windows boot after the open_app_window event fires, so the
+        // live listener misses it — the stored route survives the boot.
+        const pending = await takePendingAppRoute();
+        if (typeof pending === "string" && pending.length > 0) {
+          if (pathname === pending) {
+            return;
+          }
 
-      void navigate({ to: target, replace: true });
-    } catch {
-      // Ignore when the webview API is unavailable (e.g. unit tests).
-    }
+          await navigate({ to: pending, replace: true });
+          return;
+        }
+
+        const target = initialRouteForWindowLabel(label);
+        if (pathname === target) {
+          return;
+        }
+
+        await navigate({ to: target, replace: true });
+      } catch {
+        // Ignore when the webview API is unavailable (e.g. unit tests).
+      }
+    };
+
+    void bootFromPackagedShell();
   }, [navigate]);
 }

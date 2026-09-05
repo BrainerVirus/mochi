@@ -22,7 +22,7 @@ use crate::status::{read_cached_snapshots, RefreshCompletePayload};
 pub use panel::{
     maybe_show_main_for_dev, open_app_window, open_tray_panel, record_tray_icon_event,
     set_tray_panel_height, setup_app_windows, setup_main_panel, show_main_panel, show_tray_panel,
-    show_tray_panel_centered, MAIN_PANEL_LABEL, SETTINGS_WINDOW_LABEL,
+    show_tray_panel_centered, take_pending_app_route, MAIN_PANEL_LABEL, SETTINGS_WINDOW_LABEL,
 };
 pub use presentation::{
     pick_tray_snapshot, provider_display_name, resolve_tray_presentation, TrayIconPresentation,
