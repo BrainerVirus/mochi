@@ -268,6 +268,9 @@
       "@/features/usage/components/provider-cost-section": [
         "./src/features/usage/components/provider-cost-section/provider-cost-section.tsx"
       ],
+      "@/features/usage/components/provider-list-skeleton": [
+        "./src/features/usage/components/provider-list-skeleton/provider-list-skeleton.tsx"
+      ],
       "@/features/usage/components/provider-usage-actions": [
         "./src/features/usage/components/provider-usage-actions/provider-usage-actions.tsx"
       ],

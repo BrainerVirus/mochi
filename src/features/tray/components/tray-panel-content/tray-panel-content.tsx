@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TrayOverview } from "@/features/tray/components/tray-overview";
 import { TrayPanelTabList } from "@/features/tray/components/tray-panel-tab-list";
 import { useTabFillActivationKey } from "@/features/tray/hooks/use-tab-fill-activation-key/use-tab-fill-activation-key";
+import { ProviderListSkeleton } from "@/features/usage/components/provider-list-skeleton";
 import { ProviderUsageSection } from "@/features/usage/components/provider-usage-section";
 import { useUsageData } from "@/features/usage/hooks/use-usage-data/use-usage-data";
 import type { ProviderId } from "@/lib/schemas/usage";
@@ -10,6 +11,7 @@ import { buildTrayPanelTabsFromStates } from "@/lib/utils/tray-panel-tabs";
 import { usageSnapshotsEmptyMessage } from "@/lib/utils/usage-snapshots-empty-message";
 
 interface UsageSnapshotsPanelProps {
+  data: ReturnType<typeof useUsageData>["data"];
   error: ReturnType<typeof useUsageData>["error"];
   isPending: boolean;
   isError: boolean;
@@ -24,6 +26,7 @@ interface UsageSnapshotsPanelProps {
 }
 
 export function UsageSnapshotsPanel({
+  data,
   error,
   isError,
   isPending,
@@ -36,12 +39,8 @@ export function UsageSnapshotsPanel({
   onRefreshProvider,
   refreshingProvider,
 }: UsageSnapshotsPanelProps) {
-  if (isPending) {
-    return (
-      <output className="text-muted-foreground block px-3 py-6 text-center text-xs">
-        Loading provider usage…
-      </output>
-    );
+  if (isPending && data === undefined) {
+    return <ProviderListSkeleton providerCount={enabledProviderCount} />;
   }
 
   if (isError) {

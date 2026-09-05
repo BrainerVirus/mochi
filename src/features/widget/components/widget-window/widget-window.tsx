@@ -11,6 +11,7 @@ import { quitApp } from "@/lib/tauri/commands";
 export function WidgetWindow() {
   const layoutRef = useRef<HTMLDivElement>(null);
   const {
+    data,
     settings,
     error,
     isError,
@@ -51,6 +52,7 @@ export function WidgetWindow() {
           className="mx-auto flex w-full max-w-[360px] min-w-0 flex-col pt-3"
         >
           <UsageSnapshotsPanel
+            data={data}
             error={error}
             isError={isError}
             isPending={isPending}

@@ -13,6 +13,7 @@ import { quitApp } from "@/lib/tauri/commands";
 export function TrayPanel() {
   const layoutRef = useRef<HTMLDivElement>(null);
   const {
+    data,
     settings,
     error,
     isError,
@@ -47,6 +48,7 @@ export function TrayPanel() {
         className="mx-auto flex w-full max-w-[360px] min-w-0 flex-col"
       >
         <UsageSnapshotsPanel
+          data={data}
           error={error}
           isError={isError}
           isPending={isPending}
