@@ -21,12 +21,12 @@ pub const SETTINGS_WINDOW_WIDTH: f64 = 520.0;
 pub const SETTINGS_WINDOW_HEIGHT: f64 = 560.0;
 
 /// Compact about window size (logical px).
-pub const ABOUT_WINDOW_WIDTH: f64 = 340.0;
-pub const ABOUT_WINDOW_HEIGHT: f64 = 280.0;
+pub const ABOUT_WINDOW_WIDTH: f64 = 400.0;
+pub const ABOUT_WINDOW_HEIGHT: f64 = 300.0;
 
 /// Compact update window size (logical px).
-pub const UPDATE_WINDOW_WIDTH: f64 = 340.0;
-pub const UPDATE_WINDOW_HEIGHT: f64 = 280.0;
+pub const UPDATE_WINDOW_WIDTH: f64 = 420.0;
+pub const UPDATE_WINDOW_HEIGHT: f64 = 260.0;
 
 /// Matches `src/lib/utils/tray-panel-layout.ts` and `tauri.conf.json` main window width.
 pub const TRAY_PANEL_WIDTH: f64 = 360.0;
@@ -790,10 +790,12 @@ mod tests {
             super::app_window_size_for_path("/settings"),
             (SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
         );
+        assert_eq!((ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT), (400.0, 300.0));
         assert_eq!(
             super::app_window_size_for_path("/about"),
             (ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT)
         );
+        assert_eq!((UPDATE_WINDOW_WIDTH, UPDATE_WINDOW_HEIGHT), (420.0, 260.0));
         assert_eq!(
             super::app_window_size_for_path("/update"),
             (UPDATE_WINDOW_WIDTH, UPDATE_WINDOW_HEIGHT)
