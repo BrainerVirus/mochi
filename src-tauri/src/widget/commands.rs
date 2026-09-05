@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 use crate::diagnostics::DiagnosticsState;
-use crate::frontend::app_shell_url;
+use crate::frontend::initial_app_url_for_path;
 use crate::settings::SettingsState;
 
 use super::{WIDGET_LABEL, WIDGET_MIN_HEIGHT, WIDGET_MIN_WIDTH, WIDGET_WIDTH};
@@ -88,17 +88,18 @@ fn build_widget_window(app: &AppHandle) -> Result<WebviewWindow, Box<dyn std::er
         .and_then(|settings| settings.selected_tab.clone());
     let init_script = selected_tab_initialization_script(selected_tab.as_deref())?;
 
-    let builder = tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, app_shell_url())
-        .title("Mochi Widget")
-        .inner_size(WIDGET_WIDTH, 420.0)
-        .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
-        .decorations(true)
-        .resizable(true)
-        .visible(matches!(
-            crate::window_policy::decorated_window_initial_visibility(),
-            crate::window_policy::DecoratedWindowInitialVisibility::Visible
-        ))
-        .initialization_script(&init_script);
+    let builder =
+        tauri::WebviewWindowBuilder::new(app, WIDGET_LABEL, initial_app_url_for_path("/widget"))
+            .title("Mochi Widget")
+            .inner_size(WIDGET_WIDTH, 420.0)
+            .min_inner_size(WIDGET_MIN_WIDTH, WIDGET_MIN_HEIGHT)
+            .decorations(true)
+            .resizable(true)
+            .visible(matches!(
+                crate::window_policy::decorated_window_initial_visibility(),
+                crate::window_policy::DecoratedWindowInitialVisibility::Visible
+            ))
+            .initialization_script(&init_script);
 
     #[cfg(target_os = "linux")]
     let builder = crate::window_background::apply_shell_background(builder);

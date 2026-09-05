@@ -16,6 +16,13 @@ describe("consumeBootHashRoute", () => {
     expect(window.location.hash).toBe("");
   });
 
+  it("boots the widget window at its route before first paint", () => {
+    window.location.hash = "#/widget";
+    expect(consumeBootHashRoute()).toBe("/widget");
+    expect(window.location.pathname).toBe("/widget");
+    expect(window.location.hash).toBe("");
+  });
+
   it("leaves non-boot locations untouched", () => {
     window.history.replaceState(null, "", "/settings");
     expect(consumeBootHashRoute()).toBeNull();

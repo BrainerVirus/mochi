@@ -44,6 +44,14 @@ mod tests {
             initial_app_url_for_path("/settings").to_string(),
             format!("{APP_SHELL_ASSET}#/settings")
         );
+        assert_eq!(
+            initial_app_url_for_path("/widget").to_string(),
+            format!("{APP_SHELL_ASSET}#/widget")
+        );
+        assert_ne!(
+            initial_app_url_for_path("/widget").to_string(),
+            app_shell_url().to_string()
+        );
     }
 
     #[test]
@@ -69,10 +77,14 @@ mod tests {
                 "widget must not load as a static asset path"
             );
             assert!(
-                source.contains("app_shell_url"),
+                source.contains("app_shell_url") || source.contains("initial_app_url_for_path"),
                 "window builders must use the shared SPA shell URL"
             );
         }
+        assert!(
+            widget.contains(r#"initial_app_url_for_path("/widget")"#),
+            "widget must boot at the widget path, not the generic shell URL"
+        );
 
         assert!(
             !conf.contains(r#""url": "/widget""#),
