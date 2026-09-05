@@ -276,10 +276,12 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                                         payload
                                     }
                                     Err(error) => {
+                                        let body: String =
+                                            error.to_string().chars().take(160).collect();
                                         crate::notifications::send_notification(
                                             &app,
                                             "Mochi refresh failed",
-                                            &error.to_string(),
+                                            &body,
                                         );
                                         RefreshCompletePayload {
                                             states: crate::status::read_cached_usage_states(

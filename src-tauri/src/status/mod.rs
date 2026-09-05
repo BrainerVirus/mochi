@@ -342,9 +342,13 @@ pub async fn refresh_all_providers(
             );
             payload
         }
-        Err(_) => RefreshCompletePayload {
-            states: read_cached_usage_states(&store, &settings),
-        },
+        Err(error) => {
+            let body: String = error.to_string().chars().take(160).collect();
+            crate::notifications::send_notification(&app, "Mochi refresh failed", &body);
+            RefreshCompletePayload {
+                states: read_cached_usage_states(&store, &settings),
+            }
+        }
     };
     let _ = app.emit("usage-refresh-complete", &payload);
     Ok(payload)

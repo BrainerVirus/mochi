@@ -10,7 +10,6 @@ pub mod linux_webkit;
 pub mod linux_window_controls;
 #[cfg(target_os = "macos")]
 pub mod macos;
-#[path = "notifications/notifications.rs"]
 pub mod notifications;
 pub mod providers;
 pub mod settings;
