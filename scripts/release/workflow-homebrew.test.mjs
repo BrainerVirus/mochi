@@ -12,14 +12,13 @@ describe("Homebrew release workflow contracts", () => {
   });
 
   it.each([["stable", stableWorkflow]])(
-    "uses the dedicated PR token in the %s Homebrew job",
+    "uses GITHUB_TOKEN with write permissions in the %s Homebrew job",
     (_channel, workflow) => {
-      expect(workflow).toMatch(
-        /update-homebrew-cask:[\s\S]*?token: \$\{\{ secrets\.HOMEBREW_PR_TOKEN \}\}/,
-      );
-      expect(workflow).toMatch(
-        /update-homebrew-cask:[\s\S]*?GITHUB_TOKEN: \$\{\{ secrets\.HOMEBREW_PR_TOKEN \}\}/,
-      );
+      const job = workflow.split("update-homebrew-cask:")[1];
+      expect(job).toContain("contents: write");
+      expect(job).toContain("pull-requests: write");
+      expect(job).not.toContain("HOMEBREW_PR_TOKEN");
+      expect(job).toMatch(/GITHUB_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/);
     },
   );
 });

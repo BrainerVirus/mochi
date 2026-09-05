@@ -64,6 +64,7 @@ jobs:
           targets: ${{ startsWith(matrix.platform, 'macos-26') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
       - uses: swatinem/rust-cache@v2
         with:
+          shared-key: mochi-rust
           workspaces: src-tauri -> target
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -151,14 +152,14 @@ jobs:
     name: Update Stable Homebrew Cask
     needs: build
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout main
         uses: actions/checkout@v7
         with:
           ref: main
-          token: ${{ secrets.HOMEBREW_PR_TOKEN }}
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -168,7 +169,7 @@ jobs:
         run: node scripts/release/generate-homebrew-casks.mjs --tag "${{ github.ref_name }}" --cask mochi-desktop --out-dir Casks
       - name: Open Homebrew cask PR and merge after CI
         env:
-          GITHUB_TOKEN: ${{ secrets.HOMEBREW_PR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           bash scripts/release/publish-homebrew-cask-pr.sh \
             Casks/mochi-desktop.rb \
