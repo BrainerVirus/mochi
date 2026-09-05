@@ -15,6 +15,7 @@ import {
   refreshEnabledProviders,
   refreshSingleProvider,
   setWidgetHeight,
+  takePendingAppRoute,
 } from "./commands";
 
 describe("getSettings", () => {
@@ -135,5 +136,18 @@ describe("widget commands", () => {
     await setWidgetHeight(456);
 
     expect(invoke).toHaveBeenCalledWith("set_widget_height", { height: 456 });
+  });
+});
+
+describe("takePendingAppRoute", () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset();
+  });
+
+  it("takes the pending app route stored by open_app_window", async () => {
+    vi.mocked(invoke).mockResolvedValue("/about");
+
+    await expect(takePendingAppRoute()).resolves.toBe("/about");
+    expect(invoke).toHaveBeenCalledWith("take_pending_app_route");
   });
 });

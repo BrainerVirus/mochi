@@ -111,6 +111,10 @@ export function openAppWindow(path: string): Promise<void> {
   return invoke<void>("open_app_window", { path });
 }
 
+export function takePendingAppRoute(): Promise<string | null> {
+  return invoke<string | null>("take_pending_app_route");
+}
+
 export async function getProviderCatalog(): Promise<ProviderCatalogEntry[]> {
   const result = await invoke<unknown>("get_provider_catalog");
   return ProviderCatalogSchema.parse(result);

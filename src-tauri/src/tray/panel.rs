@@ -92,6 +92,28 @@ fn emit_app_navigate(app: &AppHandle, path: &str) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
+/// Last path passed to `open_app_window`. Fresh settings webviews boot after
+/// the `app-navigate` event fires (Tauri events are fire-and-forget), so the
+/// booting frontend takes this route instead of defaulting to `/settings`.
+static PENDING_APP_ROUTE: Mutex<Option<String>> = Mutex::new(None);
+
+pub fn store_pending_app_route(path: &str) {
+    if let Ok(mut pending) = PENDING_APP_ROUTE.lock() {
+        *pending = Some(path.to_string());
+    }
+}
+
+pub fn take_pending_app_route_value() -> Option<String> {
+    PENDING_APP_ROUTE.lock().ok()?.take()
+}
+
+/// Returns the stored route once, then clears it. Kept free of Tauri types so
+/// the store stays unit-testable without an `AppHandle`.
+#[tauri::command]
+pub fn take_pending_app_route() -> Option<String> {
+    take_pending_app_route_value()
+}
+
 fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     if let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
         return Ok(window);
@@ -383,6 +405,7 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
     }
     record_app_window_controls(&window, "rust-builder");
 
+    store_pending_app_route(path.as_str());
     emit_app_navigate(&app, path.as_str())?;
 
     #[cfg(target_os = "macos")]
@@ -792,5 +815,40 @@ mod tests {
         assert!(should_skip_positioning(Some(None)));
         // Err(_) must also skip rather than risk the plugin unwrap panic.
         assert!(should_skip_positioning(None));
+    }
+
+    static PENDING_ROUTE_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn pending_app_route_store_then_take_clears() {
+        let _guard = PENDING_ROUTE_TEST_LOCK
+            .lock()
+            .expect("pending route test lock");
+        let _ = super::take_pending_app_route_value();
+
+        super::store_pending_app_route("/about");
+
+        assert_eq!(
+            super::take_pending_app_route_value(),
+            Some("/about".to_string())
+        );
+        assert_eq!(super::take_pending_app_route_value(), None);
+    }
+
+    #[test]
+    fn pending_app_route_second_store_wins() {
+        let _guard = PENDING_ROUTE_TEST_LOCK
+            .lock()
+            .expect("pending route test lock");
+        let _ = super::take_pending_app_route_value();
+
+        super::store_pending_app_route("/settings");
+        super::store_pending_app_route("/about");
+
+        assert_eq!(
+            super::take_pending_app_route_value(),
+            Some("/about".to_string())
+        );
+        assert_eq!(super::take_pending_app_route_value(), None);
     }
 }
