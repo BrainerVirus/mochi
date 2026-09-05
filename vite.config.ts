@@ -30,6 +30,7 @@ export default defineConfig({
     folderResolver({ srcRoot: path.resolve(import.meta.dirname, "src") }),
     tailwindcss(),
     tanstackRouter({
+      autoCodeSplitting: true,
       target: "react",
       routesDirectory: "app/routes",
       generatedRouteTree: "app/routeTree.gen.ts",
