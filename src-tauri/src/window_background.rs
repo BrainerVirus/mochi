@@ -6,6 +6,7 @@
 //! loads. macOS/Windows keep their native glass flow and never call this.
 
 use tauri::webview::Color;
+#[cfg(target_os = "linux")]
 use tauri::{Manager, Runtime, WebviewWindowBuilder};
 
 /// CSS light shell background (`--background` on `[data-platform="linux"]`).

@@ -7,7 +7,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-import { folderResolver } from "./scripts/vite-folder-resolver";
+import { folderResolver } from "./scripts/vite-folder-resolver.ts";
 
 export default defineConfig({
   base: "./",
