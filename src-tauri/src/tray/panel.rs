@@ -5,7 +5,7 @@ use tauri::{
     WindowEvent,
 };
 
-use crate::frontend::app_shell_url;
+use crate::frontend::{app_shell_url, initial_app_url_for_path};
 
 #[cfg(target_os = "macos")]
 use crate::macos::set_regular_activation_policy;
@@ -59,7 +59,7 @@ pub fn dev_show_main_enabled() -> bool {
 }
 
 pub fn setup_app_windows(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    let window = ensure_settings_window(app)?;
+    let window = ensure_settings_window(app, "/settings")?;
     prepare_app_window(&window)?;
     if let Err(error) = ensure_app_window_vibrancy(&window) {
         eprintln!("[mochi] app window vibrancy unavailable: {error}");
@@ -114,23 +114,24 @@ pub fn take_pending_app_route() -> Option<String> {
     take_pending_app_route_value()
 }
 
-fn ensure_settings_window(app: &AppHandle) -> Result<WebviewWindow, String> {
+fn ensure_settings_window(app: &AppHandle, path: &str) -> Result<WebviewWindow, String> {
     if let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
         return Ok(window);
     }
 
-    let builder = WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, app_shell_url())
-        .title("Mochi")
-        .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
-        .min_inner_size(480.0, 420.0)
-        .center()
-        .transparent(window_uses_native_transparency())
-        .decorations(true)
-        .resizable(true)
-        .visible(matches!(
-            crate::window_policy::decorated_window_initial_visibility(),
-            crate::window_policy::DecoratedWindowInitialVisibility::Visible
-        ));
+    let builder =
+        WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, initial_app_url_for_path(path))
+            .title("Mochi")
+            .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
+            .min_inner_size(480.0, 420.0)
+            .center()
+            .transparent(window_uses_native_transparency())
+            .decorations(true)
+            .resizable(true)
+            .visible(matches!(
+                crate::window_policy::decorated_window_initial_visibility(),
+                crate::window_policy::DecoratedWindowInitialVisibility::Visible
+            ));
 
     #[cfg(target_os = "linux")]
     let builder = crate::window_background::apply_shell_background(builder);
@@ -239,6 +240,16 @@ fn app_window_size_for_path(path: &str) -> (f64, f64) {
         (UPDATE_WINDOW_WIDTH, UPDATE_WINDOW_HEIGHT)
     } else {
         (SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
+    }
+}
+
+fn app_window_min_size_for_path(path: &str) -> (f64, f64) {
+    if path.starts_with("/about") {
+        (ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT)
+    } else if path.starts_with("/update") {
+        (UPDATE_WINDOW_WIDTH, UPDATE_WINDOW_HEIGHT)
+    } else {
+        (480.0, 420.0)
     }
 }
 
@@ -371,34 +382,25 @@ pub fn open_app_window(app: AppHandle, path: String) -> Result<(), String> {
         );
     }
 
-    let window = ensure_settings_window(&app)?;
+    let window = ensure_settings_window(&app, path.as_str())?;
     let policy = crate::window_policy::active_decorated_window_policy();
     let creation = policy.creation_label();
     let initial_visibility = policy.initial_visibility_label();
     record_app_window_lifecycle(&window, "created", creation, initial_visibility);
 
-    if crate::window_policy::should_mutate_size_before_first_show() {
-        record_app_window_lifecycle(&window, "before-set-size", creation, initial_visibility);
-        let (width, height) = app_window_size_for_path(path.as_str());
-        let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
-        let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
-            width: if path.starts_with("/about") {
-                ABOUT_WINDOW_WIDTH
-            } else if path.starts_with("/update") {
-                UPDATE_WINDOW_WIDTH
-            } else {
-                480.0
-            },
-            height: if path.starts_with("/about") {
-                ABOUT_WINDOW_HEIGHT
-            } else if path.starts_with("/update") {
-                UPDATE_WINDOW_HEIGHT
-            } else {
-                420.0
-            },
-        })));
-        record_app_window_lifecycle(&window, "after-set-size", creation, initial_visibility);
-    }
+    // Always resize: at open time the window is normally hidden (no flicker),
+    // and the visible-reuse case must jump to the CORRECT per-path size. Never
+    // gate this on the platform size-mutation policy (statically false on
+    // Linux, which left About/Update at the giant creation size).
+    record_app_window_lifecycle(&window, "before-set-size", creation, initial_visibility);
+    let (width, height) = app_window_size_for_path(path.as_str());
+    let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+    let (min_width, min_height) = app_window_min_size_for_path(path.as_str());
+    let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
+        width: min_width,
+        height: min_height,
+    })));
+    record_app_window_lifecycle(&window, "after-set-size", creation, initial_visibility);
 
     if let Err(error) = ensure_app_window_vibrancy(&window) {
         eprintln!("[mochi] app window vibrancy unavailable: {error}");
@@ -802,6 +804,33 @@ mod tests {
         );
     }
 
+    #[test]
+    fn app_window_min_size_for_path() {
+        assert_eq!(
+            super::app_window_min_size_for_path("/settings"),
+            (480.0, 420.0)
+        );
+        assert_eq!(
+            super::app_window_min_size_for_path("/about"),
+            (ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT)
+        );
+        assert_eq!(
+            super::app_window_min_size_for_path("/update"),
+            (UPDATE_WINDOW_WIDTH, UPDATE_WINDOW_HEIGHT)
+        );
+    }
+
+    #[test]
+    fn navigating_settings_to_update_resizes() {
+        assert_ne!(
+            super::app_window_size_for_path("/settings"),
+            super::app_window_size_for_path("/update")
+        );
+        assert_ne!(
+            super::app_window_min_size_for_path("/settings"),
+            super::app_window_min_size_for_path("/update")
+        );
+    }
     #[test]
     fn navigation_events_target_dedicated_window_labels() {
         assert_eq!(MAIN_PANEL_LABEL, "main");

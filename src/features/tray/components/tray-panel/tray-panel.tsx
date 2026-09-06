@@ -4,6 +4,7 @@ import { UsageSnapshotsPanel } from "@/features/tray/components/tray-panel-conte
 import { TrayPanelDivider } from "@/features/tray/components/tray-panel-divider";
 import { TrayPanelFooter } from "@/features/tray/components/tray-panel-footer";
 import { TrayPanelShell } from "@/features/tray/components/tray-panel-shell";
+import { TrayPanelSkeleton } from "@/features/tray/components/tray-panel-skeleton";
 import { useTrayPanelFocusReset } from "@/features/tray/hooks/use-tray-panel-focus-reset";
 import { useTrayPanelHeight } from "@/features/tray/hooks/use-tray-panel-height";
 import { useTrayPanelShortcuts } from "@/features/tray/hooks/use-tray-panel-shortcuts";
@@ -60,6 +61,7 @@ export function TrayPanel() {
           states={states}
           onRefreshProvider={handleRefreshProvider}
           refreshingProvider={refreshingProvider}
+          skeleton={<TrayPanelSkeleton providerCount={settings?.enabled_providers.length ?? 0} />}
         />
         <TrayPanelDivider inset data-tray-panel-separator />
         <TrayPanelFooter
