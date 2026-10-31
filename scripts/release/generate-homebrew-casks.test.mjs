@@ -62,5 +62,6 @@ describe("renderCask", () => {
     expect(body).toContain('sha256 "x64-sha"');
     expect(body).toContain("on_arm do");
     expect(body).toContain("on_intel do");
+    expect(body).not.toContain("verified:");
   });
 });

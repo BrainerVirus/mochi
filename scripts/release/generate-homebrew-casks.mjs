@@ -50,14 +50,12 @@ cask "${id}" do
 
   on_arm do
     sha256 "${arm64.sha256}"
-    url "${arm64.url}",
-        verified: "github.com/${DEFAULT_REPO}/"
+    url "${arm64.url}"
   end
 
   on_intel do
     sha256 "${x64.sha256}"
-    url "${x64.url}",
-        verified: "github.com/${DEFAULT_REPO}/"
+    url "${x64.url}"
   end
 
   name "${name}"

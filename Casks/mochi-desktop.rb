@@ -5,14 +5,12 @@ cask "mochi-desktop" do
 
   on_arm do
     sha256 "1df720be8e5eee06dcb2866ab43a883c147c53a577a71bdafc230fe6866c16aa"
-    url "https://github.com/BrainerVirus/mochi/releases/download/v0.2.5/Mochi_0.2.5_aarch64.dmg",
-        verified: "github.com/BrainerVirus/mochi/"
+    url "https://github.com/BrainerVirus/mochi/releases/download/v0.2.5/Mochi_0.2.5_aarch64.dmg"
   end
 
   on_intel do
     sha256 "5692c6e6daa7476948d7d3be50ffac2c3a6411f2184fd7b039165dc175886c77"
-    url "https://github.com/BrainerVirus/mochi/releases/download/v0.2.5/Mochi_0.2.5_x64.dmg",
-        verified: "github.com/BrainerVirus/mochi/"
+    url "https://github.com/BrainerVirus/mochi/releases/download/v0.2.5/Mochi_0.2.5_x64.dmg"
   end
 
   name "Mochi"
